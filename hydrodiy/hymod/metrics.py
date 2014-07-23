@@ -103,8 +103,8 @@ def iqr_scores(obs, ens, coverage=80):
         iqr[i, 2] = iqr[i,1]-iqr[i,0]
         rel[i] = int( (obs[i]>=iqr[i,0]) & (obs[i]<=iqr[i,1]) )
         
-    return {'precision':1-np.mean(iqr[:,2])/np.diff(iqr_clim), 
-             'reliability':1-100*np.mean(rel)/coverage, 
+    return {'precision': 1-np.mean(iqr[:,2])/np.diff(iqr_clim), 
+             'reliability': 100*np.mean(rel)/coverage - 1, 
              'iqr':iqr, 
              'iqr_clim':iqr_clim, 
              'rel':rel}
@@ -196,7 +196,7 @@ def ens_metrics(yobs,ysim, pp_cst=0.3, min_val=0.):
 
     # iqr
     iqr80 = iqr_scores(yobs[idx], ysim[idx,:], coverage = 80)
-    iqr95 = iqr_scores(yobs[idx], ysim[idx,:], coverage = 95)
+    iqr50 = iqr_scores(yobs[idx], ysim[idx,:], coverage = 50)
 
     # FCVF skill scores
     rmse_fcvf = np.repeat(np.nan, 3)
@@ -211,8 +211,8 @@ def ens_metrics(yobs,ysim, pp_cst=0.3, min_val=0.):
             'alpha': al,
             'iqr80_precision': iqr80['precision'],
             'iqr80_reliability': iqr80['reliability'],
-            'iqr95_precision': iqr95['precision'],
-            'iqr95_reliabity': iqr95['reliability'],
+            'iqr50_precision': iqr50['precision'],
+            'iqr50_reliabity': iqr50['reliability'],
             'crps': cr['crps'],
             'crps_potential': cr['crps_potential'],
             'crps_uncertainty': cr['uncertainty'],

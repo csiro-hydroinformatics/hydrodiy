@@ -59,7 +59,7 @@ class MetricsTestCase(unittest.TestCase):
         sim = np.dot(np.arange(0, 100).reshape((100,1)), np.ones((1, 200))).T
         iqr = metrics.iqr_scores(obs, sim)
         returned = np.array([iqr['reliability'] , iqr['precision']])
-        expected = np.array([0.5, 0.5])
+        expected = np.array([-0.5, 0.5])
         self.assertTrue(np.allclose(returned, expected, atol=1e-2))
 
     def test_ens_metrics(self):
