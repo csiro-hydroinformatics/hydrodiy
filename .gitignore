@@ -1,0 +1,8 @@
+package_files.txt
+
+hydrodiy/hygis/tests/*.png
+hydrodiy/hyio/tests/*.bin
+hydrodiy/hyio/tests/*.binh
+hydrodiy/hyplot/tests/*.html
+hydrodiy/hyplot/tests/*.png
+hydrodiy/hystat/tests/*.gz

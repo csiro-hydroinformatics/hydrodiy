@@ -5,7 +5,7 @@ import os
 import re
 from hyio import iutils
 
-folder = '/home/magpie/Dropbox/code/pypackage/hydrodiy'
+folder = '../hydrodiy'
 pattern = 'tests.*'
 proceeds = None
 
@@ -31,8 +31,8 @@ if proceeds is None:
 
 # uninstall/install
 if proceeds=='y':
-    os.system('/home/magpie/Dropbox/code/pypackage/uninstall.py')
-    os.system('/home/magpie/Dropbox/code/pypackage/install.py')
+    os.system('./uninstall.py')
+    os.system('./install.py')
 
 # run tests
 i = 1
