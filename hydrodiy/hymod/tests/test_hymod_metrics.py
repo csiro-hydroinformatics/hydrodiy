@@ -54,6 +54,14 @@ class MetricsTestCase(unittest.TestCase):
         for nm in cr.dtype.names:
             self.assertTrue(np.allclose(cr[nm], self.crps_value2[nm], atol=1e-5))
 
+    def test_iqr(self):
+        obs = np.arange(0, 200)
+        sim = np.dot(np.arange(0, 100).reshape((100,1)), np.ones((1, 200))).T
+        iqr = metrics.iqr_scores(obs, sim)
+        returned = np.array([iqr['reliability'] , iqr['precision']])
+        expected = np.array([0.5, 0.5])
+        self.assertTrue(np.allclose(returned, expected, atol=1e-2))
+
     def test_ens_metrics(self):
         nval = 100
         nens = 50

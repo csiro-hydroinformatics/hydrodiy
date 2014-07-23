@@ -84,6 +84,30 @@ def alpha(yobs, ysim, pp_cst = 0.3):
 
     return kolmogorov(np.sqrt(nval)*max_dist)
 
+def iqr_scores(obs, ens, coverage=80):
+    ''' Compute the interquantile range (iqr) divided by clim and iqr reliability'''
+
+    iqr_clim = [np.percentile(obs,q) 
+                    for q in [(100-coverage)/2, (100+coverage)/2]]
+    
+    nforc = ens.shape[0]
+    assert len(obs)==nforc
+
+    nens = ens.shape[1]
+    iqr = np.zeros((nforc,3))
+    rel = np.zeros(nforc)
+
+    for i in range(nforc):
+        iqr[i, :2] = [np.percentile(ens[i,:],q) 
+                            for q in [(100-coverage)/2, (100+coverage)/2]]
+        iqr[i, 2] = iqr[i,1]-iqr[i,0]
+        rel[i] = int( (obs[i]>=iqr[i,0]) & (obs[i]<=iqr[i,1]) )
+        
+    return {'precision':1-np.mean(iqr[:,2])/np.diff(iqr_clim), 
+             'reliability':1-100*np.mean(rel)/coverage, 
+             'iqr':iqr, 
+             'iqr_clim':iqr_clim, 
+             'rel':rel}
 
 def det_metrics(yobs,ysim, compute_persistence=False, min_val=0., eps=1):
     """
@@ -170,6 +194,10 @@ def ens_metrics(yobs,ysim, pp_cst=0.3, min_val=0.):
     # crps
     cr, rt = crps(yobs[idx],ysim[idx,:])
 
+    # iqr
+    iqr80 = iqr_scores(yobs[idx], ysim[idx,:], coverage = 80)
+    iqr95 = iqr_scores(yobs[idx], ysim[idx,:], coverage = 95)
+
     # FCVF skill scores
     rmse_fcvf = np.repeat(np.nan, 3)
     rmsep_fcvf = rmse_fcvf
@@ -181,6 +209,10 @@ def ens_metrics(yobs,ysim, pp_cst=0.3, min_val=0.):
 
     metrics = {'idx':idx, 
             'alpha': al,
+            'iqr80_precision': iqr80['precision'],
+            'iqr80_reliability': iqr80['reliability'],
+            'iqr95_precision': iqr95['precision'],
+            'iqr95_reliabity': iqr95['reliability'],
             'crps': cr['crps'],
             'crps_potential': cr['crps_potential'],
             'crps_uncertainty': cr['uncertainty'],
