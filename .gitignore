@@ -1,8 +1,16 @@
+*.swp
+
+hydrodiy/hygis/tests/oz_plot1.png
+hydrodiy/hygis/tests/oz_plot2.png
+hydrodiy/hygis/tests/oz_plot3.png
+hydrodiy/hyio/tests/binfile_testdata.bin
+hydrodiy/hyio/tests/binfile_testdata.binh
+hydrodiy/hyplot/tests/ensembles.png
+hydrodiy/hyplot/tests/match.png
+hydrodiy/hyplot/tests/storage1.html
+hydrodiy/hyplot/tests/storage2.html
+hydrodiy/hyplot/tests/surrounding1.png
+hydrodiy/hyplot/tests/surrounding2.png
+hydrodiy/hystat/tests/mcmc_sample.csv.gz
 package_files.txt
 
-hydrodiy/hygis/tests/*.png
-hydrodiy/hyio/tests/*.bin
-hydrodiy/hyio/tests/*.binh
-hydrodiy/hyplot/tests/*.html
-hydrodiy/hyplot/tests/*.png
-hydrodiy/hystat/tests/*.gz
