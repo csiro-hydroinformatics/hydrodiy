@@ -1,0 +1,33 @@
+/* [wxMaxima batch file version 1] [ DO NOT EDIT BY HAND! ]*/
+/* [ Created with wxMaxima version 13.04.2 ] */
+
+/* [wxMaxima: input   start ] */
+/*
+* f is the forward transform
+* g is the inverse transform
+*/
+f(x,a):=a*x/(1+a*sqrt(abs(x)));
+g(x,a):=x/abs(x)*((a*abs(x)+sqrt((a*x)^2+4*a*abs(x)))/(2*a))^2;
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+/*
+* Check that fog = I
+*
+*/
+plot2d(f(g(x,1e2),1e2), [x, -10, 10]);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+/*
+* Compute the Jacobian of the transformation
+*/
+df(x, a):=diff(f(x,a),x);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+plot2d(df(x,1e-3), [x, -0.5, 0.5]);
+/* [wxMaxima: input   end   ] */
+
+/* Maxima can't load/batch files which end with a comment! */
+"Created with wxMaxima"$

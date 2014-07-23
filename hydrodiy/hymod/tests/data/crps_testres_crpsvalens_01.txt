@@ -1,0 +1,5 @@
+#simple_text_format
+#NROWS 1
+#NCOLS 5
+#FORMAT %10.5f
+   0.13543   0.04732  -0.97929   1.06740   0.08811
