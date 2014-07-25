@@ -102,12 +102,74 @@ def iqr_scores(obs, ens, coverage=80):
                             for q in [(100-coverage)/2, (100+coverage)/2]]
         iqr[i, 2] = iqr[i,1]-iqr[i,0]
         rel[i] = int( (obs[i]>=iqr[i,0]) & (obs[i]<=iqr[i,1]) )
+
+    pre_sc = np.mean(iqr[:,2])/np.diff(iqr_clim)
+    rel_sc = np.mean(rel) * 100
         
-    return {'precision': 1-np.mean(iqr[:,2])/np.diff(iqr_clim), 
-             'reliability': 100*np.mean(rel)/coverage - 1, 
+    return {'precision_skill': 1-pre_sc,
+             'reliability_skill': 1-abs(rel_sc-coverage)/coverage, 
+             'precision_score': pre_sc,
+             'reliability_score': rel_sc,
              'iqr':iqr, 
              'iqr_clim':iqr_clim, 
              'rel':rel}
+
+def median_contingency(obs, ens):
+    ''' Compute the contingency matrix for below/above median forecast.
+        A positive event is equivalent to below median (i.e. dry)
+
+        Contigency matrix is presented as follows:
+        ----------------------------------------------
+        | obs<med & ens<med   | obs<med & ens>=med   |
+        |--------------------------------------------|
+        | obs>=med & ens<med  | obs>=med & ens>=med  |
+        ----------------------------------------------
+    '''
+
+    obs_med = np.median(obs)
+    
+    nforc = ens.shape[0]
+    assert len(obs)==nforc
+
+    cont = np.zeros((2,2))
+    for i in range(nforc):
+        med_obs = int(obs[i]>= obs_med)
+        umed = np.mean(ens[i,:]>= obs_med)
+        cont[med_obs, int(round(umed))] += 1
+
+    hit = (cont[0,0] + cont[1,1] +0.)/np.sum(cont)
+    miss_low = (0.+cont[0,1])/np.sum(cont[0,:])
+
+    return cont, hit, miss_low
+
+def tercile_contingency(obs, ens):
+    ''' Compute the contingency matrix for below/above terciles forecast
+
+        Contigency matrix is presented as follows:
+        ----------------------------------------------------------------------------------------
+        | obs<t1 & ens<t1         | obs<t1 & ens in [t1,t2[         | obs<t1 & ens>=t2         |
+        ----------------------------------------------------------------------------------------
+        | obs in [t1,t2[ & ens<t1 | obs in [t1,t2[ & ens in [t1,t2[ | obs in [t1,t2[ & ens>=t2 |
+        ----------------------------------------------------------------------------------------
+        | obs >= t2 & ens<t1      | obs >= t2 & ens in [t1,t2[      | obs>=t2 & ens>=t2        |
+        ----------------------------------------------------------------------------------------
+    ''' 
+    obs_t1 = np.percentile(obs, 100./3)
+    obs_t2 = np.percentile(obs, 100*2./3)
+    
+    nforc = ens.shape[0]
+    assert len(obs)==nforc
+
+    cont = np.zeros((3,3))
+    for i in range(nforc):
+        t_obs = (obs[i]>= obs_t1).astype(int) + (obs[i]>=obs_t2).astype(int)
+        ut = np.mean((ens[i,:] >= obs_t1).astype(int) + (ens[i,:] >= obs_t2).astype(int))
+        cont[t_obs, int(round(ut))] += 1
+
+    hit = (cont[0,0] + cont[1,1] + cont[2,2] + 0.)/np.sum(cont)
+    miss_low = (0.+np.sum(cont[0,1:]))/np.sum(cont[0,:])
+
+    return cont, hit, miss_low
 
 def det_metrics(yobs,ysim, compute_persistence=False, min_val=0., eps=1):
     """
@@ -198,6 +260,10 @@ def ens_metrics(yobs,ysim, pp_cst=0.3, min_val=0.):
     iqr80 = iqr_scores(yobs[idx], ysim[idx,:], coverage = 80)
     iqr50 = iqr_scores(yobs[idx], ysim[idx,:], coverage = 50)
 
+    # contingency tables
+    cont_med, hit_med, miss_med = median_contingency(yobs[idx], ysim[idx,:])
+    cont_terc, hit_terc, miss_terc = tercile_contingency(yobs[idx], ysim[idx,:])
+
     # FCVF skill scores
     rmse_fcvf = np.repeat(np.nan, 3)
     rmsep_fcvf = rmse_fcvf
@@ -209,10 +275,14 @@ def ens_metrics(yobs,ysim, pp_cst=0.3, min_val=0.):
 
     metrics = {'idx':idx, 
             'alpha': al,
-            'iqr80_precision': iqr80['precision'],
-            'iqr80_reliability': iqr80['reliability'],
-            'iqr50_precision': iqr50['precision'],
-            'iqr50_reliabity': iqr50['reliability'],
+            'iqr80_precision_skill': iqr80['precision_skill'],
+            'iqr80_reliability_skill': iqr80['reliability_skill'],
+            'iqr80_precision_score': iqr80['precision_score'],
+            'iqr80_reliability_score': iqr80['reliability_score'],
+            'median_contingency_hit':hit_med,
+            'median_contingency_miss':miss_med,
+            'tercile_contingency_hit':hit_terc,
+            'tercile_contingency_miss':miss_terc,
             'crps': cr['crps'],
             'crps_potential': cr['crps_potential'],
             'crps_uncertainty': cr['uncertainty'],
