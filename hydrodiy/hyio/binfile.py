@@ -58,7 +58,7 @@ def read_bin(filename):
         datan[i] = struct.unpack('d', chunk)[0]
         i += 1
         chunk = fbin.read(nbytes)
-
+    fbin.close()
     data = pd.DataFrame(datan.reshape(ndim2, ndim1))
 
     return data, comment
