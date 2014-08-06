@@ -1,5 +1,6 @@
 import datetime
 import numpy as np
+import pandas as pd
 
 def wyear(dt, start_month=7):
     ''' compute water year of a particular day '''
@@ -12,15 +13,8 @@ def wyear_days(dt, start_month=7):
 
 def cycledist(x, y, start=1, end=12):
     ''' Compute abs(x-y) assuming that x and y are following a cycle (e.g. 12 months with start=1 and end=12)'''
-
-    values = range(int(start), int(end)+1)
-    if len(values) < len(set(values+[x])):
-        raise ValueError('x outside [%d,%d]'%(values[0], values[-1]))
-    if len(values) < len(set(values+[y])):
-        raise ValueError('y outside [%d,%d]'%(values[0], values[-1]))
-
     cycle = float(end-start+1)
-    return int(abs((x-y-cycle/2)%cycle-cycle/2))
+    return np.abs((x-y-cycle/2)%cycle-cycle/2)
 
 #def get_seasonal(data):
 #    ''' Return 3 monthly aggregated time series 
@@ -40,4 +34,23 @@ def cycledist(x, y, start=1, end=12):
 #        o = pd.concat([o3a, o3b, o3c])
 #        o = o.sort()
      
+def runclim(data, nwin=10):
+    ''' Compute climatology of a daily time series 
+        
+    '''
+    doy = np.arange(1, 367)
+    clim = None
+
+    for d in doy:
+        dist = cycledist(data.index.dayofyear, d, 1, 366)
+        idx =  dist<=nwin
+        df = pd.DataFrame(dict(data[idx].describe()), index=[d])
+
+        if clim is None:
+            clim = df
+        else:
+            clim = clim.append(df)
+
+    return clim
+
 

@@ -40,5 +40,15 @@ class UtilsTestCase(unittest.TestCase):
         self.assertEqual(dutils.cycledist(1, 365, start=1, end=365), 1)
         self.assertEqual(dutils.cycledist(1, 360, start=1, end=365), 6)
 
+    def test_runclim(self):
+        index = pd.date_range('1960-01-01', '2000-12-31', freq='D')
+        n = len(index)
+        u = np.sin((0.+index.dayofyear)/366*2*np.pi)
+        u += 0.2*np.random.uniform(size=n)-0.1
+        s = pd.Series(u, index=index)
+        cl = dutils.runclim(s)
+        
+
+
 if __name__ == "__main__":
     unittest.main()
