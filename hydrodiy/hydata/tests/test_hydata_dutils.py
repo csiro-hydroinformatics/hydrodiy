@@ -43,11 +43,11 @@ class UtilsTestCase(unittest.TestCase):
     def test_runclim(self):
         index = pd.date_range('1900-01-01', '2020-12-31', freq='d')
         n = len(index)
-        u = np.sin((0.+index.dayofyear)/366*2*np.pi)
+        u = np.sin((0.+index.dayofyear)/365*2*np.pi)
         u += 0.2*np.random.uniform(size=n)-0.1
         s = pd.Series(u, index=index)
-        clim = dutils.runclim(s)
-        v = np.sin((0.+np.arange(366))/366*2*np.pi)
+        clim, yws = dutils.runclim(s)
+        v = np.sin((0.+np.arange(365))/365*2*np.pi)
         err = np.abs(clim['median']-v)/(1+np.abs(v))
         self.assertTrue(np.max(err)<0.03)
 
@@ -58,7 +58,8 @@ class UtilsTestCase(unittest.TestCase):
         u += 0.5*np.random.uniform(size=n)-0.25
         u = u*u
         s = pd.Series(u, index=index)
-        climc = dutils.runclimcum(s)
+        clim, yws = dutils.runclim(s)
+        climc = dutils.runclimcum(s, clim, yws)
 
         #import matplotlib.pyplot as plt
         #climc[['lowest', 'median', 'highest']].plot(); plt.show()
