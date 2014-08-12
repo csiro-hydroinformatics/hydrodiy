@@ -1,4 +1,5 @@
-import datetime
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
 import numpy as np
 import pandas as pd
 
@@ -10,7 +11,7 @@ def wyear(dt, start_month=7):
 
 def wyear_days(dt, start_month=7):
     ''' compute number of days from start of the water year '''
-    yws = datetime.datetime(wyear(dt, start_month), start_month, 1)
+    yws = datetime(wyear(dt, start_month), start_month, 1)
     return (dt-yws).days+1
 
 def cycledist(x, y, start=1, end=12):
@@ -40,12 +41,20 @@ def runclim(data, nwin=10):
     ''' Compute climatology of a daily time series 
         
     '''
-    doy = np.arange(1, 367)
+    doy = np.arange(1, 366)
     clim = None
 
+    # Deals with leap years
+    dx = data.index
+    no = (dx.month==2) & (dx.day==29)
+    doyidx = dx.dayofyear
+    correc = (dx.month>2) & (dx.year%4==0)
+    doyidx[correc] = doyidx[correc] - 1
+
+    # Compute running stat
     for d in doy:
-        dist = cycledist(data.index.dayofyear, d, 1, 366)
-        idx =  dist<=nwin
+        dist = cycledist(doyidx, d, 1, 365)
+        idx =  (dist<=nwin) & (~no)
         df = pd.DataFrame(dict(data[idx].describe()), index=[d])
 
         if clim is None:
@@ -54,49 +63,60 @@ def runclim(data, nwin=10):
             clim = clim.append(df)
 
     clim = clim.rename(columns={'50%':'median'})
-
-    return clim
-
-def runclimcum(data, clim=None, nwin=10):
-    ''' Gapfill time series '''
-
-    # Get climatology
-    if clim is None:
-        clim = runclim(data, nwin)
+    clim['day'] = pd.date_range('2001-01-01', freq='D', periods=365)
 
     # Find beginning of water year
-    ts = pd.Series(clim['median'].values, 
-            index = pd.date_range('2000-01-01', freq='D', periods=366))
+    ts = pd.Series(clim['median'].values,  index=clim['day'])
     climm = ts.resample('MS') 
-    start = (climm.index[climm==np.max(climm)].dayofyear-183)%366
+    rm = relativedelta(months=6)
+    dtmax = climm.index[climm==np.max(climm)].values[0]
+    dtmax = datetime.strptime(dtmax.astype(str)[:10], '%Y-%m-%d')
+    wateryear_startmonth = (dtmax-rm).month
 
-    # reorganise series
-    ts = pd.DataFrame({'data':data.values, 
-            'dayfromstart':1+(data.index.dayofyear-start)%366})    
+    return clim, wateryear_startmonth
 
-    ts['year'] = ts['dayfromstart']==1
-    ts['year'] = ts['year'].astype('int').cumsum()
-    tsc = pd.pivot_table(ts, rows='dayfromstart', 
+def runclimcum(data, clim, wateryear_startmonth):
+    ''' Compute cumulative climatology '''
+
+    # Gapfill timeseries with monthly median
+    def replace(grp):
+        idx = pd.isnull(grp)
+        grp[idx] = grp[~idx].median()
+        return grp
+    data = data.groupby(data.index.month).transform(replace)
+
+    # reorganise series to exclude leap years
+    nope = (data.index.month==2) & (data.index.day==29)
+    dx = data[~nope].index
+    dd = pd.DataFrame({'1':dx.month, '2':dx.day})
+    dts = datetime(2001, wateryear_startmonth, 1)
+    def fun(x):
+        if x[0]>=wateryear_startmonth:
+            return (datetime(2001, x[0], x[1])-dts).days
+        else:
+            return (datetime(2002, x[0], x[1])-dts).days
+    data2 = pd.DataFrame({'data':data[~nope].values, 
+            'nday':dd.apply(fun, axis=1).values},
+            index=data.index[~nope])
+    data2['year'] = (data2['nday']==1).astype(int)
+    data2['year'] = data2['year'].cumsum() 
+    data2['year'] += data.index[0].year - 1 + int(wateryear_startmonth>1)
+    datat = pd.pivot_table(data2, rows='nday', 
             cols='year', values='data')
 
-    # Gapfill
-    for i in tsc.index:
-        val = clim['median'][(i-1+start)%366].values[0]
-        ccx = pd.isnull(tsc.loc[i,:])
-        tsc.loc[i,ccx] = val
-
     # compute cum sum
-    tsc = tsc.cumsum(axis=0)
+    datat = datat.cumsum(axis=0)
 
     # Compute stats
-    out =  tsc.apply(lambda x: x.describe(), axis=1)
-    out = out.rename(columns={'50%':'median'})
+    climc =  datat.apply(lambda x: x.describe(), axis=1)
+    climc = climc.rename(columns={'50%':'median'})
 
     # Find lowest/highest year
-    total = tsc.loc[366,:]
-    out['lowest'] = tsc.loc[:, total==np.min(total)]
-    out['highest'] = tsc.loc[:, total==np.max(total)]
+    total = datat.loc[datat.index[-1],:]
+    climc['lowest'] = datat.loc[:, total==np.min(total)]
+    climc['highest'] = datat.loc[:, total==np.max(total)]
 
-    return out
+    climc = climc.set_index(clim.index)
 
+    return climc, datat
 
