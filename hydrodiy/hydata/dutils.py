@@ -100,7 +100,8 @@ def runclimcum(data, clim, wateryear_startmonth):
             index=data.index[~nope])
     data2['year'] = (data2['nday']==1).astype(int)
     data2['year'] = data2['year'].cumsum() 
-    data2['year'] += data.index[0].year - 1 + int(wateryear_startmonth>1)
+    data2['year'] += data.index[0].year
+    data2['year'] -= data.index[0].month<=wateryear_startmonth
     datat = pd.pivot_table(data2, rows='nday', 
             cols='year', values='data')
 
