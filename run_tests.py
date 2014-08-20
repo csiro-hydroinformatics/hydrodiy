@@ -5,7 +5,7 @@ import os
 import re
 from hyio import iutils
 
-folder = '../hydrodiy'
+folder = 'hydrodiy'
 pattern = 'tests.*'
 proceeds = None
 

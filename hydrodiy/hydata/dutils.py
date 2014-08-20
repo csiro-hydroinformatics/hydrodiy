@@ -112,6 +112,15 @@ def runclimcum(data, clim, wateryear_startmonth):
     climc =  datat.apply(lambda x: x.describe(), axis=1)
     climc = climc.rename(columns={'50%':'median'})
 
+    # Correct for decreasing trends in clim
+    # remove decreasing streches and rescale to keep overall balance
+    def fix(x):
+        dd = x.diff().clip(0., 1e30)
+        dd[:1] = x[:1]
+        xx = dd.cumsum()
+        return xx/xx.sum()*x.sum()
+    climc = climc.apply(fix)
+
     # Find lowest/highest year
     total = datat.loc[datat.index[-1],:]
     climc['lowest'] = datat.loc[:, total==np.min(total)]
