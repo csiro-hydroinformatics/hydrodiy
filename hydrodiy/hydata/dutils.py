@@ -123,8 +123,10 @@ def runclimcum(data, clim, wateryear_startmonth):
 
     # Find lowest/highest year
     total = datat.loc[datat.index[-1],:]
-    climc['lowest'] = datat.loc[:, total==np.min(total)]
-    climc['highest'] = datat.loc[:, total==np.max(total)]
+    ymin = datat.columns[np.where(total==np.min(total))[0][0]]
+    climc['lowest'] = datat.loc[:, ymin]
+    ymax = datat.columns[np.where(total==np.max(total))[0][0]]
+    climc['highest'] = datat.loc[:, ymax]
 
     climc = climc.set_index(clim.index)
 
