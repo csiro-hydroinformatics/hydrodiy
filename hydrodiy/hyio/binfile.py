@@ -55,7 +55,10 @@ def read_bin(filename):
     i = 0
     chunk = fbin.read(nbytes)
     while chunk:
-        datan[i] = struct.unpack('d', chunk)[0]
+        if nbytes == 4:
+            datan[i] = struct.unpack('f', chunk)[0]
+        if nbytes == 8:
+            datan[i] = struct.unpack('d', chunk)[0]
         i += 1
         chunk = fbin.read(nbytes)
     fbin.close()
