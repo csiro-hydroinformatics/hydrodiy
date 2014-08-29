@@ -3,14 +3,13 @@ import struct
 import numpy as np
 import pandas as pd
 
-def _binhead(id, nbytes, nrow, ncol,comment):
+def _binhead(nbytes, nrow, ncol,comment):
     """ Produces a nice header for bin files """
     comment_list = comment
     if not isinstance(comment, list):
         comment_list = [comment]
 
     h = []
-    h.append('%10s %d\n'%('id', id))
     h.append('%10s %d\n'%('nbytes', nbytes))
     h.append('%10s %d\n'%('ndim1', ncol))
     h.append('%10s %d\n'%('ndim2', nrow))
@@ -22,9 +21,7 @@ def write_bin(data, filename, comment):
     """ write a pandas dataframe to a bin file with comments """
    
     # write header 
-    id = int(time.strftime("%Y%m%d%H%m"))*100 
-    id += np.random.uniform(0, 100)
-    head = _binhead(id, 8, data.shape[0], data.shape[1], comment)
+    head = _binhead(8, data.shape[0], data.shape[1], comment)
     fheader = open('%sh'%filename, 'w')
     fheader.writelines(head)
     fheader.close()
@@ -42,7 +39,6 @@ def read_bin(filename):
 
     # Reads header
     fhead = open('%sh'%filename, 'r')
-    id = int(fhead.readline()[10:])
     nbytes = int(fhead.readline()[10:])
     ndim1 = int(fhead.readline()[10:])
     ndim2 = int(fhead.readline()[10:])
