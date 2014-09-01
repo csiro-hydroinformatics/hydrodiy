@@ -196,12 +196,12 @@ def det_metrics(yobs,ysim, compute_persistence=False, min_val=0., eps=1):
     if compute_persistence:
         idx = idx & (yobs_shift>=min_val) & np.isfinite(yobs_shift)
 
-    e = yobs[idx] - ysim[idx]
-    elog = np.log(eps+yobs[idx]) - np.log(eps+ysim[idx])
-    einv = 1/(eps+yobs[idx]) - 1/(eps+ysim[idx])
+    e = ysim[idx] - yobs[idx]
+    elog = np.log(eps+ysim[idx]) - np.log(eps+yobs[idx])
+    einv = 1/(eps+ysim[idx]) - 1/(eps+yobs[idx])
     if compute_persistence:
-        esh = yobs[idx] - yobs_shift[idx]
-        esh_inv = 1/(eps+yobs[idx]) - 1/(eps+yobs_shift[idx])
+        esh = yobs_shift[idx] - yobs[idx]
+        esh_inv = 1/(eps+yobs_shift[idx]) - 1/(eps+yobs[idx])
     
     # Obseved mean and variance
     mo = np.mean(yobs[idx])
