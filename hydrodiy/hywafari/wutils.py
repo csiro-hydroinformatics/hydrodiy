@@ -131,3 +131,95 @@ def readscores_xvalidate(h5file, station_id):
 
     return scores
 
+def readrefs_xvalidate(h5file, station_id, variable='STREAMFLOW'):
+    '''  
+    
+    reads refs data from a xvalidate.hdf5 file
+    handles both formats (wafari v1 and v2)
+
+    '''
+    reference = None
+    with tables.openFile(h5file, mode='r') as h5:
+
+        for nd in h5.walk_nodes('/data/forecast', 'Array'):
+           
+            # Search id in node path
+            se =  re.search('/(.|)%s.*reference'%station_id, 
+                                        nd._v_pathname)
+
+            # Search variable name in node title attribute
+            se2  = re.search(variable, nd.title)
+
+            # proceeds if both searches returns something
+            if (se is not None) & (se2 is not None):
+
+                # Get simulation values
+                refs = nd.read()
+
+                # Find month
+                print('%s'%nd._v_pathname)
+                se2 = re.search('M[\\d]{2}', nd._v_pathname)
+                month = int(re.sub('M', '', se2.group(0)))   
+
+                # Build dataframe
+                data = pd.DataFrame(refs).T
+                data.columns = ['Ens%4.4d'%i for i in 
+                                    range(1, data.shape[1]+1)] 
+                data['month'] = month
+                data = data.set_index('month')
+
+                if reference is None:
+                    reference = data
+                else:
+                    reference = pd.concat([reference, data])
+             
+    if not reference is None:
+        reference = reference.sort()
+
+    return reference
+
+def readscores_xvalidate(h5file, station_id):
+    '''  
+    
+    reads scores data from a xvalidate.hdf5 file
+    handles both formats (wafari v1 and v2)
+
+    '''
+    scores = None
+    with tables.openFile(h5file, mode='r') as h5:
+
+        for nd in h5.walk_nodes('/data/skillScore', 'Array'):
+           
+            # Search id in node path
+            se =  re.search('/(.|)%s.*(CRPS|RMSE|RMSEP)$'%station_id, 
+                                        nd._v_pathname)
+
+            # proceeds if both searches returns something
+            if se is not None:
+                # Get values
+                values = nd.read()
+
+                # Find score name
+                se2 = re.search('(CRPS|RMSE|RMSEP)$', nd._v_pathname)
+                scname = se2.group(0)   
+
+                # Find month
+                se2 = re.search('M[\\d]{2}', nd._v_pathname)
+                month = int(re.sub('M', '', se2.group(0))) 
+
+                # Build dataframe
+                data = pd.DataFrame({'value':values})
+                data['score_name'] = scname
+                data['type'] = ['skill', 'score', 'climatology']
+                data['month'] = month
+                data['node'] = nd._v_pathname
+
+                if scores is None:
+                    scores = data
+                else:
+                    scores = pd.concat([scores, data])
+
+    assert scores.shape[0] == 108
+
+    return scores
+
