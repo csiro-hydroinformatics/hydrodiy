@@ -18,13 +18,13 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_readxv_1(self):
         if self.RUNTEST1:
-            sim = wutils.read_xvalidate(self.fxv1, '410734', 
+            sim = wutils.readsim_xvalidate(self.fxv1, '410734', 
                     'data|outcomes')
             self.assertTrue(sim.shape==(348, 6201))
 
     def test_readxv_2(self):
         if self.RUNTEST2:
-            sim = wutils.read_xvalidate(self.fxv2, '922101')
+            sim = wutils.readsim_xvalidate(self.fxv2, '922101')
             self.assertTrue(sim.shape==(253, 6641))
 
     #def test_readxv_2b(self):
