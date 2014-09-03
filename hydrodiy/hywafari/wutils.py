@@ -34,6 +34,7 @@ def read_basin(PROJECT):
     lf = iutils.find_files('%s/wafari/data'%PROJECT,'.*basin.json')
     basins = []
     catchments = []
+    nb = 1
 
     if len(lf)>0:
         for f in lf:
@@ -43,24 +44,30 @@ def read_basin(PROJECT):
             js = json.loads(' '.join(txt))
 
             # Extract basins
-            b = {'name':'', 'area':0., 'description':'',
+            b = {'name':'', 'area':0., 'description':'', 'basin_id':'B%3.3d'%nb,
                     'centroid_long':0., 'centroid_lat':0}
 
             for k in ['name', 'area', 'description']:
                 if 'name' in js: b['name'] = js['name']        
 
             if 'centroidCoordinates' in js:
-                    b['centroid_long'] = js['centroidCoordinates'][1]
-                    b['centroid_lat'] = js['centroidCoordinates'][0]
+                b['centroid_long'] = js['centroidCoordinates'][1]
+                b['centroid_lat'] = js['centroidCoordinates'][0]
 
             basins.append(b)
+            nb += 1
 
             # Extract catchment
             if 'catchment' in js:
                 for catch in js['catchment']:
                     catchments.append(catch)
+                    catchments[-1]['basin_id'] = b['basin_id']
+    
+    basins = pd.DataFrame(basins)
+    catchments = pd.DataFrame(catchments)
+    catchments = catchments.rename(columns={'ID':'id'})
 
-    return pd.DataFrame(basins), pd.DataFrame(catchments)
+    return basins, catchments
 
 def readsim_xvalidate(h5file, station_id, variable='STREAMFLOW'):
     '''  
