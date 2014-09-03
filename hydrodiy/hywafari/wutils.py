@@ -44,15 +44,17 @@ def read_basin(PROJECT):
             js = json.loads(' '.join(txt))
 
             # Extract basins
-            b = {'name':'', 'area':0., 'description':'', 'basin_id':'B%3.3d'%nb,
-                    'centroid_long':0., 'centroid_lat':0}
+            b = {'basin_name':'', 'basin_area':0., 
+                    'basin_description':'', 'basin_id':'B%3.3d'%nb,
+                    'basin_centroid_long':0., 
+                    'basin_centroid_lat':0}
 
             for k in ['name', 'area', 'description']:
-                if 'name' in js: b['name'] = js['name']        
+                if k in js: b['basin_%s'%k] = js[k]        
 
             if 'centroidCoordinates' in js:
-                b['centroid_long'] = js['centroidCoordinates'][1]
-                b['centroid_lat'] = js['centroidCoordinates'][0]
+                b['basin_centroid_long'] = js['centroidCoordinates'][1]
+                b['basin_centroid_lat'] = js['centroidCoordinates'][0]
 
             basins.append(b)
             nb += 1
