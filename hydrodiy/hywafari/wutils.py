@@ -5,6 +5,8 @@ import numpy as np
 import tables
 import pandas as pd
 
+from hyio import iutils
+
 def flattens_json(jsfile):
     ''' Convert a wafari json config file into flat pandas'''
     
@@ -26,6 +28,39 @@ def flattens_json(jsfile):
     sites = pd.DataFrame(sites, index=sites['id'])
     return sites
 
+def read_basin(PROJECT):
+    ''' read basin json file from project '''
+
+    lf = iutils.find_files('%s/wafari/data'%PROJECT,'.*basin.json')
+    basins = []
+    catchments = []
+
+    if len(lf)>0:
+        for f in lf:
+            fj = open(f, 'r')
+            txt = fj.readlines()
+            fj.close() 
+            js = json.loads(' '.join(txt))
+
+            # Extract basins
+            b = {'name':'', 'area':0., 'description':'',
+                    'centroid_long':0., 'centroid_lat':0}
+
+            for k in ['name', 'area', 'description']:
+                if 'name' in js: b['name'] = js['name']        
+
+            if 'centroidCoordinates' in js:
+                    b['centroid_long'] = js['centroidCoordinates'][1]
+                    b['centroid_lat'] = js['centroidCoordinates'][0]
+
+            basins.append(b)
+
+            # Extract catchment
+            if 'catchment' in js:
+                for catch in js['catchment']:
+                    catchments.append(catch)
+
+    return pd.DataFrame(basins), pd.DataFrame(catchments)
 
 def readsim_xvalidate(h5file, station_id, variable='STREAMFLOW'):
     '''  
