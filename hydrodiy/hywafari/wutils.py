@@ -157,7 +157,6 @@ def readrefs_xvalidate(h5file, station_id, variable='STREAMFLOW'):
                 refs = nd.read()
 
                 # Find month
-                print('%s'%nd._v_pathname)
                 se2 = re.search('M[\\d]{2}', nd._v_pathname)
                 month = int(re.sub('M', '', se2.group(0)))   
 
