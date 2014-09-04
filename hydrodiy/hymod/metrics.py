@@ -167,9 +167,11 @@ def tercile_contingency(obs, ens):
         cont[t_obs, int(round(ut))] += 1
 
     hit = (cont[0,0] + cont[1,1] + cont[2,2] + 0.)/np.sum(cont)
+    hit_low = (cont[0,0] + 0.)/np.sum(cont[0,:])
+    hit_high = (cont[2,2] + 0.)/np.sum(cont[2,:])
     miss_low = (0.+np.sum(cont[0,1:]))/np.sum(cont[0,:])
 
-    return cont, hit, miss_low
+    return cont, hit, miss_low, hit_low, hit_high
 
 def det_metrics(yobs,ysim, compute_persistence=False, min_val=0., eps=1):
     """
@@ -262,7 +264,7 @@ def ens_metrics(yobs,ysim, pp_cst=0.3, min_val=0.):
 
     # contingency tables
     cont_med, hit_med, miss_med = median_contingency(yobs[idx], ysim[idx,:])
-    cont_terc, hit_terc, miss_terc = tercile_contingency(yobs[idx], ysim[idx,:])
+    cont_terc, hit_terc, miss_terc, hit_terclow, hit_terchigh = tercile_contingency(yobs[idx], ysim[idx,:])
 
     # FCVF skill scores
     rmse_fcvf = np.repeat(np.nan, 3)
@@ -279,10 +281,12 @@ def ens_metrics(yobs,ysim, pp_cst=0.3, min_val=0.):
             'iqr80_reliability_skill': iqr80['reliability_skill'],
             'iqr80_precision_score': iqr80['precision_score'],
             'iqr80_reliability_score': iqr80['reliability_score'],
-            'median_contingency_hit':hit_med,
-            'median_contingency_miss':miss_med,
-            'tercile_contingency_hit':hit_terc,
-            'tercile_contingency_miss':miss_terc,
+            'median_hit':hit_med,
+            'median_miss':miss_med,
+            'tercile_hit':hit_terc,
+            'tercile_hitlow':hit_terclow,
+            'tercile_hithigh':hit_terchigh,
+            'tercile_miss':miss_terc,
             'crps': cr['crps'],
             'crps_potential': cr['crps_potential'],
             'crps_uncertainty': cr['uncertainty'],

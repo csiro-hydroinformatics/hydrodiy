@@ -87,7 +87,7 @@ class MetricsTestCase(unittest.TestCase):
         sim = np.vstack([np.random.uniform(1., 99., size=(200, nens)),
             np.random.uniform(200., 300., size=(101, nens))])
     
-        cont, hit, miss = metrics.tercile_contingency(obs, sim)
+        cont, hit, miss, hitlow, hithigh = metrics.tercile_contingency(obs, sim)
  
         # check balance of cont table
         returned = (abs(np.sum(cont[0,:]) - np.sum(cont[1,:])) + abs(np.sum(cont[0,:]) - np.sum(cont[2,:])))/np.sum(cont)
@@ -95,8 +95,8 @@ class MetricsTestCase(unittest.TestCase):
         self.assertTrue(np.allclose(returned, expected, atol=1e-2))
 
         # Check hit / miss
-        returned = np.array([hit, miss]) 
-        expected = np.array([2./3, 0.])
+        returned = np.array([hit, miss, hitlow, hithigh]) 
+        expected = np.array([2./3, 0., 1., 1.])
         self.assertTrue(np.allclose(returned, expected, atol=1e-2))
 
     def test_ens_metrics(self):
