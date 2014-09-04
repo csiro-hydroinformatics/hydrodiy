@@ -84,7 +84,7 @@ def readsim_xvalidate(h5file, station_id, variable='STREAMFLOW'):
         for nd in h5.walk_nodes('/data/forecast', 'Array'):
            
             # Search id in node path
-            se =  re.search('/(.|)%s.*simulation'%station_id, 
+            se =  re.search('/(.|)%s(|[A-Z]).*simulation'%station_id, 
                                         nd._v_pathname)
 
             # Search variable name in node title attribute
@@ -143,9 +143,8 @@ def readscores_xvalidate(h5file, station_id):
         for nd in h5.walk_nodes('/data/skillScore', 'Array'):
            
             # Search id in node path
-            se =  re.search('/(.|)%s\.STREAMFLOW.*(CRPS|RMSE|RMSEP)$'%station_id, 
+            se =  re.search('/(.|)%s(|[A-Z])\.STREAMFLOW.*(CRPS|RMSE|RMSEP)$'%station_id, 
                                         nd._v_pathname)
-
             # proceeds if both searches returns something
             if se is not None:
                 # Get values
@@ -171,7 +170,8 @@ def readscores_xvalidate(h5file, station_id):
                 else:
                     scores = pd.concat([scores, data])
 
-    assert scores.shape[0] == 108
+    if not scores is None:
+        assert scores.shape[0] == 108
 
     return scores
 
@@ -188,7 +188,7 @@ def readrefs_xvalidate(h5file, station_id, variable='STREAMFLOW'):
         for nd in h5.walk_nodes('/data/forecast', 'Array'):
            
             # Search id in node path
-            se =  re.search('/(.|)%s.*reference'%station_id, 
+            se =  re.search('/(.|)%s(|[A-Z]).*reference'%station_id, 
                                         nd._v_pathname)
 
             # Search variable name in node title attribute
