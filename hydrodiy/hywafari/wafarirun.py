@@ -12,10 +12,10 @@ try:
     from wafari import view as w
     from wafari.model import io
     from wafari.model.forecast import tercile
-    WIMPORT_SUCCESS = True
-
 except ImportError:
-    WIMPORT_SUCCESS = False
+    print('Can\'t import wafari\n')
+    sys.exit()
+    
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -34,9 +34,6 @@ class WafariRun:
                     model = 'batea_gr4j', 
                     freq = 'seasonal', 
                     end_xv = date(2008, 12, 1)):
-
-        if not WIMPORT_SUCCESS:
-           raise ImportError('Import of wafari modules failed. Sorry mate')
         
         self.PROJECT = PROJECT
         self.PROJECTREF = PROJECTREF
@@ -205,7 +202,8 @@ class WafariRun:
         id = self.id
         hfile = '%s/wafari/data/%s/tseries/hydromet.hdf5'%(self.PROJECT, self.basin)
         try:
-            h = w.hm.grab(id)
+            w.hm.ingest(ID=id, frequency='daily')
+            w.hm.ingest(ID=id)
         except NoSuchNodeError:
             print('.. creating node %s in file %s\n'%(id, hfile))
             w.hm.create(ID=id)
@@ -215,7 +213,8 @@ class WafariRun:
         # Check streamflow
         sfile = '%s/wafari/data/%s/tseries/streamflow.hdf5'%(self.PROJECT, self.basin)
         try:
-            q = w.sf.grab(id)
+            w.sf.ingest(ID=id, frequency='daily')
+            w.sf.ingest(ID=id)
         except NoSuchNodeError:
             print('.. creating node %s in file %s\n'%(id, sfile))
             w.sf.create(ID=id)
@@ -565,7 +564,7 @@ class WafariRun:
         fig = plt.gcf()
         fig.set_size_inches((8,6))
         fn = '%s/%s_%s_FC_1_%s_%s_%s.png'%(filepath, id, freq, year_month, model, version)
-        if webexport : fn = '%s/%s_FC_1_%s.png'%(filepath, id, year_month)
+        #if webexport : fn = '%s/%s_FC_1_%s.png'%(filepath, id, year_month)
         plt.savefig(fn, dpi=80)
         plt.close()
         
@@ -573,7 +572,7 @@ class WafariRun:
         fig = plt.gcf()
         fig.set_size_inches((8,6))
         fn = '%s/%s_%s_FC_2_%s_%s_%s.png'%(filepath, id, freq, year_month, model, version)
-        if webexport : fn = '%s/%s_FC_2_%s.png'%(filepath, id, year_month)
+        #if webexport : fn = '%s/%s_FC_2_%s.png'%(filepath, id, year_month)
         plt.savefig(fn, dpi=80)
         plt.close()
         
@@ -581,7 +580,7 @@ class WafariRun:
         fig = plt.gcf()
         fig.set_size_inches((8,6))
         fn = '%s/%s_%s_FC_3_%s_%s_%s.png'%(filepath, id, freq, year_month, model, version)
-        if webexport : fn = '%s/%s_FC_3_%s.png'%(filepath, id, year_month)
+        #if webexport : fn = '%s/%s_FC_3_%s.png'%(filepath, id, year_month)
         plt.savefig(fn, dpi=80)
         plt.close()
         
@@ -589,7 +588,7 @@ class WafariRun:
         fig = plt.gcf()
         fig.set_size_inches((8,6))
         fn = '%s/%s_%s_FC_4_%s_%s_%s.png'%(filepath, id, freq, year_month, model, version)
-        if webexport : fn = '%s/%s_FC_4_%s.png'%(filepath, id, year_month)
+        #if webexport : fn = '%s/%s_FC_4_%s.png'%(filepath, id, year_month)
         plt.savefig(fn, dpi=80)
         plt.close()
 
@@ -597,7 +596,7 @@ class WafariRun:
         fig = plt.gcf()
         fig.set_size_inches((8,6))
         fn = '%s/%s_%s_FC_5_%s_%s_%s.png'%(filepath, id, freq, year_month, model, version)
-        if webexport : fn = '%s/%s_FC_5_%s.png'%(filepath, id, year_month)
+        #if webexport : fn = '%s/%s_FC_5_%s.png'%(filepath, id, year_month)
         plt.savefig(fn, dpi=80)
         plt.close()
 
@@ -605,7 +604,7 @@ class WafariRun:
         fig = plt.gcf()
         fig.set_size_inches((8,6))
         fn = '%s/%s_%s_FC_6_%s_%s_%s.png'%(filepath, id, freq, year_month, model, version)
-        if webexport : fn = '%s/%s_FC_6_%s.png'%(filepath, id, year_month)
+        #if webexport : fn = '%s/%s_FC_6_%s.png'%(filepath, id, year_month)
         plt.savefig(fn, dpi=80)
         plt.close()
 
