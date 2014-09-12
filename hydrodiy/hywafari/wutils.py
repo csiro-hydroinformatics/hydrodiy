@@ -31,7 +31,7 @@ def flattens_json(jsfile):
 def read_basin(PROJECT):
     ''' read basin json file from project '''
 
-    lf = iutils.find_files('%s/wafari/data'%PROJECT,'.*basin.json')
+    lf = iutils.find_files('%s/data'%PROJECT,'.*basin.json')
     basins = []
     catchments = []
     nb = 1
