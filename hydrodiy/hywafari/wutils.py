@@ -1,4 +1,5 @@
 import re
+import os
 import json
 from datetime import datetime
 import numpy as np
@@ -27,6 +28,233 @@ def flattens_json(jsfile):
 
     sites = pd.DataFrame(sites, index=sites['id'])
     return sites
+
+def create_project(sites, project, model):
+    
+    create_projectdirs(sites, project, model)
+    create_basinjson(sites, project)
+    create_simoptsjson(sites, project, model)
+    create_reportjson(sites, project)
+
+
+def create_projectdirs(sites, project, model):
+
+    for idx, row in sites.iterrows():
+        basin = row['basin']
+        catchment = row['catchment']
+
+        # Create folders
+        F = [project, '%s/data'%project, 
+            '%s/data/%s'%(project, basin), 
+            '%s/data/%s/meta'%(project, basin), 
+            '%s/data/%s/tseries'%(project, basin),
+            '%s/output'%project, 
+            '%s/output/%s'%(project, model), 
+            '%s/output/%s/%s'%(project, model, basin), 
+            '%s/output/%s/%s/%s'%(project, model, basin, catchment),
+            '%s/output/%s/%s/%s/etc'%(project, model, basin, catchment), 
+            '%s/output/%s/%s/%s/out'%(project, model, basin, catchment)]
+
+        for f in F:
+            if not os.path.exists(f): os.mkdir(f)
+
+def create_basinjson(sites, project):
+
+    for idx, row in sites.iterrows():
+
+        basin = row['basin']
+        id = row['id']
+        name = row['name']
+        desc = row['description']
+        area = row['area']
+
+        fb = '%s/data/%s/meta/basin.json'%(project,basin)
+        if os.path.exists(fb):
+            fbb = open(fb, 'r')
+            txt = fbb.readlines()
+            fbb.close()
+            basin_data = json.loads(' '.join(txt))
+
+        else:
+            basin_data = {'conventionName':'basin.ehp.bom.gov.au',
+                'conventionVersion':'1.0', 
+                'name':basin, 'description':'%s basin'%re.sub('_', ' ', basin), 
+                'area': -999., 'areaUnits':'km^2', 
+                'centroidCoordinates':[-999., -999.], 'catchment':[]}
+
+        catch_data = {'ID':'%s'%id, 'AWRC':'%s'%id, 
+            'name':name, 'description':desc,
+            'area':area, 'areaUnits':'km^2'}
+        basin_data['catchment'].append(catch_data)
+
+        txt = json.dumps(basin_data, indent=4)
+        fbb = open(fb, 'w')
+        fbb.writelines(txt)
+        fbb.close()
+
+def create_simoptsjson(sites, project, model):
+
+    for idx, row in sites.iterrows():
+
+        basin = row['basin']
+        catchment = row['catchment']
+        id = row['id']
+
+        fb = '%s/output/%s/%s/%s/etc/simopts.json'%(project, model, basin, catchment)
+        simopts_data = {'conventionName':'simopts.ehp.bom.gov.au',
+            'conventionVersion':'1.0', 
+            'conventionDescription':'%s simulation options'%model, 
+            'modelName': model, 'comment':'',
+            "parameter": {
+                "startDate": "1980-01-01",
+                "endDate": "2008-12-01",
+                "warmupDate": "1975-01-01",
+                "paramStartDate": "1980-01-01",
+                "paramWarmupDate": "1970-01-01",
+                "leaveOut": 5,
+                "numberOfSamples": 6200,
+                "useBateaErrorModel": 'true'
+            },
+            "variable": {
+                "Q": {
+                    "ID": '%s'%id,
+                    "type": "streamflow",
+                    "source": "station",
+                    "frequency": "daily",
+                    "lagTime": "P1M",
+                    "integrationTime": "P3M"
+                },
+                "P": {
+                    "ID": '%s'%id,
+                    "type": "precipitation",
+                    "source": "station",
+                    "frequency": "daily",
+                    "lagTime": "P1M",
+                    "integrationTime": "P3M"
+                },
+                "P_P24": {
+                    "ID": '%s'%id,
+                    "type": "precipitation",
+                    "source": "downscaled_poama_2.4",
+                    "version": "m24",
+                    "frequency": "daily",
+                    "lagTime": "P1M",
+                    "integrationTime": "P3M"
+                },
+                "PET": {
+                    "ID": '%s'%id,
+                    "type": "potential evaporation",
+                    "source": "station",
+                    "frequency": "daily",
+                    "lagTime": "P1M",
+                    "integrationTime": "P3M"
+                }
+            },
+            "predictor": [
+                [
+                    {
+                        "variable": "P_P24",
+                        "integrationTime": "P3M"
+                    },
+                    {
+                        "variable": "P",
+                        "integrationTime": "P3M"
+                    },
+                    {
+                        "variable": "PET",
+                        "integrationTime": "P3M"
+                    }
+                ]
+            ],
+            "predictand": [
+                {
+                    "lagTime": "P1M",
+                    "leadTime": "P1M",
+                    "source": "station",
+                    "frequency": "daily",
+                    "variable": "Q",
+                    "type": "streamflow",
+                    "ID": '%s'%id,
+                    "integrationTime": "P3M"
+                }
+            ],
+            "calibrate_predictor": [
+                {
+                    "variable": "P",
+                    "integrationTime": "P3M"
+                },
+                {
+                    "variable": "PET",
+                    "integrationTime": "P3M"
+                }
+            ],
+            "calibrate_predictand": [
+                {
+                    "variable": "Q",
+                    "integrationTime": "P3M"
+                }
+            ]
+        }
+
+        txt = json.dumps(simopts_data, indent=4)
+        fbb = open(fb, 'w')
+        fbb.writelines(txt)
+        fbb.close()
+
+
+
+def create_reportjson(sites, project, jsonfile='report.json'):
+
+    fr = '%s/%s'%(project, jsonfile) 
+    if os.path.exists(fr):
+        frr = open(fr, 'r')
+        txt = frr.readlines()
+        frr.close()
+        report_data = json.loads(' '.join(txt))
+    
+    else:
+        report_data = {'conventionName':'report.ehp.bom.gov.au',
+            'conventionVersion':'1.0', 
+            'conventionDescription':'1.0', 
+            'startYear':2011,
+            'server':{ 'url':'wafari-gb.bom.gov.au', 
+                    'directory':'/var/www/html/water/reg/ehp/',
+                    'user':'ehpop'},
+            'project':{}}
+
+    for idx, row in sites.iterrows():
+
+        drainage = row['drainage']
+        basin = row['basin']
+        catchment = row['catchment']
+        id = row['id']
+
+        if drainage in report_data['project']:
+
+            if basin in report_data['project'][drainage]:
+
+                if catchment in report_data['project'][drainage][basin]:
+
+                    if id in report_data['project'][drainage][basin][catchment]:
+                        pass
+                    else:
+                        report_data['project'][drainage][basin][catchment][id] = ''
+
+                else:
+                    report_data['project'][drainage][basin][catchment] = {id:''}
+                    
+            else:
+                report_data['project'][drainage][basin] = {catchment:{id:''}}
+                
+        else:
+            drainage_data = {basin: {catchment: {id:''}}}
+            report_data['project'][drainage] = drainage_data
+
+    txt = json.dumps(report_data, indent=4)
+    frr = open(fr, 'w')
+    frr.writelines(txt)
+    frr.close()
+
 
 def read_basin(PROJECT):
     ''' read basin json file from project '''
