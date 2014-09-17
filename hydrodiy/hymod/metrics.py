@@ -304,3 +304,19 @@ def ens_metrics(yobs,ysim, pp_cst=0.3, min_val=0.):
 
     return metrics, idx, rt
 
+
+def ens_metrics_names():
+    
+    o = np.random.lognormal(size=10)
+    s = np.random.normal(size=(10,20))
+    sc, idx, rt = ens_metrics(o, s)
+    
+    return sc.keys()
+
+def det_metrics_names():
+    
+    o = np.random.lognormal(size=10)
+    s = np.random.normal(size=(10,1))
+    sc, idx = det_metrics(o, s)
+    
+    return sc.keys()
