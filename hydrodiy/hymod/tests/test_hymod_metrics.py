@@ -78,7 +78,7 @@ class MetricsTestCase(unittest.TestCase):
 
         # Check hit and miss
         returned = np.array([hit, miss]) 
-        expected = np.array([1./6, 2./3])
+        expected = np.array([1./6, 0.75])
         self.assertTrue(np.allclose(returned, expected, atol=1e-7))
 
     def test_tercile_contingency(self):
@@ -96,7 +96,7 @@ class MetricsTestCase(unittest.TestCase):
 
         # Check hit / miss
         returned = np.array([hit, miss, hitlow, hithigh]) 
-        expected = np.array([2./3, 0., 1., 1.])
+        expected = np.array([2./3, 0.5, 0.5, 1.])
         self.assertTrue(np.allclose(returned, expected, atol=1e-2))
 
     def test_ens_metrics(self):
@@ -104,7 +104,7 @@ class MetricsTestCase(unittest.TestCase):
         nens = 50
         obs = pd.Series(np.random.normal(size=nval))
         sim = pd.DataFrame(np.random.normal(size=(nval,nens)))
-        sc, idx, rt = metrics.ens_metrics(obs, sim)
+        sc, idx, rt, cont_med, cont_terc = metrics.ens_metrics(obs, sim)
 
     def test_det_metrics(self):
         nval = 100

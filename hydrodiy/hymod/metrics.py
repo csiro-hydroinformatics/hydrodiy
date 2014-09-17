@@ -134,7 +134,7 @@ def median_contingency(obs, ens):
         cont[med_obs, int(round(umed))] += 1
 
     hit = (cont[0,0] + cont[1,1] +0.)/np.sum(cont)
-    miss_low = (0.+cont[0,1])/np.sum(cont[0,:])
+    miss_low = (0.+cont[1,0])/np.sum(cont[:,0])
 
     return cont, hit, miss_low, obs_med
 
@@ -149,6 +149,13 @@ def tercile_contingency(obs, ens):
         ----------------------------------------------------------------------------------------
         | obs >= t2 & ens<t1      | obs >= t2 & ens in [t1,t2[      | obs>=t2 & ens>=t2        |
         ----------------------------------------------------------------------------------------
+
+        hit_low is the ratio between the top left cell and the total of the first column
+        (provided low value is forecasted, how many times low value occurs)
+
+        hit_high is the ratio between the bottom right cell and the total of the last column
+        (provided high value is forecasted, how many times high value occurs)
+
     ''' 
     obs_t1 = sutils.percentiles(obs, 100./3).values[0]
     obs_t2 = sutils.percentiles(obs, 200./3).values[0]
@@ -159,13 +166,14 @@ def tercile_contingency(obs, ens):
     cont = np.zeros((3,3))
     for i in range(nforc):
         t_obs = (obs[i]>= obs_t1).astype(int) + (obs[i]>=obs_t2).astype(int)
-        ut = np.mean((ens[i,:] >= obs_t1).astype(int) + (ens[i,:] >= obs_t2).astype(int))
-        cont[t_obs, int(round(ut))] += 1
+        uu = (ens[i,:] >= obs_t1).astype(int) + (ens[i,:] >= obs_t2).astype(int)
+        ut = np.bincount(uu)
+        cont[t_obs, np.argmax(ut)] += 1
 
     hit = (cont[0,0] + cont[1,1] + cont[2,2] + 0.)/np.sum(cont)
-    hit_low = (cont[0,0] + 0.)/np.sum(cont[0,:])
-    hit_high = (cont[2,2] + 0.)/np.sum(cont[2,:])
-    miss_low = (0.+np.sum(cont[0,1:]))/np.sum(cont[0,:])
+    hit_low = (cont[0,0] + 0.)/np.sum(cont[:,0]) 
+    hit_high = (cont[2,2] + 0.)/np.sum(cont[:,2])
+    miss_low = (0.+np.sum(cont[1:,0]))/np.sum(cont[:,0])
 
     return cont, hit, miss_low, hit_low, hit_high, obs_t1, obs_t2
 
@@ -265,8 +273,8 @@ def ens_metrics(yobs,ysim, pp_cst=0.3, min_val=0.):
     iqr = iqr_scores(yobs[idx], ysim[idx,:])
 
     # contingency tables
-    cont_med, hit_med, miss_med, obs_med = median_contingency(yobs[idx], ysim[idx,:])
-    cont_terc, hit_terc, miss_terc, hit_terclow, hit_terchigh, obs_t1, obs_t2 = tercile_contingency(yobs[idx], ysim[idx,:])
+    cont_med, hit_med, miss_medlow, obs_med = median_contingency(yobs[idx], ysim[idx,:])
+    cont_terc, hit_terc, miss_terclow, hit_terclow, hit_terchigh, obs_t1, obs_t2 = tercile_contingency(yobs[idx], ysim[idx,:])
 
     # FCVF skill scores
     rmse_fcvf = np.repeat(np.nan, 3)
@@ -282,12 +290,12 @@ def ens_metrics(yobs,ysim, pp_cst=0.3, min_val=0.):
             'iqr_reliability_skill': iqr[0]['reliability_skill'],
             'iqr_precision_score': iqr[0]['precision_score'],
             'iqr_reliability_score': iqr[0]['reliability_score'],
-            'median_hit':hit_med,
-            'median_miss':miss_med,
-            'tercile_hit':hit_terc,
-            'tercile_hitlow':hit_terclow,
-            'tercile_hithigh':hit_terchigh,
-            'tercile_miss':miss_terc,
+            'median_hitrates':hit_med,
+            'median_missrateslow':miss_medlow,
+            'tercile_hitrates':hit_terc,
+            'tercile_hitrateslow':hit_terclow,
+            'tercile_hitrateshigh':hit_terchigh,
+            'tercile_missrateslow':miss_terclow,
             'crps': cr['crps'][0],
             'crps_potential': cr['crps_potential'][0],
             'crps_uncertainty': cr['uncertainty'][0],
@@ -302,14 +310,14 @@ def ens_metrics(yobs,ysim, pp_cst=0.3, min_val=0.):
             'rmse_ref_fcvf': rmse_fcvf[2],
             'rmsep_ref_fcvf': rmsep_fcvf[2]}
 
-    return metrics, idx, rt
+    return metrics, idx, rt, cont_med, cont_terc
 
 
 def ens_metrics_names():
     
     o = np.random.lognormal(size=10)
     s = np.random.normal(size=(10,20))
-    sc, idx, rt = ens_metrics(o, s)
+    sc, idx, rt, cont_med, cont_terc = ens_metrics(o, s)
     
     return sc.keys()
 
