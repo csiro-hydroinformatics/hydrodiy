@@ -84,11 +84,10 @@ def alpha(yobs, ysim, pp_cst = 0.3):
 
     return kolmogorov(np.sqrt(nval)*max_dist)
 
-def iqr_scores(obs, ens, coverage=80):
-    ''' Compute the interquantile range (iqr) divided by clim and iqr reliability'''
+def iqr_scores(obs, ens):
+    ''' Compute the interquartile range (iqr) divided by clim and iqr reliability'''
 
-    iqr_clim = [np.percentile(obs,q) 
-                    for q in [(100-coverage)/2, (100+coverage)/2]]
+    iqr_clim = sutils.percentiles(obs, [25., 75.]) 
     
     nforc = ens.shape[0]
     assert len(obs)==nforc
@@ -98,8 +97,7 @@ def iqr_scores(obs, ens, coverage=80):
     rel = np.zeros(nforc)
 
     for i in range(nforc):
-        iqr[i, :2] = [np.percentile(ens[i,:],q) 
-                            for q in [(100-coverage)/2, (100+coverage)/2]]
+        iqr[i, :2] = sutils.percentiles(ens[i,:], [25., 75.])
         iqr[i, 2] = iqr[i,1]-iqr[i,0]
         rel[i] = int( (obs[i]>=iqr[i,0]) & (obs[i]<=iqr[i,1]) )
 
@@ -107,7 +105,7 @@ def iqr_scores(obs, ens, coverage=80):
     rel_sc = np.mean(rel) * 100
         
     return {'precision_skill': 1-pre_sc,
-             'reliability_skill': 1-abs(rel_sc-coverage)/coverage, 
+             'reliability_skill': 1-abs(rel_sc-50.)/50., 
              'precision_score': pre_sc,
              'reliability_score': rel_sc,
              'iqr':iqr, 
@@ -126,7 +124,7 @@ def median_contingency(obs, ens):
         ----------------------------------------------
     '''
 
-    obs_med = np.median(obs)
+    obs_med = sutils.percentiles(obs, 50.).values[0]
     
     nforc = ens.shape[0]
     assert len(obs)==nforc
@@ -154,8 +152,8 @@ def tercile_contingency(obs, ens):
         | obs >= t2 & ens<t1      | obs >= t2 & ens in [t1,t2[      | obs>=t2 & ens>=t2        |
         ----------------------------------------------------------------------------------------
     ''' 
-    obs_t1 = np.percentile(obs, 100./3)
-    obs_t2 = np.percentile(obs, 100*2./3)
+    obs_t1 = sutils.percentiles(obs, 100./3).values[0]
+    obs_t2 = sutils.percentiles(obs, 200./3).values[0]
     
     nforc = ens.shape[0]
     assert len(obs)==nforc
@@ -259,8 +257,7 @@ def ens_metrics(yobs,ysim, pp_cst=0.3, min_val=0.):
     cr, rt = crps(yobs[idx],ysim[idx,:])
 
     # iqr
-    iqr80 = iqr_scores(yobs[idx], ysim[idx,:], coverage = 80)
-    iqr50 = iqr_scores(yobs[idx], ysim[idx,:], coverage = 50)
+    iqr = iqr_scores(yobs[idx], ysim[idx,:])
 
     # contingency tables
     cont_med, hit_med, miss_med = median_contingency(yobs[idx], ysim[idx,:])
@@ -277,10 +274,10 @@ def ens_metrics(yobs,ysim, pp_cst=0.3, min_val=0.):
 
     metrics = {'idx':idx, 
             'alpha': al,
-            'iqr80_precision_skill': iqr80['precision_skill'],
-            'iqr80_reliability_skill': iqr80['reliability_skill'],
-            'iqr80_precision_score': iqr80['precision_score'],
-            'iqr80_reliability_score': iqr80['reliability_score'],
+            'iqr_precision_skill': iqr['precision_skill'],
+            'iqr_reliability_skill': iqr['reliability_skill'],
+            'iqr_precision_score': iqr['precision_score'],
+            'iqr_reliability_score': iqr['reliability_score'],
             'median_hit':hit_med,
             'median_miss':miss_med,
             'tercile_hit':hit_terc,

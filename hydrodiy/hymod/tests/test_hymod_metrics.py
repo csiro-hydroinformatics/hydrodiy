@@ -60,7 +60,7 @@ class MetricsTestCase(unittest.TestCase):
         iqr = metrics.iqr_scores(obs, sim)
         returned = np.array([iqr['reliability_score'] , iqr['precision_score'],
                             iqr['reliability_skill'] , iqr['precision_skill']])
-        expected = np.array([40, 0.5, 0.5, 0.5])
+        expected = np.array([25, 0.5, 0.5, 0.5])
         self.assertTrue(np.allclose(returned, expected, atol=1e-2))
 
     def test_median_contingency(self):

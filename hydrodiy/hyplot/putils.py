@@ -204,16 +204,16 @@ def fill_between(x, y1, y2=0, ax=None, **kwargs):
     return p
 
 def plot_ensembles(ensembles, ax, 
-        quantiles=[10., 25.],
+        percentiles=[10., 25.],
         xx=None, line_width=2, alpha=0.9):
     ''' 
-        Plot quantiles of ensembles 
+        Plot percentiles of ensembles 
         
         :param numpy.array ensembles : Data frame containing ensembles in columns
         :param matplotlib.axes ax: Axe to draw ensembles on
-        :param list quantiles: List of low quantiles to compute 
+        :param list percentiles: List of low percentiles to compute 
                         ensemble stats. Quantiles should be <50. 
-                        the 50 and other symetric quantiles are added
+                        the 50 and other symetric percentiles are added
                         automatically 
                         (e.g. [10, 20] -> [10, 20, 50, 80, 90])
         :param numpy.array xx: Abscissae to use for plotting 
@@ -221,15 +221,15 @@ def plot_ensembles(ensembles, ax,
         :param float alpha: Transparency
     '''
    
-    # compute quantiles
-    qt = quantiles+[50]+[100-q for q in quantiles]
+    # compute percentiles
+    qt = percentiles+[50]+[100-q for q in percentiles]
     args = (qt,)
     ens = pd.DataFrame(ensembles)
-    ens_qq = ens.apply(sutils.compute_quantiles, 
+    ens_qq = ens.apply(sutils.percentiles, 
             args=args, axis=1)
 
     # Ensemble colors
-    ncols = 2+len(quantiles)
+    ncols = 2+len(percentiles)
     cols = get_colors(ncols, 'Blues')[1:]
 
     # Rearrange columns 
@@ -251,7 +251,7 @@ def plot_ensembles(ensembles, ax,
     for i in range(len(cols)-1):
         v1 = ens_qq[columns[i]]
         v2 = ens_qq[columns[nens-i-1]]
-        lab = '%s %s'%(columns[i], columns[nens-i-1])
+        lab = '%s to %s'%(columns[i], columns[nens-i-1])
         lab = re.sub('_', ' ', lab)
         fill_between(ens_qq.index.values ,v1.values, 
                 v2.values, ax=ax, 
@@ -262,11 +262,12 @@ def plot_ensembles(ensembles, ax,
     ax.plot(ens_qq.index,
             ens_qq[columns[len(cols)-1]], 
             lw=line_width,
-            color=cols[len(cols)-1], label=columns[len(cols)-1])
+            color=cols[len(cols)-1], 
+            label=re.sub('_', ' ',columns[len(cols)-1]))
 
     return ens_qq
 
-def add_innerlabel(ax, label, fontsize=16):
+def label(ax, label, fontsize=16):
     ax.text(0.05, 0.95, label, transform=ax.transAxes,
            fontsize=fontsize, fontweight='bold', va='top')
 

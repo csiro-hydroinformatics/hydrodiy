@@ -14,7 +14,7 @@ class Boxplot:
 
         self.data = data
         self.varcat = varcat
-        self.quantiles = [10, 25, 50]
+        self.percentiles = [10, 25, 50]
 
         # Boxplot aspect
         blues = hyplot.utils.get_colors(20, 'Blues')
@@ -32,16 +32,16 @@ class Boxplot:
         self.toplot = self._compute_plotting_data(self)
 
     def _compute_plotting_data(self):
-        quantiles = sorted(self.quantiles+[100-self.quantiles[:2]])
+        percentiles = sorted(self.percentiles+[100-self.percentiles[:2]])
 
         if self.varcat is not None:
             grp = self.data.groupby(by=self.varcat[1])[self.varcat[0]]
             numbers = grp.apply(len)
-            toplot = grp.apply(hystat.utils.compute_quantiles, quantiles)
+            toplot = grp.apply(hystat.sutils.percentiles, percentiles)
             toplot = toplot.unstack()
         else:
-            toplot = self.data.apply(hystat.utils.compute_quantiles, 
-                                        args=[quantiles]).T
+            toplot = self.data.apply(hystat.utils.compute_percentiles, 
+                                        args=[percentiles]).T
 
         return toplot
 

@@ -12,6 +12,7 @@ def percentiles(x, perc=np.linspace(0, 100, 5), prob_cst=0.3):
         :param list perc: Percentile values
         :param float prob_cst: Constant used to compute frequency
     '''
+    perc = np.atleast_1d(np.array(perc))
     try:
         xs = np.sort(x)
         ff = empfreq(len(x), prob_cst)
