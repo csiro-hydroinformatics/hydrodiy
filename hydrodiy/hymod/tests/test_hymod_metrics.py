@@ -58,8 +58,8 @@ class MetricsTestCase(unittest.TestCase):
         obs = np.arange(0, 200)
         sim = np.dot(np.arange(0, 100).reshape((100,1)), np.ones((1, 200))).T
         iqr = metrics.iqr_scores(obs, sim)
-        returned = np.array([iqr['reliability_score'] , iqr['precision_score'],
-                            iqr['reliability_skill'] , iqr['precision_skill']])
+        returned = np.array([iqr[0]['reliability_score'] , iqr[0]['precision_score'],
+                            iqr[0]['reliability_skill'] , iqr[0]['precision_skill']])
         expected = np.array([25, 0.5, 0.5, 0.5])
         self.assertTrue(np.allclose(returned, expected, atol=1e-2))
 
@@ -104,8 +104,7 @@ class MetricsTestCase(unittest.TestCase):
         nens = 50
         obs = pd.Series(np.random.normal(size=nval))
         sim = pd.DataFrame(np.random.normal(size=(nval,nens)))
-        sc = metrics.ens_metrics(obs, sim)
-        #import pdb;pdb.set_trace()
+        sc, idx, rt = metrics.ens_metrics(obs, sim)
 
     def test_det_metrics(self):
         nval = 100
@@ -113,7 +112,7 @@ class MetricsTestCase(unittest.TestCase):
         obs = pd.Series(np.random.normal(size=nval))
         sim = pd.DataFrame(np.random.normal(size=(nval,nens)))
         sc = metrics.det_metrics(obs, sim)
-        sc = metrics.det_metrics(obs, sim, True)
+        sc, idx = metrics.det_metrics(obs, sim, True)
 
 if __name__ == "__main__":
     unittest.main()

@@ -101,16 +101,14 @@ def iqr_scores(obs, ens):
         iqr[i, 2] = iqr[i,1]-iqr[i,0]
         rel[i] = int( (obs[i]>=iqr[i,0]) & (obs[i]<=iqr[i,1]) )
 
-    pre_sc = np.mean(iqr[:,2])/np.diff(iqr_clim)
-    rel_sc = np.mean(rel) * 100
+    pre_sc = float(np.mean(iqr[:,2])/np.diff(iqr_clim))
+    rel_sc = float(np.mean(rel) * 100)
         
-    return {'precision_skill': 1-pre_sc,
+    out = {'precision_skill': 1-pre_sc,
              'reliability_skill': 1-abs(rel_sc-50.)/50., 
              'precision_score': pre_sc,
-             'reliability_score': rel_sc,
-             'iqr':iqr, 
-             'iqr_clim':iqr_clim, 
-             'rel':rel}
+             'reliability_score': rel_sc}
+    return out, iqr, iqr_clim, rel
 
 def median_contingency(obs, ens):
     ''' Compute the contingency matrix for below/above median forecast.
@@ -206,15 +204,21 @@ def det_metrics(yobs,ysim, compute_persistence=False, min_val=0., eps=1):
     # Obseved mean and variance
     mo = np.mean(yobs[idx])
     vo = np.var(yobs[idx])
-    vlogo = np.var(np.log(eps+yobs[idx]))
-    vinvo = np.var(1/(eps+yobs[idx]))
+
+    molog = np.mean(np.log(eps+yobs[idx]))
+    volog = np.var(np.log(eps+yobs[idx]))
+
+    moinv = np.mean(1/(eps+yobs[idx]))
+    voinv = np.var(1/(eps+yobs[idx]))
     
     # metrics
     nse = 1.0 - np.mean(np.square(e))/vo
-    nselog = 1.0 - np.mean(np.square(elog))/vlogo
-    nseinv = 1.0 - np.mean(np.square(einv))/vinvo
+    nselog = 1.0 - np.mean(np.square(elog))/volog
+    nseinv = 1.0 - np.mean(np.square(einv))/voinv
     corr = np.corrcoef(yobs[idx],ysim[idx],rowvar=1)[0,1]
     bias = np.mean(e)/mo
+    biaslog = np.mean(elog)/molog
+    biasinv = np.mean(einv)/moinv
     ratiovar = np.var(ysim[idx])/vo
    
     persist = np.nan
@@ -222,13 +226,14 @@ def det_metrics(yobs,ysim, compute_persistence=False, min_val=0., eps=1):
     if compute_persistence:
         persist = 1.0 - np.mean(np.square(e))/np.mean(np.square(esh))
         persist_inv = 1.0 - np.mean(np.square(einv))/np.mean(np.square(esh_inv))
-    metrics  = {'idx':idx, 
-            'nse':nse, 'nselog':nselog, 
+
+    metrics  = {'nse':nse, 'nselog':nselog, 'nseinv':nseinv,
             'persist':persist, 'persist_inv':persist_inv, 
             'nseinv':nseinv, 'bias':bias, 
+            'biaslog':biaslog, 'biasinv':biasinv,
             'corr':corr, 'ratiovar':ratiovar}
 
-    return metrics
+    return metrics, idx
 
 
 def ens_metrics(yobs,ysim, pp_cst=0.3, min_val=0.):
@@ -272,23 +277,21 @@ def ens_metrics(yobs,ysim, pp_cst=0.3, min_val=0.):
         rmse_fcvf = skillscore.rmse(yobs[idx],ysim[idx,:],yobs[idx])
         rmsep_fcvf = skillscore.rmsep(yobs[idx],ysim[idx,:],yobs[idx])
 
-    metrics = {'idx':idx, 
-            'alpha': al,
-            'iqr_precision_skill': iqr['precision_skill'],
-            'iqr_reliability_skill': iqr['reliability_skill'],
-            'iqr_precision_score': iqr['precision_score'],
-            'iqr_reliability_score': iqr['reliability_score'],
+    metrics = {'alpha': al,
+            'iqr_precision_skill': iqr[0]['precision_skill'],
+            'iqr_reliability_skill': iqr[0]['reliability_skill'],
+            'iqr_precision_score': iqr[0]['precision_score'],
+            'iqr_reliability_score': iqr[0]['reliability_score'],
             'median_hit':hit_med,
             'median_miss':miss_med,
             'tercile_hit':hit_terc,
             'tercile_hitlow':hit_terclow,
             'tercile_hithigh':hit_terchigh,
             'tercile_miss':miss_terc,
-            'crps': cr['crps'],
-            'crps_potential': cr['crps_potential'],
-            'crps_uncertainty': cr['uncertainty'],
-            'crps_reliability': cr['reliability'],
-            'crps_reliability_table': rt,
+            'crps': cr['crps'][0],
+            'crps_potential': cr['crps_potential'][0],
+            'crps_uncertainty': cr['uncertainty'][0],
+            'crps_reliability': cr['reliability'][0],
             'crps_skill_fcvf': crps_fcvf[0],
             'rmse_skill_fcvf': rmse_fcvf[0],
             'rmsep_skill_fcvf': rmsep_fcvf[0],
@@ -299,5 +302,5 @@ def ens_metrics(yobs,ysim, pp_cst=0.3, min_val=0.):
             'rmse_ref_fcvf': rmse_fcvf[2],
             'rmsep_ref_fcvf': rmsep_fcvf[2]}
 
-    return metrics
+    return metrics, idx, rt
 
