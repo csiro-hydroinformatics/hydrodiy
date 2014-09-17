@@ -1,23 +1,32 @@
+import re
 from math import sqrt
 import numpy as np
 import pandas as pd
 import _sutils
 
-def compute_quantiles(x, quantiles=np.linspace(0, 100, 5)):
-    ''' Returns quantiles of the input variable as a Pandas Series.
+def percentiles(x, perc=np.linspace(0, 100, 5), prob_cst=0.3):
+    ''' Returns percentiles of the input variable as a Pandas Series.
         Returns a series filled up with nans if the input type is wrong
+
+        :param np.array x: Sample
+        :param list perc: Percentile values
+        :param float prob_cst: Constant used to compute frequency
     '''
     try:
-        qq = [np.percentile(x, q) for q in quantiles]    
+        xs = np.sort(x)
+        ff = empfreq(len(x), prob_cst)
+        qq = np.interp((perc+0.)/100, ff, xs, left=np.nan, right=np.nan)
+        
     except TypeError:
-        qq = [np.nan] * len(quantiles)
-    idx = ['Qtl_%3.3d'%q for q in quantiles]
+        qq = np.nan * np.zeros(len(perc))
+
+    idx = [re.sub(' ', '_', 'P%5.1f'%p) for p in perc]
 
     return pd.Series(qq, index=idx)
 
 def categories(x, 
         bounds=np.linspace(0, 100, 5), 
-        is_quantile=True, 
+        is_percentile=True, 
         has_ties=True,
         format_cat='[%4.1f,\n%4.1f['):
     '''
@@ -25,8 +34,8 @@ def categories(x,
 
         :param np.array x: data from continuous variable  
         :param bounds x: boundaries of categories
-        :param bool is_quantile: consider bounds as percentage 
-                    used to compute quantiles
+        :param bool is_percentile: consider bounds as percentage 
+                    used to compute percentiles
         :param bool has_ties: Are there ties in x value (e.g. 0.0) ?
         :param string format_cat: format to use for printing categories
 
@@ -41,8 +50,8 @@ def categories(x,
 
     # Compute boundaries 
     yq = bounds
-    if is_quantile:
-        yq = [np.percentile(y, q) for q in bounds]
+    if is_percentile:
+        yq = percentiles(y, bounds, 1.)
         
         # add a small number to include max
         yq[len(bounds)-1] += 1e-10 
@@ -61,8 +70,13 @@ def categories(x,
 
     return catval, catnames
 
-def empirical_freq(nval, prob_cst=0.3):
-    delta = 1/(nval+1-2*prob_cst)
+def empfreq(nval, prob_cst=0.3):
+    ''' Compute empirical frequencies for sample of size nval 
+    
+        :param int nval: Sample size
+        :param float prob_cst: Constant used to compute frequency
+    '''
+    delta = 1./(nval+1-2*prob_cst)
     return (np.arange(1, nval+1)-prob_cst)*delta
 
 

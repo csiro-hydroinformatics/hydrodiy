@@ -23,12 +23,19 @@ class UtilsTestCase(unittest.TestCase):
 
         self.assertTrue(np.array_equal(catval, expected))
 
-    def test_empirical_freq(self):
+    def test_empfreq(self):
         nval = 10
         prob_cst = 0.2
         expected = (np.linspace(1, nval, nval)-prob_cst)/(nval+1-2*prob_cst)
-        freq = sutils.empirical_freq(nval, prob_cst)
+        freq = sutils.empfreq(nval, prob_cst)
         self.assertTrue(np.allclose(freq, expected))
+
+    def test_percentiles(self):
+        nval = 10
+        x = np.linspace(0, 1, nval)
+        qq = np.linspace(0,100, 5)
+        xq = sutils.percentiles(x, qq, 1.)
+        self.assertTrue(np.allclose(xq*100, qq))
 
     def test_acf1(self):
         fdata = '%s/acf1_data.csv'%self.FOUT
