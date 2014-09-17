@@ -69,7 +69,7 @@ class MetricsTestCase(unittest.TestCase):
         sim = np.vstack([np.random.uniform(1.1, 2., size=(100, nens)),
             np.random.uniform(0., 0.9, size=(200, nens))])
 
-        cont, hit, miss = metrics.median_contingency(obs, sim)
+        cont, hit, miss, obs_med = metrics.median_contingency(obs, sim)
 
         # check balance of cont table
         returned = (np.sum(cont[0,:]) - np.sum(cont[1,:]))/np.sum(cont)
@@ -87,7 +87,7 @@ class MetricsTestCase(unittest.TestCase):
         sim = np.vstack([np.random.uniform(1., 99., size=(200, nens)),
             np.random.uniform(200., 300., size=(101, nens))])
     
-        cont, hit, miss, hitlow, hithigh = metrics.tercile_contingency(obs, sim)
+        cont, hit, miss, hitlow, hithigh, obs_t1, obs_t2 = metrics.tercile_contingency(obs, sim)
  
         # check balance of cont table
         returned = (abs(np.sum(cont[0,:]) - np.sum(cont[1,:])) + abs(np.sum(cont[0,:]) - np.sum(cont[2,:])))/np.sum(cont)

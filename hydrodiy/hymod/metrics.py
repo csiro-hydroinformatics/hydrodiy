@@ -136,7 +136,7 @@ def median_contingency(obs, ens):
     hit = (cont[0,0] + cont[1,1] +0.)/np.sum(cont)
     miss_low = (0.+cont[0,1])/np.sum(cont[0,:])
 
-    return cont, hit, miss_low
+    return cont, hit, miss_low, obs_med
 
 def tercile_contingency(obs, ens):
     ''' Compute the contingency matrix for below/above terciles forecast
@@ -167,7 +167,7 @@ def tercile_contingency(obs, ens):
     hit_high = (cont[2,2] + 0.)/np.sum(cont[2,:])
     miss_low = (0.+np.sum(cont[0,1:]))/np.sum(cont[0,:])
 
-    return cont, hit, miss_low, hit_low, hit_high
+    return cont, hit, miss_low, hit_low, hit_high, obs_t1, obs_t2
 
 def det_metrics(yobs,ysim, compute_persistence=False, min_val=0., eps=1):
     """
@@ -265,8 +265,8 @@ def ens_metrics(yobs,ysim, pp_cst=0.3, min_val=0.):
     iqr = iqr_scores(yobs[idx], ysim[idx,:])
 
     # contingency tables
-    cont_med, hit_med, miss_med = median_contingency(yobs[idx], ysim[idx,:])
-    cont_terc, hit_terc, miss_terc, hit_terclow, hit_terchigh = tercile_contingency(yobs[idx], ysim[idx,:])
+    cont_med, hit_med, miss_med, obs_med = median_contingency(yobs[idx], ysim[idx,:])
+    cont_terc, hit_terc, miss_terc, hit_terclow, hit_terchigh, obs_t1, obs_t2 = tercile_contingency(yobs[idx], ysim[idx,:])
 
     # FCVF skill scores
     rmse_fcvf = np.repeat(np.nan, 3)
