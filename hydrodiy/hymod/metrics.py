@@ -239,6 +239,8 @@ def det_metrics(yobs,ysim, compute_persistence=False, min_val=0., eps=1):
             'persist':persist, 'persist_inv':persist_inv, 
             'nseinv':nseinv, 'bias':bias, 
             'biaslog':biaslog, 'biasinv':biasinv,
+            'absbias':abs(bias), 
+            'absbiaslog':abs(biaslog), 'absbiasinv':abs(biasinv),
             'corr':corr, 'ratiovar':ratiovar}
 
     return metrics, idx
@@ -300,6 +302,9 @@ def ens_metrics(yobs,ysim, pp_cst=0.3, min_val=0.):
             'crps_potential': cr['crps_potential'][0],
             'crps_uncertainty': cr['uncertainty'][0],
             'crps_reliability': cr['reliability'][0],
+            'crps_skill': (1-cr['crps'][0]/cr['uncertainty'][0])*100,
+            'crps_potential_skill' : (1-cr['crps_potential'][0]/cr['uncertainty'][0])*100,
+            'crps_reliability_skill' : (1-cr['reliability']/cr['uncertainty'][0])*100,
             'crps_skill_fcvf': crps_fcvf[0],
             'rmse_skill_fcvf': rmse_fcvf[0],
             'rmsep_skill_fcvf': rmsep_fcvf[0],
