@@ -67,10 +67,11 @@ class MetricsTestCase(unittest.TestCase):
     def test_median_contingency(self):
         nens = 50
         obs = np.linspace(0.9, 1.1, 300)
+        ref = np.array([obs]*len(obs))
         sim = np.vstack([np.random.uniform(1.1, 2., size=(100, nens)),
             np.random.uniform(0., 0.9, size=(200, nens))])
 
-        cont, hit, miss, obs_med = metrics.median_contingency(obs, sim)
+        cont, hit, miss, obs_med = metrics.median_contingency(obs, sim, ref)
 
         # check balance of cont table
         returned = (np.sum(cont[0,:]) - np.sum(cont[1,:]))/np.sum(cont)
@@ -85,10 +86,11 @@ class MetricsTestCase(unittest.TestCase):
     def test_tercile_contingency(self):
         nens = 50
         obs = np.arange(0, 301)
+        ref = np.array([obs]*len(obs))
         sim = np.vstack([np.random.uniform(1., 99., size=(200, nens)),
             np.random.uniform(200., 300., size=(101, nens))])
     
-        cont, hit, miss, hitlow, hithigh, obs_t1, obs_t2 = metrics.tercile_contingency(obs, sim)
+        cont, hit, miss, hitlow, hithigh, obs_t1, obs_t2 = metrics.tercile_contingency(obs, sim, ref)
  
         # check balance of cont table
         returned = (abs(np.sum(cont[0,:]) - np.sum(cont[1,:])) + abs(np.sum(cont[0,:]) - np.sum(cont[2,:])))/np.sum(cont)
@@ -104,8 +106,9 @@ class MetricsTestCase(unittest.TestCase):
         nval = 100
         nens = 50
         obs = pd.Series(np.random.normal(size=nval))
+        ref = np.array([np.random.choice(obs.values, nens+10)]*nval)
         sim = pd.DataFrame(np.random.normal(size=(nval,nens)))
-        sc, idx, rt, cont_med, cont_terc = metrics.ens_metrics(obs, sim)
+        sc, idx, rt, cont_med, cont_terc = metrics.ens_metrics(obs, sim, ref)
 
     def test_det_metrics(self):
         nval = 100

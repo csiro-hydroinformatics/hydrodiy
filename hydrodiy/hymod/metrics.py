@@ -123,7 +123,7 @@ def iqr_scores(obs, ens, ref):
              'reliability_score': rel_sc}
     return out, iqr, iqr_clim, rel, rel_clim
 
-def median_contingency(obs, ens):
+def median_contingency(obs, ens, ref):
     ''' Compute the contingency matrix for below/above median forecast.
         A positive event is equivalent to below median (i.e. dry)
 
@@ -135,13 +135,15 @@ def median_contingency(obs, ens):
         ----------------------------------------------
     '''
 
-    obs_med = sutils.percentiles(obs, 50.).values[0]
-    
     nforc = ens.shape[0]
-    assert len(obs)==nforc
+    if len(obs)!=nforc:
+        raise ValueError('Length of obs(%d) different from length of ens(%d)'%(len(obs), nforc))
+    if ref.shape[0]!=nforc:
+        raise ValueError('Length of ref(%d) different from length of ens(%d)'%(ref.shape[0], nforc))
 
     cont = np.zeros((2,2))
     for i in range(nforc):
+        obs_med = sutils.percentiles(ref[i,:], 50.).values[0]
         med_obs = int(obs[i]>= obs_med)
         umed = np.mean(ens[i,:]>= obs_med)
         cont[med_obs, int(round(umed))] += 1
@@ -151,7 +153,7 @@ def median_contingency(obs, ens):
 
     return cont, hit, miss_low, obs_med
 
-def tercile_contingency(obs, ens):
+def tercile_contingency(obs, ens, ref):
     ''' Compute the contingency matrix for below/above terciles forecast
 
         Contigency matrix is presented as follows:
@@ -170,14 +172,17 @@ def tercile_contingency(obs, ens):
         (provided high value is forecasted, how many times high value occurs)
 
     ''' 
-    obs_t1 = sutils.percentiles(obs, 100./3).values[0]
-    obs_t2 = sutils.percentiles(obs, 200./3).values[0]
-    
     nforc = ens.shape[0]
-    assert len(obs)==nforc
+    if len(obs)!=nforc:
+        raise ValueError('Length of obs(%d) different from length of ens(%d)'%(len(obs), nforc))
+    if ref.shape[0]!=nforc:
+        raise ValueError('Length of ref(%d) different from length of ens(%d)'%(ref.shape[0], nforc))
 
     cont = np.zeros((3,3))
     for i in range(nforc):
+        obs_t1 = sutils.percentiles(ref[i,:], 100./3).values[0]
+        obs_t2 = sutils.percentiles(ref[i,:], 200./3).values[0]
+    
         t_obs = (obs[i]>= obs_t1).astype(int) + (obs[i]>=obs_t2).astype(int)
         uu = (ens[i,:] >= obs_t1).astype(int) + (ens[i,:] >= obs_t2).astype(int)
         ut = np.bincount(uu)
@@ -285,14 +290,11 @@ def ens_metrics(yobs,ysim, yref=None, pp_cst=0.3, min_val=0.):
     yobs = np.array(yobs, copy=False)
     ysim = np.array(ysim, copy=False)
     nval = len(yobs)
-    assert nval==ysim.shape[0]
     if nval!=ysim.shape[0]:
         raise ValueError('Length of yobs(%d) different from length of ysim(%d)'%(len(yobs), ysim.shape[0]))
 
     if yref is None: 
         yref = np.array([yobs]*nval)
-    else:
-        yref = np.array([yref]*nval)
 
     # find proper data
     idx = np.isfinite(yobs)
@@ -307,8 +309,8 @@ def ens_metrics(yobs,ysim, yref=None, pp_cst=0.3, min_val=0.):
     iqr = iqr_scores(yobs[idx], ysim[idx,:], yref[idx,:])
 
     # contingency tables
-    cont_med, hit_med, miss_medlow, obs_med = median_contingency(yobs[idx], ysim[idx,:])
-    cont_terc, hit_terc, miss_terclow, hit_terclow, hit_terchigh, obs_t1, obs_t2 = tercile_contingency(yobs[idx], ysim[idx,:])
+    cont_med, hit_med, miss_medlow, obs_med = median_contingency(yobs[idx], ysim[idx,:], yref[idx,:])
+    cont_terc, hit_terc, miss_terclow, hit_terclow, hit_terchigh, obs_t1, obs_t2 = tercile_contingency(yobs[idx], ysim[idx,:], yref[idx,:])
 
     # FCVF skill scores
     rmse_fcvf = np.repeat(np.nan, 3)
