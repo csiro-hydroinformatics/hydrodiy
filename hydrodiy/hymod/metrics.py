@@ -1,5 +1,7 @@
 import numpy as np
 from scipy.special import kolmogorov
+from scipy.stats import kendalltau
+
 import _metrics
 from hystat import sutils
 
@@ -84,31 +86,42 @@ def alpha(yobs, ysim, pp_cst = 0.3):
 
     return kolmogorov(np.sqrt(nval)*max_dist)
 
-def iqr_scores(obs, ens):
+def iqr_scores(obs, ens, ref):
     ''' Compute the interquartile range (iqr) divided by clim and iqr reliability'''
 
-    iqr_clim = sutils.percentiles(obs, [25., 75.]) 
-    
     nforc = ens.shape[0]
-    assert len(obs)==nforc
+    if len(obs)!=nforc:
+        raise ValueError('Length of obs(%d) different from length of ens(%d)'%(len(obs), nforc))
+    if ref.shape[0]!=nforc:
+        raise ValueError('Length of ref(%d) different from length of ens(%d)'%(ref.shape[0], nforc))
 
     nens = ens.shape[1]
     iqr = np.zeros((nforc,3))
+    iqr_clim = np.zeros((nforc,3))
     rel = np.zeros(nforc)
+    rel_clim = np.zeros(nforc)
+    
+    perc = [25., 75.]
 
     for i in range(nforc):
-        iqr[i, :2] = sutils.percentiles(ens[i,:], [25., 75.])
-        iqr[i, 2] = iqr[i,1]-iqr[i,0]
-        rel[i] = int( (obs[i]>=iqr[i,0]) & (obs[i]<=iqr[i,1]) )
+        iqr_clim[i, :2] = sutils.percentiles(ref[i,:], perc)
+        iqr_clim[i, 2] = iqr_clim[i,1]-iqr_clim[i,0]
 
-    pre_sc = float(np.mean(iqr[:,2])/np.diff(iqr_clim))
-    rel_sc = float(np.mean(rel) * 100)
+        iqr[i, :2] = sutils.percentiles(ens[i,:], perc)
+        iqr[i, 2] = iqr[i,1]-iqr[i,0]
+
+        rel[i] = int( (obs[i]>=iqr[i,0]) & (obs[i]<=iqr[i,1]) )
+        rel_clim[i] = int( (obs[i]>=iqr_clim[i,0]) & (obs[i]<=iqr_clim[i,1]) )
+
+    pre_sc = np.mean(iqr[:,2]/iqr_clim[:, 2])
+    rel_sc = np.mean(rel)
+    rel_clim_sc = np.mean(rel_clim)
         
-    out = {'precision_skill': 1-pre_sc,
-             'reliability_skill': 1-abs(rel_sc-50.)/50., 
+    out = {'precision_skill': (1-pre_sc)*100,
+             'reliability_skill': (1-abs(rel_clim_sc-rel_sc)/rel_clim_sc)*100, 
              'precision_score': pre_sc,
              'reliability_score': rel_sc}
-    return out, iqr, iqr_clim, rel
+    return out, iqr, iqr_clim, rel, rel_clim
 
 def median_contingency(obs, ens):
     ''' Compute the contingency matrix for below/above median forecast.
@@ -183,6 +196,7 @@ def det_metrics(yobs,ysim, compute_persistence=False, min_val=0., eps=1):
         
         :param np.array yobs: Observations
         :param np.array ysim: Simulated data
+        :param float yref: Reference flow value
         :param bool compute_persistence: Compute persistence metrics
                 (will restrict data valid data)
         :param float min_val: Threshold below which data is considered missing
@@ -190,8 +204,10 @@ def det_metrics(yobs,ysim, compute_persistence=False, min_val=0., eps=1):
 
     """
 
+    if len(yobs)!=len(ysim):
+        raise ValueError('Length of yobs(%d) different from length of ysim(%d)'%(len(yobs), len(ysim)))
+
     # inputs
-    assert len(yobs)==len(ysim)
     yobs = np.array(yobs, copy=False)
     yobs_shift = np.roll(yobs, 1)
     yobs_shift[0] = np.nan
@@ -228,6 +244,8 @@ def det_metrics(yobs,ysim, compute_persistence=False, min_val=0., eps=1):
     biaslog = np.mean(elog)/molog
     biasinv = np.mean(einv)/moinv
     ratiovar = np.var(ysim[idx])/vo
+
+    tau, p_value = kendalltau(yobs, ysim)
    
     persist = np.nan
     persist_inv = np.nan
@@ -241,17 +259,18 @@ def det_metrics(yobs,ysim, compute_persistence=False, min_val=0., eps=1):
             'biaslog':biaslog, 'biasinv':biasinv,
             'absbias':abs(bias), 
             'absbiaslog':abs(biaslog), 'absbiasinv':abs(biasinv),
-            'corr':corr, 'ratiovar':ratiovar}
+            'corr':corr, 'ratiovar':ratiovar, 'kendalltau':tau}
 
     return metrics, idx
 
 
-def ens_metrics(yobs,ysim, pp_cst=0.3, min_val=0.):
+def ens_metrics(yobs,ysim, yref=None, pp_cst=0.3, min_val=0.):
     """
         Computes a set of ensemble performance metrics
         
         :param np.array yobs: Observations (n values)
-        :param np.array ysim: Simulated ensemble data (nxp values)
+        :param np.array ysim: Simulated ensemble data (n x p values)
+        :param np.array ysim: Reference data (1 ensemble with m values)
         :param float pp_cst:  Constant used to compute plotting position
         :param float min_val: Threshold below which data is considered missing
 
@@ -260,7 +279,15 @@ def ens_metrics(yobs,ysim, pp_cst=0.3, min_val=0.):
     # inputs
     yobs = np.array(yobs, copy=False)
     ysim = np.array(ysim, copy=False)
-    assert len(yobs)==ysim.shape[0]
+    nval = len(yobs)
+    assert nval==ysim.shape[0]
+    if nval!=ysim.shape[0]:
+        raise ValueError('Length of yobs(%d) different from length of ysim(%d)'%(len(yobs), ysim.shape[0]))
+
+    if yref is None: 
+        yref = np.array([yobs]*nval)
+    else:
+        yref = np.array([yref]*nval)
 
     # find proper data
     idx = np.isfinite(yobs)
@@ -272,7 +299,7 @@ def ens_metrics(yobs,ysim, pp_cst=0.3, min_val=0.):
     cr, rt = crps(yobs[idx],ysim[idx,:])
 
     # iqr
-    iqr = iqr_scores(yobs[idx], ysim[idx,:])
+    iqr = iqr_scores(yobs[idx], ysim[idx,:], yref[idx,:])
 
     # contingency tables
     cont_med, hit_med, miss_medlow, obs_med = median_contingency(yobs[idx], ysim[idx,:])
@@ -283,11 +310,11 @@ def ens_metrics(yobs,ysim, pp_cst=0.3, min_val=0.):
     rmsep_fcvf = rmse_fcvf
     crps_fcvf = rmse_fcvf
     if HAS_FCVF:
-        crps_fcvf = skillscore.crps(yobs[idx],ysim[idx,:],yobs[idx])
-        rmse_fcvf = skillscore.rmse(yobs[idx],ysim[idx,:],yobs[idx])
-        rmsep_fcvf = skillscore.rmsep(yobs[idx],ysim[idx,:],yobs[idx])
+        crps_fcvf = skillscore.crps(yobs[idx],ysim[idx,:],yref[idx])
+        rmse_fcvf = skillscore.rmse(yobs[idx],ysim[idx,:],yref[idx])
+        rmsep_fcvf = skillscore.rmsep(yobs[idx],ysim[idx,:],yref[idx])
 
-    metrics = {'alpha': al,
+    metrics = {'nval':nval, 'nval_ok':np.sum(idx), 'alpha': al,
             'iqr_precision_skill': iqr[0]['precision_skill'],
             'iqr_reliability_skill': iqr[0]['reliability_skill'],
             'iqr_precision_score': iqr[0]['precision_score'],
