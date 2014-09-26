@@ -255,11 +255,16 @@ def det_metrics(yobs,ysim, compute_persistence=False, min_val=0., eps=1):
 
     metrics  = {'nse':nse, 'nselog':nselog, 'nseinv':nseinv,
             'persist':persist, 'persist_inv':persist_inv, 
-            'nseinv':nseinv, 'bias':bias, 
-            'biaslog':biaslog, 'biasinv':biasinv,
-            'absbias':abs(bias), 
-            'absbiaslog':abs(biaslog), 'absbiasinv':abs(biasinv),
-            'corr':corr, 'ratiovar':ratiovar, 'kendalltau':tau}
+            'nseinv':nseinv, 
+            'bias':bias, 
+            'biaslog':biaslog, 
+            'biasinv':biasinv,
+            'bias_skill':(1-abs(bias))*100, 
+            'biaslog_skill':(1-abs(biaslog))*100, 
+            'biasinv_skill':(1-abs(biasinv))*100,
+            'corr':corr, 'ratiovar':ratiovar, 
+            'kendalltau_skill':tau*100,
+            'kendalltau':tau}
 
     return metrics, idx
 
