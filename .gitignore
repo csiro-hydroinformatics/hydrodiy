@@ -1,5 +1,6 @@
 *.swp
 *.pyc
+*.hdf5
 
 hydrodiy/hygis/tests/*.png
 hydrodiy/hystat/tests/*.png

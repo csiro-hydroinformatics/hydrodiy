@@ -5,11 +5,13 @@ from hywafari import wutils
 
 import pandas as pd
 
-try:
-    from wafari import view as w
-    has_wafari = True
-except ImportError:
-    has_wafari = False
+#try:
+#    from wafari import view as w
+#    has_wafari = True
+#except ImportError:
+#    has_wafari = False
+
+has_wafari = False
 
 class UtilsTestCase(unittest.TestCase):
     def setUp(self):
@@ -72,6 +74,20 @@ class UtilsTestCase(unittest.TestCase):
             w.sf.create(ID=id)
             w.sf.ingest(ID=id, frequency='daily')
 
+
+    def test_create_obs(self):
+
+        nval = 1000
+        dt = pd.date_range('1980-01-01', freq='D', periods=nval)
+        obs = pd.Series(np.random.uniform(0., 100., size=nval), index = dt)
+        
+        h5file = '%s/streamflow.hdf5'%self.FTEST
+        os.system('rm -f %s'%h5file)
+        id = '88888'
+        wutils.create_obs(h5file, id, 'STREAMFLOW', obs)
+
+        id = '99999'
+        wutils.create_obs(h5file, id, 'STREAMFLOW', obs)
 
     #def test_readxv_2b(self):
     #    if self.RUNTEST2b:

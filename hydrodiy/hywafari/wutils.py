@@ -1,10 +1,12 @@
 import re
 import os
 import json
-from datetime import datetime
+from datetime import datetime, date
 import numpy as np
-import tables
 import pandas as pd
+
+import tables
+from tables.exceptions import NoSuchNodeError, NodeError
 
 from hyio import iutils
 
@@ -448,4 +450,95 @@ def readrefs_xvalidate(h5file, station_id, variable='STREAMFLOW'):
         reference = reference.sort()
 
     return reference
+
+def create_obs(h5file, station_id, variable, obs):
+
+    # check inputs
+    if not variable in ['STREAMFLOW', 'PRECIPITATION', 'POTENTIAL_EVAPORATION']:
+        raise ValueError('variable %s cannot be used to create obs file'%variable)
+
+    if variable=='STREAMFLOW' and not h5file.endswith('streamflow.hdf5'):
+        raise ValueError('File must be named streamflow.hdf5 for STREAMFLOW variable')
+        
+    if variable.startswith('P') and not h5file.endswith('hydromet.hdf5'):
+        raise ValueError('File must be named hydromet.hdf5 for PRECIPITATION and POTENTIAL_EVAPORATION variables')
+
+    station_id = str(station_id)
+
+    # Populate data file
+    with tables.openFile(h5file, mode='a') as h5:
+
+        # Meta data
+        try:
+            meta_data = h5.createArray(
+                "/", "meta", 0, "meta data. see its attributes."
+            )
+            meta_data.attrs.dataOwner = "Bureau of Meteorology"
+            meta_data.attrs.dataProvider = "Bureau of Meteorology"
+            meta_data.attrs.creationDate = datetime.now().isoformat()
+            meta_data.attrs.recentRevisionDate = datetime.now().isoformat()
+            meta_data.attrs.referenceTime = date.fromordinal(1).isoformat()
+            meta_data.attrs.revisionHistory = (date.today().isoformat() +
+                                              ": created the file.")
+            meta_data.attrs.comment = "File created with hydrodiy library"
+        except NodeError:
+            pass
+
+        # Groups
+        for gr in ['/data', '/data/daily', '/data/monthly', '/data/daily/%s'%variable,
+                '/data/monthly/%s'%variable]:
+            grn = re.sub('.*/', '', gr)
+            grw = re.sub(grn, '', gr)
+            try:
+                h5.createGroup(grw, grn, '%s group'%grn) 
+            except NodeError: 
+                pass
+
+        # Data Table class
+        class TabDesc(tables.IsDescription):
+            time = tables.Int32Col(dflt=0, pos=0)
+            isotime = tables.StringCol(10)
+            value = tables.Float64Col(dflt=np.nan, pos=1)
+            flag = tables.Int32Col(dflt=1, pos=2)
+
+        # Create tables and populate at daily and monthly time step
+        for frequency in ['daily', 'monthly']:
+
+            # Create table
+            try:
+                h5.removeNode(h5.getNode('/data/%s/%s' % (frequency, variable)),
+                       station_id, recursive=True)
+            except NoSuchNodeError:
+                    pass
+
+            varTab = h5.createTable(h5.getNode('/data/%s/%s' % (frequency, variable)),
+                station_id, TabDesc, station_id)
+
+            varTab.attrs.description= station_id
+            varTab.attrs.fillValue = np.nan
+            varTab.attrs.group = ""
+            varTab.attrs.method = ""
+           
+            # compute monthly aggregation is required
+            data = obs
+            if frequency=='monthly': data = obs.resample('MS', how='sum')
+
+            # insert data
+            indexRow = varTab.row
+            for idx, value in data.iteritems():
+                indexRow["time"] = idx.to_datetime().toordinal()
+                indexRow["isotime"] = idx.to_datetime().isoformat()
+                indexRow["value"] = value
+                indexRow["flag"] = 1
+                indexRow.append()
+                                                                      
+        # Store revision date
+        h5.root.meta.attrs.recentRevisionDate = \
+            datetime.now().isoformat()
+
+        h5.flush()
+
+
+
+
 
