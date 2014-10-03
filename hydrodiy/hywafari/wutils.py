@@ -55,7 +55,11 @@ def create_projectdirs(sites, project, model):
             '%s/output/%s/%s'%(project, model, basin), 
             '%s/output/%s/%s/%s'%(project, model, basin, catchment),
             '%s/output/%s/%s/%s/etc'%(project, model, basin, catchment), 
-            '%s/output/%s/%s/%s/out'%(project, model, basin, catchment)]
+            '%s/output/%s/%s/%s/out'%(project, model, basin, catchment),
+            '%s/output/poama_m24'%project, 
+            '%s/output/poama_m24/%s'%(project, basin), 
+            '%s/output/poama_m24/%s/%s'%(project, basin, catchment),
+            '%s/output/poama_m24/%s/%s/out'%(project, basin, catchment)]
 
         for f in F:
             if not os.path.exists(f): os.mkdir(f)
