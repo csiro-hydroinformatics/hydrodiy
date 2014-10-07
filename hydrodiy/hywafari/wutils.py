@@ -100,6 +100,22 @@ def create_basinjson(sites, project):
 
 def create_simoptsjson(sites, project, model):
 
+    # Create common simopts
+    fb = '%s/output/%s/simopts.json'%(project, model)
+    simopts_data = {'conventionName':'common_simopts.ehp.bom.gov.au',
+        'conventionVersion':'1.0', 
+        'conventionDescription':'common simulation options', 
+        'modelName': model, 
+        "crossValidation": {
+            "startDate": "1980-04-01",
+            "endDate": "2008-12-01",
+        }}
+    txt = json.dumps(simopts_data, indent=4)
+    fbb = open(fb, 'w')
+    fbb.writelines(txt)
+    fbb.close()
+
+    # Create simopts for individual sites
     for idx, row in sites.iterrows():
 
         basin = row['basin']
@@ -477,6 +493,11 @@ def create_obs(h5file, station_id, variable, obs):
             meta_data = h5.createArray(
                 "/", "meta", 0, "meta data. see its attributes."
             )
+            meta_data.attrs.conventionDescription = 'measured hydrometeorological data HDF5 file format'
+            meta_data.attrs.conventionName = 'hydromet.ehp.bom.gov.au'
+            if variable =='STREAMFLOW': 
+                meta_data.attrs.conventionDescription = 'measured streamflow data HDF5 file format'
+                meta_data.attrs.conventionName = 'streamflow.ehp.bom.gov.au'
             meta_data.attrs.dataOwner = "Bureau of Meteorology"
             meta_data.attrs.dataProvider = "Bureau of Meteorology"
             meta_data.attrs.creationDate = datetime.now().isoformat()
