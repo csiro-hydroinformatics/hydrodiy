@@ -118,5 +118,16 @@ class MetricsTestCase(unittest.TestCase):
         sc = metrics.det_metrics(obs, sim)
         sc, idx = metrics.det_metrics(obs, sim, True)
 
+    def test_catforc(self):
+        nval = 10
+        cats = np.linspace(-0.5,0.5,2)
+        ysim1 = pd.Series(np.random.normal(size=(nval,)))
+        yc1 = metrics.cut(ysim1, cats)
+
+        nens = 100
+        ysim2 = pd.DataFrame(np.random.normal(size=(nval,nens)))
+        yc2 = metrics.cut(ysim2, cats)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from scipy.special import kolmogorov
 from scipy.stats import kendalltau
 
@@ -45,6 +46,38 @@ def hypit(yobs,ysim,has_ties=True,pp_cst=0.3):
     assert 0.0 <= prob_obs <= 1.0
 
     return prob_obs
+
+def cut(ysim, cats):
+    ''' Convert probabilistic forecasts into categorical forecasts '''
+
+    # Add -infty and +infty boundaries
+    cats = np.array([[-np.infty]+list(np.sort(cats))+[np.infty]])
+    cats = cats.reshape((np.prod(cats.shape),))
+
+    # Special cut functions for ensemble data
+    def cutfun(x):
+        xc = pd.cut(x, cats)
+        return x.groupby(xc).apply(lambda u:float(len(u))/x.shape[0]*100)
+   
+    # Ensemble data
+    if len(ysim.shape)>1:
+        ysim_cat = ysim.apply(cutfun, axis=1)
+
+    # Deterministic data
+    else:
+        ysimc = pd.cut(ysim, cats)
+        ysimcd = pd.DataFrame({'idx':ysim.index, 'lab':ysimc.labels, 'count':1})
+        ysim_cat =  pd.pivot_table(ysimcd, rows='idx', cols='lab', values='count')
+
+        # Add proper labelling of columns
+        ysim_cat = ysim_cat[np.sort(ysim_cat.columns.values)]
+        ysim_cat.columns = ysimc.levels[ysim_cat.columns]
+        
+        # convert to percentage
+        ysim_cat = ysim_cat.fillna(0)*100
+
+    return ysim_cat
+
 
 def crps(yobs, ysim):
     ''' Compute the CRPS decomposition from Hersbach (2000) '''
