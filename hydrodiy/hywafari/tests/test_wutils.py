@@ -74,9 +74,7 @@ class UtilsTestCase(unittest.TestCase):
             w.sf.create(ID=id)
             w.sf.ingest(ID=id, frequency='daily')
 
-
     def test_create_obs(self):
-
         nval = 1000
         dt = pd.date_range('1980-01-01', freq='D', periods=nval)
         obs = pd.Series(np.random.uniform(0., 100., size=nval), index = dt)
@@ -88,6 +86,32 @@ class UtilsTestCase(unittest.TestCase):
 
         id = '99999'
         wutils.create_obs(h5file, id, 'STREAMFLOW', obs)
+
+    def test_create_poama_hindcast(self):
+        nval = 20
+        nens = 10
+        nleadtime = 10
+
+        #nval = 372
+        #nens = 166
+        #nleadtime = 92
+
+        dt = pd.date_range('1980-01-01', freq='MS', periods=nval)
+        forc = None
+        for i in range(nens):
+            if i%10==0: print('.. generating ens %3d/%3d ..'%(i, nens))
+            tmp = pd.DataFrame(np.random.uniform(0, 100, size=(len(dt), nleadtime)))
+            tmp.columns = ['lead%2.2d'%k for k in range(nleadtime)]
+            tmp['forecast_date'] = dt
+            tmp['iens'] = i
+            if forc is None: forc = tmp
+            else:
+                forc = forc.append(tmp, ignore_index=True)
+
+        h5file = '%s/poama_hindcast.hdf5'%self.FTEST
+        os.system('rm -f %s'%h5file)
+        wutils.create_poama_hindcast(h5file, forc, nleadtime)
+
 
     #def test_readxv_2b(self):
     #    if self.RUNTEST2b:

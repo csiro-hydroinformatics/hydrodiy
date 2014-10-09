@@ -563,6 +563,100 @@ def create_obs(h5file, station_id, variable, obs):
 
         h5.flush()
 
+def create_poama_hindcast(h5file, forecasts, nleadtime=92, timestep='days'):
+
+    # check inputs
+    if not h5file.endswith('hindcast.hdf5'):
+        raise ValueError('File must be named hindcast.hdf5')
+
+    # dimensions
+    dates = np.unique(forecasts['forecast_date'])
+    ndates = len(dates)
+
+    ens = np.unique(forecasts['iens'])
+    nens = len(ens)
+
+    # Populate data file
+    with tables.openFile(h5file, mode='a') as h5:
+
+        # Meta data
+        try:
+            meta_data = h5.createArray(
+                "/", "meta", 0, "meta data. see its attributes."
+            )
+            meta_data.attrs.conventionDescription = 'calculated calibration and simulation results for cross validation in HDF5 file'
+            meta_data.attrs.conventionName = 'simulation.ehp.bom.gov.au'
+            meta_data.attrs.conventionVersion = '1.2'
+            meta_data.attrs.dataOwner = "Bureau of Meteorology"
+            meta_data.attrs.dataProvider = "Bureau of Meteorology"
+            meta_data.attrs.creationDate = datetime.now().isoformat()
+            meta_data.attrs.recentRevisionDate = datetime.now().isoformat()
+            meta_data.attrs.referenceTime = date.fromordinal(1).isoformat()
+            meta_data.attrs.revisionHistory = (date.today().isoformat() +
+                                              ": created the file.")
+            meta_data.attrs.comment = "File created with hydrodiy library"
+        except NodeError:
+            pass
+
+        # Groups
+        for gr in ['/data', '/data/YALL']:
+            grn = re.sub('.*/', '', gr)
+            grw = re.sub(grn, '', gr)
+            try:
+                h5.createGroup(grw, grn, '%s group'%grn) 
+            except NodeError: 
+                pass
+
+        # Data Table description
+        table_description = {
+            'date': tables.Int32Col(dflt=0, pos=0),
+            'isodate': tables.StringCol(10, pos=1),
+            'parameter': tables.Int32Col(dflt=0, pos=2),
+            'ensemble': tables.Int32Col(dflt=0, pos=2),
+        }
+        for i in xrange(nleadtime):
+            table_description['lead%d' % i] = tables.Float64Col(dflt=0, pos=3)
+
+        # Create table
+        try:
+            h5.removeNode(h5.getNode('/data/YALL/simulation'))
+        except NoSuchNodeError:
+                pass
+
+        varTab = h5.createTable('/data/YALL', 'simulation', table_description)
+        varTab.attrs.fillValue = np.nan
+        varTab.attrs.ndates = ndates
+        varTab.attrs.nparams = 1
+        varTab.attrs.nvalues = nleadtime
+        varTab.attrs.nens = nens
+        varTab.attrs.timestep = timestep
+        varTab.attrs.year = 'YALL'
+        varTab.attrs.group = ""
+        varTab.attrs.method = ""
+        
+        # insert data
+        index_row = varTab.row
+        count = 0
+        for idx, row in forecasts.iterrows():
+            count += 1
+            if count % 500 ==0: print('.. appending row %7d/%7d ..'%(count, forecasts.shape[0]))
+
+            index_row['date'] = row['forecast_date'].toordinal()
+            index_row['isodate'] = row['forecast_date'].isoformat()
+            index_row['parameter'] = 0
+            index_row['ensemble'] = row['iens']
+            for j in range(nleadtime):
+                index_row['lead%d' % j] = row['lead%2.2d'%j]
+                
+            index_row.append()
+                                                                      
+        # Store revision date
+        h5.root.meta.attrs.recentRevisionDate = \
+            datetime.now().isoformat()
+
+        h5.flush()
+
+
 
 
 
