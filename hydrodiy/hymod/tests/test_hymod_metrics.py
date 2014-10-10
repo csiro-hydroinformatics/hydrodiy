@@ -71,7 +71,7 @@ class MetricsTestCase(unittest.TestCase):
         sim = np.vstack([np.random.uniform(1.1, 2., size=(100, nens)),
             np.random.uniform(0., 0.9, size=(200, nens))])
 
-        cont, hit, miss, obs_med = metrics.median_contingency(obs, sim, ref)
+        cont, hit, miss, medians = metrics.median_contingency(obs, sim, ref)
 
         # check balance of cont table
         returned = (np.sum(cont[0,:]) - np.sum(cont[1,:]))/np.sum(cont)
@@ -90,7 +90,7 @@ class MetricsTestCase(unittest.TestCase):
         sim = np.vstack([np.random.uniform(1., 99., size=(200, nens)),
             np.random.uniform(200., 300., size=(101, nens))])
     
-        cont, hit, miss, hitlow, hithigh, obs_t1, obs_t2 = metrics.tercile_contingency(obs, sim, ref)
+        cont, hit, miss, hitlow, hithigh, terciles = metrics.tercile_contingency(obs, sim, ref)
  
         # check balance of cont table
         returned = (abs(np.sum(cont[0,:]) - np.sum(cont[1,:])) + abs(np.sum(cont[0,:]) - np.sum(cont[2,:])))/np.sum(cont)
@@ -109,6 +109,7 @@ class MetricsTestCase(unittest.TestCase):
         ref = np.array([np.random.choice(obs.values, nens+10)]*nval)
         sim = pd.DataFrame(np.random.normal(size=(nval,nens)))
         sc, idx, rt, cont_med, cont_terc = metrics.ens_metrics(obs, sim, ref)
+        #import pdb; pdb.set_trace()
 
     def test_det_metrics(self):
         nval = 100
@@ -118,15 +119,38 @@ class MetricsTestCase(unittest.TestCase):
         sc = metrics.det_metrics(obs, sim)
         sc, idx = metrics.det_metrics(obs, sim, True)
 
-    def test_catforc(self):
+    def test_cut(self):
         nval = 10
-        cats = np.linspace(-0.5,0.5,2)
-        ysim1 = pd.Series(np.random.normal(size=(nval,)))
-        yc1 = metrics.cut(ysim1, cats)
+        cats = np.array([-0.5, 0, 0.5])
+        ysim1 = pd.Series(np.random.choice([-1, 0, 1], nval))
+        returned = metrics.cut(ysim1, cats)
+        expected = np.zeros((nval, 3))
+        expected[ysim1.values==-1,0] = 1
+        expected[ysim1.values==0,1] = 1
+        expected[ysim1.values==1,2] = 1
+        #import pdb; pdb.set_trace()
+        self.assertTrue(np.allclose(returned.values, expected, atol=1e-2))
 
         nens = 100
-        ysim2 = pd.DataFrame(np.random.normal(size=(nval,nens)))
-        yc2 = metrics.cut(ysim2, cats)
+        cats = [0.5]
+        ysim2 = pd.DataFrame(np.random.choice([0, 1], nval*nens).reshape((nval, nens)))
+        returned = metrics.cut(ysim2, cats)
+        m = ysim2.mean(axis=1)
+        cc = returned.columns
+        expected = pd.DataFrame({cc[0]:1-m, cc[1]:m})
+        self.assertTrue(np.allclose(returned.values, expected, atol=1e-2))
+
+    def test_drps(self):
+        nval = 5
+        nens = 20
+        cats = np.ones((nval,1)) * 0.5
+        yobs = pd.Series(np.random.choice([0, 1], nval))
+        ysim = pd.DataFrame(np.random.choice([0, 1], nval*nens).reshape((nval, nens)))
+        returned, drps_all = metrics.drps(yobs, ysim, cats)
+
+        m = ysim.mean(axis=1)
+        expected = (2*(m-yobs)**2).mean()
+        self.assertTrue(np.allclose(returned, expected, atol=1e-4))
 
 
 if __name__ == "__main__":

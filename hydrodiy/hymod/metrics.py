@@ -47,36 +47,71 @@ def hypit(yobs,ysim,has_ties=True,pp_cst=0.3):
 
     return prob_obs
 
-def cut(ysim, cats):
-    ''' Convert probabilistic forecasts into categorical forecasts '''
+def cut(ysim, single_cats):
+    ''' Convert probabilistic forecasts into categorical forecasts using a common set of categories'''
 
     # Add -infty and +infty boundaries
-    cats = np.array([[-np.infty]+list(np.sort(cats))+[np.infty]])
-    cats = cats.reshape((np.prod(cats.shape),))
+    single_cats = np.array([[-np.infty]+list(np.sort(single_cats))+[np.infty]])
+    single_cats = single_cats.flatten()
 
-    # Special cut functions for ensemble data
-    def cutfun(x):
-        xc = pd.cut(x, cats)
-        return x.groupby(xc).apply(lambda u:float(len(u))/x.shape[0]*100)
-   
     # Ensemble data
     if len(ysim.shape)>1:
-        ysim_cat = ysim.apply(cutfun, axis=1)
+        # Special cut functions for ensemble data
+        def cutfun(x):
+            xc = pd.cut(x, single_cats)
+            return x.groupby(xc).apply(lambda u:float(len(u))/x.shape[0])
+
+        # Compute categorical data
+        ysim_cat = pd.DataFrame(ysim).apply(cutfun, axis=1)
 
     # Deterministic data
     else:
-        ysimc = pd.cut(ysim, cats)
-        ysimcd = pd.DataFrame({'idx':ysim.index, 'lab':ysimc.labels, 'count':1})
+        # Compute categorical data
+        ysimc = pd.cut(ysim, single_cats)
+        ysimcd = pd.DataFrame({'idx':range(ysim.shape[0]), 'lab':ysimc.labels, 'count':1})
         ysim_cat =  pd.pivot_table(ysimcd, rows='idx', cols='lab', values='count')
 
         # Add proper labelling of columns
         ysim_cat = ysim_cat[np.sort(ysim_cat.columns.values)]
         ysim_cat.columns = ysimc.levels[ysim_cat.columns]
         
-        # convert to percentage
-        ysim_cat = ysim_cat.fillna(0)*100
+        # Replace NaN with 0
+        ysim_cat = ysim_cat.fillna(0)
 
     return ysim_cat
+
+def drps(yobs, ysim, cats):
+    ''' Compute the DRPS score with categories defined by cats '''
+
+    nforc = ysim.shape[0]
+    if len(yobs)!=nforc:
+        raise ValueError('Length of yobs(%d) different from length of ysim(%d)'%(len(yobs), nforc))
+    if cats.shape[0]!=nforc:
+        raise ValueError('Length of cats(%d) different from length of ysim(%d)'%(cats.shape[0], nforc))
+
+    # find unique cats
+    cats_order = np.lexsort(cats.T)
+    cats_sort = cats[cats_order]
+    diff = np.diff(cats_sort, axis=0)
+    ui = np.ones(len(cats), 'bool')
+    ui[1:] = (diff != 0).any(axis=1)
+    cats_unique = cats_sort[ui]
+    
+    # loop through unique cats
+    drps_all = []
+    drps_value = 0.
+    for ca in cats_unique:
+        idx = np.sum(cats==ca, axis=1) == cats.shape[1]
+        yobsc_idx = cut(yobs[idx], ca)
+        ysimc_idx = cut(ysim[idx], ca)
+
+        d = (yobsc_idx-ysimc_idx)**2
+        drps_all.append({'drps_value':d.sum(axis=1).mean(), 'idx':idx, 'cats':ca, 'nval':np.sum(idx)})
+        drps_value += d.sum(axis=1).sum()
+
+    drps_value /= nforc
+
+    return drps_value, drps_all
 
 
 def crps(yobs, ysim):
@@ -175,8 +210,10 @@ def median_contingency(obs, ens, ref):
         raise ValueError('Length of ref(%d) different from length of ens(%d)'%(ref.shape[0], nforc))
 
     cont = np.zeros((2,2))
+    medians = np.zeros(nforc)
     for i in range(nforc):
         obs_med = sutils.percentiles(ref[i,:], 50.).values[0]
+        medians[i] = obs_med
         med_obs = int(obs[i]>= obs_med)
         umed = np.mean(ens[i,:]>= obs_med)
         cont[med_obs, int(round(umed))] += 1
@@ -184,7 +221,7 @@ def median_contingency(obs, ens, ref):
     hit = (cont[0,0] + cont[1,1] +0.)/np.sum(cont)
     miss_low = (0.+cont[1,0])/np.sum(cont[:,0])
 
-    return cont, hit, miss_low, obs_med
+    return cont, hit, miss_low, medians
 
 def tercile_contingency(obs, ens, ref):
     ''' Compute the contingency matrix for below/above terciles forecast
@@ -212,9 +249,11 @@ def tercile_contingency(obs, ens, ref):
         raise ValueError('Length of ref(%d) different from length of ens(%d)'%(ref.shape[0], nforc))
 
     cont = np.zeros((3,3))
+    terciles = np.zeros((nforc, 2))
     for i in range(nforc):
         obs_t1 = sutils.percentiles(ref[i,:], 100./3).values[0]
         obs_t2 = sutils.percentiles(ref[i,:], 200./3).values[0]
+        terciles[i,:] = [obs_t1, obs_t2]
     
         t_obs = (obs[i]>= obs_t1).astype(int) + (obs[i]>=obs_t2).astype(int)
         uu = (ens[i,:] >= obs_t1).astype(int) + (ens[i,:] >= obs_t2).astype(int)
@@ -226,7 +265,7 @@ def tercile_contingency(obs, ens, ref):
     hit_high = (cont[2,2] + 0.)/np.sum(cont[:,2])
     miss_low = (0.+np.sum(cont[1:,0]))/np.sum(cont[:,0])
 
-    return cont, hit, miss_low, hit_low, hit_high, obs_t1, obs_t2
+    return cont, hit, miss_low, hit_low, hit_high, terciles
 
 def det_metrics(yobs,ysim, compute_persistence=False, min_val=0., eps=1):
     """
@@ -342,8 +381,13 @@ def ens_metrics(yobs,ysim, yref=None, pp_cst=0.3, min_val=0.):
     iqr = iqr_scores(yobs[idx], ysim[idx,:], yref[idx,:])
 
     # contingency tables
-    cont_med, hit_med, miss_medlow, obs_med = median_contingency(yobs[idx], ysim[idx,:], yref[idx,:])
-    cont_terc, hit_terc, miss_terclow, hit_terclow, hit_terchigh, obs_t1, obs_t2 = tercile_contingency(yobs[idx], ysim[idx,:], yref[idx,:])
+    cont_med, hit_med, miss_medlow, medians = median_contingency(yobs[idx], ysim[idx,:], yref[idx,:])
+    cont_terc, hit_terc, miss_terclow, hit_terclow, hit_terchigh, terciles = tercile_contingency(yobs[idx], ysim[idx,:], yref[idx,:])
+
+    # drps
+    dr, dr_all = drps(yobs[idx], ysim[idx,:], cats=terciles)
+    dr_clim, dr_all = drps(yobs[idx], yref[idx,:], cats=terciles)
+    dr_skill = (1-dr/dr_clim)*100
 
     # FCVF skill scores
     rmse_fcvf = np.repeat(np.nan, 3)
@@ -365,6 +409,8 @@ def ens_metrics(yobs,ysim, yref=None, pp_cst=0.3, min_val=0.):
             'tercile_hitrateslow':hit_terclow,
             'tercile_hitrateshigh':hit_terchigh,
             'tercile_missrateslow':miss_terclow,
+            'drps': dr,
+            'drps_skill': dr_skill,
             'crps': cr['crps'][0],
             'crps_potential': cr['crps_potential'][0],
             'crps_uncertainty': cr['uncertainty'][0],
