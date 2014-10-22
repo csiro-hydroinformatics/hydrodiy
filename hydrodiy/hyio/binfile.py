@@ -3,7 +3,7 @@ import struct
 import numpy as np
 import pandas as pd
 
-def _binhead(nbytes, nrow, ncol,comment):
+def _binhead(nbytes, nrow, ncol,comment, calendarstart, timestep_duration_sec):
     """ Produces a nice header for bin files """
     comment_list = comment
     if not isinstance(comment, list):
@@ -14,14 +14,17 @@ def _binhead(nbytes, nrow, ncol,comment):
     h.append('%10s %d\n'%('ndim1', ncol))
     h.append('%10s %d\n'%('ndim2', nrow))
     h.append('%10s %s\n'%('comment', comment))
+    h.append('%10s %f\n'%('start', calendarstart))
+    h.append('%10s %d\n'%('dt_sec', timestep_duration_sec))
 
     return h
 
-def write_bin(data, filename, comment):
+def write_bin(data, filename, comment, calendarstart=-999, timestep_duration_sec=-999):
     """ write a pandas dataframe to a bin file with comments """
    
     # write header 
-    head = _binhead(8, data.shape[0], data.shape[1], comment)
+    head = _binhead(8, data.shape[0], data.shape[1], comment, 
+        calendarstart, timestep_duration_sec)
     fheader = open('%sh'%filename, 'w')
     fheader.writelines(head)
     fheader.close()
@@ -43,6 +46,14 @@ def read_bin(filename):
     ndim1 = int(fhead.readline()[10:])
     ndim2 = int(fhead.readline()[10:])
     comment = fhead.readline()[10:]
+
+    try:
+        calendarstart = float(fhead.readline()[10:])
+        timestep_duration_sec = int(fhead.readline()[10:])
+    except :
+        calendarstart = -999.
+        timestep_duration_sec = -999
+
     fhead.close()
 
     # reads data
@@ -60,5 +71,5 @@ def read_bin(filename):
     fbin.close()
     data = pd.DataFrame(datan.reshape(ndim2, ndim1))
 
-    return data, comment
+    return data, comment, calendarstart, timestep_duration_sec
 
