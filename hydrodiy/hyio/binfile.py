@@ -14,7 +14,7 @@ def _binhead(nbytes, nrow, ncol,comment, calendarstart, timestep_duration_sec):
     h.append('%10s %d\n'%('ndim1', ncol))
     h.append('%10s %d\n'%('ndim2', nrow))
     h.append('%10s %s\n'%('comment', comment))
-    h.append('%10s %f\n'%('start', calendarstart))
+    h.append('%10s %0.0f\n'%('start', calendarstart))
     h.append('%10s %d\n'%('dt_sec', timestep_duration_sec))
 
     return h

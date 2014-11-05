@@ -136,6 +136,7 @@ def create_simoptsjson(sites, project, model):
                 "leaveOut": 5,
                 "numberOfSamples": 6200,
                 "useBateaErrorModel": 'true'
+                "infillToStartDate": 'true'
             },
             "variable": {
                 "Q": {
