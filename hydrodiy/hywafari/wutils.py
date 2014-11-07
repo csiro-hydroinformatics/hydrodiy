@@ -135,7 +135,7 @@ def create_simoptsjson(sites, project, model):
                 "paramWarmupDate": "1970-01-01",
                 "leaveOut": 5,
                 "numberOfSamples": 6200,
-                "useBateaErrorModel": 'true'
+                "useBateaErrorModel": 'true',
                 "infillToStartDate": 'true'
             },
             "variable": {
