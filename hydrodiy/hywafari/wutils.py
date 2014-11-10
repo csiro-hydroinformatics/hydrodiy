@@ -538,7 +538,6 @@ def read_obs(h5file, station_id, variable, frequency):
 
     return data
 
-
 def create_obs(h5file, station_id, variable, obs):
 
     # check inputs

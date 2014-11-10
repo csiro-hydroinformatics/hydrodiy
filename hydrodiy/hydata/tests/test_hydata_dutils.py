@@ -3,6 +3,7 @@ import unittest
 import numpy as np
 import datetime
 import pandas as pd
+
 from hydata import dutils
 
 class UtilsTestCase(unittest.TestCase):
@@ -64,6 +65,23 @@ class UtilsTestCase(unittest.TestCase):
         #import matplotlib.pyplot as plt
         #climc[['lowest', 'median', 'highest']].plot(); plt.show()
         #TODO
+
+    def test_to_seasonal(self):
+       
+       nval = 10000
+       val = np.random.uniform(size=nval)
+       index = pd.date_range('1950-01-01', freq='D', periods=nval)
+       u = pd.Series(val, index=index)
+       out = dutils.to_seasonal(u)
+
+       um = u.resample('MS','sum')
+       expected = um+um.shift(-1)+um.shift(-2)
+
+       idx1 = pd.notnull(expected.values)
+       idx2 = pd.notnull(out.values)
+
+       self.assertTrue(np.allclose(expected.values[idx1], out.values[idx2]))
+
 
 if __name__ == "__main__":
     unittest.main()
