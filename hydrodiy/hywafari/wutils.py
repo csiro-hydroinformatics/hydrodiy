@@ -31,38 +31,79 @@ def flattens_json(jsfile):
     sites = pd.DataFrame(sites, index=sites['id'])
     return sites
 
+def get_sites(project):
+
+    # list of sites
+    lf = iutils.find_files(project, 'report.*.json')
+    sites = None
+    for f in lf:
+        s = wutils.flattens_json(f)
+        if sites is None: sites = s
+        else:   
+            sites = sites.append(s[~s['id'].isin(sites['id'])])
+
+    # Add catchments and basins
+    basins, catchments = wutils.read_basin(project)
+    catchments = pd.merge(catchments, basins, on = 'basin_id')
+    sites = pd.merge(sites, catchments, on = 'id', how='inner')
+    sites = sites.drop(['basin_id', 'basin_centroid_lat', 'basin_centroid_long'], 1)
+    sites = sites.drop_duplicates()
+
+    # Check duplicates of site id
+    nb = sites.groupby('id').apply(len)
+    if np.sum(nb>1)>0:
+        for id in nb.index[nb>1]:
+            df = sites[sites['id']==id]
+            sites = pd.concat([sites[sites['id']!=id], df[:1]])            
+
+    return sites
+
 def create_project(sites, project, model):
     
     create_projectdirs(sites, project, model)
-    create_basinjson(sites, project)
-    create_simoptsjson(sites, project, model)
-    create_reportjson(sites, project)
+
+    if not sites is None:
+        create_basinjson(sites, project)
+        create_simoptsjson(sites, project, model)
+        create_reportjson(sites, project)
 
 
 def create_projectdirs(sites, project, model):
 
-    for idx, row in sites.iterrows():
-        basin = row['basin']
-        catchment = row['catchment']
+    # Create project folders
+    F = [project, '%s/data'%project, 
+       '%s/output'%project, 
+        '%s/output/%s'%(project, model), 
+       '%s/output/poama_m24'%project]
 
-        # Create folders
-        F = [project, '%s/data'%project, 
-            '%s/data/%s'%(project, basin), 
-            '%s/data/%s/meta'%(project, basin), 
-            '%s/data/%s/tseries'%(project, basin),
-            '%s/output'%project, 
-            '%s/output/%s'%(project, model), 
-            '%s/output/%s/%s'%(project, model, basin), 
-            '%s/output/%s/%s/%s'%(project, model, basin, catchment),
-            '%s/output/%s/%s/%s/etc'%(project, model, basin, catchment), 
-            '%s/output/%s/%s/%s/out'%(project, model, basin, catchment),
-            '%s/output/poama_m24'%project, 
-            '%s/output/poama_m24/%s'%(project, basin), 
-            '%s/output/poama_m24/%s/%s'%(project, basin, catchment),
-            '%s/output/poama_m24/%s/%s/out'%(project, basin, catchment)]
+    for f in F:
+        if not os.path.exists(f): os.mkdir(f)
 
-        for f in F:
-            if not os.path.exists(f): os.mkdir(f)
+    # Create site folders
+    if not sites is None:
+
+        for idx, row in sites.iterrows():
+            basin = row['basin']
+            catchment = row['catchment']
+
+            # Create folders
+            F = [project, '%s/data'%project, 
+                '%s/data/%s'%(project, basin), 
+                '%s/data/%s/meta'%(project, basin), 
+                '%s/data/%s/tseries'%(project, basin),
+                '%s/output'%project, 
+                '%s/output/%s'%(project, model), 
+                '%s/output/%s/%s'%(project, model, basin), 
+                '%s/output/%s/%s/%s'%(project, model, basin, catchment),
+                '%s/output/%s/%s/%s/etc'%(project, model, basin, catchment), 
+                '%s/output/%s/%s/%s/out'%(project, model, basin, catchment),
+                '%s/output/poama_m24'%project, 
+                '%s/output/poama_m24/%s'%(project, basin), 
+                '%s/output/poama_m24/%s/%s'%(project, basin, catchment),
+                '%s/output/poama_m24/%s/%s/out'%(project, basin, catchment)]
+
+            for f in F:
+                if not os.path.exists(f): os.mkdir(f)
 
 def create_basinjson(sites, project):
 
@@ -135,7 +176,7 @@ def create_simoptsjson(sites, project, model):
                 "paramWarmupDate": "1970-01-01",
                 "leaveOut": 5,
                 "numberOfSamples": 6200,
-                "useBateaErrorModel": 'true'
+                "useBateaErrorModel": 'true',
                 "infillToStartDate": 'true'
             },
             "variable": {
@@ -223,8 +264,6 @@ def create_simoptsjson(sites, project, model):
         fbb = open(fb, 'w')
         fbb.writelines(txt)
         fbb.close()
-
-
 
 def create_reportjson(sites, project, jsonfile='report.json'):
 
@@ -471,6 +510,34 @@ def readrefs_xvalidate(h5file, station_id, variable='STREAMFLOW'):
         reference = reference.sort()
 
     return reference
+
+def read_obs(h5file, station_id, variable, frequency):
+
+    # check inputs
+    if not variable in ['STREAMFLOW', 'PRECIPITATION', 'POTENTIAL_EVAPORATION']:
+        raise ValueError('variable %s cannot be used to read obs file'%variable)
+
+    if variable=='STREAMFLOW' and not h5file.endswith('streamflow.hdf5'):
+        raise ValueError('File must be named streamflow.hdf5 for STREAMFLOW variable')
+        
+    if variable.startswith('P') and not h5file.endswith('hydromet.hdf5'):
+        raise ValueError('File must be named hydromet.hdf5 for PRECIPITATION and POTENTIAL_EVAPORATION variables')
+
+    if not frequency in ['daily', 'monthly']:
+        raise ValueError('frequency %s cannot be used to read obs file'%frequency)
+
+    station_id = str(station_id)
+
+    data = None
+    with tables.openFile(h5file, mode='r') as h5:
+        data = h5.get_node('/data/%s/%s/%s'%(frequency,variable, station_id)).read()
+
+    data = pd.DataFrame(data)
+    data['isotime'] = pd.to_datetime(data['isotime'])
+    data = data.set_index('isotime')
+
+    return data
+
 
 def create_obs(h5file, station_id, variable, obs):
 

@@ -87,6 +87,19 @@ class UtilsTestCase(unittest.TestCase):
         id = '99999'
         wutils.create_obs(h5file, id, 'STREAMFLOW', obs)
 
+    def test_read_obs(self):
+        nval = 1000
+        dt = pd.date_range('1980-01-01', freq='D', periods=nval)
+        obs = pd.Series(np.random.uniform(0., 100., size=nval), index = dt)
+        
+        h5file = '%s/streamflow.hdf5'%self.FTEST
+        os.system('rm -f %s'%h5file)
+        id = '88888'
+        wutils.create_obs(h5file, id, 'STREAMFLOW', obs)
+        data = wutils.read_obs(h5file, id, 'STREAMFLOW', 'daily')
+
+        self.assertTrue(np.allclose(obs.values, data['value'].values))
+
     def test_create_poama_hindcast(self):
         nval = 20
         nens = 10
