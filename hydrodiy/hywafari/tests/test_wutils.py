@@ -46,24 +46,23 @@ class UtilsTestCase(unittest.TestCase):
             self.assertTrue(sim.shape==(6640,))
 
     def test_createproj(self):
+        FW = '%s/wafari_project'%self.FTEST
+        project = '%s/wafari'%FW
+        if os.path.exists: os.system('rm -rf %s'%project)
+        if not os.path.exists(FW): os.mkdir(FW)
+        model = 'batea_gr4j'
+        
+        s1 = {'id':410734, 'name':'tinderry', 'catchment':'tinderry',
+                'description':'Queanbeyan River at Tinderry',
+                'area':490, 'basin':'murrumbidgee', 'drainage':'murray_darling'}
+        s2 = {'id':218001, 'name':'tuross_vale', 'catchment':'turossvale',
+                'description':'Tuross River at Tuross Vale',
+                'area':91, 'basin':'tuross', 'drainage':'south_east_coast_nsw'}
+        sites = pd.DataFrame([s1, s2])
+
+        wutils.create_project(sites, project, model)
+
         if has_wafari:
-
-            FW = '%s/wafari_project'%self.FTEST
-            project = '%s/wafari'%FW
-            if os.path.exists: os.system('rm -rf %s'%project)
-            if not os.path.exists(FW): os.mkdir(FW)
-            model = 'batea_gr4j'
-            
-            s1 = {'id':410734, 'name':'tinderry', 'catchment':'tinderry',
-                    'description':'Queanbeyan River at Tinderry',
-                    'area':490, 'basin':'murrumbidgee', 'drainage':'murray_darling'}
-            s2 = {'id':218001, 'name':'tuross_vale', 'catchment':'turossvale',
-                    'description':'Tuross River at Tuross Vale',
-                    'area':91, 'basin':'tuross', 'drainage':'south_east_coast_nsw'}
-            sites = pd.DataFrame([s1, s2])
-
-            wutils.create_project(sites, project, model)
-
             w.sys.project(FW)
             w.sys.model(model)
 

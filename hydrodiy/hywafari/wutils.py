@@ -300,16 +300,16 @@ def create_reportjson(sites, project, jsonfile='report.json'):
                     if id in report_data['project'][drainage][basin][catchment]:
                         pass
                     else:
-                        report_data['project'][drainage][basin][catchment][id] = ''
+                        report_data['project'][drainage][basin][catchment][id] = {}
 
                 else:
-                    report_data['project'][drainage][basin][catchment] = {id:''}
+                    report_data['project'][drainage][basin][catchment] = {id:{}}
                     
             else:
-                report_data['project'][drainage][basin] = {catchment:{id:''}}
+                report_data['project'][drainage][basin] = {catchment:{id:{}}}
                 
         else:
-            drainage_data = {basin: {catchment: {id:''}}}
+            drainage_data = {basin: {catchment: {id:{}}}}
             report_data['project'][drainage] = drainage_data
 
     txt = json.dumps(report_data, indent=4)
