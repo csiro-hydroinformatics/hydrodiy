@@ -361,6 +361,19 @@ def read_basin(PROJECT):
 
     return basins, catchments
 
+def read_fc(h5file, station_id, variable='STREAMFLOW'):
+    '''  
+    
+    reads simulation data from a forecast.hdf5 file
+
+    '''
+    simulations = None
+    with tables.openFile(h5file, mode='r') as h5:
+        simulations = h5.get_node('/data/forecast/%s.%s'%(station_id, variable)).read()
+    
+    return simulations
+
+
 def readsim_xvalidate(h5file, station_id, variable='STREAMFLOW'):
     '''  
     

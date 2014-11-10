@@ -20,23 +20,30 @@ class UtilsTestCase(unittest.TestCase):
         self.FTEST = FTEST
 
         self.fxv1 = '/home/magpie/Dropbox/data/test/xvalidate_v1.hdf5'
-        self.fxv2 = '/home/magpie/Dropbox/data/test/xvalidate_v2.hdf5'
+        self.fxv2 = '/data/nas01/jenkins/jobs/wafari_dm_project/wafari/output/batea_gr4j/murrumbidgee/tinderry/out/xvalidate.hdf5'
+        self.ffc = '/data/nas01/jenkins/jobs/wafari_dm_project/wafari/output/batea_gr4j/murrumbidgee/tinderry/out/forecast.hdf5'
         #self.fxv2b = '/home/magpie/Dropbox/data/test/xvalidate_v2b.hdf5'
 
-        self.RUNTEST1 = os.path.exists(self.fxv1)
-        self.RUNTEST2 = os.path.exists(self.fxv2)
-        #self.RUNTEST2b = os.path.exists(self.fxv2b)
+        self.RUNXVTEST1 = os.path.exists(self.fxv1)
+        self.RUNXVTEST2 = os.path.exists(self.fxv2)
+        self.RUNFCTEST = os.path.exists(self.ffc)
+        #self.RUNXVTEST2b = os.path.exists(self.fxv2b)
 
     def test_readxv_1(self):
-        if self.RUNTEST1:
+        if self.RUNXVTEST1:
             sim = wutils.readsim_xvalidate(self.fxv1, '410734', 
                     'data|outcomes')
             self.assertTrue(sim.shape==(348, 6201))
 
     def test_readxv_2(self):
-        if self.RUNTEST2:
-            sim = wutils.readsim_xvalidate(self.fxv2, '922101')
-            self.assertTrue(sim.shape==(253, 6641))
+        if self.RUNXVTEST2:
+            sim = wutils.readsim_xvalidate(self.fxv2, '410734')
+            self.assertTrue(sim.shape==(337, 6641))
+
+    def test_readfc(self):
+        if self.RUNFCTEST:
+            sim = wutils.read_fc(self.ffc, '410734')
+            self.assertTrue(sim.shape==(6640,))
 
     def test_createproj(self):
         if has_wafari:
@@ -127,7 +134,7 @@ class UtilsTestCase(unittest.TestCase):
 
 
     #def test_readxv_2b(self):
-    #    if self.RUNTEST2b:
+    #    if self.RUNXVTEST2b:
     #        sim = wutils.read_xvalidate(self.fxv2b, '922101', 
     #                variable='simulated (STREAMFLOW|outcomes)')
     #        import pdb; pdb.set_trace()
