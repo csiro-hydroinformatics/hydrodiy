@@ -62,6 +62,18 @@ class UtilsTestCase(unittest.TestCase):
 
         wutils.create_project(sites, project, model)
 
+        sites = sites.set_index('id')
+        sites = sites.sort(axis=1)
+        sites = sites.sort()
+
+        sites2 = wutils.get_sites(project)
+        idx = sites2.columns.isin(sites.columns)
+        sites2 = sites2[sites2.columns[idx]]
+        sites2 = sites2.sort(axis=1)
+        sites2 = sites2.sort()
+
+        self.assertTrue(np.all(sites.values == sites2.values))
+
         if has_wafari:
             w.sys.project(FW)
             w.sys.model(model)

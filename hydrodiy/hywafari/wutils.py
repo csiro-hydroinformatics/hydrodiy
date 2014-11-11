@@ -31,30 +31,33 @@ def flattens_json(jsfile):
     sites = pd.DataFrame(sites, index=sites['id'])
     return sites
 
+def has_duplicates(sites, field):
+    ''' Check duplicate values '''
+
+    nb = sites.groupby(field).apply(len)
+    out = False
+    ids = ''
+    if np.sum(nb>1):
+        out = True
+        ids = ' '.join(nb[nb>1].index)
+
+    return out, ids
+
 def get_sites(project):
 
     # list of sites
     lf = iutils.find_files(project, 'report.*.json')
     sites = None
     for f in lf:
-        s = wutils.flattens_json(f)
+        s = flattens_json(f)
         if sites is None: sites = s
         else:   
             sites = sites.append(s[~s['id'].isin(sites['id'])])
 
     # Add catchments and basins
-    basins, catchments = wutils.read_basin(project)
+    basins, catchments = read_basin(project)
     catchments = pd.merge(catchments, basins, on = 'basin_id')
-    sites = pd.merge(sites, catchments, on = 'id', how='inner')
-    sites = sites.drop(['basin_id', 'basin_centroid_lat', 'basin_centroid_long'], 1)
-    sites = sites.drop_duplicates()
-
-    # Check duplicates of site id
-    nb = sites.groupby('id').apply(len)
-    if np.sum(nb>1)>0:
-        for id in nb.index[nb>1]:
-            df = sites[sites['id']==id]
-            sites = pd.concat([sites[sites['id']!=id], df[:1]])            
+    sites = pd.merge(sites, catchments, on = 'id', how='left')
 
     return sites
 
@@ -69,6 +72,10 @@ def create_project(sites, project, model):
 
 
 def create_projectdirs(sites, project, model):
+
+    # Check catchment duplicates
+    dp, ids = has_duplicates(sites, 'catchment')
+    if dp: raise ValueError('Catchments %s occured more than once in the site list'%ids)
 
     # Create project folders
     F = [project, '%s/data'%project, 
@@ -107,6 +114,10 @@ def create_projectdirs(sites, project, model):
 
 def create_basinjson(sites, project):
 
+    # Check id duplicates
+    dp, ids = has_duplicates(sites, 'id')
+    if dp: raise ValueError('Ids %s occured more than once in the site list'%ids)
+
     for idx, row in sites.iterrows():
 
         basin = row['basin']
@@ -140,6 +151,10 @@ def create_basinjson(sites, project):
         fbb.close()
 
 def create_simoptsjson(sites, project, model):
+
+    # Check id duplicates
+    dp, ids = has_duplicates(sites, 'id')
+    if dp: raise ValueError('Ids %s occured more than once in the site list'%ids)
 
     # Create common simopts
     fb = '%s/output/%s/simopts.json'%(project, model)
@@ -267,6 +282,10 @@ def create_simoptsjson(sites, project, model):
 
 def create_reportjson(sites, project, jsonfile='report.json'):
 
+    # Check id duplicates
+    dp, ids = has_duplicates(sites, 'id')
+    if dp: raise ValueError('Ids %s occured more than once in the site list'%ids)
+
     fr = '%s/%s'%(project, jsonfile) 
     if os.path.exists(fr):
         frr = open(fr, 'r')
@@ -356,8 +375,11 @@ def read_basin(PROJECT):
                     catchments[-1]['basin_id'] = b['basin_id']
     
     basins = pd.DataFrame(basins)
+    basins = basins.drop_duplicates(subset=['basin_name'])
+
     catchments = pd.DataFrame(catchments)
     catchments = catchments.rename(columns={'ID':'id'})
+    catchments = catchments.drop_duplicates(subset=['id', 'name'])
 
     return basins, catchments
 
@@ -828,9 +850,5 @@ def create_gr4j_hindcast(h5file, states, parameters):
             datetime.now().isoformat()
 
         h5.flush()
-
-
-
-
 
 
