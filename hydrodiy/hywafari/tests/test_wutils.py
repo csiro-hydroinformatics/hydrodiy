@@ -20,43 +20,61 @@ class UtilsTestCase(unittest.TestCase):
         self.FTEST = FTEST
 
         self.fxv1 = '/home/magpie/Dropbox/data/test/xvalidate_v1.hdf5'
-        self.fxv2 = '/home/magpie/Dropbox/data/test/xvalidate_v2.hdf5'
+        self.fxv2 = '/data/nas01/jenkins/jobs/wafari_dm_project/wafari/output/batea_gr4j/murrumbidgee/tinderry/out/xvalidate.hdf5'
+        self.ffc = '/data/nas01/jenkins/jobs/wafari_dm_project/wafari/output/batea_gr4j/murrumbidgee/tinderry/out/forecast.hdf5'
         #self.fxv2b = '/home/magpie/Dropbox/data/test/xvalidate_v2b.hdf5'
 
-        self.RUNTEST1 = os.path.exists(self.fxv1)
-        self.RUNTEST2 = os.path.exists(self.fxv2)
-        #self.RUNTEST2b = os.path.exists(self.fxv2b)
+        self.RUNXVTEST1 = os.path.exists(self.fxv1)
+        self.RUNXVTEST2 = os.path.exists(self.fxv2)
+        self.RUNFCTEST = os.path.exists(self.ffc)
+        #self.RUNXVTEST2b = os.path.exists(self.fxv2b)
 
     def test_readxv_1(self):
-        if self.RUNTEST1:
+        if self.RUNXVTEST1:
             sim = wutils.readsim_xvalidate(self.fxv1, '410734', 
                     'data|outcomes')
             self.assertTrue(sim.shape==(348, 6201))
 
     def test_readxv_2(self):
-        if self.RUNTEST2:
-            sim = wutils.readsim_xvalidate(self.fxv2, '922101')
-            self.assertTrue(sim.shape==(253, 6641))
+        if self.RUNXVTEST2:
+            sim = wutils.readsim_xvalidate(self.fxv2, '410734')
+            self.assertTrue(sim.shape==(337, 6641))
+
+    def test_readfc(self):
+        if self.RUNFCTEST:
+            sim = wutils.read_fc(self.ffc, '410734')
+            self.assertTrue(sim.shape==(6640,))
 
     def test_createproj(self):
+        FW = '%s/wafari_project'%self.FTEST
+        project = '%s/wafari'%FW
+        if os.path.exists: os.system('rm -rf %s'%project)
+        if not os.path.exists(FW): os.mkdir(FW)
+        model = 'batea_gr4j'
+        
+        s1 = {'id':410734, 'name':'tinderry', 'catchment':'tinderry',
+                'description':'Queanbeyan River at Tinderry',
+                'area':490, 'basin':'murrumbidgee', 'drainage':'murray_darling'}
+        s2 = {'id':218001, 'name':'tuross_vale', 'catchment':'turossvale',
+                'description':'Tuross River at Tuross Vale',
+                'area':91, 'basin':'tuross', 'drainage':'south_east_coast_nsw'}
+        sites = pd.DataFrame([s1, s2])
+
+        wutils.create_project(sites, project, model)
+
+        sites = sites.set_index('id')
+        sites = sites.sort(axis=1)
+        sites = sites.sort()
+
+        sites2 = wutils.get_sites(project)
+        idx = sites2.columns.isin(sites.columns)
+        sites2 = sites2[sites2.columns[idx]]
+        sites2 = sites2.sort(axis=1)
+        sites2 = sites2.sort()
+
+        self.assertTrue(np.all(sites.values == sites2.values))
+
         if has_wafari:
-
-            FW = '%s/wafari_project'%self.FTEST
-            project = '%s/wafari'%FW
-            if os.path.exists: os.system('rm -rf %s'%project)
-            if not os.path.exists(FW): os.mkdir(FW)
-            model = 'batea_gr4j'
-            
-            s1 = {'id':410734, 'name':'tinderry', 'catchment':'tinderry',
-                    'description':'Queanbeyan River at Tinderry',
-                    'area':490, 'basin':'murrumbidgee', 'drainage':'murray_darling'}
-            s2 = {'id':218001, 'name':'tuross_vale', 'catchment':'turossvale',
-                    'description':'Tuross River at Tuross Vale',
-                    'area':91, 'basin':'tuross', 'drainage':'south_east_coast_nsw'}
-            sites = pd.DataFrame([s1, s2])
-
-            wutils.create_project(sites, project, model)
-
             w.sys.project(FW)
             w.sys.model(model)
 
@@ -87,6 +105,19 @@ class UtilsTestCase(unittest.TestCase):
         id = '99999'
         wutils.create_obs(h5file, id, 'STREAMFLOW', obs)
 
+    def test_read_obs(self):
+        nval = 1000
+        dt = pd.date_range('1980-01-01', freq='D', periods=nval)
+        obs = pd.Series(np.random.uniform(0., 100., size=nval), index = dt)
+        
+        h5file = '%s/streamflow.hdf5'%self.FTEST
+        os.system('rm -f %s'%h5file)
+        id = '88888'
+        wutils.create_obs(h5file, id, 'STREAMFLOW', obs)
+        data = wutils.read_obs(h5file, id, 'STREAMFLOW', 'daily')
+
+        self.assertTrue(np.allclose(obs.values, data['value'].values))
+
     def test_create_poama_hindcast(self):
         nval = 20
         nens = 10
@@ -114,7 +145,7 @@ class UtilsTestCase(unittest.TestCase):
 
 
     #def test_readxv_2b(self):
-    #    if self.RUNTEST2b:
+    #    if self.RUNXVTEST2b:
     #        sim = wutils.read_xvalidate(self.fxv2b, '922101', 
     #                variable='simulated (STREAMFLOW|outcomes)')
     #        import pdb; pdb.set_trace()

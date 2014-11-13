@@ -21,7 +21,8 @@ pattern = '|'.join(module_names)
 pattern = '|'.join([pattern, package_name])
 
 # Try to install the package and list files
-os.system('python setup.py install --user --record package_files.txt')
+# add --user if no venv
+os.system('python setup.py install --record package_files.txt')
 with file('package_files.txt', 'r') as fp:
     files = fp.readlines()
 

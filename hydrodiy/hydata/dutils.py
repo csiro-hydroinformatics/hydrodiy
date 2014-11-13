@@ -18,24 +18,6 @@ def cycledist(x, y, start=1, end=12):
     ''' Compute abs(x-y) assuming that x and y are following a cycle (e.g. 12 months with start=1 and end=12)'''
     cycle = float(end-start+1)
     return np.abs((x-y-cycle/2)%cycle-cycle/2)
-
-#def get_seasonal(data):
-#    ''' Return 3 monthly aggregated time series 
-#        
-#        :param pandas.Series data: Input data (assuming daily)
-#    '''
-#    o = d.resample('MS', how='sum')
-#    o['lag'] = o['value'].shift(1)
-#    
-#    if timestep=='seasonal':
-#        o3a = o.resample('3MS', how='sum')
-#        o3a['lag'] = o3a['value'].shift(1)
-#        o3b = o[1:].resample('3MS', how='sum')
-#        o3b['lag'] = o3b['value'].shift(1)
-#        o3c = o[2:].resample('3MS', how='sum')
-#        o3c['lag'] = o3c['value'].shift(1)
-#        o = pd.concat([o3a, o3b, o3c])
-#        o = o.sort()
      
 def runclim(data, nwin=10):
     ''' Compute climatology of a daily time series 
@@ -131,4 +113,20 @@ def runclimcum(data, clim, wateryear_startmonth):
     climc = climc.set_index(clim.index)
 
     return climc, datat
+
+def to_seasonal(ts):
+    ''' Convert time series to seasonal time step '''
+    
+    # Resample to monthly
+    tsm = ts.resample('MS', 'sum')
+
+    # Produce 3 shifted series
+    tss = []
+    for s in range(0, 3):
+        tss.append(tsm.shift(-s))
+
+    tss = pd.DataFrame(tss)
+    tss.loc[:,tss.columns[-2:]] = np.nan
+
+    return tss.apply(np.sum, axis=0)
 

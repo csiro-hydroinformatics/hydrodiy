@@ -31,40 +31,92 @@ def flattens_json(jsfile):
     sites = pd.DataFrame(sites, index=sites['id'])
     return sites
 
+def has_duplicates(sites, field):
+    ''' Check duplicate values '''
+
+    nb = sites.groupby(field).apply(len)
+    out = False
+    ids = ''
+    if np.sum(nb>1):
+        out = True
+        ids = ' '.join(nb[nb>1].index)
+
+    return out, ids
+
+def get_sites(project):
+
+    # list of sites
+    lf = iutils.find_files(project, 'report.*.json')
+    sites = None
+    for f in lf:
+        s = flattens_json(f)
+        if sites is None: sites = s
+        else:   
+            sites = sites.append(s[~s['id'].isin(sites['id'])])
+
+    # Add catchments and basins
+    basins, catchments = read_basin(project)
+    catchments = pd.merge(catchments, basins, on = 'basin_id')
+    sites = pd.merge(sites, catchments, on = 'id', how='left')
+
+    return sites
+
 def create_project(sites, project, model):
     
     create_projectdirs(sites, project, model)
-    create_basinjson(sites, project)
-    create_simoptsjson(sites, project, model)
-    create_reportjson(sites, project)
+
+    if not sites is None:
+        create_basinjson(sites, project)
+        create_simoptsjson(sites, project, model)
+        create_reportjson(sites, project)
 
 
 def create_projectdirs(sites, project, model):
 
-    for idx, row in sites.iterrows():
-        basin = row['basin']
-        catchment = row['catchment']
+    # Check catchment duplicates
+    dp, ids = has_duplicates(sites, 'catchment')
+    if dp: raise ValueError('Catchments %s occured more than once in the site list'%ids)
 
-        # Create folders
-        F = [project, '%s/data'%project, 
-            '%s/data/%s'%(project, basin), 
-            '%s/data/%s/meta'%(project, basin), 
-            '%s/data/%s/tseries'%(project, basin),
-            '%s/output'%project, 
-            '%s/output/%s'%(project, model), 
-            '%s/output/%s/%s'%(project, model, basin), 
-            '%s/output/%s/%s/%s'%(project, model, basin, catchment),
-            '%s/output/%s/%s/%s/etc'%(project, model, basin, catchment), 
-            '%s/output/%s/%s/%s/out'%(project, model, basin, catchment),
-            '%s/output/poama_m24'%project, 
-            '%s/output/poama_m24/%s'%(project, basin), 
-            '%s/output/poama_m24/%s/%s'%(project, basin, catchment),
-            '%s/output/poama_m24/%s/%s/out'%(project, basin, catchment)]
+    # Create project folders
+    F = [project, '%s/data'%project, 
+       '%s/output'%project, 
+        '%s/output/%s'%(project, model), 
+       '%s/output/poama_m24'%project]
 
-        for f in F:
-            if not os.path.exists(f): os.mkdir(f)
+    for f in F:
+        if not os.path.exists(f): os.mkdir(f)
+
+    # Create site folders
+    if not sites is None:
+
+        for idx, row in sites.iterrows():
+            basin = row['basin']
+            catchment = row['catchment']
+
+            # Create folders
+            F = [project, '%s/data'%project, 
+                '%s/data/%s'%(project, basin), 
+                '%s/data/%s/meta'%(project, basin), 
+                '%s/data/%s/tseries'%(project, basin),
+                '%s/output'%project, 
+                '%s/output/%s'%(project, model), 
+                '%s/output/%s/%s'%(project, model, basin), 
+                '%s/output/%s/%s/%s'%(project, model, basin, catchment),
+                '%s/output/%s/%s/%s/etc'%(project, model, basin, catchment), 
+                '%s/output/%s/%s/%s/out'%(project, model, basin, catchment),
+                '%s/output/poama_m24'%project, 
+                '%s/output/poama_m24/%s'%(project, basin), 
+                '%s/output/poama_m24/%s/%s'%(project, basin, catchment),
+                '%s/output/poama_m24/%s/%s/out'%(project, basin, catchment)]
+
+            for f in F:
+                if not os.path.exists(f): os.mkdir(f)
 
 def create_basinjson(sites, project):
+
+    # Check id duplicates
+    dp, ids = has_duplicates(sites, 'id')
+    if dp: raise ValueError('Ids %s occured more than once in the site list'%ids)
 
     for idx, row in sites.iterrows():
 
@@ -99,6 +151,10 @@ def create_basinjson(sites, project):
         fbb.close()
 
 def create_simoptsjson(sites, project, model):
+
+    # Check id duplicates
+    dp, ids = has_duplicates(sites, 'id')
+    if dp: raise ValueError('Ids %s occured more than once in the site list'%ids)
 
     # Create common simopts
     fb = '%s/output/%s/simopts.json'%(project, model)
@@ -224,9 +280,11 @@ def create_simoptsjson(sites, project, model):
         fbb.writelines(txt)
         fbb.close()
 
-
-
 def create_reportjson(sites, project, jsonfile='report.json'):
+
+    # Check id duplicates
+    dp, ids = has_duplicates(sites, 'id')
+    if dp: raise ValueError('Ids %s occured more than once in the site list'%ids)
 
     fr = '%s/%s'%(project, jsonfile) 
     if os.path.exists(fr):
@@ -261,16 +319,16 @@ def create_reportjson(sites, project, jsonfile='report.json'):
                     if id in report_data['project'][drainage][basin][catchment]:
                         pass
                     else:
-                        report_data['project'][drainage][basin][catchment][id] = ''
+                        report_data['project'][drainage][basin][catchment][id] = {}
 
                 else:
-                    report_data['project'][drainage][basin][catchment] = {id:''}
+                    report_data['project'][drainage][basin][catchment] = {id:{}}
                     
             else:
-                report_data['project'][drainage][basin] = {catchment:{id:''}}
+                report_data['project'][drainage][basin] = {catchment:{id:{}}}
                 
         else:
-            drainage_data = {basin: {catchment: {id:''}}}
+            drainage_data = {basin: {catchment: {id:{}}}}
             report_data['project'][drainage] = drainage_data
 
     txt = json.dumps(report_data, indent=4)
@@ -317,10 +375,26 @@ def read_basin(PROJECT):
                     catchments[-1]['basin_id'] = b['basin_id']
     
     basins = pd.DataFrame(basins)
+    basins = basins.drop_duplicates(subset=['basin_name'])
+
     catchments = pd.DataFrame(catchments)
     catchments = catchments.rename(columns={'ID':'id'})
+    catchments = catchments.drop_duplicates(subset=['id', 'name'])
 
     return basins, catchments
+
+def read_fc(h5file, station_id, variable='STREAMFLOW'):
+    '''  
+    
+    reads simulation data from a forecast.hdf5 file
+
+    '''
+    simulations = None
+    with tables.openFile(h5file, mode='r') as h5:
+        simulations = h5.get_node('/data/forecast/%s.%s'%(station_id, variable)).read()
+    
+    return simulations
+
 
 def readsim_xvalidate(h5file, station_id, variable='STREAMFLOW'):
     '''  
@@ -471,6 +545,33 @@ def readrefs_xvalidate(h5file, station_id, variable='STREAMFLOW'):
         reference = reference.sort()
 
     return reference
+
+def read_obs(h5file, station_id, variable, frequency):
+
+    # check inputs
+    if not variable in ['STREAMFLOW', 'PRECIPITATION', 'POTENTIAL_EVAPORATION']:
+        raise ValueError('variable %s cannot be used to read obs file'%variable)
+
+    if variable=='STREAMFLOW' and not h5file.endswith('streamflow.hdf5'):
+        raise ValueError('File must be named streamflow.hdf5 for STREAMFLOW variable')
+        
+    if variable.startswith('P') and not h5file.endswith('hydromet.hdf5'):
+        raise ValueError('File must be named hydromet.hdf5 for PRECIPITATION and POTENTIAL_EVAPORATION variables')
+
+    if not frequency in ['daily', 'monthly']:
+        raise ValueError('frequency %s cannot be used to read obs file'%frequency)
+
+    station_id = str(station_id)
+
+    data = None
+    with tables.openFile(h5file, mode='r') as h5:
+        data = h5.get_node('/data/%s/%s/%s'%(frequency,variable, station_id)).read()
+
+    data = pd.DataFrame(data)
+    data['isotime'] = pd.to_datetime(data['isotime'])
+    data = data.set_index('isotime')
+
+    return data
 
 def create_obs(h5file, station_id, variable, obs):
 
@@ -749,9 +850,5 @@ def create_gr4j_hindcast(h5file, states, parameters):
             datetime.now().isoformat()
 
         h5.flush()
-
-
-
-
 
 
