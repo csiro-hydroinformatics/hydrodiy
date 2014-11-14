@@ -587,8 +587,13 @@ def create_obs(h5file, station_id, variable, obs):
 
     station_id = str(station_id)
 
+    # Check file exists
+    h5mode = 'w'
+    if os.path.exists(h5file):
+        h5mode = 'a'
+
     # Populate data file
-    with tables.openFile(h5file, mode='a') as h5:
+    with tables.openFile(h5file, mode=h5mode) as h5:
 
         # Meta data
         try:
