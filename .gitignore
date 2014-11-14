@@ -1,7 +1,9 @@
 *.swp
 *.pyc
 *.hdf5
-
+*.log
+dist
+build
 hydrodiy/hygis/tests/*.png
 hydrodiy/hystat/tests/*.png
 hydrodiy/hyio/tests/*.bin
@@ -10,4 +12,5 @@ hydrodiy/hyplot/tests/*.png
 hydrodiy/hyplot/tests/*.html
 hydrodiy/hystat/tests/*.gz
 package_files.txt
+hydrodiy/hywafari/tests/wafari_project
 

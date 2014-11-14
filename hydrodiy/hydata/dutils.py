@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import numpy as np
@@ -19,7 +20,7 @@ def cycledist(x, y, start=1, end=12):
     cycle = float(end-start+1)
     return np.abs((x-y-cycle/2)%cycle-cycle/2)
      
-def runclim(data, nwin=10):
+def runclim(data, nwin=10, ispos=True, perc=[5, 10, 25, 50, 75, 90, 95]):
     ''' Compute climatology of a daily time series 
         
     '''
@@ -28,27 +29,25 @@ def runclim(data, nwin=10):
 
     # Deals with leap years
     dx = data.index
-    no = (dx.month==2) & (dx.day==29)
+    no = (dx.month==2) & (dx.day==29) 
     doyidx = dx.dayofyear
     correc = (dx.month>2) & (dx.year%4==0)
     doyidx[correc] = doyidx[correc] - 1
 
     # Compute running stat
+    clim = {}
     for d in doy:
         dist = cycledist(doyidx, d, 1, 365)
-        idx =  (dist<=nwin) & (~no)
-        df = pd.DataFrame(dict(data[idx].describe()), index=[d])
+        idx =  (dist<=nwin) & (~no) 
+        if ispos: idx = idx & (data>=0)
+        clim[d] = sutils.percentiles(data[idx], perc)
 
-        if clim is None:
-            clim = df
-        else:
-            clim = clim.append(df)
-
-    clim = clim.rename(columns={'50%':'median'})
+    clim = pd.DataFrame(clim).T
+    clim.columns = ['%d%%'%p for p in perc]
     clim['day'] = pd.date_range('2001-01-01', freq='D', periods=365)
 
     # Find beginning of water year
-    ts = pd.Series(clim['median'].values,  index=clim['day'])
+    ts = pd.Series(clim['50%'].values,  index=clim['day'])
     climm = ts.resample('MS') 
     rm = relativedelta(months=6)
     dtmax = climm.index[climm==np.max(climm)].values[0]
@@ -72,6 +71,7 @@ def runclimcum(data, clim, wateryear_startmonth):
     dx = data[~nope].index
     dd = pd.DataFrame({'1':dx.month, '2':dx.day})
     dts = datetime(2001, wateryear_startmonth, 1)
+
     def fun(x):
         if x[0]>=wateryear_startmonth:
             return (datetime(2001, x[0], x[1])-dts).days
@@ -91,8 +91,9 @@ def runclimcum(data, clim, wateryear_startmonth):
     datat = datat.cumsum(axis=0)
 
     # Compute stats
-    climc =  datat.apply(lambda x: x.describe(), axis=1)
-    climc = climc.rename(columns={'50%':'median'})
+    perc = [int(re.sub('%', '', cn)) for cn in clim.columns if cn.endswith('%')]
+    climc =  datat.apply(lambda x: sutils.percentiles(x, perc), axis=1)
+    climc.columns = ['%d%%'%p for p in perc]
 
     # Correct for decreasing trends in clim
     # remove decreasing streches and rescale to keep overall balance
