@@ -157,36 +157,38 @@ class Linreg:
             :param list quantiles: Coverage of prediction intervals
         '''
 
-        if self.type!='ols':
-            raise ValueError('Only predict output for ols regressions')
-
+        # Prediction data
         xx0 = np.array(x0)
         npts = xx0.shape[0]
         X0 = self._buildinput(xx0, npts) 
         Y0 = np.dot(X0, self.params['estimate'])
         nq = len(coverage)*2
-        
-        PI = pd.DataFrame(np.zeros((npts ,nq)))
-        cols = []
-        for c in coverage:
-            cols += ['predint_%3.3d'%(5*(100.-c)), 
-                        'predint_%3.3d'%(1000-5*(100.-c))]
-        PI.columns = cols
+       
+        # Prediction intervals (only for OLS)
+        PI = None
 
-        # prediction factor
-        v = np.dot(X0, self.tXXinv)
-        pf = self.sigma * np.sqrt(1.+np.dot(v, X0.T))
+        if self.type == 'ols':
+            PI = pd.DataFrame(np.zeros((npts ,nq)))
+            cols = []
+            for c in coverage:
+                cols += ['predint_%3.3d'%(5*(100.-c)), 
+                            'predint_%3.3d'%(1000-5*(100.-c))]
+            PI.columns = cols
 
-        # Compute prediction intervals
-        for c in coverage:
-            q = (100.-c)*5
-            st = pf*student.ppf(q*1e-3, self.df)
+            # prediction factor
+            v = np.dot(X0, self.tXXinv)
+            pf = self.sigma * np.sqrt(1.+np.dot(v, X0.T))
 
-            c1 = 'predint_%3.3d'%q
-            PI[c1] = Y0+np.diag(st)
+            # Compute prediction intervals
+            for c in coverage:
+                q = (100.-c)*5
+                st = pf*student.ppf(q*1e-3, self.df)
 
-            c2 = 'predint_%3.3d'%(1000-q)
-            PI[c2] = Y0-np.diag(st)
+                c1 = 'predint_%3.3d'%q
+                PI[c1] = Y0+np.diag(st)
+
+                c2 = 'predint_%3.3d'%(1000-q)
+                PI[c2] = Y0-np.diag(st)
 
         return Y0, PI
 
