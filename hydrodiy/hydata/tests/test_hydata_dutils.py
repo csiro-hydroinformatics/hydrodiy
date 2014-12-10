@@ -44,29 +44,26 @@ class UtilsTestCase(unittest.TestCase):
     def test_runclim(self):
         index = pd.date_range('1900-01-01', '2020-12-31', freq='d')
         n = len(index)
-        u = np.sin((0.+index.dayofyear)/365*2*np.pi)
-        u += 0.2*np.random.uniform(size=n)-0.1
-        u = u + 5
+        u0 = 5 + np.sin((0.+index.dayofyear)/365*2*np.pi)
+        u  = u0 + 0.5*(np.random.uniform(size=n)-0.5)
         s = pd.Series(u, index=index)
-        clim, yws = dutils.runclim(s)
-        v = np.sin((0.+np.arange(365))/365*2*np.pi)
-        err = np.abs(clim['50%']-5-v)/(1+np.abs(v))
+        clim, yws = dutils.runclim(s, nwin=30)
+        v = 5 + np.sin((0.+np.arange(365))/365*2*np.pi)
+        err = np.abs(clim['50%']-v)/(1+np.abs(v))
         self.assertTrue(np.max(err)<0.03)
 
     def test_runclimcum(self):
         index = pd.date_range('1950-01-01', '2020-12-31', freq='D')
         n = len(index)
         u = np.sin((0.+index.dayofyear)/366*2*np.pi)
-        u += 0.5*np.random.uniform(size=n)-0.25
+        u += 1.*(np.random.uniform(size=n)-0.5)
         u = u*u
         s = pd.Series(u, index=index)
         clim, yws = dutils.runclim(s)
-        climc = dutils.runclimcum(s, clim, yws)
-
-        import pdb; pdb.set_trace()
+        climc, datat = dutils.runclimcum(s, clim, yws)
 
         #import matplotlib.pyplot as plt
-        #climc[['lowest', 'median', 'highest']].plot(); plt.show()
+        #climc[['10%', '50%', '90%']].plot(); plt.show()
         #TODO
 
     def test_to_seasonal(self):

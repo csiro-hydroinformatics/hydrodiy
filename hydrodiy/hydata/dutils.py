@@ -20,7 +20,35 @@ def cycledist(x, y, start=1, end=12):
     cycle = float(end-start+1)
     return np.abs((x-y-cycle/2)%cycle-cycle/2)
      
-def runclim(data, nwin=10, ispos=True, perc=[5, 10, 25, 50, 75, 90, 95]):
+def padclim(clim, nwin, is_cumulative=False):
+    ''' Pad start and end climate dataset '''
+
+    # Pad data at start
+    start = clim.tail(nwin*2).copy()
+    dstart = clim.index[0].to_datetime() - relativedelta(days=nwin*2)
+    days = pd.date_range(dstart, periods=nwin*2, freq='D')
+    start = start.set_index(days)
+
+    # Set negative values if data is cumulative
+    if is_cumulative:
+        start = start.apply(lambda x: x-x[-1])
+
+    # Pad data at the end
+    end = clim.head(nwin*2).copy()
+    dend = clim.index[-1].to_datetime() + relativedelta(days=1)
+    days = pd.date_range(dend, periods=nwin*2, freq='D')
+    end = end.set_index(days)
+    
+    # Set negative values if data is cumulative
+    if is_cumulative:
+        end = end + np.dot(np.ones((end.shape[0], 1)), clim[-1:].values) 
+
+    clim = clim.append([start, end])
+    clim = clim.sort()
+
+    return clim
+
+def runclim(data, nwin=20, ispos=True, perc=[5, 10, 25, 50, 75, 90, 95]):
     ''' Compute climatology of a daily time series 
         
     '''
@@ -44,19 +72,27 @@ def runclim(data, nwin=10, ispos=True, perc=[5, 10, 25, 50, 75, 90, 95]):
 
     clim = pd.DataFrame(clim).T
     clim.columns = ['%d%%'%p for p in perc]
-    clim['day'] = pd.date_range('2001-01-01', freq='D', periods=365)
+    days = pd.date_range('2001-01-01', freq='D', periods=365)
+    clim = clim.set_index(days)
+
+    # pad start and end
+    clim = padclim(clim, nwin)
+
+    # Apply rectangular filter and clip to proper dates
+    clim = pd.rolling_mean(clim, window=nwin)
+    clim = clim.shift(-nwin/2)
+    clim = clim[clim.index.year==2001]
 
     # Find beginning of water year
-    ts = pd.Series(clim['50%'].values,  index=clim['day'])
-    climm = ts.resample('MS') 
-    rm = relativedelta(months=6)
+    climm = clim['50%'].resample('MS') 
     dtmax = climm.index[climm==np.max(climm)].values[0]
     dtmax = datetime.strptime(dtmax.astype(str)[:10], '%Y-%m-%d')
+    rm = relativedelta(months=6)
     wateryear_startmonth = (dtmax-rm).month
 
     return clim, wateryear_startmonth
 
-def runclimcum(data, clim, wateryear_startmonth):
+def runclimcum(data, clim, wateryear_startmonth, nwin=20):
     ''' Compute cumulative climatology '''
 
     # Gapfill timeseries with monthly median
@@ -64,6 +100,7 @@ def runclimcum(data, clim, wateryear_startmonth):
         idx = pd.isnull(grp)
         grp[idx] = grp[~idx].median()
         return grp
+
     data = data.groupby(data.index.month).transform(replace)
 
     # reorganise series to exclude leap years
@@ -77,15 +114,17 @@ def runclimcum(data, clim, wateryear_startmonth):
             return (datetime(2001, x[0], x[1])-dts).days
         else:
             return (datetime(2002, x[0], x[1])-dts).days
+
     data2 = pd.DataFrame({'data':data[~nope].values, 
             'nday':dd.apply(fun, axis=1).values},
             index=data.index[~nope])
+
     data2['year'] = (data2['nday']==1).astype(int)
     data2['year'] = data2['year'].cumsum() 
     data2['year'] += data.index[0].year
-    data2['year'] -= data.index[0].month<=wateryear_startmonth
-    datat = pd.pivot_table(data2, rows='nday', 
-            cols='year', values='data')
+    data2['year'] -= data.index[0].month <= wateryear_startmonth
+    datat = pd.pivot_table(data2, index='nday', 
+            columns='year', values='data')
 
     # compute cum sum
     datat = datat.cumsum(axis=0)
@@ -94,24 +133,33 @@ def runclimcum(data, clim, wateryear_startmonth):
     perc = [int(re.sub('%', '', cn)) for cn in clim.columns if cn.endswith('%')]
     climc =  datat.apply(lambda x: sutils.percentiles(x, perc), axis=1)
     climc.columns = ['%d%%'%p for p in perc]
+    climc = climc.set_index(clim.index)
 
     # Correct for decreasing trends in clim
     # remove decreasing streches and rescale to keep overall balance
     def fix(x):
-        dd = x.diff().clip(0., 1e30)
+        dd = x.diff().clip(0., np.inf)
         dd[:1] = x[:1]
         xx = dd.cumsum()
         return xx/xx.sum()*x.sum()
+
     climc = climc.apply(fix)
+
+    # Pad start/end
+    climc = padclim(climc, nwin, True)
+
+    # Apply rolling mean to smooth out data
+    climc = pd.rolling_mean(climc, window=nwin)
+    climc = climc.shift(-nwin/2)
+    climc = climc[climc.index.year == clim.index.year[0]]
+    climc = climc.apply(lambda x: np.clip(x, 0., np.inf))
 
     # Find lowest/highest year
     total = datat.loc[datat.index[-1],:]
-    ymin = datat.columns[np.where(total==np.min(total))[0][0]]
+    ymin = datat.columns[np.where(total == np.min(total))[0][0]]
     climc['lowest'] = datat.loc[:, ymin]
-    ymax = datat.columns[np.where(total==np.max(total))[0][0]]
+    ymax = datat.columns[np.where(total == np.max(total))[0][0]]
     climc['highest'] = datat.loc[:, ymax]
-
-    climc = climc.set_index(clim.index)
 
     return climc, datat
 
