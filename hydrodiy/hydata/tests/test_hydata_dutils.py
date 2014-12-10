@@ -60,6 +60,8 @@ class UtilsTestCase(unittest.TestCase):
         u = u*u
         s = pd.Series(u, index=index)
         clim, yws = dutils.runclim(s)
+
+        yws = 5
         climc, datat = dutils.runclimcum(s, clim, yws)
 
         #import matplotlib.pyplot as plt

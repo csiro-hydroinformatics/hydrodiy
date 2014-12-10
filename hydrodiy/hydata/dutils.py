@@ -133,7 +133,11 @@ def runclimcum(data, clim, wateryear_startmonth, nwin=20):
     perc = [int(re.sub('%', '', cn)) for cn in clim.columns if cn.endswith('%')]
     climc =  datat.apply(lambda x: sutils.percentiles(x, perc), axis=1)
     climc.columns = ['%d%%'%p for p in perc]
-    climc = climc.set_index(clim.index)
+
+    idx = pd.date_range('%4d-%2.2d-01' % (2001, wateryear_startmonth), 
+                freq='D', periods=365)
+
+    climc = climc.set_index(idx)
 
     # Correct for decreasing trends in clim
     # remove decreasing streches and rescale to keep overall balance
@@ -151,7 +155,7 @@ def runclimcum(data, clim, wateryear_startmonth, nwin=20):
     # Apply rolling mean to smooth out data
     climc = pd.rolling_mean(climc, window=nwin)
     climc = climc.shift(-nwin/2)
-    climc = climc[climc.index.year == clim.index.year[0]]
+    climc = climc[(climc.index>=idx[0]) & (climc.index<=idx[-1])]
     climc = climc.apply(lambda x: np.clip(x, 0., np.inf))
 
     # Find lowest/highest year
