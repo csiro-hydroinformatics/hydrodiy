@@ -1,11 +1,15 @@
 # test function
+
+ac1 <- function(innov, phi){
+	n = length(innov)
+	M = matrix(0, n, n)
+	for(i in seq(1, n)) M[i, 1:i] = rev(phi^seq(0, i-1))
+
+	return(M%*%innov)
+}
+
 runtest <- function(data, fbase){
-    if(basename(fbase)=='linreg1'){
-        r = lm(y~x1+x2, data)
-    }
-    else{
-        r = lm(y~x1+x2+x3, data)
-    }
+    r = lm(y~x1+x2, data)
 
     fdata = sprintf("%s_data.csv", fbase)
     write.csv(data, fdata, quote=FALSE, row.names=FALSE)
@@ -26,25 +30,27 @@ runtest <- function(data, fbase){
     pred = data.frame(newdata, predict(r, newdata, 
                                         interval='prediction'))
 
-    fres = sprintf("%s_result_predict.csv", fbase)
+    fres = sprintf("%s_result_predict_gls.csv", fbase)
     write.csv(pred, fres, quote=FALSE, row.names=FALSE)
 }
 
 
-#folder = "/home/magpie/Dropbox/code/pypackage/hydrodiy/hystat/tests"
-#folder = "D:\\code\\hydrodiy\\hydrodiy\\hystat\\tests"
+folder = "/home/magpie/Dropbox/code/pypackage/hydrodiy/hystat/tests"
+folder = "D:\\code\\hydrodiy\\hydrodiy\\hystat\\tests"
 
 # simple dataset
 nval = 100
 x1 = rnorm(nval)
 x2 = rexp(nval)
 y0 = 5+4*x1+3*x2
-y = y0+5*rnorm(nval)
+e = ac1(rnorm(nval)*0.4, 0.6)
+y = y0+e
 data = data.frame(x1, x2, y)
+browser()
 runtest(data, sprintf('%s/linreg1', folder))
 
-y0 = 50+10*x1+5*x1^2+4*x1^3
-y = y0+40*rnorm(nval)
-data = data.frame(x1=x1, x2=x1^2, x3=x1^3, y)
-runtest(data, sprintf('%s/linreg2', folder))
+e = ac1(rnorm(nval)*0.6, 0.95)
+y = y0+e
+data = data.frame(x1, x2, y)
+runtest(data, sprintf('%s/linreg1', folder))
 
