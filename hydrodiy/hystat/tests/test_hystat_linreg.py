@@ -21,6 +21,8 @@ class LinregTestCase(unittest.TestCase):
         x = [[3, 5], [1, 4], [5, 6], [2, 4], [4, 6]]
         y = [3, 1, 8, 3, 5]
         lm = linreg.Linreg(x, y)
+        lm.fit()
+
         print(lm)
 
     def test_ols_johnston(self):
@@ -30,6 +32,8 @@ class LinregTestCase(unittest.TestCase):
         y = [3, 1, 8, 3, 5]
 
         lm = linreg.Linreg(x, y)
+        lm.fit()
+
         self.assertTrue(np.allclose(lm.params['estimate'].values, 
                                 np.array([4., 2.5, -1.5])))
 
@@ -57,6 +61,7 @@ class LinregTestCase(unittest.TestCase):
 
         # Fit model
         lm = linreg.Linreg(data[['x1', 'x2']], data['y'])
+        lm.fit()
 
         # Test estimates
         params = lm.params[['estimate', 'stderr', 'tvalue', 'Pr(>|t|)']]
@@ -81,6 +86,7 @@ class LinregTestCase(unittest.TestCase):
 
         # Fit model
         lm = linreg.Linreg(data[['x1']], data['y'], polyorder=3)
+        lm.fit()
 
         # Test estimates
         params = lm.params[['estimate', 'stderr', 'tvalue', 'Pr(>|t|)']]
@@ -94,23 +100,40 @@ class LinregTestCase(unittest.TestCase):
         ck = np.allclose(pred, pred_R[['fit', 'lwr', 'upr']])
         self.assertTrue(ck)
 
-    def test_gls_ar1(self):
+    def test_gls_johnston(self):
+        # data set from Johnston and Di Nardo, page 193
+        # Econometrics Methods, 1993
+
         # Build inputs
-        nval = 50
-        nvar = 3
-        mu = np.random.uniform(-1,1, size=(nval, ))
-        sig = 4.
-        x = np.empty((nval, nvar))
-        for i in range(nvar):
-            x[:,i] = np.random.normal(loc=mu, scale=sig)
-        rho = 0.99
-        e = sutils.ar1random([rho, 8*sig*math.sqrt(1-rho**2), 0.], nval)
-        theta = np.random.uniform(2, 3, size=(nvar, 1))
-        y = np.dot(x, theta) + e.reshape((nval, 1))
+        nval = 40
+
+        x = 10. + 5.*np.random.normal(size=(nval+1,1))
+        x[0] = 5.
+        XX = np.concatenate([x[1:], x[:-1]], axis=1)
+
+        e = 2 + 2.*XX[:,0] - 0.5*XX[:,1] 
+        y = sutils.ar1innov([0.7, 0.], e) + 5*np.random.normal(size=(nval,))
+        ym = np.concatenate([np.array([0.]), y[:-1]]).reshape((nval, 1))
+        XX = np.concatenate([XX, ym], axis=1)
 
         # Fit model
-        lm1 = linreg.Linreg(x, y, type='ols', intercept=False)
-        lm2 = linreg.Linreg(x, y, type='gls_ar1', intercept=False)
+        #lm1 = linreg.Linreg(XX, y, type='ols')  # Correct regression
+        lm2 = linreg.Linreg(XX[:,0], y, type='ols') # Misspecified
+        lm2.fit()
+        y2, int2 = lm2.predict(XX[:,0])
+
+        lm3 = linreg.Linreg(XX[:,0], y, type='gls_ar1') # GLS temptative
+        lm3.fit()
+        y3, int3 = lm3.predict(XX[:,0])
+
+        import matplotlib.pyplot as plt
+        plt.plot(y, label = 'obs')
+        plt.plot(y2, label = 'lm2')
+        plt.plot(y3, label = 'lm3')
+        plt.legend()
+
+        import pdb; pdb.set_trace()
+
         # TODO : finish this test
 
 if __name__ == "__main__":
