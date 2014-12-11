@@ -13,19 +13,42 @@ from hystat import sutils
 class Linreg:
     ''' Class to handle linear regression '''
 
-    def __init__(self, x, y, intercept=True, polyorder=1, type='ols'):
+    def __init__(self, x, y, has_intercept = True, polyorder = 1, 
+            type = 'ols', 
+            gls_nexplore = 50, 
+            gls_niterations = 20,
+            gls_epsilon = 1e-3):
         ''' Initialise regression model
 
             :param np.array x: Predictor variable
             :param np.array  y: Predictand variable
-            :param bool intercep: Add intercept to regression model?
+            :param bool has_intercept: Add intercept to regression model?
             :param int polyorder: Add polynomial terms with higher order (polyorder>1)
+            :param str type: Regression type
+            :param int gls_nexplore: Number of initial AR1 values tested
+            :param int gls_niterations: Number of iterations in GLS procedure
+            :param int gls_epsilon: Convergence threshold for ar1 in gls iterative procedure
 
         '''
-        # build input and output matrix
-        self.intercept = intercept
+
+        # Store data
+        self.type = type
+        self.has_intercept = has_intercept
         self.polyorder = polyorder
-        
+        self.x = x
+        self.y = y
+
+        # GLS parameters
+        self.gls_nexplore = gls_nexplore
+        self.gls_niterations = gls_niterations
+        self.gls_epsilon = gls_epsilon
+
+    def fit(self):
+        ''' Run parameter estimation and compute diagnostics '''
+ 
+        # build input and output matrix
+        x = self.x
+        y = self.y
         npts = len(y)
         xx = np.array(x)
         self.nvar = np.prod(xx.shape)/npts
@@ -34,55 +57,66 @@ class Linreg:
         self.tXXinv = np.linalg.inv(np.dot(X.T,X))
         Y = np.array(y).reshape((npts, 1))
 
-        # run parameter estimation
-        self.type = type
+        # Fit
         if self.type == 'ols':
             params, sigma, df = self._ols(self.tXXinv, X, Y)
             pgi = None
-        if self.type =='gls_ar1':
-            params, sigma, df, pgi = self._gls_ar1(X, Y)
+            ar1 = None
 
+        elif self.type =='gls_ar1':
+            params, ar1, sigma, df, pgi = self._gls_ar1(X, Y)
+
+        else:
+            raise ValueError('Regression type %s not recognised' % type)
+
+        # Store data
         self.params = params
         self.params_gls_iter = pgi
         self.sigma = sigma
         self.df = df
+        self.ar1 = ar1
 
         # compute fit
         fit = np.dot(X, self.params['estimate'])
         fit = fit.reshape((npts, 1))
-        self._check(Y, fit)
+        self._diagnostic(Y, fit)
     
     def __str__(self):
-        str = '\t** Linear model **\n'
+        str = '\n\t** Linear model **\n'
         str += '\n\tModel setup:\n'
         str += '\t  Type: %s\n'%self.type
-        str += '\t  Intercept: %s\n'%self.intercept
+        str += '\t  Has intercept: %s\n'%self.has_intercept
         str += '\t  Polynomial order: %d\n\n'%self.polyorder
         str += '\tParameters:\n'
         for idx, row in self.params.iterrows():
-            str += '\t  params %d = %5.2f [%5.2f,%5.2f] P(>|t|)=%0.3f\n'%(idx, 
+            str += '\t  params %d = %5.2f [%5.2f, %5.2f] P(>|t|)=%0.3f\n'%(idx, 
                 row['estimate'], row['confint_025'], 
                 row['confint_975'], row['Pr(>|t|)'])
 
+        if self.type == 'gls_ar1':
+            str += '\n\tAR1 coefficient (AR1 GLS only):\n'
+            str += '\t  phi = %0.3f\n'%self.ar1
+ 
         str += '\n\tPerformance:\n'
         str += '\t  R2 = %0.3f\n'%self.R2
 
         str += '\n\tTest on normality of residuals (Shapiro):\n'
         sh = self.shapiro_residuals['p-value']
-        mess = ''
-        if sh<0.05: mess = '(<0.05 : failing normality at 5% level)'
+        mess = '(<0.05 : failing normality at 5% level)'
         str += '\t  P value = %0.3f %s\n'%(sh, mess)
 
         str += '\n\tTest on independence of residuals (Durbin-Watson):\n'
         dw = self.durbin_watson_residuals['stat']
-        mess = ''
-        if dw<1: mess = '(<1 : residuals may not be independent)'
+        mess = '(<1 : residuals may not be independent)'
         str += '\t  Statistic = %0.3f %s\n'%(dw, mess)
         
         return str
 
     def _buildinput(self, xx, npts):
-        ''' Build regression input matrix '''
+        ''' Build regression input matrix, i.e. the matrix [1,xx] for standard regressions
+            or [xx] if the intercept is not included in the regression equation.
+
+        '''
         XX = xx.reshape(npts, self.nvar)
         assert self.polyorder>0
 
@@ -91,7 +125,7 @@ class Linreg:
             for k in range(self.polyorder):
                 X[:, j*self.polyorder+k] = XX[:, j]**(k+1)
 
-        if self.intercept:
+        if self.has_intercept:
             X = np.insert(X, 0, 1., axis=1)
 
         return X
@@ -121,34 +155,73 @@ class Linreg:
 
         return params, sigma, df
 
-    def _gls_ar1(self, X, Y, niter=5):
+    def _gls_transform_matrix(self, npts, ac1):
+        ''' Compute transformation matrix required for GLS iterative solution'''
+
+        P = np.eye(npts)
+        P[0,0] = math.sqrt(1-ac1**2)
+        P -= np.diag([1]*(npts-1), -1)*ac1
+
+        return P
+
+    def _gls_ar1(self, X, Y):
         ''' Estimate parameter with generalized least squares 
             assuming ar1 residuals
         '''
-        npts = X.shape[0]
-        P = np.eye(npts)
-        params_gls_iter = np.empty((X.shape[1], niter))
 
-        for i in range(niter):
-            # OLS estimate with transformed variables
+        niter = self.gls_niterations
+        npts = X.shape[0]
+        params_gls_iter = np.empty((X.shape[1]+1, niter))
+
+        # Systematic exploration of initial AR1 values
+        min_sigma = np.inf
+        ac1_optim = 0.
+        
+        for ac1 in np.linspace(-0.99, 0.99, self.gls_nexplore):
+            P = self._gls_transform_matrix(npts, ac1)
             Xs = np.dot(P, X)
             Ys = np.dot(P, Y)
             tXXinvs = np.linalg.inv(np.dot(Xs.T,Xs))
             params, sigma, df = self._ols(tXXinvs, Xs, Ys)
+
+            if sigma < min_sigma:
+                min_sigma = sigma
+                ac1_optim = ac1
+
+        # Initialise ac1 to optimal value
+        ac1 = ac1_optim
+
+        # Iterative procedure
+        for i in range(niter):
+
+            # Compute OLS estimate with transformed variables
+            P = self._gls_transform_matrix(npts, ac1)
+            Xs = np.dot(P, X)
+            Ys = np.dot(P, Y)
+            tXXinvs = np.linalg.inv(np.dot(Xs.T,Xs))
+            params, sigma, df = self._ols(tXXinvs, Xs, Ys)
+
+            # Store data
             pp = params['estimate'].reshape((params.shape[0], 1))
-            params_gls_iter[:,i] = pp[:,0]
+            params_gls_iter[:-1,i] = pp[:,0]
 
-            if i<niter-1:
-                # Estimate auto-correlation of OLS residuals
-                residuals = Y-np.dot(X, pp)
-                ac1 = sutils.acf(residuals, lag=[1])['acf'].values[0]
+            # Estimate auto-correlation of residuals
+            residuals = Y-np.dot(X, pp)
 
-                # Compute transformation matrix
-                P = np.eye(npts)
-                P[0,0] = math.sqrt(1-ac1**2)
-                P -= np.diag([1]*(npts-1), -1)*ac1
+            tXXinvs = np.linalg.inv(np.dot(residuals.T,residuals))
+            ac1params, ac1sigma, ac1df = self._ols(tXXinvs, residuals[:-1], residuals[1:])
 
-        return params, sigma, df, params_gls_iter
+            ac1 = ac1params['estimate'].values[0]
+            params_gls_iter[-1,i] = ac1
+
+            # Check convergence
+            if i>0:
+                delta = np.abs(ac1-params_gls_iter[-1,i-1])
+
+                if delta < self.gls_epsilon:
+                    break
+
+        return params, ac1, sigma, df, params_gls_iter
 
     def predict(self, x0, coverage=[95, 80]):
         ''' Pediction with intervals 
@@ -192,18 +265,31 @@ class Linreg:
 
         return Y0, PI
 
-    def _check(self, Y, fit):
-        ''' perform tests on assumptions '''
+    def _getresiduals(self, Y, fit):
+
+        # Compute residuals
         residuals = Y-fit
+
+        # Extract innovation from AR1 if GLS AR1 
+        if self.type == 'gls_ar1':
+            r = residuals.reshape((len(residuals),))
+            residuals = sutils.ar1inverse([self.ar1, 0.], r)
+
+        return residuals
+
+    def _diagnostic(self, Y, fit):
+        ''' perform tests on regression assumptions '''
+
+        residuals = self._getresiduals(Y, fit)
 
         # Shapiro Wilks on residuals
         s = shapiro(residuals)
         self.shapiro_residuals = {'stat':s[0], 'p-value':s[1]}
 
         # Durbin watson test
-        res = residuals[:,0]
-        de = np.diff(res, 1)
-        dw = np.dot(de, de)/np.dot(res, res)
+        residuals = residuals.reshape((len(residuals), ))
+        de = np.diff(residuals, 1)
+        dw = np.dot(de, de)/np.dot(residuals, residuals)
         self.durbin_watson_residuals = {'stat':dw, 'p-value':np.nan}
 
         # correlation
