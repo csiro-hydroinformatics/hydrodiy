@@ -30,9 +30,9 @@ runtest <- function(data, fbase){
     write.csv(pred, fres, quote=FALSE, row.names=FALSE)
 }
 
-
-#folder = "/home/magpie/Dropbox/code/pypackage/hydrodiy/hystat/tests"
-#folder = "D:\\code\\hydrodiy\\hydrodiy\\hystat\\tests"
+# Folder
+folder = "/home/magpie/Code/pypackage/hydrodiy/hystat/tests"
+if(!file.exists(folder)) folder = "D:\\code\\hydrodiy\\hydrodiy\\hystat\\tests"
 
 # simple dataset
 nval = 100
