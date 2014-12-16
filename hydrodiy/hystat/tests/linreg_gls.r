@@ -23,14 +23,14 @@ runtest <- function(data, fbase){
     r = lm(y~x1+x2, data)
     sr = cochrane.orcutt(r)
 
-    fdata = sprintf("%s_gls_data.csv", fbase)
+    fdata = sprintf("%s_data.csv", fbase)
     write.csv(data, fdata, quote=FALSE, row.names=FALSE)
 
-    fres = sprintf("%s_gls_result_estimate_ols.csv", fbase)
+    fres = sprintf("%s_result_estimate_ols.csv", fbase)
     params_ols = summary(r)$coefficients
     write.csv(params_ols, fres, quote=FALSE, row.names=FALSE)
 
-    fres = sprintf("%s_gls_result_estimate_gls.csv", fbase)
+    fres = sprintf("%s_result_estimate_gls.csv", fbase)
     params_gls = sr$Cochrane.Orcutt$coefficients
     write.csv(params_gls, fres, quote=FALSE, row.names=FALSE)
 
@@ -45,13 +45,14 @@ runtest <- function(data, fbase){
     pred$ols = M %*% data.matrix(params_ols[,1])
     pred$gls = M %*% data.matrix(params_gls[,1])
 
-    fres = sprintf("%s_gls_result_predict_gls.csv", fbase)
+    fres = sprintf("%s_result_predict_gls.csv", fbase)
     write.csv(pred, fres, quote=FALSE, row.names=FALSE)
 }
 
 # Folder
 folder = "/home/magpie/Code/pypackage/hydrodiy/hystat/tests"
 if(!file.exists(folder)) folder = "D:\\code\\hydrodiy\\hydrodiy\\hystat\\tests"
+if(!file.exists(folder)) folder = "/ehpdata/shared/jlerat/code/hydrodiy/hydrodiy/hystat/tests"
 
 # simple dataset
 nval = 100
@@ -61,10 +62,10 @@ y0 = 5+4*x1+3*x2
 e = ac1(nval, 0.7, 3)
 y = y0+e
 data = data.frame(x1, x2, y)
-runtest(data, sprintf('%s/linreg1', folder))
+runtest(data, sprintf('%s/glslinreg1', folder))
 
 e = ac1(nval, 0.9, 5)
 y = y0+e
 data = data.frame(x1, x2, y)
-runtest(data, sprintf('%s/linreg1', folder))
+runtest(data, sprintf('%s/glslinreg2', folder))
 

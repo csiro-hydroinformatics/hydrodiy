@@ -50,13 +50,16 @@ class LinregTestCase(unittest.TestCase):
         y0, pint = lm.predict(np.array([10, 10]).reshape((1,2)))
         self.assertTrue(np.allclose(y0[0],14))
  
-    def test_ols_R1(self):
-        # data set from R
-        fd = '%s/linreg1_data.csv'%self.FOUT
+    def test_ols_rcran1(self):
+
+        # data set from R - see linreg.r
+        fd = '%s/olslinreg1_data.csv'%self.FOUT
         data, comment = csv.read_csv(fd)
-        fd = '%s/linreg1_result_estimate.csv'%self.FOUT
+
+        fd = '%s/olslinreg1_result_estimate.csv' % self.FOUT
         estimate, comment = csv.read_csv(fd)
-        fd = '%s/linreg1_result_predict.csv'%self.FOUT
+
+        fd = '%s/olslinreg1_result_predict.csv' % self.FOUT
         pred_R, comment = csv.read_csv(fd)
 
         # Fit model
@@ -75,17 +78,20 @@ class LinregTestCase(unittest.TestCase):
         ck = np.allclose(pred, pred_R[['fit', 'lwr', 'upr']])
         self.assertTrue(ck)
  
-    def test_ols_R2(self):
-        # data set from R
-        fd = '%s/linreg2_data.csv'%self.FOUT
+    def test_ols_rcran2(self):
+
+        # data set from R - see linreg.r
+        fd = '%s/olslinreg2_data.csv'%self.FOUT
         data, comment = csv.read_csv(fd)
-        fd = '%s/linreg2_result_estimate.csv'%self.FOUT
+
+        fd = '%s/olslinreg2_result_estimate.csv' % self.FOUT
         estimate, comment = csv.read_csv(fd)
-        fd = '%s/linreg2_result_predict.csv'%self.FOUT
+
+        fd = '%s/olslinreg2_result_predict.csv' % self.FOUT
         pred_R, comment = csv.read_csv(fd)
 
         # Fit model
-        lm = linreg.Linreg(data[['x1']], data['y'], polyorder=3)
+        lm = linreg.Linreg(data['x1'], data['y'], polyorder=3)
         lm.fit()
 
         # Test estimates
@@ -94,47 +100,52 @@ class LinregTestCase(unittest.TestCase):
         self.assertTrue(ck)
 
         # Test predictions
-        y0, pint = lm.predict(pred_R[['x1']])
+        y0, pint = lm.predict(pred_R['x1'])
         pred = pd.DataFrame({'fit':y0, 'lwr':pint['predint_025'],
                         'upr':pint['predint_975']}) 
         ck = np.allclose(pred, pred_R[['fit', 'lwr', 'upr']])
         self.assertTrue(ck)
+ 
+    def test_gls_rcran(self):
 
-    def test_gls_johnston(self):
-        # data set from Johnston and Di Nardo, page 193
-        # Econometrics Methods, 1993
+        # data set from R - see linreg_gls.r
+        for itest in range(1, 3):
 
-        # Build inputs
-        nval = 40
+            fd = '%s/glslinreg%d_data.csv' % (self.FOUT, itest)
+            data, comment = csv.read_csv(fd)
 
-        x = 10. + 5.*np.random.normal(size=(nval+1,1))
-        x[0] = 5.
-        XX = np.concatenate([x[1:], x[:-1]], axis=1)
+            fd = '%s/glslinreg%d_result_estimate_gls.csv' % (self.FOUT, itest)
+            estimate, comment = csv.read_csv(fd)
 
-        e = 2 + 2.*XX[:,0] - 0.5*XX[:,1] 
-        y = sutils.ar1innov([0.7, 0.], e) + 5*np.random.normal(size=(nval,))
-        ym = np.concatenate([np.array([0.]), y[:-1]]).reshape((nval, 1))
-        XX = np.concatenate([XX, ym], axis=1)
+            fd = '%s/glslinreg%d_result_predict_gls.csv' % (self.FOUT, itest)
+            pred_R, comment = csv.read_csv(fd)
 
-        # Fit model
-        #lm1 = linreg.Linreg(XX, y, type='ols')  # Correct regression
-        lm2 = linreg.Linreg(XX[:,0], y, type='ols') # Misspecified
-        lm2.fit()
-        y2, int2 = lm2.predict(XX[:,0])
+            # Fit model
+            lm = linreg.Linreg(data[['x1', 'x2']], data['y'], type='gls_ar1')
+            lm.fit()
 
-        lm3 = linreg.Linreg(XX[:,0], y, type='gls_ar1') # GLS temptative
-        lm3.fit()
-        y3, int3 = lm3.predict(XX[:,0])
+            # Test estimates
+            params = lm.params[['estimate', 'stderr', 'tvalue', 'Pr(>|t|)']]
+            params.columns = estimate.columns
 
-        import matplotlib.pyplot as plt
-        plt.plot(y, label = 'obs')
-        plt.plot(y2, label = 'lm2')
-        plt.plot(y3, label = 'lm3')
-        plt.legend()
+            cc = params.columns[[0,1,3]]
+            rw = range(1,3)
+            ck1 = np.allclose(params.loc[rw,cc], estimate.loc[rw,cc], atol=3e-2)
+            if not ck1:
+                import pdb; pdb.set_trace()
+            self.assertTrue(ck1)
 
-        import pdb; pdb.set_trace()
+            cc = params.columns[[0,1,3]]
+            rw = [0]
+            ck2 = np.allclose(params.loc[rw,cc], estimate.loc[rw,cc], atol=1e-1)
+            if not ck2:
+                import pdb; pdb.set_trace()
+            self.assertTrue(ck2)
 
-        # TODO : finish this test
+            # Test predictions
+            y0, pint = lm.predict(pred_R[['x1', 'x2']])
+            ck = np.allclose(y0, pred_R['gls'], atol=2e-1)
+            self.assertTrue(ck)
 
 if __name__ == "__main__":
     unittest.main()

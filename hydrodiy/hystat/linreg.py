@@ -17,7 +17,7 @@ class Linreg:
             type = 'ols', 
             gls_nexplore = 50, 
             gls_niterations = 20,
-            gls_epsilon = 1e-3):
+            gls_epsilon = 1e-4):
         ''' Initialise regression model
 
             :param np.array x: Predictor variable
@@ -51,11 +51,13 @@ class Linreg:
         y = self.y
         npts = len(y)
         xx = np.array(x)
-        self.nvar = np.prod(xx.shape)/npts
+        self.npredictors = np.prod(xx.shape)/npts
 
         X = self._buildinput(xx, npts)
         self.tXXinv = np.linalg.inv(np.dot(X.T,X))
+
         Y = np.array(y).reshape((npts, 1))
+        self.npredictands = Y.shape[1]
 
         # Fit
         if self.type == 'ols':
@@ -84,6 +86,8 @@ class Linreg:
     def __str__(self):
         str = '\n\t** Linear model **\n'
         str += '\n\tModel setup:\n'
+        str += '\t  N predictors: %s\n'%self.npredictors
+        str += '\t  N predictands: %s\n'%self.npredictands
         str += '\t  Type: %s\n'%self.type
         str += '\t  Has intercept: %s\n'%self.has_intercept
         str += '\t  Polynomial order: %d\n\n'%self.polyorder
@@ -117,7 +121,7 @@ class Linreg:
             or [xx] if the intercept is not included in the regression equation.
 
         '''
-        XX = xx.reshape(npts, self.nvar)
+        XX = xx.reshape(npts, self.npredictors)
         assert self.polyorder>0
 
         X = np.empty((XX.shape[0], XX.shape[1] * self.polyorder), float)
@@ -164,6 +168,14 @@ class Linreg:
 
         return P
 
+    def _gls_ar1_loglikelihood(innov, sigma, phi):
+        ''' Returns the log-likelihood of the GLS ar1 innovations '''
+        n = float(len(innov))
+        sse = np.sum(innov**2)
+        ll = -n/2*math.log(math.pi)-n*math.log(sigma)+math.log(1-phi**2)/2-sse/(2*sigma)
+
+        return ll
+
     def _gls_ar1(self, X, Y):
         ''' Estimate parameter with generalized least squares 
             assuming ar1 residuals
@@ -200,17 +212,18 @@ class Linreg:
             Ys = np.dot(P, Y)
             tXXinvs = np.linalg.inv(np.dot(Xs.T,Xs))
             params, sigma, df = self._ols(tXXinvs, Xs, Ys)
+            pp = params['estimate'].reshape((params.shape[0], 1))
+
+            # Correct bias
+            pp[0,0] = np.mean(Y-np.dot(X[:,1:], pp[1:]))
 
             # Store data
-            pp = params['estimate'].reshape((params.shape[0], 1))
             params_gls_iter[:-1,i] = pp[:,0]
 
             # Estimate auto-correlation of residuals
             residuals = Y-np.dot(X, pp)
-
-            tXXinvs = np.linalg.inv(np.dot(residuals.T,residuals))
+            tXXinvs = 1./(np.dot(residuals[:-1].T,residuals[:-1]))
             ac1params, ac1sigma, ac1df = self._ols(tXXinvs, residuals[:-1], residuals[1:])
-
             ac1 = ac1params['estimate'].values[0]
             params_gls_iter[-1,i] = ac1
 
@@ -223,7 +236,7 @@ class Linreg:
 
         return params, ac1, sigma, df, params_gls_iter
 
-    def predict(self, x0, coverage=[95, 80]):
+    def predict(self, x0=None, coverage=[95, 80]):
         ''' Pediction with intervals 
             
             :param numpy.array x0: regression input
@@ -231,7 +244,19 @@ class Linreg:
         '''
 
         # Prediction data
+        if x0 is None:
+            x0 = self.x
         xx0 = np.array(x0)
+        
+        if len(xx0.shape) == 1:
+            npred = 1
+        else:
+            npred = xx0.shape[-1]
+
+        if npred != self.npredictors:
+            raise ValueError('Number of predictors in input data(%d) different from regression(%d)' %(npred,
+                self.npredictors))
+
         npts = xx0.shape[0]
         X0 = self._buildinput(xx0, npts) 
         Y0 = np.dot(X0, self.params['estimate'])
@@ -297,18 +322,18 @@ class Linreg:
         v = fit-np.mean(fit)
         self.R2 = np.sum(u*v)**2/np.sum(u**2)/np.sum(v**2)
 
-    #def boot(self, nsample=5000):
-    #    ''' Confidence interval based on bootstrap '''
+    def boot(self, nsample=5000):
+        ''' Confidence interval based on bootstrap '''
 
-    #    nx = self.X.shape[0]
-    #    for i in range(nsample):
-    #        kk = np.random.randint(nx, size=nx)
-    #        XB = self.X[kk,:]    
-    #        YB = self.Y[kk]
-    #        tXXinvB = np.linalg.inv(np.dot(XB.T,XB))
-    #        params, Yhat, residuals, sigma = _olspars(tXXinvB, XB, YB)
+        nx = self.X.shape[0]
+        for i in range(nsample):
+            kk = np.random.randint(nx, size=nx)
+            XB = self.X[kk,:]    
+            YB = self.Y[kk]
+            tXXinvB = np.linalg.inv(np.dot(XB.T,XB))
+            params, Yhat, residuals, sigma = _olspars(tXXinvB, XB, YB)
 
-    #    return 0
+        return 0
     #        
     #def plot(self):
     #    ''' plot some common data '''
