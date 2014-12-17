@@ -197,12 +197,12 @@ class Linreg:
 
         return params, sigma, df
 
-    def _gls_transform_matrix(self, nsamp, ac1):
+    def _gls_transform_matrix(self, nsamp, phi):
         ''' Compute transformation matrix required for GLS iterative solution'''
 
         P = np.eye(nsamp)
-        P[0,0] = math.sqrt(1-ac1**2)
-        P -= np.diag([1]*(nsamp-1), -1)*ac1
+        P[0,0] = math.sqrt(1-phi**2)
+        P -= np.diag([1]*(nsamp-1), -1)*phi
 
         return P
 
@@ -452,8 +452,17 @@ class Linreg:
         
         # Generate regression inputs
         X0, nsamp, npred = self._buildXmatrix(x0) 
-        Y0 = np.dot(X0, self.params['estimate'])
-        nq = len(coverage)*2
+
+        if self.type == 'ols':
+            Y0 = np.dot(X0, self.params['estimate'])
+            nq = len(coverage)*2
+
+        if self.type == 'gls_ar1':
+            P = self._gls_transform_matrix(nsamp, self.pi)
+            Xs = np.dot(P, X0)
+
+            Pinv = np.linalg.inv(P)
+            Y0 = np.dot(Pinv, np.dot(X0, self.params['estimate']))
        
         # Prediction intervals (only for OLS)
         PI = None
