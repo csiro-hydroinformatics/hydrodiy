@@ -124,17 +124,10 @@ class Linreg:
             xx = np.array(self.x)
         else:
             xx = np.array(xx0)
-<<<<<<< HEAD
 
         # Dimensions
         nsamp, npred = self._getDim(xx)
 
-=======
-
-        # Dimensions
-        nsamp, npred = self._getDim(xx)
-
->>>>>>> 0c9d9418c3748bbe91fd88335ff6e7590c538486
         if xx0 is None:
             self.npredictors = npred
         else:
@@ -171,17 +164,9 @@ class Linreg:
 
         # build input and output matrix
         self.tXXinv = np.linalg.inv(np.dot(X.T,X))
-<<<<<<< HEAD
 
         self.Y = np.array(self.y).reshape((nsamp, 1))
         self.npredictands = self.Y.shape[1]
-
-=======
-
-        self.Y = np.array(self.y).reshape((nsamp, 1))
-        self.npredictands = self.Y.shape[1]
-
->>>>>>> 0c9d9418c3748bbe91fd88335ff6e7590c538486
 
     def _ols(self):
         ''' Estimate parameter with ordinary least squares '''
@@ -375,15 +360,6 @@ class Linreg:
         Yhat = np.dot(self.X, self.params['estimate'])
         self.Yhat = Yhat.reshape((self.nsample, 1))
 
-=======
-
-        #   # Check convergence
-        #   if i>0:
-        #       delta = np.abs(ac1-params_gls_iter[-1,i-1])
-
-        #       if delta < self.gls_epsilon:
-        #           break
-
         return params, phi, sigma
 
     def getresiduals(self, Y, Yhat):
@@ -463,7 +439,6 @@ class Linreg:
         Yhat = np.dot(self.X, self.params['estimate'])
         self.Yhat = Yhat.reshape((self.nsample, 1))
 
->>>>>>> 0c9d9418c3748bbe91fd88335ff6e7590c538486
         # Run diagnostic 
         diag = self.diagnostic(self.Y, self.Yhat)
         self.diag = diag
