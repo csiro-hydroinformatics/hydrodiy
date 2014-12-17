@@ -24,10 +24,22 @@ def ar1_loglikelihood(theta, X, Y):
     innov = sutils.ar1inverse([phi, 0.], e)
 
     sse = np.sum(innov**2)
-    ll = -n/2*math.log(math.pi)-n*math.log(sigma)+math.log(1-phi**2)/2-sse/(2*sigma)
+    #ll1 = -n/2*math.log(math.pi)
+    ll2 = -n*math.log(sigma)
+    ll3 = math.log(1-phi**2)/2
+    ll4 = -sse/(2*sigma)
 
-    return -ll
+    ll = {'sigma':ll2, 'phi':ll3, 'sse':ll4}
 
+    return ll
+
+def ar1_loglikelihood_objfun(theta, X, Y):
+    ''' Returns the GLS ar1 log-likelihood objective function '''
+
+    ll = ar1_loglikelihood(theta, X, Y)
+    lls = -(ll['sigma']+ll['phi']+ll['sse'])
+
+    return lls
 
 class Linreg:
     ''' Class to handle linear regression '''
@@ -68,34 +80,43 @@ class Linreg:
     def __str__(self):
         str = '\n\t** Linear model **\n'
         str += '\n\tModel setup:\n'
-        str += '\t  N predictors: %s\n'%self.npredictors
-        str += '\t  N predictands: %s\n'%self.npredictands
-        str += '\t  Type: %s\n'%self.type
-        str += '\t  Has intercept: %s\n'%self.has_intercept
-        str += '\t  Polynomial order: %d\n\n'%self.polyorder
+        str += '\t  N predictors: %s\n' % self.npredictors
+        str += '\t  N predictands: %s\n' % self.npredictands
+        str += '\t  Type: %s\n'% self.type
+        str += '\t  Has intercept: %s\n' % self.has_intercept
+        str += '\t  Polynomial order: %d\n\n' % self.polyorder
         str += '\tParameters:\n'
         for idx, row in self.params.iterrows():
-            str += '\t  params %d = %5.2f [%5.2f, %5.2f] P(>|t|)=%0.3f\n'%(idx, 
-                row['estimate'], row['confint_025'], 
-                row['confint_975'], row['Pr(>|t|)'])
+
+            if self.type == 'ols':
+                str += '\t  params %d = %5.2f [%5.2f, %5.2f] P(>|t|)=%0.3f\n'%(idx, 
+                    row['estimate'], row['confint_025'], 
+                    row['confint_975'], row['Pr(>|t|)'])
+
+            if self.type == 'gls_ar1':
+                str += '\t  params %d = %5.2f\n' % (idx, row['estimate'])
 
         if self.type == 'gls_ar1':
             str += '\n\tAR1 coefficient (AR1 GLS only):\n'
-            str += '\t  phi = %0.3f\n'%self.phi
+            str += '\t  phi = %0.3f\n' % self.phi
+
+            str += '\n\tLikelihood component (AR1 GLS only):\n'
+            for k in self.loglikelihood:
+                str += '\t  ll[%5s] = %0.3f\n' % (k, self.loglikelihood[k])
  
         str += '\n\tPerformance:\n'
-        str += '\t  R2        = %0.3f\n'%self.diag['R2']
-        str += '\t  Bias      = %0.3f\n'%self.diag['bias']
-        str += '\t  Coef Det  = %0.3f\n'%self.diag['coef_determination']
-        str += '\t  Ratio Var = %0.3f\n'%self.diag['ratio_variance']
+        str += '\t  R2        = %0.3f\n' % self.diagnostic['R2']
+        str += '\t  Bias      = %0.3f\n' % self.diagnostic['bias']
+        str += '\t  Coef Det  = %0.3f\n' % self.diagnostic['coef_determination']
+        str += '\t  Ratio Var = %0.3f\n' % self.diagnostic['ratio_variance']
 
         str += '\n\tTest on normality of residuals (Shapiro):\n'
-        sh = self.diag['shapiro_pvalue']
+        sh = self.diagnostic['shapiro_pvalue']
         mess = '(<0.05 : failing normality at 5% level)'
         str += '\t  P value = %0.3f %s\n'%(sh, mess)
 
         str += '\n\tTest on independence of residuals (Durbin-Watson):\n'
-        dw = self.diag['durbinwatson_stat']
+        dw = self.diagnostic['durbinwatson_stat']
         mess = '(<1 : residuals may not be independent)'
         str += '\t  Statistic = %0.3f %s\n'%(dw, mess)
         
@@ -223,142 +244,10 @@ class Linreg:
 
         # Maximisation of log-likelihood
         theta0 = [sigma, phi] + list(params['estimate'])
-        res = fmin(ar1_loglikelihood, theta0, args=(self.X, self.Y,))
+        res = fmin(ar1_loglikelihood_objfun, theta0, args=(self.X, self.Y,), disp=0)
         params = pd.DataFrame({'estimate':res[2:]})
         sigma = res[0]
         phi = res[1]
-
-        #iter = self.gls_niterations
-        #pts = X.shape[0]
-        #arams_gls_iter = np.empty((X.shape[1]+1, niter))
-
-        # Systematic exploration of initial AR1 values
-        #in_sigma = np.inf
-        #c1_optim = 0.
-        #
-        #or ac1 in np.linspace(-0.99, 0.99, self.gls_nexplore):
-        #   P = self._gls_transform_matrix(nsamp, ac1)
-        #   Xs = np.dot(P, X)
-        #   Ys = np.dot(P, Y)
-        #   tXXinvs = np.linalg.inv(np.dot(Xs.T,Xs))
-        #   params, sigma, df = self._ols(tXXinvs, Xs, Ys)
-
-        #   if sigma < min_sigma:
-        #       min_sigma = sigma
-        #       ac1_optim = ac1
-
-        # Initialise ac1 to optimal value
-        #c1 = ac1_optim
-
-        # Iterative procedure
-        #or i in range(niter):
-
-        #   # Compute OLS estimate with transformed variables
-        #   P = self._gls_transform_matrix(nsamp, ac1)
-        #   Xs = np.dot(P, X)
-        #   Ys = np.dot(P, Y)
-        #   tXXinvs = np.linalg.inv(np.dot(Xs.T,Xs))
-        #   params, sigma, df = self._ols(tXXinvs, Xs, Ys)
-        #   pp = params['estimate'].reshape((params.shape[0], 1))
-
-        #   # Correct bias
-        #   pp[0,0] = np.mean(Y-np.dot(X[:,1:], pp[1:]))
-
-        #   # Store data
-        #   params_gls_iter[:-1,i] = pp[:,0]
-
-        #   # Estimate auto-correlation of residuals
-        #   residuals = Y-np.dot(X, pp)
-        #   tXXinvs = 1./(np.dot(residuals[:-1].T,residuals[:-1]))
-        #   ac1params, ac1sigma, ac1df = self._ols(tXXinvs, residuals[:-1], residuals[1:])
-        #   ac1 = ac1params['estimate'].values[0]
-        #   params_gls_iter[-1,i] = ac1
-
-        #   # Check convergence
-        #   if i>0:
-        #       delta = np.abs(ac1-params_gls_iter[-1,i-1])
-
-        #       if delta < self.gls_epsilon:
-        #           break
-
-        return params, phi, sigma
-
-    def getresiduals(self, Y, Yhat):
-
-        # Compute residuals
-        residuals = Y-Yhat
-
-        # Extract innovation from AR1 if GLS AR1 
-        if self.type == 'gls_ar1':
-            r = nresiduals.reshape((len(residuals),))
-            residuals = sutils.ar1inverse([self.phi, 0.], r)
-
-        return residuals
-
-    def diagnostic(self, Y, Yhat):
-        ''' perform tests on regression assumptions '''
-
-        residuals = self.getresiduals(Y, Yhat)
-
-        # Shapiro Wilks on residuals
-        s = shapiro(residuals)
-
-        # Durbin watson test
-        residuals = residuals.reshape((len(residuals), ))
-        de = np.diff(residuals, 1)
-        dw = np.dot(de, de)/np.dot(residuals, residuals)
-
-        # correlation
-        u = Y-np.mean(Y)
-        v = Yhat-np.mean(Yhat)
-        R2 = np.sum(u*v)**2/np.sum(u**2)/np.sum(v**2)
-
-        # Bias
-        mY = np.mean(Y)
-        b = np.mean(Y-Yhat)/mY
-
-        # Coeff of determination
-        d = 1-np.sum((Y-Yhat)**2)/np.sum((Y-mY)**2)
-
-        # Ratio of variances
-        rv = np.var(Yhat)/np.var(Y)
-
-        # Store data
-        diag = {'bias':b, 
-            'coef_determination':d,
-            'ratio_variance':rv,
-            'shapiro_stat': s[0], 
-            'shapiro_pvalue':s[1],
-            'durbinwatson_stat': dw, 
-            'R2': R2}
-
-        return diag
-
-
-    def fit(self):
-        ''' Run parameter estimation and compute diagnostics '''
-
-        # Fit
-        if self.type == 'ols':
-            params, sigma, df = self._ols()
-            phi = None
-
-        elif self.type =='gls_ar1':
-            params, phi, sigma = self._gls_ar1()
-            df = None
-
-        else:
-            raise ValueError('Regression type %s not recognised' % self.type)
-
-        # Store data
-        self.params = params
-        self.sigma = sigma
-        self.df = df
-        self.phi = phi
-
-        # compute fit
-        Yhat = np.dot(self.X, self.params['estimate'])
-        self.Yhat = Yhat.reshape((self.nsample, 1))
 
         return params, phi, sigma
 
@@ -374,7 +263,7 @@ class Linreg:
 
         return residuals
 
-    def diagnostic(self, Y, Yhat):
+    def compute_diagnostic(self, Y, Yhat):
         ''' perform tests on regression assumptions '''
 
         residuals = self.getresiduals(Y, Yhat)
@@ -426,6 +315,9 @@ class Linreg:
             params, phi, sigma = self._gls_ar1()
             df = None
 
+            pp = [sigma, phi] + list(params['estimate'])
+            self.loglikelihood = ar1_loglikelihood(pp, self.X, self.Y)
+
         else:
             raise ValueError('Regression type %s not recognised' % self.type)
 
@@ -440,8 +332,8 @@ class Linreg:
         self.Yhat = Yhat.reshape((self.nsample, 1))
 
         # Run diagnostic 
-        diag = self.diagnostic(self.Y, self.Yhat)
-        self.diag = diag
+        diag = self.compute_diagnostic(self.Y, self.Yhat)
+        self.diagnostic = diag
 
     def predict(self, x0=None, coverage=[95, 80]):
         ''' Pediction with intervals 
@@ -453,17 +345,9 @@ class Linreg:
         # Generate regression inputs
         X0, nsamp, npred = self._buildXmatrix(x0) 
 
-        if self.type == 'ols':
-            Y0 = np.dot(X0, self.params['estimate'])
-            nq = len(coverage)*2
+        Y0 = np.dot(X0, self.params['estimate'])
+        nq = len(coverage)*2
 
-        if self.type == 'gls_ar1':
-            P = self._gls_transform_matrix(nsamp, self.pi)
-            Xs = np.dot(P, X0)
-
-            Pinv = np.linalg.inv(P)
-            Y0 = np.dot(Pinv, np.dot(X0, self.params['estimate']))
-       
         # Prediction intervals (only for OLS)
         PI = None
 
@@ -531,5 +415,6 @@ class Linreg:
         ax.set_ylabel(r'$Y$')
 
         # R2
-        ax.annotate(r'$R^2$ = %0.2f' % self.diag['R2'], 
+        ax.annotate(r'$R^2$ = %0.2f' % self.diagnostic['R2'], 
                 xy=(0.05, 0.93), xycoords='axes fraction')
+
