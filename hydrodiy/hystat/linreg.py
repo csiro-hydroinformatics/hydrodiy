@@ -12,18 +12,18 @@ import matplotlib.pyplot as plt
 from hystat import sutils
 
 def ar1_loglikelihood(theta, X, Y):
-    ''' Returns the opposite (x -1) of the GLS ar1 log-likelihood '''
+    ''' Returns the components of the GLS ar1 log-likelihood '''
 
-    sigma = theta[0]
-    phi = theta[1]
+    sigma = np.clip(theta[0], 0., np.inf)
+    phi = np.clip(theta[1], 0., 1.)
     p = np.array(theta[2:]).reshape((len(theta)-2,1))
     Yhat = np.dot(X,p)
 
     n = Yhat.shape[0]
     e = np.array(Y-Yhat).reshape((n,))
     innov = sutils.ar1inverse([phi, 0.], e)
-
     sse = np.sum(innov**2)
+
     #ll1 = -n/2*math.log(math.pi)
     ll2 = -n*math.log(sigma)
     ll3 = math.log(1-phi**2)/2
@@ -113,16 +113,16 @@ class Linreg:
         str += '\n\tTest on normality of residuals (Shapiro):\n'
         sh = self.diagnostic['shapiro_pvalue']
         mess = '(<0.05 : failing normality at 5% level)'
-        str += '\t  P value = %0.3f %s\n'%(sh, mess)
+        str += '\t  P value = %0.3f %s\n' % (sh, mess)
 
         str += '\n\tTest on independence of residuals (Durbin-Watson):\n'
         dw = self.diagnostic['durbinwatson_stat']
         mess = '(<1 : residuals may not be independent)'
-        str += '\t  Statistic = %0.3f %s\n'%(dw, mess)
+        str += '\t  Statistic = %0.3f %s\n' % (dw, mess)
         
         return str
 
-    def _getDim(self, xx):
+    def _getdim(self, xx):
 
         xx = np.array(xx)
 
@@ -147,7 +147,7 @@ class Linreg:
             xx = np.array(xx0)
 
         # Dimensions
-        nsamp, npred = self._getDim(xx)
+        nsamp, npred = self._getdim(xx)
 
         if xx0 is None:
             self.npredictors = npred
@@ -188,6 +188,7 @@ class Linreg:
 
         self.Y = np.array(self.y).reshape((nsamp, 1))
         self.npredictands = self.Y.shape[1]
+
 
     def _ols(self):
         ''' Estimate parameter with ordinary least squares '''
@@ -376,7 +377,7 @@ class Linreg:
 
         return Y0, PI
 
-    #def boot(self, nsample=5000):
+    #def paramboot(self, nsample=5000):
     #    ''' Confidence interval based on bootstrap '''
 
     #    nx = self.X.shape[0]
