@@ -124,10 +124,17 @@ class Linreg:
             xx = np.array(self.x)
         else:
             xx = np.array(xx0)
+<<<<<<< HEAD
 
         # Dimensions
         nsamp, npred = self._getDim(xx)
 
+=======
+
+        # Dimensions
+        nsamp, npred = self._getDim(xx)
+
+>>>>>>> 0c9d9418c3748bbe91fd88335ff6e7590c538486
         if xx0 is None:
             self.npredictors = npred
         else:
@@ -164,10 +171,17 @@ class Linreg:
 
         # build input and output matrix
         self.tXXinv = np.linalg.inv(np.dot(X.T,X))
+<<<<<<< HEAD
 
         self.Y = np.array(self.y).reshape((nsamp, 1))
         self.npredictands = self.Y.shape[1]
 
+=======
+
+        self.Y = np.array(self.y).reshape((nsamp, 1))
+        self.npredictands = self.Y.shape[1]
+
+>>>>>>> 0c9d9418c3748bbe91fd88335ff6e7590c538486
 
     def _ols(self):
         ''' Estimate parameter with ordinary least squares '''
@@ -225,7 +239,6 @@ class Linreg:
         # Maximisation of log-likelihood
         theta0 = [sigma, phi] + list(params['estimate'])
         res = fmin(ar1_loglikelihood, theta0, args=(self.X, self.Y,))
-
         params = pd.DataFrame({'estimate':res[2:]})
         sigma = res[0]
         phi = res[1]
@@ -362,6 +375,95 @@ class Linreg:
         Yhat = np.dot(self.X, self.params['estimate'])
         self.Yhat = Yhat.reshape((self.nsample, 1))
 
+=======
+
+        #   # Check convergence
+        #   if i>0:
+        #       delta = np.abs(ac1-params_gls_iter[-1,i-1])
+
+        #       if delta < self.gls_epsilon:
+        #           break
+
+        return params, phi, sigma
+
+    def getresiduals(self, Y, Yhat):
+
+        # Compute residuals
+        residuals = Y-Yhat
+
+        # Extract innovation from AR1 if GLS AR1 
+        if self.type == 'gls_ar1':
+            r = residuals.reshape((len(residuals),))
+            residuals = sutils.ar1inverse([self.phi, 0.], r)
+
+        return residuals
+
+    def diagnostic(self, Y, Yhat):
+        ''' perform tests on regression assumptions '''
+
+        residuals = self.getresiduals(Y, Yhat)
+
+        # Shapiro Wilks on residuals
+        s = shapiro(residuals)
+
+        # Durbin watson test
+        residuals = residuals.reshape((len(residuals), ))
+        de = np.diff(residuals, 1)
+        dw = np.dot(de, de)/np.dot(residuals, residuals)
+
+        # correlation
+        u = Y-np.mean(Y)
+        v = Yhat-np.mean(Yhat)
+        R2 = np.sum(u*v)**2/np.sum(u**2)/np.sum(v**2)
+
+        # Bias
+        mY = np.mean(Y)
+        b = np.mean(Y-Yhat)/mY
+
+        # Coeff of determination
+        d = 1-np.sum((Y-Yhat)**2)/np.sum((Y-mY)**2)
+
+        # Ratio of variances
+        rv = np.var(Yhat)/np.var(Y)
+
+        # Store data
+        diag = {'bias':b, 
+            'coef_determination':d,
+            'ratio_variance':rv,
+            'shapiro_stat': s[0], 
+            'shapiro_pvalue':s[1],
+            'durbinwatson_stat': dw, 
+            'R2': R2}
+
+        return diag
+
+
+    def fit(self):
+        ''' Run parameter estimation and compute diagnostics '''
+
+        # Fit
+        if self.type == 'ols':
+            params, sigma, df = self._ols()
+            phi = None
+
+        elif self.type =='gls_ar1':
+            params, phi, sigma = self._gls_ar1()
+            df = None
+
+        else:
+            raise ValueError('Regression type %s not recognised' % self.type)
+
+        # Store data
+        self.params = params
+        self.sigma = sigma
+        self.df = df
+        self.phi = phi
+
+        # compute fit
+        Yhat = np.dot(self.X, self.params['estimate'])
+        self.Yhat = Yhat.reshape((self.nsample, 1))
+
+>>>>>>> 0c9d9418c3748bbe91fd88335ff6e7590c538486
         # Run diagnostic 
         diag = self.diagnostic(self.Y, self.Yhat)
         self.diag = diag
