@@ -4,6 +4,17 @@ from distutils.core import setup, Extension
 import numpy
 from Cython.Distutils import build_ext
 
+import os, re
+
+# Find gnuwin32 for windows compilation
+gnuwin32lib = []
+gnuwin32inc = []
+if 'PATH' in os.environ:
+	path = os.environ['PATH']
+	gnuwin32lib = [p for p in path.split(';') if re.search('gnuwin32.*lib', p)]
+	gnuwin32inc = [p for p in path.split(';') if re.search('gnuwin32.*include', p)]
+
+
 setup(name='hydrodiy',
       version='0.3',
       description='Utility functions for hydrological modelling',
@@ -30,14 +41,14 @@ setup(name='hydrodiy',
                         sources=['hydrodiy/hyplot/_match.pyx', 
                             'hydrodiy/hyplot/c_match.c'],
                         libraries=['gsl', 'gslcblas'],
-                        library_dirs=['/usr/local/lib', '~/.local/lib'],
-                        include_dirs=[numpy.get_include(), '~/.local/lib/include']),
+                        library_dirs=['/usr/local/lib', '~/.local/lib'] + gnuwin32lib,
+                        include_dirs=[numpy.get_include(), '~/.local/lib/include'] + gnuwin32inc),
                     Extension('_sutils', 
                         sources=['hydrodiy/hystat/_sutils.pyx', 
                             'hydrodiy/hystat/c_ar1.c'],
                         libraries=['gsl', 'gslcblas'],
-                        library_dirs=['/usr/local/lib', '~/.local/lib'],
-                        include_dirs=[numpy.get_include(), '~/.local/lib/include']),
+                        library_dirs=['/usr/local/lib', '~/.local/lib'] + gnuwin32lib,
+                        include_dirs=[numpy.get_include(), '~/.local/lib/include'] + gnuwin32inc),
                     Extension('_datacheck', 
                         sources=['hydrodiy/hydata/_datacheck.pyx', 
                             'hydrodiy/hydata/c_lindetect.c'],
