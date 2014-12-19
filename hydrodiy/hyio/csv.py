@@ -23,7 +23,7 @@ def _csvhead(nrow,ncol,comment,src='uknown'):
     h.append("# Written on : %s"%time.strftime("%Y-%m-%d %H:%M"))
     try:
         h.append("# Author : %s"%os.getlogin())
-    except OSError:
+    except (OSError, AttributeError):
         h.append("# Author : ")
     h.append("# Produced with python script : %s"%src)
     h.append("# Python work dir : %s"%os.getcwd())
