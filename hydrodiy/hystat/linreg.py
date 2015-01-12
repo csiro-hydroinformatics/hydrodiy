@@ -15,7 +15,7 @@ def ar1_loglikelihood(theta, X, Y):
     ''' Returns the components of the GLS ar1 log-likelihood '''
 
     sigma = np.clip(theta[0], 0., np.inf)
-	eps = 1e-10
+    eps = 1e-10
     phi = np.clip(theta[1], eps, 1.-eps)
     p = np.array(theta[2:]).reshape((len(theta)-2,1))
     Yhat = np.dot(X,p)
