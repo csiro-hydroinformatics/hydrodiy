@@ -45,11 +45,10 @@ def ar1_loglikelihood_objfun(theta, X, Y):
 class Linreg:
     ''' Class to handle linear regression '''
 
-    def __init__(self, x, y, has_intercept = True, polyorder = 1, 
-            type = 'ols', 
-            gls_nexplore = 50, 
-            gls_niterations = 20,
-            gls_epsilon = 1e-4):
+    def __init__(self, x, y, 
+            has_intercept = True, 
+            polyorder = 1, 
+            type = 'ols'):
         ''' Initialise regression model
 
             :param np.array x: Predictor variable
@@ -57,9 +56,6 @@ class Linreg:
             :param bool has_intercept: Add intercept to regression model?
             :param int polyorder: Add polynomial terms with higher order (polyorder>1)
             :param str type: Regression type
-            :param int gls_nexplore: Number of initial AR1 values tested
-            :param int gls_niterations: Number of iterations in GLS procedure
-            :param int gls_epsilon: Convergence threshold for ar1 in gls iterative procedure
 
         '''
 
@@ -69,11 +65,6 @@ class Linreg:
         self.polyorder = polyorder
         self.x = x
         self.y = y
-
-        # GLS parameters
-        self.gls_nexplore = gls_nexplore
-        self.gls_niterations = gls_niterations
-        self.gls_epsilon = gls_epsilon
 
         # Build inputs
         self._buildinput()
@@ -112,12 +103,12 @@ class Linreg:
         str += '\t  Ratio Var = %0.3f\n' % self.diagnostic['ratio_variance']
 
         str += '\n\tTest on normality of residuals (Shapiro):\n'
-        sh = self.diagnostic['shapiro_pvalue']
+        sh = self.diagnostic['shapiro_residuals_pvalue']
         mess = '(<0.05 : failing normality at 5% level)'
         str += '\t  P value = %0.3f %s\n' % (sh, mess)
 
         str += '\n\tTest on independence of residuals (Durbin-Watson):\n'
-        dw = self.diagnostic['durbinwatson_stat']
+        dw = self.diagnostic['durbinwatson_residuals_stat']
         mess = '(<1 : residuals may not be independent)'
         str += '\t  Statistic = %0.3f %s\n' % (dw, mess)
         
@@ -191,7 +182,7 @@ class Linreg:
         self.npredictands = self.Y.shape[1]
 
 
-    def _ols(self):
+    def _fit_ols(self):
         ''' Estimate parameter with ordinary least squares '''
 
         # OLS parameter estimate
@@ -229,13 +220,13 @@ class Linreg:
 
         return P
 
-    def _gls_ar1(self):
+    def _fit_gls_ar1(self):
         ''' Estimate parameter with generalized least squares 
             assuming ar1 residuals
         '''
         
         # OLS regression to define starting point for optimisation
-        params, sigma, df = self._ols()
+        params, sigma, df = self._fit_ols()
 
         # Estimate auto-correlation of residuals
         pp = np.array(params['estimate']).reshape((params.shape[0],1))
@@ -297,9 +288,9 @@ class Linreg:
         diag = {'bias':b, 
             'coef_determination':d,
             'ratio_variance':rv,
-            'shapiro_stat': s[0], 
-            'shapiro_pvalue':s[1],
-            'durbinwatson_stat': dw, 
+            'shapiro_residuals_stat': s[0], 
+            'shapiro_residuals_pvalue':s[1],
+            'durbinwatson_residuals_stat': dw, 
             'R2': R2}
 
         return diag
@@ -310,11 +301,11 @@ class Linreg:
 
         # Fit
         if self.type == 'ols':
-            params, sigma, df = self._ols()
+            params, sigma, df = self._fit_ols()
             phi = None
 
         elif self.type =='gls_ar1':
-            params, phi, sigma = self._gls_ar1()
+            params, phi, sigma = self._fit_gls_ar1()
             df = None
 
             pp = [sigma, phi] + list(params['estimate'])
@@ -378,18 +369,49 @@ class Linreg:
 
         return Y0, PI
 
-    #def paramboot(self, nsample=5000):
-    #    ''' Confidence interval based on bootstrap '''
+    def boot(self, nsample=500):
+        ''' Confidence intervals based on bootstrap '''
 
-    #    nx = self.X.shape[0]
-    #    for i in range(nsample):
-    #        kk = np.random.randint(nx, size=nx)
-    #        XB = self.X[kk,:]    
-    #        YB = self.Y[kk]
-    #        tXXinvB = np.linalg.inv(np.dot(XB.T,XB))
-    #        params, Yhat, residuals, sigma = _olspars(tXXinvB, XB, YB)
+        # Performs first fit
+        self.fit()
+        residuals = self.getresiduals(self.Y, self.Yhat)
 
-    #    return 0
+        # Initialise boot data
+        self.params_boot = []
+        self.diagnostic_boot = []
+
+        for i in range(nsample):
+
+            # Resample residuals
+            residuals_boot = np.random.choice(residuals.flatten(), size=residuals.shape[0])
+
+            # Reconstruct autocorrelated signal in case of GLS_AR1
+            if self.type == 'gls_ar1':
+                r = residuals_boot.reshape((len(residuals_boot),))
+                residuals_boot = sutils.ar1innov([self.phi, 0.], r)
+
+            # Create a new set of observations
+            y_boot = self.Yhat.flatten() + residuals_boot
+
+            # Fit regression
+            lmboot = Linreg(self.x, y_boot, 
+                type=self.type, 
+                has_intercept=self.has_intercept,
+                polyorder=self.polyorder)
+
+            lmboot.fit()
+
+            # Store results
+            self.params_boot.append(lmboot.params['estimate'])
+            self.diagnostic_boot.append(lmboot.diagnostic)
+
+        # Compute quantiles on bootstrap results
+        self.params_boot = pd.DataFrame(self.params_boot)
+        fp = lambda x: sutils.percentiles(x, [2.5, 5, 10, 50, 90, 95, 97.5])
+        self.params_boot_percentiles = self.params_boot.apply(fp).T
+
+        self.diagnostic_boot = pd.DataFrame(self.diagnostic_boot)
+        self.diagnostic_boot_percentiles = self.diagnostic_boot.apply(fp).T
             
     def scatterplot(self, ax=None, log=False):
         ''' plot Yhat vs Y '''
