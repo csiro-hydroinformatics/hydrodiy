@@ -171,49 +171,35 @@ class LinregTestCase(unittest.TestCase):
         fd = '%s/olslinreg1_data.csv'%self.FOUT
         data, comment = csv.read_csv(fd)
 
-        fd = '%s/olslinreg1_result_estimate.csv' % self.FOUT
-        estimate, comment = csv.read_csv(fd)
-
-        fd = '%s/olslinreg1_result_predict.csv' % self.FOUT
-        pred_R, comment = csv.read_csv(fd)
-
         # Fit model
         lm = linreg.Linreg(data[['x1', 'x2']], data['y'])
         lm.boot(nsample=500)
 
         p1 = lm.params['estimate']
         p2 = lm.params_boot_percentiles['P_50.0']
-        ck1 = np.allclose(p1, p2, atol=1e-1)
+        ck1 = np.allclose(p1, p2, atol=2e-1)
         self.assertTrue(ck1)
 
         p1 = lm.params['confint_025']
         p2 = lm.params_boot_percentiles['P__2.5']
-        ck2= np.allclose(p1, p2, atol=1e-1)
+        ck2= np.allclose(p1, p2, atol=2e-1)
         self.assertTrue(ck2)
 
         p1 = lm.params['confint_975']
         p2 = lm.params_boot_percentiles['P_97.5']
-        ck3 = np.allclose(p1, p2, atol=1e-1)
+        ck3 = np.allclose(p1, p2, atol=2e-1)
         self.assertTrue(ck3)
      
     def test_boot_gls(self):
 
         # data set from R - see linreg_gls.r
-        itest = 1
-
+        itest = 3
         fd = '%s/glslinreg%d_data.csv' % (self.FOUT, itest)
         data, comment = csv.read_csv(fd)
-
-        fd = '%s/glslinreg%d_result_estimate_gls.csv' % (self.FOUT, itest)
-        estimate, comment = csv.read_csv(fd)
-
-        fd = '%s/glslinreg%d_result_predict_gls.csv' % (self.FOUT, itest)
-        pred_R, comment = csv.read_csv(fd)
 
         # Fit model
         lm = linreg.Linreg(data[['x1', 'x2']], data['y'], type='gls_ar1')
         lm.boot(nsample=100)
-
 
 if __name__ == "__main__":
     unittest.main()

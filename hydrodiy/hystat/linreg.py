@@ -14,9 +14,8 @@ from hystat import sutils
 def ar1_loglikelihood(theta, X, Y):
     ''' Returns the components of the GLS ar1 log-likelihood '''
 
-    sigma = np.clip(theta[0], 0., np.inf)
-    eps = 1e-10
-    phi = np.clip(theta[1], eps, 1.-eps)
+    sigma = theta[0]
+    phi = theta[1]
     p = np.array(theta[2:]).reshape((len(theta)-2,1))
     Yhat = np.dot(X,p)
 
@@ -26,8 +25,16 @@ def ar1_loglikelihood(theta, X, Y):
     sse = np.sum(innov**2)
 
     #ll1 = -n/2*math.log(math.pi)
-    ll2 = -n*math.log(sigma)
-    ll3 = math.log(1-phi**2)/2
+    if sigma>0:
+        ll2 = -n*math.log(sigma)
+    else:
+        ll2 = -n*math.log(-sigma)*1e4
+
+    if phi**2<1:
+        ll3 = math.log(1-phi**2)/2
+    else:
+        ll3 = -phi**2*1e4
+
     ll4 = -sse/(2*sigma)
 
     ll = {'sigma':ll2, 'phi':ll3, 'sse':ll4}
@@ -241,6 +248,12 @@ class Linreg:
         params = pd.DataFrame({'estimate':res[2:]})
         sigma = res[0]
         phi = res[1]
+
+        if (phi<-1)|(phi>1):
+            raise ValueError('Phi(%0.5f) is not within [-1, 1], Error in optimisation of log-likelihood' % phi)
+
+        if sigma<0:
+            raise ValueError('Signa(%0.5f) is not within [0, +inf], Error in optimisation of log-likelihood' % sigma)
 
         return params, phi, sigma
 
