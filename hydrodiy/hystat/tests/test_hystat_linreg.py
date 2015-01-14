@@ -18,12 +18,12 @@ class LinregTestCase(unittest.TestCase):
         self.FOUT = FTEST
         self.y1 = np.array(1)
        
-    def test_print(self):
+    def test_aprint(self):
         x = [[3, 5], [1, 4], [5, 6], [2, 4], [4, 6]]
         y = [3, 1, 8, 3, 5]
         lm = linreg.Linreg(x, y)
         lm.fit()
-
+        
         print(lm)
 
     def test_ols_johnston(self):

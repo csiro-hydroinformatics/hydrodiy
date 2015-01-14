@@ -55,7 +55,8 @@ class Linreg:
     def __init__(self, x, y, 
             has_intercept = True, 
             polyorder = 1, 
-            type = 'ols'):
+            type = 'ols', 
+            varnames = None):
         ''' Initialise regression model
 
             :param np.array x: Predictor variable
@@ -63,6 +64,7 @@ class Linreg:
             :param bool has_intercept: Add intercept to regression model?
             :param int polyorder: Add polynomial terms with higher order (polyorder>1)
             :param str type: Regression type
+            :param list varnames: Variable names
 
         '''
 
@@ -72,6 +74,7 @@ class Linreg:
         self.polyorder = polyorder
         self.x = x
         self.y = y
+        self.varnames = varnames
 
         # Build inputs
         self._buildinput()
@@ -88,12 +91,12 @@ class Linreg:
         for idx, row in self.params.iterrows():
 
             if self.type == 'ols':
-                str += '\t  params %d = %5.2f [%5.2f, %5.2f] P(>|t|)=%0.3f\n'%(idx, 
+                str += '\t  %s = %5.2f [%5.2f, %5.2f] P(>|t|)=%0.3f\n'%(idx, 
                     row['estimate'], row['confint_025'], 
                     row['confint_975'], row['Pr(>|t|)'])
 
             if self.type == 'gls_ar1':
-                str += '\t  params %d = %5.2f\n' % (idx, row['estimate'])
+                str += '\t  %s = %5.2f\n' % (idx, row['estimate'])
 
         if self.type == 'gls_ar1':
             str += '\n\tAR1 coefficient (AR1 GLS only):\n'
@@ -160,14 +163,52 @@ class Linreg:
 
         # Produce X matrix
         X = np.empty((XX.shape[0], XX.shape[1] * self.polyorder), float)
+
         for j in range(XX.shape[1]):
+
             for k in range(self.polyorder):
+                
+                # populate X matrix
                 X[:, j*self.polyorder+k] = XX[:, j]**(k+1)
 
         if self.has_intercept:
             X = np.insert(X, 0, 1., axis=1)
 
         return X, nsamp, npred
+
+    def _get_param_names(self):
+        ''' Extract regression parameter names '''
+
+        # Extract variable names
+        if self.varnames is None:
+            try:
+                # Get varnames from pandas.DataFrame columns
+                parnames = list(self.x.columns)
+
+            except AttributeError:
+                try:
+                    # Get varnames from pandas.Series name
+                    parnames = [self.x.name]
+
+                except AttributeError:
+                    parnames = ['x%2.2d' % k for k in range(self.npredictors)]
+        else:
+            parnames = self.varnames.copy()
+
+        # Expand if polyorder>1
+        if self.polyorder>1:
+            pn = []
+            for n in parnames:
+                for k in range(self.polyorder):
+                    pn.append('%s**%d' % (n, k+1))
+
+            parnames = pn
+
+        # Has intercept?
+        if self.has_intercept:
+            parnames.insert(0, 'intercept')
+
+        return parnames
 
 
     def _buildinput(self):
@@ -181,6 +222,9 @@ class Linreg:
         self.X = X
         self.npredictors = npredictors
         self.nsample = nsamp
+
+        # Get parameter names
+        self.params_names = self._get_param_names()
 
         # build input and output matrix
         self.tXXinv = np.linalg.inv(np.dot(X.T,X))
@@ -206,6 +250,8 @@ class Linreg:
 
         # Parameter data frame
         params = pd.DataFrame({'estimate':pars[:,0], 'stderr':sigma_pars})
+        params['parameter'] = self.params_names
+        params = params.set_index('parameter')
         
         params['tvalue'] = params['estimate']/params['stderr']
         params['confint_025'] = params['estimate']+\
@@ -245,7 +291,13 @@ class Linreg:
         # Maximisation of log-likelihood
         theta0 = [sigma, phi] + list(params['estimate'])
         res = fmin(ar1_loglikelihood_objfun, theta0, args=(self.X, self.Y,), disp=0)
+
+        # Build parameter dataframe
         params = pd.DataFrame({'estimate':res[2:]})
+        params['parameter'] = self.params_names
+        params = params.set_index('parameter')
+
+        # Extract sigma and phi
         sigma = res[0]
         phi = res[1]
 
@@ -410,7 +462,8 @@ class Linreg:
             lmboot = Linreg(self.x, y_boot, 
                 type=self.type, 
                 has_intercept=self.has_intercept,
-                polyorder=self.polyorder)
+                polyorder=self.polyorder,
+                varnames=self.varnames)
 
             lmboot.fit()
 
