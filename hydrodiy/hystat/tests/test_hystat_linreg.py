@@ -192,14 +192,14 @@ class LinregTestCase(unittest.TestCase):
      
     def test_boot_gls(self):
 
-        # data set from R - see linreg_gls.r
-        itest = 3
+        itest = 4
         fd = '%s/glslinreg%d_data.csv' % (self.FOUT, itest)
         data, comment = csv.read_csv(fd)
 
         # Fit model
-        lm = linreg.Linreg(data[['x1', 'x2']], data['y'], type='gls_ar1')
-        lm.boot(nsample=100)
+        cc = [cn for cn in data.columns if cn != 'y']
+        lm = linreg.Linreg(data[cc], data['y'], type='gls_ar1')
+        lm.boot(nsample=200)
 
 if __name__ == "__main__":
     unittest.main()

@@ -28,12 +28,12 @@ def ar1_loglikelihood(theta, X, Y):
     if sigma>0:
         ll2 = -n*math.log(sigma)
     else:
-        ll2 = -n*math.log(-sigma)*1e4
+        ll2 = sigma*1e100
 
     if phi**2<1:
         ll3 = math.log(1-phi**2)/2
     else:
-        ll3 = -phi**2*1e4
+        ll3 = -phi**2*1e100
 
     ll4 = -sse/(2*sigma)
 
@@ -76,6 +76,8 @@ class Linreg:
         self.y = y
         self.varnames = varnames
 
+        self.nboot_print = 50
+
         # Build inputs
         self._buildinput()
 
@@ -100,27 +102,27 @@ class Linreg:
 
         if self.type == 'gls_ar1':
             str += '\n\tAR1 coefficient (AR1 GLS only):\n'
-            str += '\t  phi = %0.3f\n' % self.phi
+            str += '\t  phi = %6.3f\n' % self.phi
 
             str += '\n\tLikelihood component (AR1 GLS only):\n'
             for k in self.loglikelihood:
-                str += '\t  ll[%5s] = %0.3f\n' % (k, self.loglikelihood[k])
+                str += '\t  ll[%5s] = %6.3f\n' % (k, self.loglikelihood[k])
  
         str += '\n\tPerformance:\n'
-        str += '\t  R2        = %0.3f\n' % self.diagnostic['R2']
-        str += '\t  Bias      = %0.3f\n' % self.diagnostic['bias']
-        str += '\t  Coef Det  = %0.3f\n' % self.diagnostic['coef_determination']
-        str += '\t  Ratio Var = %0.3f\n' % self.diagnostic['ratio_variance']
+        str += '\t  R2        = %6.3f\n' % self.diagnostic['R2']
+        str += '\t  Bias      = %6.3f\n' % self.diagnostic['bias']
+        str += '\t  Coef Det  = %6.3f\n' % self.diagnostic['coef_determination']
+        str += '\t  Ratio Var = %6.3f\n' % self.diagnostic['ratio_variance']
 
         str += '\n\tTest on normality of residuals (Shapiro):\n'
         sh = self.diagnostic['shapiro_residuals_pvalue']
         mess = '(<0.05 : failing normality at 5% level)'
-        str += '\t  P value = %0.3f %s\n' % (sh, mess)
+        str += '\t  P value = %6.3f %s\n' % (sh, mess)
 
         str += '\n\tTest on independence of residuals (Durbin-Watson):\n'
         dw = self.diagnostic['durbinwatson_residuals_stat']
         mess = '(<1 : residuals may not be independent)'
-        str += '\t  Statistic = %0.3f %s\n' % (dw, mess)
+        str += '\t  Statistic = %6.3f %s\n' % (dw, mess)
         
         return str
 
@@ -305,7 +307,8 @@ class Linreg:
             raise ValueError('Phi(%0.5f) is not within [-1, 1], Error in optimisation of log-likelihood' % phi)
 
         if sigma<0:
-            raise ValueError('Signa(%0.5f) is not within [0, +inf], Error in optimisation of log-likelihood' % sigma)
+            import pdb; pdb.set_trace()
+            raise ValueError('Sigma(%0.5f) is not within [0, +inf], Error in optimisation of log-likelihood' % sigma)
 
         return params, phi, sigma
 
@@ -446,6 +449,8 @@ class Linreg:
         self.diagnostic_boot = []
 
         for i in range(nsample):
+            if i%self.nboot_print==0:
+                print('\t\t.. Boot sample %4d / %4d ..' % (i+1, nsample))
 
             # Resample residuals
             residuals_boot = np.random.choice(residuals.flatten(), size=residuals.shape[0])
