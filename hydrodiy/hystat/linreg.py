@@ -111,6 +111,7 @@ class Linreg:
         str += '\n\tPerformance:\n'
         str += '\t  R2        = %6.3f\n' % self.diagnostic['R2']
         str += '\t  Bias      = %6.3f\n' % self.diagnostic['bias']
+        str += '\t  Mean Error= %6.3f\n' % self.diagnostic['mean_error']
         str += '\t  Coef Det  = %6.3f\n' % self.diagnostic['coef_determination']
         str += '\t  Ratio Var = %6.3f\n' % self.diagnostic['ratio_variance']
 
@@ -344,7 +345,8 @@ class Linreg:
 
         # Bias
         mY = np.mean(Y)
-        b = np.mean(Y-Yhat)/mY
+        me = np.mean(Y-Yhat)
+        b = me/mY
 
         # Coeff of determination
         d = 1-np.sum((Y-Yhat)**2)/np.sum((Y-mY)**2)
@@ -354,6 +356,7 @@ class Linreg:
 
         # Store data
         diag = {'bias':b, 
+            'mean_error':me,
             'coef_determination':d,
             'ratio_variance':rv,
             'shapiro_residuals_stat': s[0], 
