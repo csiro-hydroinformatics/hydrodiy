@@ -457,12 +457,13 @@ class Linreg:
                 print('\t\t.. Boot sample %4d / %4d ..' % (i+1, nsample))
 
             # Resample residuals
-            residuals_boot = np.random.choice(residuals.flatten(), size=residuals.shape[0])
+            residuals_boot = residuals.copy().flatten()
+            residuals_boot[1:] = np.random.choice(residuals[1:].flatten(), size=residuals.shape[0]-1)
 
             # Reconstruct autocorrelated signal in case of GLS_AR1
+            # Resample only the 2, 3, ..., n values. The first value remains the same
             if self.type == 'gls_ar1':
-                r = residuals_boot.reshape((len(residuals_boot),))
-                residuals_boot = sutils.ar1innov([self.phi, 0.], r)
+                residuals_boot = sutils.ar1innov([self.phi, 0.], residuals_boot)
 
             # Create a new set of observations
             y_boot = self.Yhat.flatten() + residuals_boot
