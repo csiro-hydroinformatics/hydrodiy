@@ -18,5 +18,9 @@ class UtilsTestCase(unittest.TestCase):
         Q2 = P*(1-1/(1+(P/PE)**n)**(1/n))
         self.assertTrue(all(Q1==Q2))
 
+    def test_memusage(self):
+        mem = mutils.getmemusage()
+
+
 if __name__ == "__main__":
     unittest.main()
