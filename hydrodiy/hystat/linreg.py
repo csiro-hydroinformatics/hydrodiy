@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 from hystat import sutils
 
-def ar1_loglikelihood(theta, X, Y):
+def ar1_loglikelihood(theta, X, Y, eps=1e-10):
     ''' Returns the components of the GLS ar1 log-likelihood '''
 
     sigma = theta[0]
@@ -22,20 +22,21 @@ def ar1_loglikelihood(theta, X, Y):
     n = Yhat.shape[0]
     e = np.array(Y-Yhat).reshape((n,))
     innov = sutils.ar1inverse([phi, 0.], e)
-    sse = np.sum(innov**2)
+    sse = np.sum(innov[1:]**2)
+    sse += innov[0]**2 * (1-phi**2)
 
-    #ll1 = -n/2*math.log(math.pi)
-    if sigma>0:
+    #ll1 = -n/2*math.log(2*math.pi)
+    if sigma>eps:
         ll2 = -n*math.log(sigma)
     else:
-        ll2 = sigma*1e100
+        ll2 = -n*math.log(eps) - (sigma-eps)**2*1e100
 
-    if phi**2<1:
+    if phi**2<1-eps:
         ll3 = math.log(1-phi**2)/2
     else:
-        ll3 = -phi**2*1e100
+        ll3 = math.log(1-eps**2)/2 - (phi**2-1+eps)**2*1e100
 
-    ll4 = -sse/(2*sigma)
+    ll4 = -sse/(2*sigma**2)
 
     ll = {'sigma':ll2, 'phi':ll3, 'sse':ll4}
 

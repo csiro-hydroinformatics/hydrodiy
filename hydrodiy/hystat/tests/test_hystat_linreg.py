@@ -136,14 +136,17 @@ class LinregTestCase(unittest.TestCase):
             fd = '%s/glslinreg%d_data.csv' % (self.FOUT, itest)
             data, comment = csv.read_csv(fd)
 
-            fd = '%s/glslinreg%d_result_estimate_gls.csv' % (self.FOUT, itest)
+            fd = ('%s/glslinreg%d_result_estimate'
+                    '_gls.csv') % (self.FOUT, itest)
             estimate, comment = csv.read_csv(fd)
 
-            fd = '%s/glslinreg%d_result_predict_gls.csv' % (self.FOUT, itest)
+            fd = ('%s/glslinreg%d_result_predict_'
+                    'gls.csv') % (self.FOUT, itest)
             pred_R, comment = csv.read_csv(fd)
 
             # Fit model
-            lm = linreg.Linreg(data[['x1', 'x2']], data['y'], type='gls_ar1')
+            lm = linreg.Linreg(data[['x1', 'x2']], data['y'], 
+                    type='gls_ar1')
             lm.fit()
 
             # Test estimates
