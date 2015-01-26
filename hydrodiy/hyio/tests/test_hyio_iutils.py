@@ -14,7 +14,7 @@ class UtilsTestCase(unittest.TestCase):
         self.FOUT = FTEST
         
     def test_find_files(self):
-        folder = '/home/magpie/Dropbox/code/pypackage/hydrodiy' 
+        folder = '%s/../..' % self.FOUT
         pattern = '(_[\\d]{2}){3}( \\(|.txt)'
         found = iutils.find_files(folder, pattern)
         fn = [re.sub('_.*', '', os.path.basename(f)) 
@@ -27,5 +27,12 @@ class UtilsTestCase(unittest.TestCase):
         h = iutils.extracpat(s, regexp)
         self.assertTrue(h == '1978-02')
          
+    def test_script_template(self):
+        
+        fs = '%s/script_test.pytest' % self.FOUT
+        iutils.script_template(fs)
+
+
+
 if __name__ == "__main__":
     unittest.main()
