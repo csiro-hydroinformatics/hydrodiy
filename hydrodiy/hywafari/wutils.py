@@ -495,7 +495,10 @@ def readscores_xvalidate(h5file, station_id):
                 else:
                     scores = pd.concat([scores, data])
 
-    if not scores is None:
+    if scores is None:
+        raise ValueError('Cannot extract scores (=None)')
+
+    if scores.shape[0]!=108:
         raise ValueError('scores does not have 108 lines (=%d)' % scores.shape[0])
 
     return scores
