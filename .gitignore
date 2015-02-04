@@ -4,13 +4,11 @@
 *.log
 dist
 build
-hydrodiy/hygis/tests/*.png
-hydrodiy/hystat/tests/*.png
-hydrodiy/hyio/tests/*.bin
-hydrodiy/hyio/tests/*.binh
-hydrodiy/hyplot/tests/*.png
-hydrodiy/hyplot/tests/*.html
-hydrodiy/hystat/tests/*.gz
+*.png
+*.html
+*.gz
+*.bin
+*.binh
 package_files.txt
 hydrodiy/hywafari/tests/wafari_project
 
