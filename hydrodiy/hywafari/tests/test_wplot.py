@@ -41,17 +41,21 @@ class WplotTestCase(unittest.TestCase):
         scores = (np.random.normal(size=(20,12))+2)*10
         scores = pd.DataFrame(scores)
 
-        fig, ax = plt.subplots()
+        fig, axs = plt.subplots(ncols=2)
 
         desc = ['xxx'] * scores.shape[0]
-        pc = wplots.summary(scores, ax, descriptions = desc)
+        pc1 = wplots.summary(scores, axs[0], descriptions = desc)
+
+        reds = plt.get_cmap('Reds')
+        pc2 = wplots.summary(scores, axs[1], descriptions = desc, cmap=reds)
 
         # Add colorbar
         fig.subplots_adjust(right=0.8)
         cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
-        fig.colorbar(pc, cax = cbar_ax)
+        fig.colorbar(pc1, cax = cbar_ax)
 
         fp = '%s/summary.png' % FIMG
+        fig.set_size_inches((16,6))
         fig.savefig(fp)
 
 

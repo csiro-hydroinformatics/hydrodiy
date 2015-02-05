@@ -94,19 +94,24 @@ def skillscores(scores, ax=None, seasonal=True, title=None, ylim=(-10, 70)):
 
 
 def summary(scores, ax=None, seasonal=True, title=None, ylim=(-5, 70),
-            descriptions=None):
+            descriptions=None, cmap=None):
     ''' Skill score summary plot
 
             :parameter pandas.DataFrame scores: Skill score values for n sites and 12 months ([n sites x 12 months] dataframe)
             :parameter string title: Plot title
             :parameter bool seasonal: Seasonal data or monthly?
             :parameter tuple ylim: Min max limits for Y axis
+            :parameter list descriptions: Site names
+            :parameter matplotlib.colors.LinerSegmentedColormap cmap: Color map 
     '''
     if ax is None:
         ax = plt.gca()
 
     if title is None:
         title = 'Skill score summary'
+
+    if cmap is None:
+        cmap = cmap_wafari
 
     if scores.shape[1] != 12:
         return ValueError('score matrix does not have 12 columns (=%d)' % scores.shape[1])
@@ -117,8 +122,7 @@ def summary(scores, ax=None, seasonal=True, title=None, ylim=(-5, 70),
 
     # Plot data
     x = np.arange(13)
-    pc = ax.pcolor(scores, cmap=cmap_wafari,
-                      vmin=ylim[0], vmax=ylim[1], edgecolor="white")
+    pc = ax.pcolor(scores, cmap=cmap, vmin=ylim[0], vmax=ylim[1], edgecolor="white")
 
     # Decorations
     ax.set_xticks(x+0.5)
