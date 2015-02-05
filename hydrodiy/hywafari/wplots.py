@@ -113,6 +113,9 @@ def summary(scores, ax=None, seasonal=True, title=None, ylim=(-5, 70),
     if cmap is None:
         cmap = cmap_wafari
 
+    if descriptions is None:
+        descriptions = range(1, scores.shape[0]+1)
+
     if scores.shape[1] != 12:
         return ValueError('score matrix does not have 12 columns (=%d)' % scores.shape[1])
 

@@ -47,7 +47,7 @@ class WplotTestCase(unittest.TestCase):
         pc1 = wplots.summary(scores, axs[0], descriptions = desc)
 
         reds = plt.get_cmap('Reds')
-        pc2 = wplots.summary(scores, axs[1], descriptions = desc, cmap=reds)
+        pc2 = wplots.summary(scores, axs[1], cmap=reds)
 
         # Add colorbar
         fig.subplots_adjust(right=0.8)
