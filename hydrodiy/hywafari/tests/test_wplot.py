@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 class WplotTestCase(unittest.TestCase):
+
     def setUp(self):
         print('\t=> WplotTestCase (hywafari)')
         FTEST, testfile = os.path.split(__file__)
@@ -34,7 +35,24 @@ class WplotTestCase(unittest.TestCase):
         fp = '%s/skillscores2.png' % FIMG
         fig.savefig(fp)
 
+    def test_summary(self):
+        FIMG = self.FTEST
 
+        scores = (np.random.normal(size=(20,12))+2)*10
+        scores = pd.DataFrame(scores)
+
+        fig, ax = plt.subplots()
+
+        desc = ['xxx'] * scores.shape[0]
+        pc = wplots.summary(scores, ax, descriptions = desc)
+
+        # Add colorbar
+        fig.subplots_adjust(right=0.8)
+        cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
+        fig.colorbar(pc, cax = cbar_ax)
+
+        fp = '%s/summary.png' % FIMG
+        fig.savefig(fp)
 
 
 if __name__ == "__main__":
