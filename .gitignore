@@ -11,4 +11,5 @@ build
 *.binh
 package_files.txt
 hydrodiy/hywafari/tests/wafari_project
+hydrodiy/hywafari/tests/*.csv
 
