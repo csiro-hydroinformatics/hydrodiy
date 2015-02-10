@@ -5,16 +5,21 @@ import gzip
 import datetime
 
 
-def find_files(folder, pattern):
+def find_files(folder, pattern, recursive=True):
     ''' Find files recursively based on regexp pattern search '''
 
     found = []
-    for root, dirs, files in os.walk(folder):
-        for filename in files:
-            fn = os.path.join(root, filename)
 
-            if not re.search(pattern, fn) is None:
-                found.append(fn)
+    if recursive:
+        for root, dirs, files in os.walk(folder):
+            for filename in files:
+                fn = os.path.join(root, filename)
+
+                if not re.search(pattern, fn) is None:
+                    found.append(fn)
+    else:
+        files = next(os.walk(folder))[2]
+        found = [os.path.join(folder, f) for f in files]
 
     return found
 

@@ -14,12 +14,22 @@ class UtilsTestCase(unittest.TestCase):
         self.FOUT = FTEST
         
     def test_find_files(self):
+
+        # Recursive
         folder = '%s/../..' % self.FOUT
         pattern = '(_[\\d]{2}){3}( \\(|.txt)'
         found = iutils.find_files(folder, pattern)
         fn = [re.sub('_.*', '', os.path.basename(f)) 
                                 for f in found]
         self.assertTrue(fn == ['findthis']*3)
+        
+        # Not recursive
+        found = iutils.find_files(folder, pattern, recursive=False)
+        self.assertTrue(len(found)==0)
+
+        folder = '%s/find' % self.FOUT
+        found = iutils.find_files(folder, pattern, recursive=False)
+        self.assertTrue(len(found)==3)
 
     def test_extracpat(self):
         regexp = re.compile(r'19[0-9]{2}-[0-9]{2}')
