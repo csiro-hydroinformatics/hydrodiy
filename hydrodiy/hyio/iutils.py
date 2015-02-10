@@ -14,12 +14,14 @@ def find_files(folder, pattern, recursive=True):
         for root, dirs, files in os.walk(folder):
             for filename in files:
                 fn = os.path.join(root, filename)
-
                 if not re.search(pattern, fn) is None:
                     found.append(fn)
     else:
         files = next(os.walk(folder))[2]
-        found = [os.path.join(folder, f) for f in files]
+        for filename in files:
+            fn = os.path.join(folder, filename)
+            if not re.search(pattern, fn) is None:
+                found.append(fn)
 
     return found
 
