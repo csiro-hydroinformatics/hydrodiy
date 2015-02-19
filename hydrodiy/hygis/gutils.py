@@ -1,4 +1,5 @@
 import numpy as np
+import math
 import matplotlib.image as mpimg
 
 def points_inside_polygon(points, poly, rtol=1e-8, atol=1e-8):
@@ -73,6 +74,48 @@ def plot_geoimage(ax, imgfile):
     extent = [ulx, ulx+dx*img.shape[1], uly+dy*img.shape[0], uly]
 
     ax.imshow(img, extent=extent)
+
+
+def smoothpolygon(xy, tol=1e-2, maxremove=0.5):
+    ''' 
+    [FUNCTION IS NOT TESTED]
+    Smooth a polygon defined by x/y coordinates by removing spikes, i.e.
+    removing points lying far away from their neighbours.
+
+    :param numpy.array xy : A polygon defined by a 2d numpy array [x,y]
+    :param float tol : Tolerance for smooth factor. Values higher than 1e-2 allow more roughness
+    :param float maxremove : Maximum proportion of points that can be removed
+
+    '''
+
+    # Characteristic dimension of polygon
+    min = np.min(xy, 0)
+    max = np.max(xy, 0)
+    w = math.sqrt(np.sum((max-min)**2))
+
+    # Initialise 
+    ipb = [True]*len(xy) 
+    n = len(xy)
+    nmin = int(float(n)*maxremove)
+    xy2 = xy.copy()
+
+    # Remove spikes iteratively, until no spike remains
+    while (np.sum(ipb)>0) & (n>nmin):
+        n = len(xy2)
+        d2 = np.sum((xy2[2:]-xy2[:-2])**2, 1)
+        d1 = np.sum((xy2[1:]-xy2[:-1])**2, 1).reshape(n-1, 1)
+        d1m = np.min(np.concatenate((d1[1:], d1[:-1]),1), 1)
+
+        metric = (d2-d1m)/w
+        metric = np.insert(metric, [0, 1], 0)
+        ipb = metric > 1e-2
+        xy2 = xy2[~ipb]
+
+    return xy2
+
+
+
+
 
 
 
