@@ -1,9 +1,0 @@
-state,name,type,xcenter,ycenter,xoutside,youtside,ha,va
-ACT,Australian Capital Territory,Territory,149.045616,-35.481479,155,-38.5,center, left
-NSW,New South Wales,State,147.006564,-32.166265,155,-32,center,left
-NT,Northern Territory,Territory,133.367921,-19.420893,124,-8.73,bottom,center
-QLD,Queensland,State,144.545039,-22.568754,155,-17.8, center, left
-SA,South Australia,State,135.8272,-30.104682,130,-45,center,top
-TAS,Tasmania,State,146.59429,-41.936024,151,-45,left,top
-VIC,Victoria,State,144.299081,-36.849683,139,-45,center,top
-WA,Western Australia,State,122.178368,-25.470892,113,-40,right,top
