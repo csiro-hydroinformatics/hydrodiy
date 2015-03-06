@@ -86,10 +86,10 @@ def img2html(title, image_data, root_http=None, filename=None):
 
     return html
 
-def footer(fig, version=None, type='bureau'):
+def footer(fig, author, version=None, type='bureau'):
     ''' Add footer to a figure (code from wafari) '''
     now = datetime.datetime.now()
-    label = 'Generated: %s'%now.strftime('%H:%M %d/%m/%Y')
+    label = '%s - Generated: %s' % (author, now.strftime('%H:%M %d/%m/%Y'))
 
     if not version is None:
         label = label + ' (ver. %s)'%version
