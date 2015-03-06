@@ -675,10 +675,6 @@ def create_obs(h5file, station_id, variable, obs):
 
 def create_poama_hindcast(h5file, forecasts, nleadtime=92, timestep='days'):
 
-    # check inputs
-    if not h5file.endswith('hindcast.hdf5'):
-        raise ValueError('File must be named hindcast.hdf5')
-
     # dimensions
     dates = np.unique(forecasts['forecast_date'])
     ndates = len(dates)
