@@ -272,3 +272,28 @@ def label(ax, label, fontsize=16):
            fontsize=fontsize, fontweight='bold', va='top')
 
 
+def zoom(ax, fraction, which_axis='both'):
+    ''' Zoom in (fraction>0) and out (fraction<0) '''
+
+    a = float(fraction)/100+1
+    
+    xlim = ax.get_xlim()
+    ylim = ax.get_ylim()
+
+    # Zoom in x axis
+    x0 = float(xlim[0]+xlim[1])/2
+    dx = float(xlim[1]-xlim[0])/2
+    xlim2 = [x0-dx*a, x0+dx*a]
+
+    if (which_axis == 'x') | (which_axis == 'both'):
+        ax.set_xlim(xlim2)
+
+    # Zoom in y axis
+    y0 = (ylim[0]+ylim[1])/2
+    dy = (ylim[1]-ylim[0])/2
+    ylim2 = [y0-dy*a, y0+dy*a]
+
+    if (which_axis == 'y') | (which_axis == 'both'):
+        ax.set_ylim(ylim2)
+
+

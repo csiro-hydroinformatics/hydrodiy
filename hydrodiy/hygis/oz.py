@@ -1,5 +1,12 @@
+
 import matplotlib.pyplot as plt
-from mpl_toolkits import basemap
+
+try:
+    from mpl_toolkits import basemap
+    has_basemap = True
+
+except ImportError:
+    has_basemap = False
 
 class Oz:
     ''' Plot Australia coast lines and state boundaries '''
@@ -18,11 +25,14 @@ class Oz:
         else:
             self.ax = ax
 
-        self.map = basemap.Basemap(self.llon, self.llat, self.rlon, self.ulat, 
-            lat_0=24.75, lon_0=134.0, lat_1=-10, lat_2=-40, 
-            rsphere=(6378137.00,6356752.3142), 
-            projection='lcc', resolution=resolution,
-            area_thresh=1000, suppress_ticks=True, ax = self.ax)
+        if has_basemap:
+            self.map = basemap.Basemap(self.llon, self.llat, self.rlon, self.ulat, 
+                lat_0=24.75, lon_0=134.0, lat_1=-10, lat_2=-40, 
+                rsphere=(6378137.00,6356752.3142), 
+                projection='lcc', resolution=resolution,
+                area_thresh=1000, suppress_ticks=True, ax = self.ax)
+        else:
+            raise ImportError('matplotlib - basemap is not available')
 
         if remove_axis:
             self.ax.axis('off')
