@@ -144,16 +144,16 @@ def acf(data, lag=range(1,6),
             mean2 = mean
             nval_lag = nval
 
-        out['nval'][l] = nval_lag
-        out['mean'][l] = mean1
-        out['mean_lag'][l] = mean2
-        out['std'][l] = std1
-        out['std_lag'][l] = std2
+        out.loc[l, 'nval'] = nval_lag
+        out.loc[l, 'mean'] = mean1
+        out.loc[l, 'mean_lag'] = mean2
+        out.loc[l, 'std'] = std1
+        out.loc[l, 'std_lag'] = std2
 
-        out['covar'][l] = np.sum((data[idx]-mean1) * (data_lag[idx]-mean2))
-        out['covar'][l] /= nval_lag
-        out['acf'][l] = out['covar'][l]/std1
-        out['acf'][l] /= std2
+        out.loc[l, 'covar'] = np.sum((data[idx]-mean1) * (data_lag[idx]-mean2))
+        out.loc[l, 'covar'] /= nval_lag
+        out.loc[l, 'acf'] = out['covar'][l]/std1
+        out.loc[l, 'acf'] /= std2
 
     return out
 
