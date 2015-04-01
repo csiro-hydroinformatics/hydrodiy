@@ -6,20 +6,38 @@ import pandas as pd
 
 from hystat import sutils
 
+def normaliseid(id):
+    ''' Normalise station id '''
+
+    idn = '%s' % id
+
+    if re.search('[0-9]', idn):
+        idn = re.sub('^0*|[A-Z]*$', '', idn)
+
+    idn = re.sub('\\..*$| ', '', idn)
+    idn = re.sub('-', '_', idn)
+    idn = idn.upper()
+
+    return idn
+
+
 def wyear(dt, start_month=7):
     ''' compute water year of a particular day '''
     return dt.year - int(dt.month<start_month)
+
 
 def wyear_days(dt, start_month=7):
     ''' compute number of days from start of the water year '''
     yws = datetime(wyear(dt, start_month), start_month, 1)
     return (dt-yws).days+1
 
+
 def cycledist(x, y, start=1, end=12):
     ''' Compute abs(x-y) assuming that x and y are following a cycle (e.g. 12 months with start=1 and end=12)'''
     cycle = float(end-start+1)
     return np.abs((x-y-cycle/2)%cycle-cycle/2)
-     
+
+
 def padclim(clim, nwin, is_cumulative=False):
     ''' Pad start and end climate dataset '''
 
@@ -91,6 +109,7 @@ def runclim(data, nwin=20, ispos=True, perc=[5, 10, 25, 50, 75, 90, 95]):
     wateryear_startmonth = (dtmax-rm).month
 
     return clim, wateryear_startmonth
+
 
 def runclimcum(data, clim, wateryear_startmonth, nwin=20):
     ''' Compute cumulative climatology '''
