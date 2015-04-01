@@ -14,8 +14,19 @@ def normaliseid(id):
     if re.search('[0-9]', idn):
         idn = re.sub('^0*|[A-Z]*$', '', idn)
 
-    idn = re.sub('\\..*$| ', '', idn)
-    idn = re.sub('-', '_', idn)
+    # Remove spaces
+    idn = re.sub(' ', '', idn)
+
+    # Remove delimiters
+    idn = re.sub('\\(|\\)|-', '_', idn)
+
+    # Remove multiple underscores
+    idn = re.sub('_+', '_', idn)
+
+    # Remove character after a dot and first and last underscores
+    idn = re.sub('\\..*$|\\_*$|^\\_*', '', idn)
+
+    # Get upper case
     idn = idn.upper()
 
     return idn
