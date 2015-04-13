@@ -21,6 +21,29 @@ class UtilsTestCase(unittest.TestCase):
     def test_memusage(self):
         mem = mutils.getmemusage()
 
+    def test_sinmodel(self):
+
+        doy = np.arange(1, 367)
+
+        mu = 100
+        eta = 50
+        phi = 2*np.pi*0.2
+        alpha = 1
+        params = [mu, eta, phi, alpha]
+        Q1 = mutils.sinmodel(params, doy)
+        u = 0.5 + 0.5*np.sin((0. + doy)/365*2*np.pi + np.pi/2 - phi)
+        Q2 = ((1+u)**(alpha+1)-1)/(2**(alpha+1)-1) - 0.5
+        Q2 = mu + eta * Q2
+        self.assertTrue(all(Q1==Q2))
+
+        alpha = -10.
+        params = [mu, eta, phi, alpha]
+        Q1 = mutils.sinmodel(params, doy)
+        Q2 = ((1+u)**(alpha+1)-1)/(2**(alpha+1)-1) - 0.5
+        Q2 = mu + eta * Q2
+        self.assertTrue(all(Q1==Q2))
+
+
 
 if __name__ == "__main__":
     unittest.main()
