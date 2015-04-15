@@ -46,14 +46,15 @@ def script_template(filename, author='J. Lerat, EHP, Bureau of Meteorogoloy'):
     '''
 
     FMOD, modfile = os.path.split(__file__)
-    f = os.path.join(FMOD, 'script_template.py.gz')
-    with gzip.GzipFile(f, 'rb') as fgz:
-        txt = fgz.readlines()
+    f = os.path.join(FMOD, 'script_template.py')
+    with open(f, 'r') as ft:
+        txt = ft.readlines()
 
     meta = ['# -- Script Meta Data --\n']
     meta += ['# Author : %s\n' % author]
     meta += ['# Versions :\n']
-    meta += ['#    V00 - Script written from template on %s\n' % datetime.datetime.now()]
+    meta += [('#    V00 - Script written from template '
+                    'on %s\n') % datetime.datetime.now()]
     meta += ['#\n', '# ------------------------------\n']
 
     txt = txt[:2] + meta + txt[3:]

@@ -42,7 +42,8 @@ class UtilsTestCase(unittest.TestCase):
         fs = '%s/script_test.pytest' % self.FOUT
         iutils.script_template(fs)
 
-
+        execfile(fs)
+        
 
 if __name__ == "__main__":
     unittest.main()
