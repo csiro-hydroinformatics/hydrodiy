@@ -37,6 +37,9 @@ class Oz:
         if remove_axis:
             self.ax.axis('off')
 
+    def get_map(self):
+        return self.map
+
     def get_range(self):
         ''' Get x/y range for the map '''
 
