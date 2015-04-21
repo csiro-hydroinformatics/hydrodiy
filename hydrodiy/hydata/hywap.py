@@ -24,7 +24,10 @@ class HyWap():
 
         self.awap_url = awap_url
 
-        self.awap_dirs = {'rainfall':None, 'temperature':None}
+        self.awap_dirs = {'rainfall':None, 
+                'temperature':None,
+                'vprp':None,
+                'temperature':None}
 
     def set_awapdir(self, awap_dir):
         ''' Set AWAP output directory ''' 
@@ -33,27 +36,32 @@ class HyWap():
         F = os.path.join(awap_dir, 'rainfall')
         if not os.path.exists(F):
             os.mkdir(F)
-           
         self.awap_dirs['rainfall'] = F
 
         F = os.path.join(awap_dir, 'temperature')
         if not os.path.exists(F):
             os.mkdir(F)
-
         self.awap_dirs['temperature'] = F
+        
+        F = os.path.join(awap_dir, 'vprp')
+        if not os.path.exists(F):
+            os.mkdir(F)
+        self.awap_dirs['vprp'] = F
+
 
 
     def getgriddata(self, varname, vartype, date):
         ''' Download gridded awap daily data '''
 
         if (varname == 'rainfall') & (vartype != 'totals'):
-            raise ValueError('when varname=%s, vartype must be "totals"' % varname)
+            raise ValueError('when varname=%s, vartype(%s) must be "totals"' % (varname, vartype))
             
         if (varname == 'temperature') & ~(vartype in ['maxave', 'minave']):
-            raise ValueError('when varname=%s, vartype must be "maxave" or "minave"' % varname)
+            raise ValueError('when varname=%s, vartype(%s) must be "maxave" or "minave"' % (varname,vartype))
 
-        if not varname in ['rainfall', 'temperature']:
-            raise ValueError('varname should be rainfall or temperature, not %s' % varname)
+        if (varname == 'vprp') & ~(vartype in ['vprph09']):
+            raise ValueError('when varname=%s, vartype(%s) must be "vprph09"' % (varname, vartype))
+
 
         dt = datetime.datetime.strptime(date, '%Y-%m-%d')
 
@@ -93,6 +101,11 @@ class HyWap():
         # Process grid
         header = {k:float(v) 
             for k,v in [re.split(' ', s.strip()) for s in txt[:6]]}
+
+        header['varname'] = varname
+        header['vartype'] = vartype
+        header['date'] = date
+        header['url'] = url
 
         meta = [s.strip() for s in txt[-18:]]
 
@@ -140,9 +153,19 @@ class HyWap():
 
         return '%s.gz' % fout
 
-    def plotdata(self, data, header, ax,
+    def plotdata(self, data, header, ax):
+
+        if header['varname'] == 'rainfall':
             clevs = [0, 1, 5, 10, 15, 25, 50, 100, 150, 200, 300, 400],
-            cmap = cm.s3pcpn):
+            cmap = cm.s3pcpn
+
+        if header['varname'] == 'temperature':
+            clevs = range(-9, 51, 3)
+            cmap = cm.s3pcpn
+
+        if header['varname'] == 'vprp':
+            clevs = range(0, 40, 2)
+            cmap = cm.s3pcpn
 
         cellnum, llongs, llats, = self.getcoords(header)
 
@@ -153,6 +176,10 @@ class HyWap():
 
         m = om.get_map()
         x, y = m(llongs, llats)
-        cs = m.contourf(x, y, data.values, clevs, cmap=cmap)
+        z = data.values
+        try:
+            cs = m.contourf(x, y, z, clevs, cmap=cmap)
+        except ValueError:
+            import pdb; pdb.set_trace()
         cbar = m.colorbar(cs, location = 'bottom', pad='5%')
 

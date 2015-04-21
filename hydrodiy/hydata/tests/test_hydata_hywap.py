@@ -24,13 +24,24 @@ class HyWapTestCase(unittest.TestCase):
        
         hya = hywap.HyWap()
 
+        dt = '2015-04-01'
+
         varname = 'rainfall'
         vartype = 'totals'
-        dt = '1900-01-05'
-
         data, comment, header = hya.getgriddata(varname, vartype, dt)
-
         self.assertEqual(data.shape, (691, 886))
+
+        varname = 'temperature'
+        vartype = 'maxave'
+        data, comment, header = hya.getgriddata(varname, vartype, dt)
+        self.assertEqual(data.shape, (691, 886))
+
+        varname = 'vprp'
+        vartype = 'vprph09'
+        data, comment, header = hya.getgriddata(varname, vartype, dt)
+        self.assertEqual(data.shape, (691, 886))
+
+
 
     def test_writegriddata(self):
        
@@ -67,20 +78,23 @@ class HyWapTestCase(unittest.TestCase):
         
         hya = hywap.HyWap()
 
-        varname = 'rainfall'
-        vartype = 'totals'
         dt = '2015-04-17'
 
-        data, comment, header = hya.getgriddata(varname, vartype, dt)
+        varlists = [('rainfall', 'totals'),
+                ('temperature', 'maxave'),
+                ('vprp', 'vprph09')]
 
-        fig, ax = plt.subplots()
+        for varname, vartype in varlists:
+            data, comment, header = hya.getgriddata(varname, vartype, dt)
 
-        hya.plotdata(data, header, ax)
+            fig, ax = plt.subplots()
 
-        ax.set_title('%s - %s' % (varname, dt))
+            hya.plotdata(data, header, ax)
 
-        fp = '%s/rainfallsurf.png' % self.FAWAP
-        fig.savefig(fp)
+            ax.set_title('%s - %s' % (varname, dt))
+
+            fp = '%s/%s.png' % (self.FAWAP, varname)
+            fig.savefig(fp)
 
 if __name__ == "__main__":
     unittest.main()

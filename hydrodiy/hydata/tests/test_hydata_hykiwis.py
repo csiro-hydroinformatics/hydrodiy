@@ -14,7 +14,7 @@ class HyKiwisTestCase(unittest.TestCase):
 
     def test_getsites(self):
        
-        hyk = hykiwis.HyKiwis()
+        hyk = hykiwis.HyKiwis(False)
 
         sites = hyk.get_sites()
 
@@ -22,7 +22,7 @@ class HyKiwisTestCase(unittest.TestCase):
  
     def test_getattrs(self):
        
-        hyk = hykiwis.HyKiwis()
+        hyk = hykiwis.HyKiwis(False)
 
         attrs = hyk.get_tsattrs('410001')
         self.assertEqual(attrs['ts_id'], '54940042')
@@ -36,7 +36,7 @@ class HyKiwisTestCase(unittest.TestCase):
 
     def test_getattrs_all(self):
                
-        hyk = hykiwis.HyKiwis()
+        hyk = hykiwis.HyKiwis(False)
 
         sites = hyk.get_sites()
 
@@ -49,7 +49,7 @@ class HyKiwisTestCase(unittest.TestCase):
  
     def test_getdata(self):
        
-        hyk = hykiwis.HyKiwis()
+        hyk = hykiwis.HyKiwis(False)
 
         attrs = hyk.get_tsattrs('410001')
         ts_data = hyk.get_data(attrs, '1980-01-01', '1980-01-05')
