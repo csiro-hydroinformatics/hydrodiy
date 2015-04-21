@@ -4,7 +4,10 @@ import numpy as np
 import datetime
 import pandas as pd
 
+import matplotlib.pyplot as plt
+
 from hydata import hywap
+from hygis import oz
 
 class HyWapTestCase(unittest.TestCase):
 
@@ -25,7 +28,9 @@ class HyWapTestCase(unittest.TestCase):
         vartype = 'totals'
         dt = '1900-01-05'
 
-        data, comment = hya.getgriddata(varname, vartype, dt)
+        data, comment, header = hya.getgriddata(varname, vartype, dt)
+
+        self.assertEqual(data.shape, (691, 886))
 
     def test_writegriddata(self):
        
@@ -38,13 +43,44 @@ class HyWapTestCase(unittest.TestCase):
         vartype = 'totals'
         dt = '1900-01-05'
 
-        hya.writegriddata(varname, vartype, dt)
+        fdata = hya.writegriddata(varname, vartype, dt)
 
+        self.assertTrue(os.path.exists(fdata))
 
-        import pdb; pdb.set_trace()
+    def test_getcoord(self):
+        
+        hya = hywap.HyWap()
 
-        #self.assertEqual(list(ts_data.astype(int)), 
-        #        [13964, 14018, 15702, 16402, 15410])
+        varname = 'rainfall'
+        vartype = 'totals'
+        dt = '2015-04-17'
+
+        data, comment, header = hya.getgriddata(varname, vartype, dt)
+
+        cellnum, llongs, llats = hya.getcoords(header)
+
+        self.assertEqual(cellnum.shape, (691, 886))
+        self.assertEqual(llongs.shape, (691, 886))
+        self.assertEqual(llats.shape, (691, 886))
+
+    def test_plotdata(self):
+        
+        hya = hywap.HyWap()
+
+        varname = 'rainfall'
+        vartype = 'totals'
+        dt = '2015-04-17'
+
+        data, comment, header = hya.getgriddata(varname, vartype, dt)
+
+        fig, ax = plt.subplots()
+
+        hya.plotdata(data, header, ax)
+
+        ax.set_title('%s - %s' % (varname, dt))
+
+        fp = '%s/rainfallsurf.png' % self.FAWAP
+        fig.savefig(fp)
 
 if __name__ == "__main__":
     unittest.main()
