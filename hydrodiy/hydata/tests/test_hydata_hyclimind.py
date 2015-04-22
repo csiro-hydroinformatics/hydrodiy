@@ -17,10 +17,9 @@ class HyClimIndTestCase(unittest.TestCase):
         hyc = hyclimind.HyClimInd()
         names = hyc.index_names
 
-        names = ['amo']
-
         for n in names:
             d = hyc.get_data(n)
+
 
 if __name__ == "__main__":
     unittest.main()

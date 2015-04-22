@@ -44,6 +44,9 @@ class HyClimInd():
         if name == 'soi':
             url = self.bom_soi_url
             sep = '\t'
+
+        if re.search('nino', name):
+            url = re.sub('long', 'long.anom', url)
         
         # download data
         req = urllib2.urlopen(url)
@@ -58,6 +61,10 @@ class HyClimInd():
         nmiss = data.apply(lambda x: np.sum(pd.notnull(x)))
         data = data[nmiss.index[nmiss>0]]
         data.columns = range(0, 13)
+
+        # Remove first line if required
+        if data.iloc[0,0] == data.iloc[1,0]:
+            data = data.iloc[1:,:]
 
         # Remove superfluous lines
         nmiss = data.T.apply(lambda x: np.sum(pd.notnull(x)))
