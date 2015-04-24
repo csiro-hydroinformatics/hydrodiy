@@ -213,3 +213,15 @@ def to_seasonal(ts):
 
     return tss.apply(np.sum, axis=0)
 
+def tofloat(x):
+    try:
+        f = float('%s' % x)
+    except ValueError:
+        f = np.nan
+
+    return f
+
+def tofloats(s):
+    return pd.Series([tofloat(x) for x in s], index=s.index)
+
+

@@ -9,16 +9,7 @@ import urllib2
 import numpy as np
 import pandas as pd
 
-def tofloat(x):
-    try:
-        f = float('%s' % x)
-    except ValueError:
-        f = np.nan
-
-    return f
-
-def tofloats(s):
-    return pd.Series([tofloat(x) for x in s], index=s.index)
+from hydata import dutils
 
 class HyClimInd():
     ''' Class to download climate indices '''
@@ -71,7 +62,7 @@ class HyClimInd():
         else:
             # Convert to dataframe (tried read_csv but failed)
             data = pd.DataFrame([re.split(sep, l) for l in txt])
-            data = data.apply(tofloats)
+            data = data.apply(dutils.tofloats)
 
             # Check not superfulous columns
             nmiss = data.apply(lambda x: np.sum(pd.notnull(x)))
