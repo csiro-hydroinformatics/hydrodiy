@@ -13,4 +13,5 @@ build
 package_files.txt
 hydrodiy/hywafari/tests/wafari_project
 hydrodiy/hywafari/tests/*.csv
+hydrodiy/hygis/tests/*
 

@@ -86,10 +86,15 @@ def img2html(title, image_data, root_http=None, filename=None):
 
     return html
 
-def footer(fig, author, version=None, type='bureau'):
+def footer(fig, author=None, copyright=False, version=None):
     ''' Add footer to a figure (code from wafari) '''
     now = datetime.datetime.now()
-    label = '%s - Generated: %s' % (author, now.strftime('%H:%M %d/%m/%Y'))
+
+    if not author is None:
+        label = '%s - Generated: %s' % (author, 
+                now.strftime('%H:%M %d/%m/%Y'))
+    else:
+        label = 'Generated: %s' % now.strftime('%H:%M %d/%m/%Y')
 
     if not version is None:
         label = label + ' (ver. %s)'%version
@@ -98,15 +103,10 @@ def footer(fig, author, version=None, type='bureau'):
     fig.text(0.05, 0.010, label, color='#595959', ha='left', fontsize=9)
 
     # Add copyright
-    if type=='bureau':
+    if copyright:
         copyright = u'\u00A9' 
         copyright += 'Commonwealth of Australia %s'%now.strftime('%Y')
         copyright += ' Australian Bureau of Meteorology'
-        fig.text(0.95, 0.010, copyright, color='#595959', 
-                                ha='right', fontsize=9)
-    elif type=='jl':
-        copyright = u'\u00A9' 
-        copyright += 'Julien Lerat %s'%now.strftime('%Y')
         fig.text(0.95, 0.010, copyright, color='#595959', 
                                 ha='right', fontsize=9)
 

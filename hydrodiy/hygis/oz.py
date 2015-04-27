@@ -1,5 +1,11 @@
+import os
+
+import numpy as np
 
 import matplotlib.pyplot as plt
+from matplotlib.patches import Polygon
+from matplotlib.collections import PatchCollection
+from matplotlib.patches import PathPatch
 
 try:
     from mpl_toolkits import basemap
@@ -50,26 +56,48 @@ class Oz:
         self.ax.set_xlim((self.llon, self.rlon))
         self.ax.set_ylim((self.ulat, self.llat))
 
-    def drawcoast(self):
+    def drawcoast(self, *args, **kwargs):
         ''' plot coast line '''
-        self.map.drawcoastlines()
+        self.map.drawcoastlines(*args, **kwargs)
 
-    def drawrelief(self):
+    def drawrelief(self, *args, **kwargs):
         ''' plot shaded relief map '''
-        self.map.shadedrelief()
+        self.map.shadedrelief(*args, **kwargs)
 
-    def drawstates(self, linestyle='--'):
+    def drawstates(self, *args, **kwargs):
         ''' plot states boundaries '''
-        self.map.drawstates(linestyle=linestyle)
+        self.map.drawstates(*args, **kwargs)
+
+    def drawpolygons(self, fshp, *args, **kwargs):
+        ''' Draw polygon shapefile. Arguments sent to PatchCollection constructor  '''
+    
+
+        nm = os.path.basename(fshp)
+        self.map.readshapefile(fshp, nm, drawbounds = False)
+
+        patches = []
+        for shape in getattr(self.map, nm):
+            patches.append(Polygon(np.array(shape), True))
+        
+        self.ax.add_collection(PatchCollection(patches, *args, **kwargs)) 
 
     def plot(self, long, lat, *args, **kwargs):
         ''' Plot points in map '''
 
         if len(long) != len(lat):
-            raise ValueError('len(long) (%d) != len(lat) (%d)' % (len(long), len(lat)))
+            raise ValueError(('len(long) (%d) != '
+                'len(lat) (%d)') % (len(long), len(lat)))
 
         x, y = self.map(long, lat)
         self.map.plot(x, y, *args, **kwargs)
 
              
+    def set_lim(self, xlim, ylim):
+        ''' Set xlim and ylim '''
+
+        xxlim, yylim = self.map(np.sort(xlim),np.sort(ylim))
+
+        self.ax.set_xlim(np.sort(xxlim))
+        self.ax.set_ylim(np.sort(yylim))
+
 
