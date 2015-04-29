@@ -1,5 +1,7 @@
 import os
 import unittest
+import itertools
+
 import numpy as np
 import datetime
 import pandas as pd
@@ -24,26 +26,24 @@ class HyWapTestCase(unittest.TestCase):
        
         hya = hywap.HyWap()
 
-        dt = '2015-04-01'
+        dt = '2015-02-01'
 
-        varname = 'rainfall'
-        vartype = 'totals'
-        data, comment, header = hya.getgriddata(varname, vartype, dt)
-        self.assertEqual(data.shape, (691, 886))
+        vn = hya.variables
+        ts = hya.timesteps
 
-        varname = 'temperature'
-        vartype = 'maxave'
-        data, comment, header = hya.getgriddata(varname, vartype, dt)
-        self.assertEqual(data.shape, (691, 886))
+        for varname, timestep in itertools.product(vn.keys(), ts):
 
-        varname = 'vprp'
-        vartype = 'vprph09'
-        data, comment, header = hya.getgriddata(varname, vartype, dt)
-        self.assertEqual(data.shape, (691, 886))
+            for vartype in vn[varname]:
 
+                data, comment, header = hya.getgriddata(varname, vartype, 
+                                            timestep, dt)
 
+                nr = int(header['nrows'])
+                nc = int(header['ncols'])
 
-    def test_writegriddata(self):
+                self.assertEqual(data.shape, (nr, nc))
+
+    def test_savegriddata(self):
        
         hya = hywap.HyWap()
 
@@ -52,9 +52,10 @@ class HyWapTestCase(unittest.TestCase):
 
         varname = 'rainfall'
         vartype = 'totals'
-        dt = '1900-01-05'
+        ts = 'month'
+        dt = '1900-01-01'
 
-        fdata = hya.writegriddata(varname, vartype, dt)
+        fdata = hya.savegriddata(varname, vartype, ts, dt)
 
         self.assertTrue(os.path.exists(fdata))
 
@@ -64,37 +65,44 @@ class HyWapTestCase(unittest.TestCase):
 
         varname = 'rainfall'
         vartype = 'totals'
-        dt = '2015-04-17'
+        ts = 'month'
+        dt = '2015-03-01'
 
-        data, comment, header = hya.getgriddata(varname, vartype, dt)
+        data, comment, header = hya.getgriddata(varname, vartype, ts, dt)
 
         cellnum, llongs, llats = hya.getcoords(header)
 
-        self.assertEqual(cellnum.shape, (691, 886))
-        self.assertEqual(llongs.shape, (691, 886))
-        self.assertEqual(llats.shape, (691, 886))
+        nr = int(header['nrows'])
+        nc = int(header['ncols'])
+
+        self.assertEqual(cellnum.shape, (nr, nc))
+        self.assertEqual(llongs.shape, (nr, nc))
+        self.assertEqual(llats.shape, (nr, nc))
 
     def test_plotdata(self):
         
         hya = hywap.HyWap()
 
-        dt = '2015-04-17'
+        dt = '2015-02-01'
 
-        varlists = [('rainfall', 'totals'),
-                ('temperature', 'maxave'),
-                ('vprp', 'vprph09')]
+        vn = hya.variables
+        ts = hya.timesteps
 
-        for varname, vartype in varlists:
-            data, comment, header = hya.getgriddata(varname, vartype, dt)
+        for varname, timestep in itertools.product(vn.keys(), ts):
 
-            fig, ax = plt.subplots()
+            for vartype in vn[varname]:
+ 
+                data, comment, header = hya.getgriddata(varname, vartype, 
+                                            timestep, dt)
 
-            hya.plotdata(data, header, ax)
+                fig, ax = plt.subplots()
 
-            ax.set_title('%s - %s' % (varname, dt))
+                hya.plotdata(data, header, ax)
 
-            fp = '%s/%s.png' % (self.FAWAP, varname)
-            fig.savefig(fp)
+                ax.set_title('%s - %s' % (varname, dt))
+
+                fp = '%s/%s_%s_%s.png' % (self.FAWAP, varname, timestep, vartype)
+                fig.savefig(fp)
 
 if __name__ == "__main__":
     unittest.main()

@@ -4,14 +4,19 @@ import datetime
 
 import urllib2
 
+from dateutil.relativedelta import relativedelta as delta
+
 import tempfile
+
+import itertools
 
 from subprocess import Popen, PIPE
 
 import numpy as np
 import pandas as pd
 
-from mpl_toolkits.basemap import cm
+from mpl_toolkits.basemap import cm as cm
+import matplotlib.pyplot as plt
 
 from hyio import csv
 from hygis import oz
@@ -24,62 +29,83 @@ class HyWap():
 
         self.awap_url = awap_url
 
-        self.awap_dirs = {'rainfall':None, 
-                'temperature':None,
-                'vprp':None,
-                'temperature':None}
+        self.awap_dir = None
+
+        self.variables = {
+            'rainfall':['totals'],
+            'temperature':['maxave', 'minave'], 
+            'vprp':['vprph09'],
+            'solar':['solarave']
+           }
+
+        self.timesteps = ['daily', 'month']
+
+        self.current_url = None
 
     def set_awapdir(self, awap_dir):
         ''' Set AWAP output directory ''' 
 
-        # Create output directories
-        F = os.path.join(awap_dir, 'rainfall')
-        if not os.path.exists(F):
-            os.mkdir(F)
-        self.awap_dirs['rainfall'] = F
+        self.awap_dir = awap_dir
 
-        F = os.path.join(awap_dir, 'temperature')
-        if not os.path.exists(F):
-            os.mkdir(F)
-        self.awap_dirs['temperature'] = F
-        
-        F = os.path.join(awap_dir, 'vprp')
-        if not os.path.exists(F):
-            os.mkdir(F)
-        self.awap_dirs['vprp'] = F
+        for varname in self.variables.keys():
 
+            # Create output directories
+            F = os.path.join(awap_dir, varname)
 
+            if not os.path.exists(F):
+                os.mkdir(F)
 
-    def getgriddata(self, varname, vartype, date):
+            # Create output directories for each timestep
+            for timestep in ['daily', 'month']:
+                F = os.path.join(awap_dir, varname, timestep)
+                if not os.path.exists(F):
+                    os.mkdir(F)
+
+    def getgriddata(self, varname, vartype, timestep, date):
         ''' Download gridded awap daily data '''
 
-        if (varname == 'rainfall') & (vartype != 'totals'):
-            raise ValueError('when varname=%s, vartype(%s) must be "totals"' % (varname, vartype))
-            
-        if (varname == 'temperature') & ~(vartype in ['maxave', 'minave']):
-            raise ValueError('when varname=%s, vartype(%s) must be "maxave" or "minave"' % (varname,vartype))
+        # Check variable
+        if not (varname in self.variables):
+            raise ValueError('varname(%s) not recognised (=%s)' % (varname,
+                ', '.join(self.variables.keys())))
+           
+        if not (vartype in self.variables[varname]):
+            raise ValueError('vartype(%s) not recognised (=%s)' % (vartype,
+                ', '.join(self.variables[varname])))
+           
+        if not (timestep in self.timesteps):
+            raise ValueError('timestep(%s) not recognised (=%s)' % (varname,
+                ', '.join(self.timesteps)))
 
-        if (varname == 'vprp') & ~(vartype in ['vprph09']):
-            raise ValueError('when varname=%s, vartype(%s) must be "vprph09"' % (varname, vartype))
+        # Define start and end date of period
+        dt1 = datetime.datetime.strptime(date, '%Y-%m-%d')
 
+        if (timestep == 'month') & (dt1.day != 1):
+            raise ValueError(('Invalide date(%s). '
+                'Should be on day 1 of the month') % dt1.date())
 
-        dt = datetime.datetime.strptime(date, '%Y-%m-%d')
+        dt2 = dt1
+        if timestep == 'month':
+            dt2 = dt1 + delta(months=1) - delta(days=1)
 
         # Download data
-        url = ('%s/%s/%s/daily/grid/0.05/history/nat/'
+        self.current_url = ('%s/%s/%s/%s/grid/0.05/history/nat/'
                 '%4d%2.2d%2.2d%4d%2.2d%2.2d.grid.Z') % (self.awap_url, 
-                    varname, vartype, dt.year, dt.month, dt.day,
-                    dt.year, dt.month, dt.day)
+                    varname, vartype, timestep, 
+                    dt1.year, dt1.month, dt1.day,
+                    dt2.year, dt2.month, dt2.day)
         
         try:
-            resp = urllib2.urlopen(url)
+            resp = urllib2.urlopen(self.current_url)
+
         except urllib2.HTTPError, e:
-            print('Cannot download %s: HTTP Error = %s' % (url, e))
+            print('Cannot download %s: HTTP Error = %s' % (self.current_url, e))
             raise e
 
+        # Read data from pipe and write it to disk
         zdata = resp.read()
 
-        F = self.awap_dirs[varname]
+        F = self.awap_dir
         if F is None:
             F = tempfile.gettempdir()
 
@@ -98,24 +124,38 @@ class HyWap():
         except OSError:
             pass
 
+        # Spot header / comments
+        tmp = [bool(re.search('([a-zA-Z]|\\[)', l[0])) for l in txt]
+        iheader = np.argmin(tmp)
+        icomment = np.argmin(tmp[::-1])
+
         # Process grid
         header = {k:float(v) 
-            for k,v in [re.split(' ', s.strip()) for s in txt[:6]]}
+            for k,v in [re.split(' +', s.strip()) for s in txt[:iheader]]}
 
         header['varname'] = varname
         header['vartype'] = vartype
         header['date'] = date
-        header['url'] = url
+        header['url'] = self.current_url
 
-        meta = [s.strip() for s in txt[-18:]]
+        meta = [s.strip() for s in txt[-icomment:]]
 
-        data = [np.array(re.split(' ', s.strip())) for s in txt[6:-18]]
+        data = [np.array(re.split(' +', s.strip())) for s in txt[iheader:-icomment]]
         data = np.array(data).astype(np.float)
         data[data == header['nodata_value']] = np.nan
 
-        data = pd.DataFrame(data)
-        data.columns = ['c%3.3d' % i for i in range(data.shape[1])]
+        # Check dimensions of dataset
+        nc = int(header['ncols'])
+        nr = int(header['nrows'])
 
+        if data.shape != (nr, nc):
+            import pdb; pdb.set_trace()
+
+            raise IOError(('Dataset dimensions (%d,%d)'
+                ' do not match header (%d,%d)' % (data.shape[0], 
+                data.shape[1], nr, nc)))
+
+        # Build comments
         comment = ['AWAP Data set downloaded from %s' % self.awap_url, '', '',]
         comment += meta
         comment += ['']
@@ -123,6 +163,7 @@ class HyWap():
         return data, comment, header
 
     def getcoords(self, header):
+        ''' Get coordinates and cell number of gridded data '''
 
         nrows = int(header['nrows'])
         ncols = int(header['ncols'])
@@ -140,32 +181,60 @@ class HyWap():
         return cellnum, llongs, llats
         
     
-    def writegriddata(self, varname, vartype, date):
+    def savegriddata(self, varname, vartype, timestep, dt):
+        ''' Download gridded data and save it to disk '''
 
-        data, comment, header = self.getgriddata(varname, vartype, date)
+        data, comment, header = self.getgriddata(varname, vartype, timestep, dt)
 
-        F = self.awap_dirs[varname]
+        data = pd.DataFrame(data)
+        data.columns = ['c%3.3d' % i for i in range(data.shape[1])]
+
+        F = self.awap_dir
         if F is None:
             raise ValueError('Cannot write data, awap dir is not setup')
 
-        fout = os.path.join(F, '%s_%s_%s.csv' % (varname, vartype, date))
-        csv.write_csv(data, fout, comment)
+        fout = os.path.join(F, varname, timestep, '%s_%s_%s_%s.csv' % (varname, 
+                                timestep, vartype, dt))
+
+        co = comment + [''] + ['%s:%s' % (k, header[k]) for k in header] + ['']
+        csv.write_csv(data, fout, co)
 
         return '%s.gz' % fout
 
-    def plotdata(self, data, header, ax):
+    def plotdata(self, data, header, ax, 
+        clevs = None,
+        cmap = None,
+        is_decile=False, is_masked=False):
+        ''' Plot gridded data '''
 
         if header['varname'] == 'rainfall':
-            clevs = [0, 1, 5, 10, 15, 25, 50, 100, 150, 200, 300, 400],
-            cmap = cm.s3pcpn
+            if clevs is None:
+                clevs = [0, 1, 5, 10, 15, 25, 50, 100, 150, 200, 300, 400]
+
+            if cmap is None:
+                cmap = cm.s3pcpn
 
         if header['varname'] == 'temperature':
-            clevs = range(-9, 51, 3)
-            cmap = cm.s3pcpn
+            if clevs is None:
+                clevs = range(-9, 51, 3)
+
+            if cmap is None:
+                cmap = plt.get_cmap('gist_rainbow_r')
 
         if header['varname'] == 'vprp':
-            clevs = range(0, 40, 2)
-            cmap = cm.s3pcpn
+            if clevs is None:
+                clevs = range(0, 40, 2)
+
+            if cmap is None:
+                cmap = plt.get_cmap('gist_rainbow_r')
+
+        if header['varname'] == 'solar':
+            if clevs is None:
+                clevs = range(0, 40, 3)
+
+            if cmap is None:
+                cmap = plt.get_cmap('jet_r')
+
 
         cellnum, llongs, llats, = self.getcoords(header)
 
@@ -176,10 +245,22 @@ class HyWap():
 
         m = om.get_map()
         x, y = m(llongs, llats)
-        z = data.values
-        try:
-            cs = m.contourf(x, y, z, clevs, cmap=cmap)
-        except ValueError:
-            import pdb; pdb.set_trace()
+        z = data
+
+        # Filter data
+        z[z<clevs[0]] = np.nan
+        z[z>clevs[-1]] = np.nan
+
+        # Refine levels
+        if np.nanmax(z)<np.max(clevs):
+            iw = np.min(np.where(np.nanmax(z) < np.sort(clevs))[0])
+            clevs = clevs[:iw+1]
+
+        # draw contour
+        cs = m.contourf(x, y, z, clevs, cmap=cmap)
+
+        # Add color bar
         cbar = m.colorbar(cs, location = 'bottom', pad='5%')
+
+        return om
 
