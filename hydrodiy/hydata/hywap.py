@@ -173,8 +173,8 @@ class HyWap():
 
         cellnum = np.arange(1, nrows*ncols+1).reshape((nrows, ncols))
 
-        longs = np.linspace(xll, xll+sz*ncols, ncols)
-        lats = np.linspace(yll, yll+sz*nrows, nrows)[::-1]
+        longs = xll + sz * np.arange(0, ncols)
+        lats = yll + sz * np.arange(0, nrows)
 
         llongs, llats = np.meshgrid(longs, lats)
 
