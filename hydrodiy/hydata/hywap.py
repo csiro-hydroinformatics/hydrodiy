@@ -171,14 +171,15 @@ class HyWap():
         yll = header['yllcenter']
         sz = header['cellsize']
 
-        cellnum = np.arange(1, nrows*ncols+1).reshape((nrows, ncols))
-
         longs = xll + sz * np.arange(0, ncols)
         lats = yll + sz * np.arange(0, nrows)
 
         llongs, llats = np.meshgrid(longs, lats)
 
-        return cellnum, llongs, llats
+        cellids = np.array(['%0.2f_%0.2f' % (x,y) for x,y in zip(llongs.flat[:],
+                            llats.flat[:])]).reshape(llongs.shape)
+
+        return cellids, llongs, llats
         
     
     def savegriddata(self, varname, vartype, timestep, dt):

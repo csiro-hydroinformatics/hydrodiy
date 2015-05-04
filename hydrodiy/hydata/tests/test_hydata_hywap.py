@@ -70,12 +70,12 @@ class HyWapTestCase(unittest.TestCase):
 
         data, comment, header = hya.getgriddata(varname, vartype, ts, dt)
 
-        cellnum, llongs, llats = hya.getcoords(header)
+        cellids, llongs, llats = hya.getcoords(header)
 
         nr = int(header['nrows'])
         nc = int(header['ncols'])
 
-        self.assertEqual(cellnum.shape, (nr, nc))
+        self.assertEqual(cellids.shape, (nr, nc))
         self.assertEqual(llongs.shape, (nr, nc))
         self.assertEqual(llats.shape, (nr, nc))
 
