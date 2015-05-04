@@ -1,6 +1,9 @@
 import re
+import math
+
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+
 import numpy as np
 import pandas as pd
 
@@ -225,3 +228,17 @@ def tofloats(s):
     return pd.Series([tofloat(x) for x in s], index=s.index)
 
 
+def atmospress(altitude):
+    ''' Mean atmospheric pressure 
+        See http://en.wikipedia.org/wiki/Atmospheric_pressure
+    '''
+
+    g = 9.80665 # m/s^2 - Gravity acceleration
+    M = 0.0289644 # kg/mol - Molar mass of dry air
+    R = 8.31447 # j/mol/K - Universal gas constant
+    T0 = 288.15 # K - Sea level standard temp
+    P0 = 101325 # Pa - Sea level standard atmospheric pressure
+
+    P = P0 * math.exp(-g*M/R/T0 * altitude) 
+
+    return P

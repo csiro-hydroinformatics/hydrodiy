@@ -107,5 +107,21 @@ class UtilsTestCase(unittest.TestCase):
        self.assertTrue(np.allclose(expected.values[idx1], out.values[idx2]))
 
 
+    def test_atmospress(self):
+
+        alt = 0
+        p = dutils.atmospress(alt)
+        self.assertTrue(np.allclose(p, 101325.))
+
+       
+        alt = 100
+        p = dutils.atmospress(alt)
+        self.assertTrue(np.allclose(p, 100130.800974))
+
+        alt = 200
+        p = dutils.atmospress(alt)
+        self.assertTrue(np.allclose(p, 98950.6765392))
+
+     
 if __name__ == "__main__":
     unittest.main()
