@@ -174,7 +174,8 @@ class HyWap():
         longs = xll + sz * np.arange(0, ncols)
         lats = yll + sz * np.arange(0, nrows)
 
-        llongs, llats = np.meshgrid(longs, lats)
+        # We have to flip the lats
+        llongs, llats = np.meshgrid(longs, lats[::-1])
 
         cellids = np.array(['%0.2f_%0.2f' % (x,y) for x,y in zip(llongs.flat[:],
                             llats.flat[:])]).reshape(llongs.shape)
