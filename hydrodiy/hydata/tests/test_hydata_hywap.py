@@ -9,7 +9,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from hydata import hywap
-from hygis import oz
+
+if hywap.has_basemap:
+    from hygis import oz
 
 class HyWapTestCase(unittest.TestCase):
 
@@ -93,22 +95,24 @@ class HyWapTestCase(unittest.TestCase):
         vn = hya.variables
         ts = hya.timesteps
 
-        for varname, timestep in itertools.product(vn.keys(), ts):
+        if hywap.has_basemap:
 
-            for v in vn[varname]:
-                vartype = v['type']
+            for varname, timestep in itertools.product(vn.keys(), ts):
+
+                for v in vn[varname]:
+                    vartype = v['type']
  
-                data, comment, header = hya.getgriddata(varname, vartype, 
-                                            timestep, dt)
+                    data, comment, header = hya.getgriddata(varname, vartype, 
+                                                timestep, dt)
 
-                fig, ax = plt.subplots()
+                    fig, ax = plt.subplots()
 
-                hya.plotdata(data, header, ax)
+                    hya.plotdata(data, header, ax)
 
-                ax.set_title('%s - %s' % (varname, dt))
+                    ax.set_title('%s - %s' % (varname, dt))
 
-                fp = '%s/%s_%s_%s.png' % (self.FAWAP, varname, timestep, vartype)
-                fig.savefig(fp)
+                    fp = '%s/%s_%s_%s.png' % (self.FAWAP, varname, timestep, vartype)
+                    fig.savefig(fp)
 
 if __name__ == "__main__":
     unittest.main()

@@ -15,11 +15,16 @@ from subprocess import Popen, PIPE
 import numpy as np
 import pandas as pd
 
-from mpl_toolkits.basemap import cm as cm
-import matplotlib.pyplot as plt
+has_basemap = False
+try:
+    from mpl_toolkits.basemap import cm as cm
+    import matplotlib.pyplot as plt
+    from hygis import oz
+
+except ImportError:
+    has_basemap = False
 
 from hyio import csv
-from hygis import oz
 
 class HyWap():
     ''' Class to download daily awap grids '''
@@ -209,6 +214,9 @@ class HyWap():
         cmap = None,
         is_decile=False, is_masked=False):
         ''' Plot gridded data '''
+
+        if not has_basemap:
+            raise ImportError('basemap is not available')
 
         if header['varname'] == 'rainfall':
             if clevs is None:
