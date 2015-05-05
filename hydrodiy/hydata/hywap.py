@@ -24,18 +24,18 @@ from hygis import oz
 class HyWap():
     ''' Class to download daily awap grids '''
 
-    def __init__(self, 
-            awap_url ='http://www.bom.gov.au/web03/ncc/www/awap'):
+    def __init__(self, awap_url ='http://www.bom.gov.au/web03/ncc/www/awap'):
 
         self.awap_url = awap_url
 
         self.awap_dir = None
 
         self.variables = {
-            'rainfall':['totals'],
-            'temperature':['maxave', 'minave'], 
-            'vprp':['vprph09'],
-            'solar':['solarave']
+            'rainfall':[{'type':'totals', 'unit':'mm/d'}],
+            'temperature':[{'type':'maxave','unit':'celsius'}, 
+                           {'type':'minave','unit':'celsius'}], 
+            'vprp':[{'type':'vprph09', 'unit':'Pa'}],
+            'solar':[{'type':'solarave','unit':'MJ/m2'}]
            }
 
         self.timesteps = ['daily', 'month']
@@ -66,15 +66,16 @@ class HyWap():
 
         # Check variable
         if not (varname in self.variables):
-            raise ValueError('varname(%s) not recognised (=%s)' % (varname,
+            raise ValueError('varname(%s) not recognised (should be %s)' % (varname,
                 ', '.join(self.variables.keys())))
            
-        if not (vartype in self.variables[varname]):
-            raise ValueError('vartype(%s) not recognised (=%s)' % (vartype,
-                ', '.join(self.variables[varname])))
+        vt = [v['type'] for v in self.variables[varname]]
+        if not (vartype in vt):
+            raise ValueError('vartype(%s) not recognised (should be %s)' % (vartype,
+                ', '.join(vt)))
            
         if not (timestep in self.timesteps):
-            raise ValueError('timestep(%s) not recognised (=%s)' % (varname,
+            raise ValueError('timestep(%s) not recognised (should be %s)' % (varname,
                 ', '.join(self.timesteps)))
 
         # Define start and end date of period

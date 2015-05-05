@@ -33,7 +33,8 @@ class HyWapTestCase(unittest.TestCase):
 
         for varname, timestep in itertools.product(vn.keys(), ts):
 
-            for vartype in vn[varname]:
+            for v in vn[varname]:
+                vartype = v['type']
 
                 data, comment, header = hya.getgriddata(varname, vartype, 
                                             timestep, dt)
@@ -94,7 +95,8 @@ class HyWapTestCase(unittest.TestCase):
 
         for varname, timestep in itertools.product(vn.keys(), ts):
 
-            for vartype in vn[varname]:
+            for v in vn[varname]:
+                vartype = v['type']
  
                 data, comment, header = hya.getgriddata(varname, vartype, 
                                             timestep, dt)
