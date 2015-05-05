@@ -167,9 +167,9 @@ class HyWap():
 
         nrows = int(header['nrows'])
         ncols = int(header['ncols'])
-        xll = header['xllcenter']
-        yll = header['yllcenter']
-        sz = header['cellsize']
+        xll = float(header['xllcenter'])
+        yll = float(header['yllcenter'])
+        sz = float(header['cellsize'])
 
         longs = xll + sz * np.arange(0, ncols)
         lats = yll + sz * np.arange(0, nrows)

@@ -79,6 +79,10 @@ class HyWapTestCase(unittest.TestCase):
         self.assertEqual(llongs.shape, (nr, nc))
         self.assertEqual(llats.shape, (nr, nc))
 
+        xll = float(header['xllcenter'])
+        yll = float(header['yllcenter'])
+        self.assertEqual(cellids[0,0], '%0.2f_%0.2f' % (xll, yll))
+
     def test_plotdata(self):
         
         hya = hywap.HyWap()
