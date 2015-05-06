@@ -3,73 +3,149 @@ import struct
 import numpy as np
 import pandas as pd
 
-def _binhead(nbytes, nrow, ncol,comment, calendarstart, timestep_duration_sec):
-    """ Produces a nice header for bin files """
+def _getdatatypes(data):
+    """ Get the data types from a data frame """
+    
+    dtt = data.dtypes
+
+    dt = np.array(['s'] * len(dtt))
+
+    dt[(dtt == np.int64).values] = 'l'
+    dt[(dtt == np.float64).values] = 'd'
+
+    return dt
+
+def _todatatypes(data, datatypes, strlength):
+    """ Convert data frame according to datatypes """
+
+    data2 = data.copy()
+
+    for i in range(len(datatypes)):
+
+        dt = datatypes[i]
+
+        if dt == 'd':
+            data2.iloc[:, i] = data.iloc[:, i].astype(np.float64)
+
+        if dt == 'l':
+            data2.iloc[:, i] = data.iloc[:, i].astype(np.int64)
+
+        if dt == 'd':
+            data2.iloc[:, i] = data.iloc[:, i].astype(str).apply(lambda x: 
+                        x.encode('ascii', 'ignore')[:strlength])
+   
+    return data2
+    
+
+def _binhead(datatypes, strlength, nrow, ncol,comment):
+    """ Produces the bin files header """
+
     comment_list = comment
     if not isinstance(comment, list):
         comment_list = [comment]
 
     h = []
-    h.append('%10s %d\n'%('nbytes', nbytes))
-    h.append('%10s %d\n'%('ndim1', ncol))
-    h.append('%10s %d\n'%('ndim2', nrow))
+    h.append('%10s %d\n'%('strlength', strlength))
+    h.append('%10s %d\n'%('ncol', ncol))
+    h.append('%10s %d\n'%('nrow', nrow))
+    h.append('%10s %s\n'%('datatypes', datatypes))
     h.append('%10s %s\n'%('comment', comment))
-    h.append('%10s %0.0f\n'%('start', calendarstart))
-    h.append('%10s %d\n'%('dt_sec', timestep_duration_sec))
 
     return h
 
-def write_bin(data, filename, comment, calendarstart=-999, timestep_duration_sec=-999):
+def write_bin(data, filebase, comment, strlength=30):
     """ write a pandas dataframe to a bin file with comments """
    
+    # Get datatypes
+    datatypes = _getdatatypes(data)
+
+    # Convert to datatypes
+    data2 = _todatatypes(data, datatypes, strlength)
+
     # write header 
-    head = _binhead(8, data.shape[0], data.shape[1], comment, 
-        calendarstart, timestep_duration_sec)
-    fheader = open('%sh'%filename, 'w')
+    head = _binhead(datatypes, strlength, 
+        data.shape[0], data.shape[1], comment) 
+
+    fheader = open('%sh'%filebase, 'w')
     fheader.writelines(head)
     fheader.close()
 
-    # write data 
-    datan = data.astype('float64').values
-    datan = datan.reshape((np.prod(data.shape),))
-    databin = struct.pack('d'*len(datan), *datan);
-    fbin = open(filename, 'wb')
-    fbin.write(databin)
-    fbin.close()
+    # write double data 
+    nd = np.sum(datatypes == 'd')
+    if nd >0:
+        datad = data2.loc[:, datatypes == 'd'].values
+        datad = datad.reshape((np.prod(datad.shape),))
+        databin = struct.pack('d'*len(datad), *datad);
 
-def read_bin(filename):
+        fbin = open('%sd' % filebase, 'wb')
+        fbin.write(databin)
+        fbin.close()
+
+    # write long int data 
+    nd = np.sum(datatypes == 'l')
+    if nd >0:
+        datal = data2.loc[:, datatypes == 'l'].values
+        datal = datal.reshape((np.prod(datal.shape),))
+        databin = struct.pack('Q'*len(datal), *datal);
+
+        fbin = open('%sl' % filebase, 'wb')
+        fbin.write(databin)
+        fbin.close()
+
+
+def read_bin(filebase):
     """ Reads data from bin file with header file to a pandas data frame"""
 
     # Reads header
-    fhead = open('%sh'%filename, 'r')
-    nbytes = int(fhead.readline()[10:])
-    ndim1 = int(fhead.readline()[10:])
-    ndim2 = int(fhead.readline()[10:])
+    fhead = open('%sh'%filebase, 'r')
+    strlength = int(fhead.readline()[10:])
+    ncol = int(fhead.readline()[10:])
+    nrow = int(fhead.readline()[10:])
+    dt = fhead.readline()[10:]
     comment = fhead.readline()[10:]
-
-    try:
-        calendarstart = float(fhead.readline()[10:])
-        timestep_duration_sec = int(fhead.readline()[10:])
-    except :
-        calendarstart = -999.
-        timestep_duration_sec = -999
-
     fhead.close()
 
-    # reads data
-    fbin = open(filename, 'rb')
-    datan = np.zeros((ndim1*ndim2,))
-    i = 0
-    chunk = fbin.read(nbytes)
-    while chunk:
-        if nbytes == 4:
-            datan[i] = struct.unpack('f', chunk)[0]
-        if nbytes == 8:
-            datan[i] = struct.unpack('d', chunk)[0]
-        i += 1
-        chunk = fbin.read(nbytes)
-    fbin.close()
-    data = pd.DataFrame(datan.reshape(ndim2, ndim1))
+    # reshape datatypes
+    datatypes = np.array([''] * ncol)
+    for i in range(len(dt)):
+        datatypes[i] = dt[i]
+   
+    if len(dt) < len(datatypes):
+        datatypes[len(dt):] = datatypes[len(dt)]
 
-    return data, comment, calendarstart, timestep_duration_sec
+    # reads double data
+    datad = None
+    ncold = np.sum(datatypes == 'd')
+    if nd > 0:
+        fbin = open('%sd' % filebase, 'rb')
+        datad = np.zeros((ncold*nrow,))
+        i = 0
+        chunk = fbin.read(nbytes)
+        while chunk:
+            datad[i] = struct.unpack('d', chunk)[0]
+            i += 1
+            chunk = fbin.read(nbytes)
+        fbin.close()
+
+        datad = pd.DataFrame(datad.reshape(nrow, ncold))
+
+    # reads long data
+    datal = None
+    ncoll = np.sum(datatypes == 'l')
+    if nd > 0:
+        fbin = open('%sl' % filebase, 'rb')
+        datal = np.zeros((ncoll*nrow,))
+        i = 0
+        chunk = fbin.read(nbytes)
+        while chunk:
+            datal[i] = struct.unpack('Q', chunk)[0]
+            i += 1
+            chunk = fbin.read(nbytes)
+        fbin.close()
+
+        datal = pd.DataFrame(datad.reshape(nrow, ncoll))
+
+    data = pd.merge([datad, datal], axis=1) 
+
+    return data, comment
 
