@@ -1,4 +1,4 @@
-import time
+import re
 import struct
 import numpy as np
 import pandas as pd
@@ -18,20 +18,24 @@ def _getdatatypes(data):
 def _todatatypes(data, datatypes, strlength):
     """ Convert data frame according to datatypes """
 
-    data2 = data.copy()
+    data2 = data.values
 
     for i in range(len(datatypes)):
 
         dt = datatypes[i]
 
         if dt == 'd':
-            data2.iloc[:, i] = data.iloc[:, i].astype(np.float64)
+            data2[:, i] = data.iloc[:, i].astype(np.float64)
 
         if dt == 'l':
-            data2.iloc[:, i] = data.iloc[:, i].astype(np.int64)
+            data2[:, i] = data.iloc[:, i].astype(np.int64)
 
-        if dt == 'd':
-            data2.iloc[:, i] = data.iloc[:, i].astype(str).apply(lambda x: 
+        if dt == 's':
+            tmp = data.iloc[:, i].astype(str)
+
+            # Pad string with spaces
+            tmp = tmp.apply(lambda x: (x+ '\0'*strlength)[:strlength])
+            data2[:, i] = tmp.apply(lambda x: 
                         x.encode('ascii', 'ignore')[:strlength])
    
     return data2
@@ -48,7 +52,7 @@ def _binhead(datatypes, strlength, nrow, ncol,comment):
     h.append('%10s %d\n'%('strlength', strlength))
     h.append('%10s %d\n'%('ncol', ncol))
     h.append('%10s %d\n'%('nrow', nrow))
-    h.append('%10s %s\n'%('datatypes', datatypes))
+    h.append('%10s %s\n'%('datatypes', ''.join(datatypes)))
     h.append('%10s %s\n'%('comment', comment))
 
     return h
@@ -73,8 +77,8 @@ def write_bin(data, filebase, comment, strlength=30):
     # write double data 
     nd = np.sum(datatypes == 'd')
     if nd >0:
-        datad = data2.loc[:, datatypes == 'd'].values
-        datad = datad.reshape((np.prod(datad.shape),))
+        datad = data2[:, datatypes == 'd']
+        datad = datad.flat[:]
         databin = struct.pack('d'*len(datad), *datad);
 
         fbin = open('%sd' % filebase, 'wb')
@@ -84,11 +88,23 @@ def write_bin(data, filebase, comment, strlength=30):
     # write long int data 
     nd = np.sum(datatypes == 'l')
     if nd >0:
-        datal = data2.loc[:, datatypes == 'l'].values
-        datal = datal.reshape((np.prod(datal.shape),))
+        datal = data2[:, datatypes == 'l']
+        datal = datal.flat[:]
         databin = struct.pack('Q'*len(datal), *datal);
 
         fbin = open('%sl' % filebase, 'wb')
+        fbin.write(databin)
+        fbin.close()
+
+    # write string data 
+    ns = np.sum(datatypes == 's')
+    if ns >0:
+        datas = data2[:, datatypes == 's']
+        datas = datas.reshape((np.prod(datas.shape),))
+        datas = np.array([[c for c in v] for v in datas]).flat[:]
+        databin = struct.pack('s'*len(datas), *datas);
+
+        fbin = open('%ss' % filebase, 'wb')
         fbin.write(databin)
         fbin.close()
 
@@ -101,8 +117,8 @@ def read_bin(filebase):
     strlength = int(fhead.readline()[10:])
     ncol = int(fhead.readline()[10:])
     nrow = int(fhead.readline()[10:])
-    dt = fhead.readline()[10:]
-    comment = fhead.readline()[10:]
+    dt = re.sub(' +', '', fhead.readline()[10:].strip())
+    comment = fhead.readline()[10:].strip()
     fhead.close()
 
     # reshape datatypes
@@ -113,39 +129,62 @@ def read_bin(filebase):
     if len(dt) < len(datatypes):
         datatypes[len(dt):] = datatypes[len(dt)]
 
-    # reads double data
-    datad = None
-    ncold = np.sum(datatypes == 'd')
-    if nd > 0:
-        fbin = open('%sd' % filebase, 'rb')
-        datad = np.zeros((ncold*nrow,))
-        i = 0
-        chunk = fbin.read(nbytes)
-        while chunk:
-            datad[i] = struct.unpack('d', chunk)[0]
-            i += 1
-            chunk = fbin.read(nbytes)
-        fbin.close()
+    # reads data
+    data_all = {}
+    config_unpack = {'d':{'flag':'d', 'nbyte':8}, 
+        'l':{'flag':'Q', 'nbyte':8}, 
+        's':{'flag':'s', 'nbyte':1}}
 
-        datad = pd.DataFrame(datad.reshape(nrow, ncold))
+    for datatype in ['d', 'l', 's']:
 
-    # reads long data
-    datal = None
-    ncoll = np.sum(datatypes == 'l')
-    if nd > 0:
-        fbin = open('%sl' % filebase, 'rb')
-        datal = np.zeros((ncoll*nrow,))
-        i = 0
-        chunk = fbin.read(nbytes)
-        while chunk:
-            datal[i] = struct.unpack('Q', chunk)[0]
-            i += 1
-            chunk = fbin.read(nbytes)
-        fbin.close()
+        datam = None
+        ncolm = np.sum(datatypes == datatype)
 
-        datal = pd.DataFrame(datad.reshape(nrow, ncoll))
+        cfg = config_unpack[datatype]
 
-    data = pd.merge([datad, datal], axis=1) 
+        if ncolm > 0:
+            fbin = open('%s%c' % (filebase, datatype), 'rb')
+
+            datam = []
+
+            i = 0
+            chunk = fbin.read(cfg['nbyte'])
+
+            while chunk:
+                datam.append(struct.unpack(cfg['flag'], chunk)[0])
+                i += 1
+                chunk = fbin.read(cfg['nbyte'])
+
+            fbin.close()
+
+            # Reformat string data
+            if datatype == 's':
+                datam = np.array(datam).reshape(nrow*ncolm, strlength)
+                datam = np.array([''.join(v) for v in datam])
+                
+            datam = np.array(datam).reshape(nrow, ncolm)
+
+            data_all[datatype] = datam
+
+    # Create final object
+    data = {}
+
+    for i in range(ncol):
+
+        if datatypes[i] == 'd':
+            idxd = np.sum(datatypes[:i] == 'd')
+            data['C%3.3d' % i] = data_all['d'][:, idxd]
+        
+        if datatypes[i] == 'l':
+            idxl = np.sum(datatypes[:i] == 'l')
+            data['C%3.3d' % i] = data_all['l'][:, idxl]
+
+        if datatypes[i] == 's':
+            idxs = np.sum(datatypes[:i] == 's')
+            data['C%3.3d' % i] = data_all['s'][:, idxs]
+
+
+    data = pd.DataFrame(data)
 
     return data, comment
 
