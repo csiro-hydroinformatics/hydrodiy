@@ -34,6 +34,15 @@ def normaliseid(id):
 
     return idn
 
+def ordinalsec(t):
+    ''' Compute number of sec elapsed from 0000/00/00 00:00:00 '''
+
+    o = np.int64(t.toordinal()) * 86400
+    o += np.int64(t.hour) * 3600
+    o += np.int64(t.minute) * 60
+    o += np.int64(t.second)
+
+    return o
 
 def wyear(dt, start_month=7):
     ''' compute water year of a particular day '''
