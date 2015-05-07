@@ -1,47 +1,56 @@
 import re
 import struct
+import datetime
 import numpy as np
 import pandas as pd
 
-def _getdatatypes(data):
-    """ Get the data types from a data frame """
-    
-    dtt = data.dtypes
+from hydata import dutils
 
-    dt = np.array(['s'] * len(dtt))
+long_types = [np.int64, np.int32, int]
 
-    dt[(dtt == np.int64).values] = 'l'
-    dt[(dtt == np.float64).values] = 'd'
+double_types = [np.float64, np.float32, float]
 
-    return dt
+datetime_types = [np.datetime64, np.dtype('<M8[ns]'),
+        np.dtype('>M8[ns]')]
 
-def _todatatypes(data, datatypes, strlength):
+def _todatatypes(data, strlength):
     """ Convert data frame according to datatypes """
 
     data2 = data.values
 
-    for i in range(len(datatypes)):
+    dtt = data.dtypes.values
 
-        dt = datatypes[i]
+    ncol = data.shape[1]
 
-        if dt == 'd':
+    datatypes = np.array(['s'] * ncol)
+
+    for i in range(ncol):
+
+        if dtt[i] in double_types:
+            datatypes[i] = 'd'
             data2[:, i] = data.iloc[:, i].astype(np.float64)
 
-        if dt == 'l':
-            data2[:, i] = data.iloc[:, i].astype(np.int64)
+        elif dtt[i] in long_types:
+            datatypes[i] = 'l'
+            data2[:, i] = data.iloc[:, i].astype(np.uint64)
 
-        if dt == 's':
+        elif dtt[i] in datetime_types:
+            datatypes[i] = 't'
+            data2[:, i] = data.iloc[:, i].apply(dutils.osec2time).astype(np.int64)
+
+        else:
+            datatypes[i] = 's'
             tmp = data.iloc[:, i].astype(str)
 
             # Pad string with spaces
             tmp = tmp.apply(lambda x: (x+ '\0'*strlength)[:strlength])
             data2[:, i] = tmp.apply(lambda x: 
                         x.encode('ascii', 'ignore')[:strlength])
-   
-    return data2
-    
 
-def _binhead(datatypes, strlength, nrow, ncol,comment):
+    return data2, datatypes
+   
+
+def _binhead(datatypes, strlength, timestep, nrow, ncol,comment):
     """ Produces the bin files header """
 
     comment_list = comment
@@ -50,6 +59,7 @@ def _binhead(datatypes, strlength, nrow, ncol,comment):
 
     h = []
     h.append('%10s %d\n'%('strlength', strlength))
+    h.append('%10s %d\n'%('timestep', timestep))
     h.append('%10s %d\n'%('ncol', ncol))
     h.append('%10s %d\n'%('nrow', nrow))
     h.append('%10s %s\n'%('datatypes', ''.join(datatypes)))
@@ -57,17 +67,14 @@ def _binhead(datatypes, strlength, nrow, ncol,comment):
 
     return h
 
-def write_bin(data, filebase, comment, strlength=30):
+def write_bin(data, filebase, comment, strlength=30, timestep=-1):
     """ write a pandas dataframe to a bin file with comments """
    
-    # Get datatypes
-    datatypes = _getdatatypes(data)
-
     # Convert to datatypes
-    data2 = _todatatypes(data, datatypes, strlength)
+    data2, datatypes = _todatatypes(data, strlength)
 
     # write header 
-    head = _binhead(datatypes, strlength, 
+    head = _binhead(datatypes, strlength, timestep, 
         data.shape[0], data.shape[1], comment) 
 
     fheader = open('%sh'%filebase, 'w')
@@ -84,11 +91,12 @@ def write_bin(data, filebase, comment, strlength=30):
         fbin = open('%sd' % filebase, 'wb')
         fbin.write(databin)
         fbin.close()
-
+        
     # write long int data 
-    nd = np.sum(datatypes == 'l')
-    if nd >0:
-        datal = data2[:, datatypes == 'l']
+    idx = np.array([(dt == 'l') | (dt == 't') for dt in datatypes])
+    nl = np.sum(idx)
+    if nl >0:
+        datal = data2[:, idx]
         datal = datal.flat[:]
         databin = struct.pack('Q'*len(datal), *datal);
 
@@ -115,6 +123,7 @@ def read_bin(filebase):
     # Reads header
     fhead = open('%sh'%filebase, 'r')
     strlength = int(fhead.readline()[10:])
+    timestep = int(fhead.readline()[10:])
     ncol = int(fhead.readline()[10:])
     nrow = int(fhead.readline()[10:])
     dt = re.sub(' +', '', fhead.readline()[10:].strip())
@@ -133,9 +142,10 @@ def read_bin(filebase):
     data_all = {}
     config_unpack = {'d':{'flag':'d', 'nbyte':8}, 
         'l':{'flag':'Q', 'nbyte':8}, 
-        's':{'flag':'s', 'nbyte':1}}
+        's':{'flag':'s', 'nbyte':1},
+        't':{'flag':'Q', 'nbyte':8}}
 
-    for datatype in ['d', 'l', 's']:
+    for datatype in ['d', 'l', 's', 't']:
 
         datam = None
         ncolm = np.sum(datatypes == datatype)
@@ -161,6 +171,10 @@ def read_bin(filebase):
             if datatype == 's':
                 datam = np.array(datam).reshape(nrow*ncolm, strlength)
                 datam = np.array([''.join(v) for v in datam])
+
+            # Convert time data
+            if datatype == 't':
+                datam = np.array([dutils.osec2time(dt) for dt in datam])
                 
             datam = np.array(datam).reshape(nrow, ncolm)
 
@@ -186,5 +200,5 @@ def read_bin(filebase):
 
     data = pd.DataFrame(data)
 
-    return data, comment
-
+    return data, strlength, timestep, comment
+  
