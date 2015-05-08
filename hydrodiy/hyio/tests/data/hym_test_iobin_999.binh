@@ -1,0 +1,6 @@
+ strlength 50
+  timestep 201
+      ncol 3
+      nrow 26
+ datatypes dls
+   comment test data 999
