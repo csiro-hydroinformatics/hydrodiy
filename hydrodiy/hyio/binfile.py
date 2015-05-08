@@ -36,7 +36,7 @@ def _todatatypes(data, strlength):
 
         elif dtt[i] in datetime_types:
             datatypes[i] = 't'
-            data2[:, i] = data.iloc[:, i].apply(dutils.osec2time).astype(np.int64)
+            data2[:, i] = data.iloc[:, i].apply(dutils.time2osec).astype(np.uint64)
 
         else:
             datatypes[i] = 's'
@@ -82,40 +82,25 @@ def write_bin(data, filebase, comment, strlength=30, timestep=-1):
     fheader.close()
 
     # write double data 
-    nd = np.sum(datatypes == 'd')
-    if nd >0:
-        datad = data2[:, datatypes == 'd']
-        datad = datad.flat[:]
-        databin = struct.pack('d'*len(datad), *datad);
+    for datatype in ['d', 'l', 's', 't']:
+        n = np.sum(datatypes == datatype)
+        if n >0:
+            datan = data2[:, datatypes == datatype]
+            datan = datan.flat[:]
 
-        fbin = open('%sd' % filebase, 'wb')
+            if datatype == 'd':
+                databin = struct.pack('d'*len(datan), *datan);
+
+            if datatype in ['l', 't']:
+                databin = struct.pack('Q'*len(datan), *datan);
+
+            if datatype == 's':
+                datan = np.array([[c for c in v] for v in datan]).flat[:]
+                databin = struct.pack('s'*len(datan), *datan);
+
+        fbin = open('%s%s' % (filebase, datatype), 'wb')
         fbin.write(databin)
         fbin.close()
-        
-    # write long int data 
-    idx = np.array([(dt == 'l') | (dt == 't') for dt in datatypes])
-    nl = np.sum(idx)
-    if nl >0:
-        datal = data2[:, idx]
-        datal = datal.flat[:]
-        databin = struct.pack('Q'*len(datal), *datal);
-
-        fbin = open('%sl' % filebase, 'wb')
-        fbin.write(databin)
-        fbin.close()
-
-    # write string data 
-    ns = np.sum(datatypes == 's')
-    if ns >0:
-        datas = data2[:, datatypes == 's']
-        datas = datas.reshape((np.prod(datas.shape),))
-        datas = np.array([[c for c in v] for v in datas]).flat[:]
-        databin = struct.pack('s'*len(datas), *datas);
-
-        fbin = open('%ss' % filebase, 'wb')
-        fbin.write(databin)
-        fbin.close()
-
 
 def read_bin(filebase):
     """ Reads data from bin file with header file to a pandas data frame"""
@@ -185,18 +170,11 @@ def read_bin(filebase):
 
     for i in range(ncol):
 
-        if datatypes[i] == 'd':
-            idxd = np.sum(datatypes[:i] == 'd')
-            data['C%3.3d' % i] = data_all['d'][:, idxd]
-        
-        if datatypes[i] == 'l':
-            idxl = np.sum(datatypes[:i] == 'l')
-            data['C%3.3d' % i] = data_all['l'][:, idxl]
+        for dt in ['d', 'l', 's', 't']:
 
-        if datatypes[i] == 's':
-            idxs = np.sum(datatypes[:i] == 's')
-            data['C%3.3d' % i] = data_all['s'][:, idxs]
-
+            if datatypes[i] == dt:
+                idx = np.sum(datatypes[:i] == dt)
+                data['C%3.3d' % i] = data_all[dt][:, idx]
 
     data = pd.DataFrame(data)
 
