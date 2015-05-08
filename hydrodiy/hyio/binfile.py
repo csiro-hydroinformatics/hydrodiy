@@ -35,7 +35,7 @@ def _todatatypes(data, strlength):
             data2[:, i] = data.iloc[:, i].astype(np.uint64)
 
         elif dtt[i] in datetime_types:
-            datatypes[i] = 't'
+            datatypes[i] = 'l'
             data2[:, i] = data.iloc[:, i].apply(dutils.time2osec).astype(np.uint64)
 
         else:
@@ -82,7 +82,7 @@ def write_bin(data, filebase, comment, strlength=30, timestep=-1):
     fheader.close()
 
     # write double data 
-    for datatype in ['d', 'l', 's', 't']:
+    for datatype in ['d', 'l', 's']:
         n = np.sum(datatypes == datatype)
         if n >0:
             datan = data2[:, datatypes == datatype]
@@ -127,10 +127,9 @@ def read_bin(filebase):
     data_all = {}
     config_unpack = {'d':{'flag':'d', 'nbyte':8}, 
         'l':{'flag':'Q', 'nbyte':8}, 
-        's':{'flag':'s', 'nbyte':1},
-        't':{'flag':'Q', 'nbyte':8}}
+        's':{'flag':'s', 'nbyte':1}}
 
-    for datatype in ['d', 'l', 's', 't']:
+    for datatype in ['d', 'l', 's']:
 
         datam = None
         ncolm = np.sum(datatypes == datatype)
@@ -156,10 +155,6 @@ def read_bin(filebase):
             if datatype == 's':
                 datam = np.array(datam).reshape(nrow*ncolm, strlength)
                 datam = np.array([''.join(v) for v in datam])
-
-            # Convert time data
-            if datatype == 't':
-                datam = np.array([dutils.osec2time(dt) for dt in datam])
                 
             datam = np.array(datam).reshape(nrow, ncolm)
 
@@ -170,7 +165,7 @@ def read_bin(filebase):
 
     for i in range(ncol):
 
-        for dt in ['d', 'l', 's', 't']:
+        for dt in ['d', 'l', 's']:
 
             if datatypes[i] == dt:
                 idx = np.sum(datatypes[:i] == dt)

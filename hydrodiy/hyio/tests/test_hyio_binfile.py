@@ -3,7 +3,9 @@ import re
 import unittest
 import numpy as np
 import pandas as pd
+
 from hyio import binfile
+from hydata import dutils
 
 class BinfileTestCase(unittest.TestCase):
 
@@ -30,8 +32,7 @@ class BinfileTestCase(unittest.TestCase):
         self.assertTrue(np.allclose(data1, data2))
         
         F = self.FOUT
-        cmd = 'rm %s/*.bind %s/*.bins %s/*.bint %s/*.binl %s/*.binh' % (F, 
-                            F, F, F, F)
+        cmd = 'rm %s/*.bind %s/*.bins %s/*.binl %s/*.binh' % (F, F, F, F)
         os.system(cmd)
     
     def test_binfile2(self):
@@ -57,8 +58,7 @@ class BinfileTestCase(unittest.TestCase):
         self.assertTrue(np.allclose(data1, data2))
         
         F = self.FOUT
-        cmd = 'rm %s/*.bind %s/*.bins %s/*.bint %s/*.binl %s/*.binh' % (F, 
-                                F, F, F, F)
+        cmd = 'rm %s/*.bind %s/*.bins %s/*.binl %s/*.binh' % (F, F, F, F)
         os.system(cmd)
     
     def test_binfile3(self):
@@ -104,8 +104,7 @@ class BinfileTestCase(unittest.TestCase):
        self.assertTrue(np.all(data1[cc] == data2[cc]))
 
        F = self.FOUT
-       cmd = 'rm %s/*.bind %s/*.bins %s/*.bint %s/*.binl %s/*.binh' % (F, 
-                                F, F, F, F)
+       cmd = 'rm %s/*.bind %s/*.bins %s/*.binl %s/*.binh' % (F, F, F, F)
        os.system(cmd)
     
     def test_binfile4(self):
@@ -144,12 +143,12 @@ class BinfileTestCase(unittest.TestCase):
        self.assertTrue(np.allclose(data1[cc], data2[cc]))
 
        cc = [cn for cn in data1.columns if re.search('^t', cn)]
-       d = (data1[cc] - data2[cc]).astype(int)
+       dd = data2[cc].apply(lambda x: np.array([dutils.osec2time(v) for v in x]))
+       d = (data1[cc] - dd).astype(int)
        self.assertTrue(np.all(d == 0))
 
        F = self.FOUT
-       cmd = 'rm %s/*.bind %s/*.bins %s/*.bint %s/*.binl %s/*.binh' % (F, 
-                                F, F, F, F)
+       cmd = 'rm %s/*.bind %s/*.bins %s/*.binl %s/*.binh' % (F, F, F, F)
        os.system(cmd)
     
     def test_binfile5(self):
