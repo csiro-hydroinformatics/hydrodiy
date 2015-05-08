@@ -154,12 +154,19 @@ class BinfileTestCase(unittest.TestCase):
     def test_binfile5(self):
         """ Binfile from hym """
 
-        ft = '%s/data/hym_test_iobin_3.bin'%self.FOUT        
+        ft = '%s/data/hym_test_iobin_999.bin'%self.FOUT        
         data, sl, ts, comment = binfile.read_bin(ft)
 
         self.assertTrue(ts == 201)
 
-        self.assertTrue(data.shape == (1000, 6))
+        self.assertTrue(data.shape == (26, 3))
         
+        self.assertTrue(np.allclose(data.iloc[:,0], np.arange(26)))
+        self.assertTrue(np.allclose(data.iloc[:,1], np.arange(26)))
+
+        s = pd.Series([chr(i) for i in range(32, 58)])
+        self.assertTrue(np.all(data.iloc[:,2] == s))
+
+
 if __name__ == "__main__":
     unittest.main()
