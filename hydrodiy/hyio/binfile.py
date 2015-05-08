@@ -98,9 +98,9 @@ def write_bin(data, filebase, comment, strlength=30, timestep=-1):
                 datan = np.array([[c for c in v] for v in datan]).flat[:]
                 databin = struct.pack('s'*len(datan), *datan);
 
-        fbin = open('%s%s' % (filebase, datatype), 'wb')
-        fbin.write(databin)
-        fbin.close()
+            fbin = open('%s%s' % (filebase, datatype), 'wb')
+            fbin.write(databin)
+            fbin.close()
 
 def read_bin(filebase):
     """ Reads data from bin file with header file to a pandas data frame"""
