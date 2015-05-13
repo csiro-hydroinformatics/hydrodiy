@@ -14,9 +14,10 @@ def percentiles(x, perc=np.linspace(0, 100, 5), prob_cst=0.3):
     '''
     perc = np.atleast_1d(np.array(perc))
     try:
-        idx = ~np.isnan(x)
-        xs = np.sort(x[idx]).astype(np.float)
-        ff = empfreq(len(x[idx]), prob_cst)
+        xx = x.astype(float)
+        idx = ~np.isnan(xx)
+        xs = np.sort(xx[idx]).astype(np.float)
+        ff = empfreq(len(xx[idx]), prob_cst)
         qq = np.interp((perc+0.)/100, ff, xs, left=np.nan, right=np.nan)
         
     except TypeError:
