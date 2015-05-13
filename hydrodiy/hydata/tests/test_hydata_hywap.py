@@ -9,7 +9,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from hydata import hywap
-from hygis import oz
+
+if hywap.has_basemap:
+    from hygis import oz
 
 class HyWapTestCase(unittest.TestCase):
 
@@ -33,7 +35,8 @@ class HyWapTestCase(unittest.TestCase):
 
         for varname, timestep in itertools.product(vn.keys(), ts):
 
-            for vartype in vn[varname]:
+            for v in vn[varname]:
+                vartype = v['type']
 
                 data, comment, header = hya.getgriddata(varname, vartype, 
                                             timestep, dt)
@@ -70,14 +73,18 @@ class HyWapTestCase(unittest.TestCase):
 
         data, comment, header = hya.getgriddata(varname, vartype, ts, dt)
 
-        cellnum, llongs, llats = hya.getcoords(header)
+        cellids, llongs, llats = hya.getcoords(header)
 
         nr = int(header['nrows'])
         nc = int(header['ncols'])
 
-        self.assertEqual(cellnum.shape, (nr, nc))
+        self.assertEqual(cellids.shape, (nr, nc))
         self.assertEqual(llongs.shape, (nr, nc))
         self.assertEqual(llats.shape, (nr, nc))
+
+        xll = float(header['xllcenter'])
+        yll = float(header['yllcenter'])
+        self.assertEqual(cellids[-1,0], '%0.2f_%0.2f' % (xll, yll))
 
     def test_plotdata(self):
         
@@ -88,21 +95,24 @@ class HyWapTestCase(unittest.TestCase):
         vn = hya.variables
         ts = hya.timesteps
 
-        for varname, timestep in itertools.product(vn.keys(), ts):
+        if hywap.has_basemap:
 
-            for vartype in vn[varname]:
+            for varname, timestep in itertools.product(vn.keys(), ts):
+
+                for v in vn[varname]:
+                    vartype = v['type']
  
-                data, comment, header = hya.getgriddata(varname, vartype, 
-                                            timestep, dt)
+                    data, comment, header = hya.getgriddata(varname, vartype, 
+                                                timestep, dt)
 
-                fig, ax = plt.subplots()
+                    fig, ax = plt.subplots()
 
-                hya.plotdata(data, header, ax)
+                    hya.plotdata(data, header, ax)
 
-                ax.set_title('%s - %s' % (varname, dt))
+                    ax.set_title('%s - %s' % (varname, dt))
 
-                fp = '%s/%s_%s_%s.png' % (self.FAWAP, varname, timestep, vartype)
-                fig.savefig(fp)
+                    fp = '%s/%s_%s_%s.png' % (self.FAWAP, varname, timestep, vartype)
+                    fig.savefig(fp)
 
 if __name__ == "__main__":
     unittest.main()

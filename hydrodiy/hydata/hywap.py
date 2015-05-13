@@ -15,27 +15,32 @@ from subprocess import Popen, PIPE
 import numpy as np
 import pandas as pd
 
-from mpl_toolkits.basemap import cm as cm
-import matplotlib.pyplot as plt
+has_basemap = False
+try:
+    from mpl_toolkits.basemap import cm as cm
+    import matplotlib.pyplot as plt
+    from hygis import oz
+
+except ImportError:
+    has_basemap = False
 
 from hyio import csv
-from hygis import oz
 
 class HyWap():
     ''' Class to download daily awap grids '''
 
-    def __init__(self, 
-            awap_url ='http://www.bom.gov.au/web03/ncc/www/awap'):
+    def __init__(self, awap_url ='http://www.bom.gov.au/web03/ncc/www/awap'):
 
         self.awap_url = awap_url
 
         self.awap_dir = None
 
         self.variables = {
-            'rainfall':['totals'],
-            'temperature':['maxave', 'minave'], 
-            'vprp':['vprph09'],
-            'solar':['solarave']
+            'rainfall':[{'type':'totals', 'unit':'mm/d'}],
+            'temperature':[{'type':'maxave','unit':'celsius'}, 
+                           {'type':'minave','unit':'celsius'}], 
+            'vprp':[{'type':'vprph09', 'unit':'Pa'}],
+            'solar':[{'type':'solarave','unit':'MJ/m2'}]
            }
 
         self.timesteps = ['daily', 'month']
@@ -66,15 +71,16 @@ class HyWap():
 
         # Check variable
         if not (varname in self.variables):
-            raise ValueError('varname(%s) not recognised (=%s)' % (varname,
+            raise ValueError('varname(%s) not recognised (should be %s)' % (varname,
                 ', '.join(self.variables.keys())))
            
-        if not (vartype in self.variables[varname]):
-            raise ValueError('vartype(%s) not recognised (=%s)' % (vartype,
-                ', '.join(self.variables[varname])))
+        vt = [v['type'] for v in self.variables[varname]]
+        if not (vartype in vt):
+            raise ValueError('vartype(%s) not recognised (should be %s)' % (vartype,
+                ', '.join(vt)))
            
         if not (timestep in self.timesteps):
-            raise ValueError('timestep(%s) not recognised (=%s)' % (varname,
+            raise ValueError('timestep(%s) not recognised (should be %s)' % (varname,
                 ', '.join(self.timesteps)))
 
         # Define start and end date of period
@@ -167,18 +173,20 @@ class HyWap():
 
         nrows = int(header['nrows'])
         ncols = int(header['ncols'])
-        xll = header['xllcenter']
-        yll = header['yllcenter']
-        sz = header['cellsize']
-
-        cellnum = np.arange(1, nrows*ncols+1).reshape((nrows, ncols))
+        xll = float(header['xllcenter'])
+        yll = float(header['yllcenter'])
+        sz = float(header['cellsize'])
 
         longs = xll + sz * np.arange(0, ncols)
         lats = yll + sz * np.arange(0, nrows)
 
-        llongs, llats = np.meshgrid(longs, lats)
+        # We have to flip the lats
+        llongs, llats = np.meshgrid(longs, lats[::-1])
 
-        return cellnum, llongs, llats
+        cellids = np.array(['%0.2f_%0.2f' % (x,y) for x,y in zip(llongs.flat[:],
+                            llats.flat[:])]).reshape(llongs.shape)
+
+        return cellids, llongs, llats
         
     
     def savegriddata(self, varname, vartype, timestep, dt):
@@ -206,6 +214,9 @@ class HyWap():
         cmap = None,
         is_decile=False, is_masked=False):
         ''' Plot gridded data '''
+
+        if not has_basemap:
+            raise ImportError('basemap is not available')
 
         if header['varname'] == 'rainfall':
             if clevs is None:

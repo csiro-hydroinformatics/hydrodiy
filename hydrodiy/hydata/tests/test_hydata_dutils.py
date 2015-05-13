@@ -34,6 +34,29 @@ class UtilsTestCase(unittest.TestCase):
         idn = dutils.normaliseid(id)
         self.assertEqual(idn, '101')
 
+    def test_ordinalsec(self):
+        
+        def rn(x0, x1):
+            return np.random.randint(x0, x1)
+        
+        n = 5000
+
+        for i in range(n):
+            t = datetime.datetime(rn(500, 9900), rn(1, 12), rn(1, 28),
+                rn(0, 23), rn(0, 59), rn(0, 59))
+
+            o = dutils.time2osec(t)
+
+            self.assertEqual(t.toordinal(), int(o/86400))
+
+            s = int(o - np.uint64(t.toordinal())*86400)
+
+            self.assertEqual(t.hour, s/3600)
+
+            t2 = dutils.osec2time(o)
+
+            self.assertEqual(t, t2)
+
     def test_wyear1(self):
         day = datetime.datetime(2001, 12, 3)
         yw = dutils.wyear(day)
