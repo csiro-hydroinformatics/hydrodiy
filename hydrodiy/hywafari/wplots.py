@@ -174,7 +174,7 @@ def pit(obs, forc, ax=None, title=None):
     nen = forc.shape[1]
 
     # Kolmogoroff distance
-    kdist = 1.358 / nval
+    kdist = 1.358 / np.sqrt(nval)
 
     # Plotting variables
     ff = sutils.empfreq(nval)
