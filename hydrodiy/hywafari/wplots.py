@@ -5,6 +5,7 @@ from matplotlib import colors
 from matplotlib.font_manager import FontProperties
 
 from hyplot import putils
+from hystat import sutils
 
 from calendar import month_abbr
 
@@ -48,6 +49,8 @@ def skillscores(scores, ax=None, seasonal=True, title=None, ylim=(-10, 70)):
         ''' Skill score plot
 
             :parameter pandas.DataFrame scores: Skill score values for 12 months ([12 x n scores] dataframe)
+            :parameter matplotlib.axes.Axes: Ax object
+            :parameter bool seasonal: Seasonal or monthly plot?
             :parameter string title: Plot title
             :parameter bool seasonal: Seasonal data or monthly?
             :parameter tuple ylim: Min max limits for Y axis
@@ -98,6 +101,8 @@ def summary(scores, ax=None, seasonal=True, title=None, ylim=(-5, 70),
     ''' Skill score summary plot
 
             :parameter pandas.DataFrame scores: Skill score values for n sites and 12 months ([n sites x 12 months] dataframe)
+            :parameter matplotlib.axes.Axes: Ax object
+            :parameter bool seasonal: Seasonal or monthly plot?
             :parameter string title: Plot title
             :parameter bool seasonal: Seasonal data or monthly?
             :parameter tuple ylim: Min max limits for Y axis
@@ -146,3 +151,63 @@ def summary(scores, ax=None, seasonal=True, title=None, ylim=(-5, 70),
     ax.set_frame_on(False)
 
     return pc
+
+def pit(obs, forc, ax=None, title=None):
+    ''' PIT plot
+
+            :parameter pandas.Series obs: Observed flow data
+            :parameter pandas.DataFrame forc: Forecasts
+            :parameter tuple ylim: Min max limits for Y axis
+    '''
+
+    if ax is None:
+        ax = plt.gca()
+
+    if title is None:
+        title = 'PIT uniform probability plot'
+
+    # Compute PIT
+    pit = sutils.pit(obs, forc) 
+
+    # Dimensions
+    nval = len(obs)
+    nen = forc.shape[1]
+
+    # Kolmogoroff distance
+    kdist = 1.358 / nval
+
+    # Plotting variables
+    ff = sutils.empfreq(nval)
+    pit_s = np.sort(pit)
+
+    # Colors
+    cols1 = putils.get_colors(8, 'Blues')
+    cols2 = putils.get_colors(8, 'Dark2')
+
+    # plot pit
+    ax.plot(pit_s, ff, 'o', mfc=cols1[6], 
+            mec=cols1[7], label='PIT values')
+
+    # 1:1 line + KS bands
+    ax.plot((0,1), (0,1), '-', color=cols2[1])
+    ax.plot((0,1), (kdist,1+kdist), '-', color=cols1[4], label='95% K-S band')
+    ax.plot((0,1), (-kdist,1-kdist), '-', color=cols1[4])
+
+    # Decoration
+    ax.set_xlim((0, 1))
+    ax.set_ylim((0, 1))
+
+    ax.set_title(title)
+
+    ax.set_xlabel('PIT')
+    ax.set_ylabel('Cumulative Frequency')
+
+    ax.set_xticks(np.arange(0, 1.2, 0.2))
+    ax.set_yticks(np.arange(0, 1.2, 0.2))
+
+    ax.legend(loc=2, numpoints=1, fancybox=True, shadow=True)
+
+    ax.set_axisbelow(True)
+    ax.grid(True, color='gray', linestyle=':', clip_on=False)
+
+

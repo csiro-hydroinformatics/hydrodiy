@@ -82,7 +82,26 @@ class UtilsTestCase(unittest.TestCase):
         innov = sutils.ar1inverse(params[:2], y)
         y2 = sutils.ar1innov(params[:2], innov)
         self.assertTrue(np.allclose(y, y2))
-   
+ 
+    def test_pit(self):
+
+        nval = 100
+        nens = 1000
+
+        pit1 = np.round(np.random.uniform(0, 1, nval), 3)
+
+        ff = sutils.empfreq(nens)
+        forc = np.random.uniform(0, 100, (nval, nens))
+        obs = np.ones((nval,)) * np.nan
+
+        for i in range(nval):
+            fo = np.sort(forc[i,:])
+            obs[i] = np.interp(pit1[i], ff, fo) 
+
+        pit2 = sutils.pit(obs, forc)
+
+        self.assertTrue(np.allclose(pit1, pit2))
+  
 
 if __name__ == "__main__":
     unittest.main()

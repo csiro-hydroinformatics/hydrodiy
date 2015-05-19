@@ -8,7 +8,7 @@ def percentiles(x, perc=np.linspace(0, 100, 5), prob_cst=0.3):
     ''' Returns percentiles of the input variable as a Pandas Series.
         Returns a series filled up with nans if the input type is wrong
 
-        :param np.array x: Sample
+        :param numpy.array x: Sample
         :param list perc: Percentile values
         :param float prob_cst: Constant used to compute frequency
     '''
@@ -35,7 +35,7 @@ def categories(x,
     '''
         Compute categorical data from continuous data
 
-        :param np.array x: data from continuous variable  
+        :param numpy.array x: data from continuous variable  
         :param bounds x: boundaries of categories
         :param bool is_percentile: consider bounds as percentage 
                     used to compute percentiles
@@ -90,9 +90,9 @@ def acf(data, lag=range(1,6),
     ''' 
         Compute lagged correlation with missing data 
 
-        :param np.array data: data used to compute acf
+        :param numpy.array data: data used to compute acf
         :param list lag: lag values
-        :param np.array filter: boolean vector to keep only certain values in the data vector 
+        :param numpy.array filter: boolean vector to keep only certain values in the data vector 
             CAUTION values are NOT removed from the lagged vector
             this parameter is not intended to flag missing data
         :param float min_val: Minimum value under which data is considered missing
@@ -163,7 +163,7 @@ def ar1random(params, nval, seed=0):
     ''' 
         Run ar1 model with normal innovation
 
-        :param np.array params: parameter vector with
+        :param numpy.array params: parameter vector with
             params[0] = ar1 parameter
             params[1] = sigma of innovation (used if innov is None)
             params[2] = output value at t=0
@@ -186,7 +186,7 @@ def ar1innov(params, innov):
     ''' 
         Run ar1 model with normal innovation
 
-        :param np.array params: parameter vector with
+        :param numpy.array params: parameter vector with
             params[0] = ar1 parameter
             params[1] = output value at t=0
     '''
@@ -208,7 +208,7 @@ def ar1inverse(params, input):
     ''' 
         Run ar1 model with normal innovation
 
-        :param np.array params: parameter vector with
+        :param numpy.array params: parameter vector with
             params[0] = ar1 parameter
     '''
 
@@ -224,3 +224,36 @@ def ar1inverse(params, input):
     return innov
 
 
+def pit(obs, forc):
+    ''' 
+        Compute PIT for ensemble forecasts
+
+        :param numpy.array obs Observed data
+        :param numpy.array forc Forecast data
+    '''
+
+    nval = len(obs)
+    nens = forc.shape[1]
+
+    if forc.shape[0] != nval:
+        raise ValueError('forc.shape[1](%d) != len(obs)(%d)' % (forc.shape[0], nval))
+
+    pit = np.ones_like(obs) * np.nan
+    ff = empfreq(forc.shape[1])
+
+    for i in range(nval):
+
+        if pd.notnull(obs[i]):
+
+            # Add small perturbation to avoid ties
+            f = np.sort(forc[i, :])
+            d = np.abs(np.diff(f))
+            eps = np.min(d[d>0]) * 1e-10
+            e = np.random.uniform(0, eps, nens)
+            f = f + e
+
+            # Compute PIT
+            pit[i] = np.interp(obs[i], f, ff, left=0, right=1)
+        
+
+    return pit

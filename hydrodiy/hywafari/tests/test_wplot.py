@@ -3,6 +3,8 @@ import unittest
 import numpy as np
 from hywafari import wplots
 
+from hystat import sutils
+
 import matplotlib.pyplot as plt
 
 import pandas as pd
@@ -57,6 +59,24 @@ class WplotTestCase(unittest.TestCase):
         fp = '%s/summary.png' % FIMG
         fig.set_size_inches((16,6))
         fig.savefig(fp)
+
+    def test_pit(self):
+        FIMG = self.FTEST
+
+        nval = 100
+        nens = 1000
+
+        ff = sutils.empfreq(nens)
+        forc = np.random.uniform(0, 100, (nval, nens))
+        obs = np.random.uniform(0, 100, (nval,))
+
+        fig, ax = plt.subplots()
+
+        wplots.pit(obs, forc, ax)
+
+        fp = '%s/pit.png' % FIMG
+        fig.savefig(fp)
+
 
 
 if __name__ == "__main__":
