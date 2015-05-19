@@ -15,7 +15,7 @@ from subprocess import Popen, PIPE
 import numpy as np
 import pandas as pd
 
-has_basemap = False
+has_basemap = True
 try:
     from mpl_toolkits.basemap import cm as cm
     import matplotlib.pyplot as plt
