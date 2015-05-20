@@ -209,10 +209,11 @@ class HyWap():
 
         return '%s.gz' % fout
 
-    def plotdata(self, data, header, ax, 
+    def plot(self, data, header, ax, 
         clevs = None,
         cmap = None,
-        is_decile=False, is_masked=False):
+        is_decile=False, is_masked=False,
+        drawcoast=True, drawstates=True):
         ''' Plot gridded data '''
 
         if not has_basemap:
@@ -251,8 +252,11 @@ class HyWap():
 
         om = oz.Oz(ax = ax)
 
-        om.drawcoast()
-        om.drawstates()
+        if drawcoast:
+            om.drawcoast()
+
+        if drawstates:
+            om.drawstates()
 
         m = om.get_map()
         x, y = m(llongs, llats)
@@ -270,8 +274,5 @@ class HyWap():
         # draw contour
         cs = m.contourf(x, y, z, clevs, cmap=cmap)
 
-        # Add color bar
-        cbar = m.colorbar(cs, location = 'bottom', pad='5%')
-
-        return om
+        return cs
 

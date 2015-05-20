@@ -86,7 +86,7 @@ class HyWapTestCase(unittest.TestCase):
         yll = float(header['yllcenter'])
         self.assertEqual(cellids[-1,0], '%0.2f_%0.2f' % (xll, yll))
 
-    def test_plotdata(self):
+    def test_plot(self):
         
         hya = hywap.HyWap()
 
@@ -107,7 +107,7 @@ class HyWapTestCase(unittest.TestCase):
 
                     fig, ax = plt.subplots()
 
-                    hya.plotdata(data, header, ax)
+                    hya.plot(data, header, ax)
 
                     ax.set_title('%s - %s' % (varname, dt))
 
