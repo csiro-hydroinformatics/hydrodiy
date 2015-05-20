@@ -213,7 +213,8 @@ class HyWap():
         clevs = None,
         cmap = None,
         is_decile=False, is_masked=False,
-        drawcoast=True, drawstates=True):
+        coast_linestyle='-', 
+        states_linestyle='--'):
         ''' Plot gridded data '''
 
         if not has_basemap:
@@ -252,11 +253,11 @@ class HyWap():
 
         om = oz.Oz(ax = ax)
 
-        if drawcoast:
-            om.drawcoast()
+        if not coast_linestyle is None:
+            om.drawcoast(linestyle = coast_linestyle)
 
-        if drawstates:
-            om.drawstates()
+        if not states_linestyle is None:
+            om.drawstates(linestyle = states_linestyle)
 
         m = om.get_map()
         x, y = m(llongs, llats)
