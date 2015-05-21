@@ -92,6 +92,7 @@ class HyWapTestCase(unittest.TestCase):
         
         hya = hywap.HyWap()
 
+
         dt = '2015-02-01'
 
         vn = hya.variables
@@ -117,7 +118,11 @@ class HyWapTestCase(unittest.TestCase):
 
                     fig, ax = plt.subplots()
 
-                    cs = hya.plot(data, header, ax, config=cfg)
+                    om = oz.Oz(ax = ax)
+                    om.drawcoast(linestyle='-')
+                    om.drawstates(linestyle='--')
+
+                    cs = hya.plot(data, header, om, config=cfg)
 
                     sz = axes_size.AxesY(ax, 0.6)
                     sz = '10%'

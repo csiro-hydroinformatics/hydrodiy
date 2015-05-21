@@ -20,7 +20,6 @@ try:
     from mpl_toolkits.basemap import cm as cm
     import matplotlib.pyplot as plt
     from mpl_toolkits.axes_grid1 import make_axes_locatable
-    from hygis import oz
 
 except ImportError:
     has_basemap = False
@@ -252,10 +251,7 @@ class HyWap():
 
         return cfg 
 
-    def plot(self, data, header, ax, 
-            config = None,
-            coast={'linestyle':'-'}, 
-            states={'linestyle':'--'}):
+    def plot(self, data, header, om, config = None):
         ''' Plot gridded data '''
 
         if not has_basemap:
@@ -264,14 +260,6 @@ class HyWap():
         cfg = self.default_plotconfig(config, header['varname'])
 
         cellnum, llongs, llats, = self.getcoords(header)
-
-        om = oz.Oz(ax = ax)
-
-        if not coast is None:
-            om.drawcoast(**coast)
-
-        if not states is None:
-            om.drawstates(**states)
 
         m = om.get_map()
         x, y = m(llongs, llats)
