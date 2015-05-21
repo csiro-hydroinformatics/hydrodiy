@@ -210,50 +210,50 @@ class HyWap():
 
         return '%s.gz' % fout
 
-    def default_plotconfig(self, plotconfig, varname):
+    def default_plotconfig(self, cfg, varname):
         ''' Generate default plotting configuration '''
 
-        if plotconfig is None:
-            plotconfig = {'plotconfig':None, 'clevs':None, 'norm':None}
+        if cfg is None:
+            cfg = {'cmap':None, 'clevs':None, 'norm':None}
 
         if varname == 'rainfall':
-            if plotconfig['clevs'] is None:
-                plotconfig['clevs'] = [0, 1, 5, 10, 15, 25, 50, 
+            if cfg['clevs'] is None:
+                cfg['clevs'] = [0, 1, 5, 10, 15, 25, 50, 
                                         100, 150, 200, 300, 400]
 
-            if plotconfig['plotconfig'] is None:
-                plotconfig['plotconfig'] = cm.s3pcpn
+            if cfg['cmap'] is None:
+                cfg['cmap'] = cm.s3pcpn
 
         if varname == 'temperature':
-            if plotconfig['clevs'] is None:
-                plotconfig['clevs'] = range(-9, 51, 3)
+            if cfg['clevs'] is None:
+                cfg['clevs'] = range(-9, 51, 3)
 
-            if plotconfig['plotconfig'] is None:
-                plotconfig['plotconfig'] = plt.get_cmap('gist_rainbow_r')
+            if cfg['cmap'] is None:
+                cfg['cmap'] = plt.get_cmap('gist_rainbow_r')
 
         if varname == 'vprp':
-            if plotconfig['clevs'] is None:
-                plotconfig['clevs'] = range(0, 40, 2)
+            if cfg['clevs'] is None:
+                cfg['clevs'] = range(0, 40, 2)
 
-            if plotconfig['plotconfig'] is None:
-                plotconfig['plotconfig'] = plt.get_cmap('gist_rainbow_r')
+            if cfg['cmap'] is None:
+                cfg['cmap'] = plt.get_cmap('gist_rainbow_r')
 
         if varname == 'solar':
-            if plotconfig['clevs'] is None:
-                plotconfig['clevs'] = range(0, 40, 3)
+            if cfg['clevs'] is None:
+                cfg['clevs'] = range(0, 40, 3)
 
-            if plotconfig['plotconfig'] is None:
-                plotconfig['plotconfig'] = plt.get_cmap('jet_r')
+            if cfg['cmap'] is None:
+                cfg['cmap'] = plt.get_cmap('jet_r')
 
-        if plotconfig['norm'] is None:
-            plotconfig['norm'] = plt.cm.colors.Normalize(
-                    vmin=np.min(plotconfig['clevs']), 
-                    vmax=np.max(plotconfig['clevs']))
+        if cfg['norm'] is None:
+            cfg['norm'] = plt.cm.colors.Normalize(
+                    vmin=np.min(cfg['clevs']), 
+                    vmax=np.max(cfg['clevs']))
 
-        return plotconfig 
+        return cfg 
 
     def plot(self, data, header, ax, 
-            plotconfig = None,
+            config = None,
             coast={'linestyle':'-'}, 
             states={'linestyle':'--'}):
         ''' Plot gridded data '''
@@ -261,7 +261,7 @@ class HyWap():
         if not has_basemap:
             raise ImportError('basemap is not available')
 
-        plotconfig = self.default_plotconfig(plotconfig, header['varname'])
+        cfg = self.default_plotconfig(config, header['varname'])
 
         cellnum, llongs, llats, = self.getcoords(header)
 
@@ -278,7 +278,7 @@ class HyWap():
         z = data
 
         # Filter data
-        clevs = plotconfig['clevs']
+        clevs = cfg['clevs']
         z[z<clevs[0]] = np.nan
         z[z>clevs[-1]] = np.nan
 
@@ -288,9 +288,9 @@ class HyWap():
             clevs = clevs[:iw+1]
 
         # draw contour
-        cs = m.contourf(x, y, z, plotconfig['clevs'], 
-                    cmap=plotconfig['plotconfig'],
-                    norm=plotconfig['norm'])
+        cs = m.contourf(x, y, z, cfg['clevs'], 
+                    cmap=cfg['cmap'],
+                    norm=cfg['norm'])
 
         return cs
 

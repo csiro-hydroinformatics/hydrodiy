@@ -101,13 +101,13 @@ class HyWapTestCase(unittest.TestCase):
 
             for varname, timestep in itertools.product(vn.keys(), ts):
                 
-                plotconfig = hya.default_plotconfig(None, varname)
+                cfg = hya.default_plotconfig(None, varname)
                     
                 if varname == 'rainfall':
-                    plotconfig['norm'] = mpl.colors.SymLogNorm(
+                    cfg['norm'] = mpl.colors.SymLogNorm(
                             linthresh = 1,
                             vmin = 0., 
-                            vmax = plotconfig['clevs'][-1])
+                            vmax = cfg['clevs'][-1])
 
                 for v in vn[varname]:
                     vartype = v['type']
@@ -117,7 +117,7 @@ class HyWapTestCase(unittest.TestCase):
 
                     fig, ax = plt.subplots()
 
-                    cs = hya.plot(data, header, ax, plotconfig=plotconfig)
+                    cs = hya.plot(data, header, ax, config=cfg)
 
                     sz = axes_size.AxesY(ax, 0.6)
                     sz = '10%'
