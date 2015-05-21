@@ -19,6 +19,7 @@ has_basemap = True
 try:
     from mpl_toolkits.basemap import cm as cm
     import matplotlib.pyplot as plt
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
     from hygis import oz
 
 except ImportError:
@@ -209,61 +210,75 @@ class HyWap():
 
         return '%s.gz' % fout
 
+    def default_plotconfig(self, plotconfig, varname):
+        ''' Generate default plotting configuration '''
+
+        if plotconfig is None:
+            plotconfig = {'plotconfig':None, 'clevs':None, 'norm':None}
+
+        if varname == 'rainfall':
+            if plotconfig['clevs'] is None:
+                plotconfig['clevs'] = [0, 1, 5, 10, 15, 25, 50, 
+                                        100, 150, 200, 300, 400]
+
+            if plotconfig['plotconfig'] is None:
+                plotconfig['plotconfig'] = cm.s3pcpn
+
+        if varname == 'temperature':
+            if plotconfig['clevs'] is None:
+                plotconfig['clevs'] = range(-9, 51, 3)
+
+            if plotconfig['plotconfig'] is None:
+                plotconfig['plotconfig'] = plt.get_cmap('gist_rainbow_r')
+
+        if varname == 'vprp':
+            if plotconfig['clevs'] is None:
+                plotconfig['clevs'] = range(0, 40, 2)
+
+            if plotconfig['plotconfig'] is None:
+                plotconfig['plotconfig'] = plt.get_cmap('gist_rainbow_r')
+
+        if varname == 'solar':
+            if plotconfig['clevs'] is None:
+                plotconfig['clevs'] = range(0, 40, 3)
+
+            if plotconfig['plotconfig'] is None:
+                plotconfig['plotconfig'] = plt.get_cmap('jet_r')
+
+        if plotconfig['norm'] is None:
+            plotconfig['norm'] = plt.cm.colors.Normalize(
+                    vmin=np.min(plotconfig['clevs']), 
+                    vmax=np.max(plotconfig['clevs']))
+
+        return plotconfig 
+
     def plot(self, data, header, ax, 
-        clevs = None,
-        cmap = None,
-        is_decile=False, is_masked=False,
-        coast_linestyle='-', 
-        states_linestyle='--'):
+            plotconfig = None,
+            coast={'linestyle':'-'}, 
+            states={'linestyle':'--'}):
         ''' Plot gridded data '''
 
         if not has_basemap:
             raise ImportError('basemap is not available')
 
-        if header['varname'] == 'rainfall':
-            if clevs is None:
-                clevs = [0, 1, 5, 10, 15, 25, 50, 100, 150, 200, 300, 400]
-
-            if cmap is None:
-                cmap = cm.s3pcpn
-
-        if header['varname'] == 'temperature':
-            if clevs is None:
-                clevs = range(-9, 51, 3)
-
-            if cmap is None:
-                cmap = plt.get_cmap('gist_rainbow_r')
-
-        if header['varname'] == 'vprp':
-            if clevs is None:
-                clevs = range(0, 40, 2)
-
-            if cmap is None:
-                cmap = plt.get_cmap('gist_rainbow_r')
-
-        if header['varname'] == 'solar':
-            if clevs is None:
-                clevs = range(0, 40, 3)
-
-            if cmap is None:
-                cmap = plt.get_cmap('jet_r')
-
+        plotconfig = self.default_plotconfig(plotconfig, header['varname'])
 
         cellnum, llongs, llats, = self.getcoords(header)
 
         om = oz.Oz(ax = ax)
 
-        if not coast_linestyle is None:
-            om.drawcoast(linestyle = coast_linestyle)
+        if not coast is None:
+            om.drawcoast(**coast)
 
-        if not states_linestyle is None:
-            om.drawstates(linestyle = states_linestyle)
+        if not states is None:
+            om.drawstates(**states)
 
         m = om.get_map()
         x, y = m(llongs, llats)
         z = data
 
         # Filter data
+        clevs = plotconfig['clevs']
         z[z<clevs[0]] = np.nan
         z[z>clevs[-1]] = np.nan
 
@@ -273,7 +288,18 @@ class HyWap():
             clevs = clevs[:iw+1]
 
         # draw contour
-        cs = m.contourf(x, y, z, clevs, cmap=cmap)
+        cs = m.contourf(x, y, z, plotconfig['clevs'], 
+                    cmap=plotconfig['plotconfig'],
+                    norm=plotconfig['norm'])
 
         return cs
+
+    def plot_cbar(self, fig, ax, cs, *args, **kwargs):
+
+        div = make_axes_locatable(ax)
+
+        cbar_ax = div.append_axes(*args, **kwargs)
+
+        cb = fig.colorbar(cs, cax=cbar_ax)
+
 

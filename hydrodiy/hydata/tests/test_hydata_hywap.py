@@ -7,6 +7,8 @@ import datetime
 import pandas as pd
 
 import matplotlib.pyplot as plt
+import matplotlib as mpl
+from mpl_toolkits.axes_grid import axes_size
 
 from hydata import hywap
 
@@ -98,6 +100,14 @@ class HyWapTestCase(unittest.TestCase):
         if hywap.has_basemap:
 
             for varname, timestep in itertools.product(vn.keys(), ts):
+                
+                plotconfig = hya.default_plotconfig(None, varname)
+                    
+                if varname == 'rainfall':
+                    plotconfig['norm'] = mpl.colors.SymLogNorm(
+                            linthresh = 1,
+                            vmin = 0., 
+                            vmax = plotconfig['clevs'][-1])
 
                 for v in vn[varname]:
                     vartype = v['type']
@@ -107,12 +117,18 @@ class HyWapTestCase(unittest.TestCase):
 
                     fig, ax = plt.subplots()
 
-                    hya.plot(data, header, ax)
+                    cs = hya.plot(data, header, ax, plotconfig=plotconfig)
+
+                    sz = axes_size.AxesY(ax, 0.6)
+                    sz = '10%'
+                    hya.plot_cbar(fig, ax, cs, 
+                        position='right', size=sz, pad=0.1)
 
                     ax.set_title('%s - %s' % (varname, dt))
 
                     fp = '%s/%s_%s_%s.png' % (self.FAWAP, varname, timestep, vartype)
                     fig.savefig(fp)
+
 
 if __name__ == "__main__":
     unittest.main()
