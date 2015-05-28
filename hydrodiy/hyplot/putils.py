@@ -4,10 +4,13 @@ from datetime import datetime
 import datetime
 
 import matplotlib.pyplot as plt
+
 from matplotlib import cm
+
 from matplotlib.path import Path
-import matplotlib.patches as patches
-import matplotlib.gridspec as gridspec
+
+from matplotlib.colors import hex2color
+from matplotlib.colors import LinearSegmentedColormap
 
 import numpy as np
 import pandas as pd
@@ -110,190 +113,31 @@ def footer(fig, author=None, copyright=False, version=None):
         fig.text(0.95, 0.010, copyright, color='#595959', 
                                 ha='right', fontsize=9)
 
+def col2cmap(colors):
+    ''' Define a linear cmap from a dictionary of colors '''
 
-def rectangle_paths(left, right, bottom, top, 
-                        rounded_fraction=0.3):
-    ''' 
-        build a Path object containing multiple 
-        rectangles. The rounded option uses rounded
-        corners as a fraction min(width, height).
-        Should be smaller than 0.5
-    '''
-    # see http://matplotlib.org/examples/pylab_examples/fancybox_demo.html
-    # should be much easier !!!
+    keys = np.sort(colors.keys()).astype(float)
 
-    # Determines rounded corner size
-    wx = np.min(right-left)
-    rx = np.max(right)-np.min(left)
-    wy = np.min(top-bottom)
-    ry = np.max(top)-np.min(bottom)
-    ww = min(wx/rx, wy/ry)
+    if keys[0] < 0.:
+        raise ValueError('lowest key(%f) is lower than 0' % keys[0])
 
-    rwidthx = min(0.5, rounded_fraction) * ww * rx 
-    rwidthy = min(0.5, rounded_fraction) * ww * ry
+    if keys[-1] > 1.:
+        raise ValueError('lowest key(%f) is lower than 0' % keys[-1])
+
+    cdict = {
+            'red': [],
+            'green': [],
+            'blue': []
+        }
+
+    for k in keys:
+        col = hex2color(colors[k])
+
+        cdict['red'].append((k, col[0], col[0]))
+        cdict['green'].append((k, col[1], col[1]))
+        cdict['blue'].append((k, col[2], col[2]))
+
+    return LinearSegmentedColormap('mycmap', cdict, 256)
+
    
-    # initialise path object
-    npt = 13
-    nverts = len(left) * npt
-    verts = np.zeros((nverts,2))
-    codes = np.ones(nverts, int) * Path.LINETO
-    
-    codes[0::npt] = Path.MOVETO
-    codes[(npt-1)::npt] = Path.CLOSEPOLY
-   
-    # Rounded corners
-    for k in [2, 3, 5, 6, 8, 9, 11, 12]:
-        codes[k::npt] = Path.CURVE3
-   
-    # Draw path
-    verts[0::npt,0] = left
-    verts[0::npt,1] = bottom+rwidthy
-    
-    verts[1::npt,0] = left
-    verts[1::npt,1] = top-rwidthy
-    
-    verts[2::npt,0] = left
-    verts[2::npt,1] = top
-    
-    verts[3::npt,0] = left+rwidthx
-    verts[3::npt,1] = top
-    
-    verts[4::npt,0] = right-rwidthx
-    verts[4::npt,1] = top
-    
-    verts[5::npt,0] = right
-    verts[5::npt,1] = top
-    
-    verts[6::npt,0] = right
-    verts[6::npt,1] = top-rwidthy
-    
-    verts[7::npt,0] = right
-    verts[7::npt,1] = bottom+rwidthy
-    
-    verts[8::npt,0] = right
-    verts[8::npt,1] = bottom
-    
-    verts[9::npt,0] = right-rwidthx
-    verts[9::npt,1] = bottom
-    
-    verts[10::npt,0] = left+rwidthx
-    verts[10::npt,1] = bottom
-    
-    verts[11::npt,0] = left
-    verts[11::npt,1] = bottom
-    
-    verts[12::npt,0] = left
-    verts[12::npt,1] = bottom+rwidthy
-
-    return Path(verts, codes)
-
-def fill_between(x, y1, y2=0, ax=None, **kwargs):
-    """Plot filled region between `y1` and `y2`.
-
-    This function works exactly the same as matplotlib's fill_between, 
-    except that it also plots a proxy artist 
-    (specifically, a rectangle of 0 size) so that it can be added 
-    it appears on a legend.
-    See http://goo.gl/tGLbji 
-    """
-    ax = ax if ax is not None else plt.gca()
-    ax.fill_between(x, y1, y2, **kwargs)
-    p = plt.Rectangle((0, 0), 0, 0, **kwargs)
-    ax.add_patch(p)
-
-    return p
-
-def plot_ensembles(ensembles, ax, 
-        percentiles=[10., 25.],
-        xx=None, line_width=2, alpha=0.9):
-    ''' 
-        Plot percentiles of ensembles 
-        
-        :param numpy.array ensembles : Data frame containing ensembles in columns
-        :param matplotlib.axes ax: Axe to draw ensembles on
-        :param list percentiles: List of low percentiles to compute 
-                        ensemble stats. Quantiles should be <50. 
-                        the 50 and other symetric percentiles are added
-                        automatically 
-                        (e.g. [10, 20] -> [10, 20, 50, 80, 90])
-        :param numpy.array xx: Abscissae to use for plotting 
-        :param float line_width: Width of line drawn
-        :param float alpha: Transparency
-    '''
-   
-    # compute percentiles
-    qt = percentiles+[50]+[100-q for q in percentiles]
-    args = (qt,)
-    ens = pd.DataFrame(ensembles)
-    ens_qq = ens.apply(sutils.percentiles, 
-            args=args, axis=1)
-
-    # Ensemble colors
-    ncols = 2+len(percentiles)
-    cols = get_colors(ncols, 'Blues')[1:]
-
-    # Rearrange columns 
-    ens_qq = ens_qq[np.sort(ens_qq.columns.values)]
-
-    # dimensions
-    nval = ens_qq.shape[0]
-    nens = ens_qq.shape[1]
-
-    # Abscissae
-    if xx is None:
-        u = ens_qq.index.values
-        x = np.hstack([u, u[::-1], u[0]])
-    else:
-        x = np.hstack([xx, xx[::-1], xx[0]])
-
-    # plots ensemble range
-    columns = ens_qq.columns
-    for i in range(len(cols)-1):
-        v1 = ens_qq[columns[i]]
-        v2 = ens_qq[columns[nens-i-1]]
-        lab = '%s to %s'%(columns[i], columns[nens-i-1])
-        lab = re.sub('_', ' ', lab)
-        fill_between(ens_qq.index.values ,v1.values, 
-                v2.values, ax=ax, 
-                color=cols[i], lw=0.1, alpha=0.8, 
-                label=lab)
-    
-    # plot median
-    ax.plot(ens_qq.index,
-            ens_qq[columns[len(cols)-1]], 
-            lw=line_width,
-            color=cols[len(cols)-1], 
-            label=re.sub('_', ' ',columns[len(cols)-1]))
-
-    return ens_qq
-
-def label(ax, label, fontsize=16):
-    ax.text(0.05, 0.95, label, transform=ax.transAxes,
-           fontsize=fontsize, fontweight='bold', va='top')
-
-
-def zoom(ax, fraction, which_axis='both'):
-    ''' Zoom in (fraction>0) and out (fraction<0) '''
-
-    a = float(fraction)/100+1
-    
-    xlim = ax.get_xlim()
-    ylim = ax.get_ylim()
-
-    # Zoom in x axis
-    x0 = float(xlim[0]+xlim[1])/2
-    dx = float(xlim[1]-xlim[0])/2
-    xlim2 = [x0-dx*a, x0+dx*a]
-
-    if (which_axis == 'x') | (which_axis == 'both'):
-        ax.set_xlim(xlim2)
-
-    # Zoom in y axis
-    y0 = (ylim[0]+ylim[1])/2
-    dy = (ylim[1]-ylim[0])/2
-    ylim2 = [y0-dy*a, y0+dy*a]
-
-    if (which_axis == 'y') | (which_axis == 'both'):
-        ax.set_ylim(ylim2)
-
 
