@@ -22,14 +22,20 @@ class BinfileTestCase(unittest.TestCase):
 
         data1 = pd.DataFrame(np.random.normal(size=(self.nrow, self.ncol)))
 
+        start = 19950310000000
+
         # Writes data
         ft = '%s/binfile_testdata1.bin'%self.FOUT        
-        binfile.write_bin(data1, ft, 'test data')
+        binfile.write_bin(data1, ft, 
+                calendarstart = start,
+                comment = 'test data')
 
         # Reads it back
-        data2, sl, ts, comment = binfile.read_bin(ft)
+        data2, sl, start2, ts, comment = binfile.read_bin(ft)
 
         self.assertTrue(np.allclose(data1, data2))
+
+        self.assertTrue(start == start2)
         
         F = self.FOUT
         cmd = 'rm %s/*.bind %s/*.bins %s/*.binl %s/*.binh' % (F, F, F, F)
@@ -53,7 +59,7 @@ class BinfileTestCase(unittest.TestCase):
         binfile.write_bin(data1, ft, 'test data')
 
         # Reads it back
-        data2, sl, ts, comment = binfile.read_bin(ft)
+        data2, sl, start, ts, comment = binfile.read_bin(ft)
 
         self.assertTrue(np.allclose(data1, data2))
         
@@ -93,7 +99,7 @@ class BinfileTestCase(unittest.TestCase):
        binfile.write_bin(data1, ft, 'test data', strlength=strlength)
 
        # Reads it back
-       data2, sl, ts, comment = binfile.read_bin(ft)
+       data2, sl, start, ts, comment = binfile.read_bin(ft)
        data2.columns = data1.columns
       
        # Test equality
@@ -135,7 +141,7 @@ class BinfileTestCase(unittest.TestCase):
        binfile.write_bin(data1, ft, 'test data')
 
        # Reads it back
-       data2, sl, ts, comment = binfile.read_bin(ft)
+       data2, sl, start, ts, comment = binfile.read_bin(ft)
        data2.columns = data1.columns
       
        # Test equality
@@ -155,9 +161,11 @@ class BinfileTestCase(unittest.TestCase):
         """ Binfile from hym """
 
         ft = '%s/data/hym_test_iobin_999.bin'%self.FOUT        
-        data, sl, ts, comment = binfile.read_bin(ft)
+        data, sl, start, ts, comment = binfile.read_bin(ft)
 
         self.assertTrue(ts == 201)
+
+        self.assertTrue(start == 19900101000000)
 
         self.assertTrue(data.shape == (26, 3))
         

@@ -50,7 +50,9 @@ def _todatatypes(data, strlength):
     return data2, datatypes
    
 
-def _binhead(datatypes, strlength, timestep, nrow, ncol,comment):
+def _binhead(datatypes, strlength, nrow, ncol, 
+        calendarstart, timestep,
+        comment):
     """ Produces the bin files header """
 
     comment_list = comment
@@ -59,23 +61,29 @@ def _binhead(datatypes, strlength, timestep, nrow, ncol,comment):
 
     h = []
     h.append('%10s %d\n'%('strlength', strlength))
-    h.append('%10s %d\n'%('timestep', timestep))
     h.append('%10s %d\n'%('ncol', ncol))
     h.append('%10s %d\n'%('nrow', nrow))
     h.append('%10s %s\n'%('datatypes', ''.join(datatypes)))
+    h.append('%10s %d\n'%('calstart', calendarstart))
+    h.append('%10s %d\n'%('timestep', timestep))
     h.append('%10s %s\n'%('comment', comment))
 
     return h
 
-def write_bin(data, filebase, comment, strlength=30, timestep=-1):
+def write_bin(data, filebase, comment, 
+        strlength = 30, 
+        calendarstart = 19900101000000,
+        timestep=-1):
     """ write a pandas dataframe to a bin file with comments """
    
     # Convert to datatypes
     data2, datatypes = _todatatypes(data, strlength)
 
     # write header 
-    head = _binhead(datatypes, strlength, timestep, 
-        data.shape[0], data.shape[1], comment) 
+    head = _binhead(datatypes, strlength,  
+        data.shape[0], data.shape[1], 
+        calendarstart, timestep,
+        comment) 
 
     fheader = open('%sh'%filebase, 'w')
     fheader.writelines(head)
@@ -108,10 +116,11 @@ def read_bin(filebase):
     # Reads header
     fhead = open('%sh'%filebase, 'r')
     strlength = int(fhead.readline()[10:])
-    timestep = int(fhead.readline()[10:])
     ncol = int(fhead.readline()[10:])
     nrow = int(fhead.readline()[10:])
     dt = re.sub(' +', '', fhead.readline()[10:].strip())
+    calendarstart = int(fhead.readline()[10:])
+    timestep = int(fhead.readline()[10:])
     comment = fhead.readline()[10:].strip()
     fhead.close()
 
@@ -173,5 +182,5 @@ def read_bin(filebase):
 
     data = pd.DataFrame(data)
 
-    return data, strlength, timestep, comment
+    return data, strlength, calendarstart, timestep, comment
   
