@@ -2,6 +2,7 @@ import os
 import unittest
 import numpy as np
 import datetime
+import math
 from hymod import mutils
 
 class UtilsTestCase(unittest.TestCase):
@@ -23,25 +24,26 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_sinmodel(self):
 
-        doy = np.arange(1, 367)
+        soy = np.arange(1, 367*86400, 86400)
 
         mu = 100
         eta = 50
         phi = 2*np.pi*0.2
         alpha = 1
         params = [mu, eta, phi, alpha]
-        Q1 = mutils.sinmodel(params, doy)
-        u = 0.5 + 0.5*np.sin((0. + doy)/365*2*np.pi + np.pi/2 - phi)
-        Q2 = ((1+u)**(alpha+1)-1)/(2**(alpha+1)-1) - 0.5
+        Q1 = mutils.sinmodel(params, soy)
+
+        u = np.sin((0. + soy)/365.2425/86400*2*np.pi + np.pi/2 - phi)
+        Q2 = (np.exp(alpha*u)-math.exp(-alpha))/(math.exp(alpha)-math.exp(-alpha))
         Q2 = mu + eta * Q2
-        self.assertTrue(all(Q1==Q2))
+        self.assertTrue(np.allclose(Q1, Q2))
 
         alpha = -10.
         params = [mu, eta, phi, alpha]
-        Q1 = mutils.sinmodel(params, doy)
-        Q2 = ((1+u)**(alpha+1)-1)/(2**(alpha+1)-1) - 0.5
+        Q1 = mutils.sinmodel(params, soy)
+        Q2 = (np.exp(alpha*u)-math.exp(-alpha))/(math.exp(alpha)-math.exp(-alpha))
         Q2 = mu + eta * Q2
-        self.assertTrue(all(Q1==Q2))
+        self.assertTrue(np.allclose(Q1, Q2))
 
 
 

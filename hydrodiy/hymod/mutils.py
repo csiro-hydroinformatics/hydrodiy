@@ -1,4 +1,5 @@
 import datetime
+import math 
 import os
 import numpy as np
 
@@ -23,21 +24,24 @@ def getmemusage():
     return mem
 
 
-def sinmodel(params, dayofyear):
+def sinmodel(params, secofyear):
     ''' Sinusoidal model to produce seasonal daily data '''
     
     mu = params[0] # location
     eta = max(0., params[1]) # scale
     phi = max(0., min(2*np.pi, params[2])) # phase 
-    alpha = max(-20, min(20, params[3])) # shape
+    alpha = max(-50, min(50, params[3])) # shape
 
     # Sinusoid
-    u = 0.5 + 0.5*np.sin((0. + dayofyear)/365*2*np.pi + np.pi/2 - phi)
+    nsec = 365.2425 * 86400
+    u = np.sin((0. + secofyear)/nsec*2*np.pi + np.pi/2 - phi)
 
     # Shape power factor
-    if np.abs(alpha+1) > 1e-10:
-        y = ((1+u)**(alpha+1)-1)/(2**(alpha+1)-1) - 0.5
+    if np.abs(alpha) > 1e-10:
+        y = (np.exp(alpha*u)-math.exp(-alpha))/(math.exp(alpha)-math.exp(-alpha))
+
     else:
-        y = (math.log(1+u)-1)/(math.log(2)-1) - 0.5
+        y = u
 
     return mu + eta * y
+
