@@ -37,11 +37,11 @@ def sinmodel(params, secofyear):
     u = np.sin((0. + secofyear)/nsec*2*np.pi + np.pi/2 - phi)
 
     # Shape power factor
-    if np.abs(alpha) > 1e-10:
+    if abs(alpha) > 1e-3:
         y = (np.exp(alpha*u)-math.exp(-alpha))/(math.exp(alpha)-math.exp(-alpha))
 
     else:
-        y = u
+        y = (u+1)/2+alpha/2*(u**2-1)
 
     return mu + eta * y
 
