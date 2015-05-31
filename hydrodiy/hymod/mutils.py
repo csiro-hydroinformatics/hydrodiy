@@ -28,7 +28,7 @@ def sinmodel(params, secofyear):
     ''' Sinusoidal model to produce seasonal daily data '''
     
     mu = params[0] # location
-    eta = max(0., params[1]) # scale
+    eta = params[1] # scale
     phi = max(0., min(2*np.pi, params[2])) # phase 
     alpha = max(-50, min(50, params[3])) # shape
 
@@ -43,5 +43,5 @@ def sinmodel(params, secofyear):
     else:
         y = (u+1)/2+alpha/2*(u**2-1)
 
-    return mu + eta * y
+    return mu + math.exp(eta)/2 * y
 
