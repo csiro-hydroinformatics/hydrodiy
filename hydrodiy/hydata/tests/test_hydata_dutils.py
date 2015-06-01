@@ -57,6 +57,20 @@ class UtilsTestCase(unittest.TestCase):
 
             self.assertEqual(t, t2)
 
+    def test_secofyear(self):
+
+        t = datetime.datetime(2001, 1, 1)
+        n = dutils.secofyear(t)
+
+        self.assertEqual(n, 0)
+       
+        t1 = datetime.datetime(2000, 2, 29)
+        n1 = dutils.secofyear(t1)
+        t2 = datetime.datetime(2000, 3, 1)
+        n2 = dutils.secofyear(t2)
+
+        self.assertEqual(n1, n2)
+       
     def test_wyear1(self):
         day = datetime.datetime(2001, 12, 3)
         yw = dutils.wyear(day)

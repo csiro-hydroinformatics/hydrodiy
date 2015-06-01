@@ -213,7 +213,8 @@ class HyWap():
         ''' Generate default plotting configuration '''
 
         if cfg is None:
-            cfg = {'cmap':None, 'clevs':None, 'norm':None}
+            cfg = {'cmap':None, 'clevs':None, 
+                'norm':None, 'sigma':None}
 
         if varname == 'rainfall':
             if cfg['clevs'] is None:
@@ -263,12 +264,16 @@ class HyWap():
 
         m = om.get_map()
         x, y = m(llongs, llats)
-        z = data
+        z = data.copy()
 
         # Filter data
         clevs = cfg['clevs']
         z[z<clevs[0]] = np.nan
         z[z>clevs[-1]] = np.nan
+
+        if not cfg['sigma'] is None:
+            z = scipy.ndimage.gaussian_filter(z, sigma=cfg['sigma'],
+                                                   mode='nearest')
 
         # Refine levels
         if np.nanmax(z)<np.max(clevs):

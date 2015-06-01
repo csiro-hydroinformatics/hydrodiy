@@ -3,6 +3,7 @@ import math
 
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+import calendar
 
 import numpy as np
 import pandas as pd
@@ -46,6 +47,20 @@ def time2osec(t):
     o += np.uint64(t.second)
 
     return o
+
+def secofyear(t):
+    ''' 
+        Compute number of seconds elapsed since Jan 1
+    '''
+
+    o = time2osec(t)
+    o0 = time2osec(datetime(t.year, 1, 1))
+
+    if calendar.isleap(t.year) & (t.month >= 3):
+        o -= 86400
+
+    return o-o0
+
 
 def osec2time(o):
     ''' 
