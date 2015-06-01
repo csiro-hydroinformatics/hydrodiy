@@ -27,22 +27,31 @@ class UtilsTestCase(unittest.TestCase):
         soy = np.arange(1, 367*86400, 86400)
 
         mu = 100
+
         eta = 3
-        phi = 2*np.pi*0.2
+
+        phase = 0.2
+        phi = 2*math.pi * max(0., 
+            min(1, math.exp(phase)/(1+math.exp(phase))))
+
         alpha = 1
-        params = [mu, eta, phi, alpha]
+
+        params = [mu, eta, phase, alpha]
+
         Q1 = mutils.sinmodel(params, soy)
 
-        u = np.sin((0. + soy)/365.2425/86400*2*np.pi + np.pi/2 - phi)
+        u = np.sin((0. + soy)/365.2425/86400*2*math.pi + math.pi/2 - phi)
+
         Q2 = (np.exp(alpha*u)-math.exp(-alpha))/(math.exp(alpha)-math.exp(-alpha))
-        Q2 = mu + math.exp(eta)/2 * Q2
+        Q2 = mu + math.exp(eta) * Q2
         self.assertTrue(np.allclose(Q1, Q2))
 
         alpha = -10.
-        params = [mu, eta, phi, alpha]
+        params = [mu, eta, phase, alpha]
+
         Q1 = mutils.sinmodel(params, soy)
         Q2 = (np.exp(alpha*u)-math.exp(-alpha))/(math.exp(alpha)-math.exp(-alpha))
-        Q2 = mu + math.exp(eta)/2 * Q2
+        Q2 = mu + math.exp(eta) * Q2
         self.assertTrue(np.allclose(Q1, Q2))
 
 
