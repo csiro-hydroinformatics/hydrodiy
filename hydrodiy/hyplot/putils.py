@@ -17,6 +17,11 @@ import pandas as pd
 
 from hystat import sutils
 
+# Some useful colors
+wafari_tercile_colors = ['#FF9933', '#64A0C8', '#005BBB']
+
+bureau_background_color = '#002745'
+
 
 def get_colors(ncols=10, palette='Paired'):
     ''' generates a set of colors '''
