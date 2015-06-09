@@ -247,8 +247,13 @@ def pit(obs, forc):
 
             # Add small perturbation to avoid ties
             f = np.sort(forc[i, :])
+
             d = np.abs(np.diff(f))
-            eps = np.min(d[d>0]) * 1e-10
+            idx = d>0
+            eps = 1e-20
+            if np.sum(idx)>0:
+                eps = np.min(d[d>0]) * 1e-10
+
             e = np.random.uniform(0, eps, nens)
             f = f + e
 

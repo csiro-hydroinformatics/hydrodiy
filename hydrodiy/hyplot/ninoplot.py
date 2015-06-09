@@ -100,6 +100,11 @@ class NinoPlot:
         self.nino_ts1 = ts1
         self.nino_ts2 = ts2
 
+    def _set_spines_color(self, ax):
+
+        for bn in ['left', 'bottom', 'top', 'right']:
+            ax.spines[bn].set_color(self.color_spines)
+
 
     def _draw_legend(self, ax):
          
@@ -129,7 +134,9 @@ class NinoPlot:
     
     def _set_decoration(self, ax, 
             startplot, endplot, ylim,
-            legend, title, ylabel):
+            legend, title, ylabel, 
+            yticks=[], 
+            ygrid=False):
 
         ax.set_xlim(get_nmonth_fromstart([startplot, endplot], self.start))
         
@@ -143,6 +150,13 @@ class NinoPlot:
             self._draw_legend(ax)
             
         self._set_xtick(ax, startplot, endplot)
+
+        self._set_spines_color(ax)
+
+        ax.set_yticks(yticks)
+
+        if ygrid:
+            ax.yaxis.grid(True, color=self.color_spines)
 
 
     def set_font(self,
@@ -179,23 +193,12 @@ class NinoPlot:
             line_width_smooth = 3,
             ylabel = '', 
             yticks = [], 
+            ygrid = False,
             title = '',
             legend = True):
 
         # Get ax
         ax = plt.subplot(self.gs[0,0], axisbg=self.color_background)
-
-        # Bounding box color
-        for bn in ['left', 'bottom', 'top', 'right']:
-            ax.spines[bn].set_color(self.color_spines)
-
-        # Decorate axis
-        ax.set_ylabel(ylabel)
-
-        ax.set_yticks(yticks)
-
-        ax.set_title(title)
-
 
         # Plot data
         xx = get_nmonth_fromstart(data.index, self.start)
@@ -212,7 +215,6 @@ class NinoPlot:
                 lw=line_width_smooth,
                 label = '%d month av.' % nmonth_smooth) 
 
-
         # Nino periods
         xx = get_nmonth_fromstart(self.nino_ts1['time'], self.start)
 
@@ -225,7 +227,7 @@ class NinoPlot:
 
         # Decorations
         self._set_decoration(ax, startplot, endplot, 
-            ylim, legend, title, ylabel)
+            ylim, legend, title, ylabel, yticks, ygrid)
 
 
     def bottomplot_bars(self,
@@ -236,6 +238,8 @@ class NinoPlot:
             endplot = datetime.datetime(2015, 4, 1),
             title = '',
             ylabel = '',
+            yticks = [], 
+            ygrid = False,
             barwidth = 1,
             hide_non_nino=False,
             legend = True):
@@ -247,14 +251,14 @@ class NinoPlot:
         # Get ax
         ax = plt.subplot(self.gs[1,0], axisbg=self.color_background)
 
-        # Bounding box color
-        for bn in ['left', 'bottom', 'top', 'right']:
-            ax.spines[bn].set_color(self.color_spines)
-
         # Add nino event
         tmp = data.join(self.nino_ts2)
         data0 = data[tmp['nino']==0]
         data1 = data[tmp['nino']==1]
+
+        means = data.mean()
+        if hide_non_nino:
+            means = data1.mean()
 
         # Get abscissae
         xx0 = get_nmonth_fromstart(data0.index, self.start)
@@ -302,7 +306,9 @@ class NinoPlot:
 
         # Decorations
         self._set_decoration(ax, startplot, endplot, ylim, 
-            legend, title, ylabel)
+            legend, title, ylabel, yticks, ygrid)
+
+        return means
 
 
     def bottomplot_line(self,
@@ -319,6 +325,8 @@ class NinoPlot:
             line_width_nino = 6,
             title = '',
             ylabel = '',
+            yticks = [], 
+            ygrid = False,
             barwidth = 1,
             hide_non_nino=False,
             legend = True):
@@ -326,13 +334,12 @@ class NinoPlot:
         # Get ax
         ax = plt.subplot(self.gs[1,0], axisbg=self.color_background)
 
-        # Bounding box color
-        for bn in ['left', 'bottom', 'top', 'right']:
-            ax.spines[bn].set_color(self.color_spines)
-
+        # Get x values
         xx = get_nmonth_fromstart(data.index, self.start)
         
         # Remove non nino years
+        means = data.mean()
+
         if hide_non_nino:
 
             tmp = pd.DataFrame(data).join(nino_ts2)
@@ -340,16 +347,19 @@ class NinoPlot:
             data2[tmp['nino']==0] = np.nan
             ax.plot(xx, data2.values, lw=line_width_nino, color=color_nino)
            
+            means = data2.mean()
 
         if not idx_highlight is None:
 
             data2 = data.copy()
-            data2[idx_highlight] = np.nan
+            data2[~idx_highlight] = np.nan
 
             ax.plot(xx, data2.values, 
                 lw=line_width_highlight, 
                 color='white', 
                 label=label_highlight)
+
+            means = data2.mean()
 
         # Plot line
         ax.plot(xx, data.values, '-', 
@@ -358,54 +368,57 @@ class NinoPlot:
 
         # Decorations
         self._set_decoration(ax, startplot, endplot, ylim, 
-            legend, title, ylabel)
+            legend, title, ylabel, yticks, ygrid)
+
+        return means
 
 
     def bottomplot_average(self,
-            data, 
             ylim, 
             colors,
             title, 
             label,
+            means = [], 
+            barwidth = 1,
             font_size_large = 20,
             font_size_small = 16):
-
-        if data.shape[1] != len(colors):
-            raise ValueError('if data.shape[1](%d) != len(colors)(%d)',
-                data.shape[1], len(colors))
 
         # Get ax
         ax = plt.subplot(self.gs[1,1], axisbg=self.color_background)
 
-        # Bounding box color
-        for bn in ['left', 'bottom', 'top', 'right']:
-            if highlight in ['0', '1']:
-                ax.spines[bn].set_color(self.color_spines)
-        
         ax.set_ylim(ylim)
 
-        if data.shape[1] > 1:
+        if len(means)>0:
+
+            if len(means) != len(colors):
+                raise ValueError('len(means)(%d) != len(colors)(%d)' % (
+                    len(means), len(colors)))
+
             # Bar plots
             bottom = 0.
             b = []
     
-            for i in range(data.shape[1]):
+            for i in range(len(means)):
                 
-                bb = ax.bar(0, data.iloc[0, i], width=barwidth, 
+                bb = ax.bar(0, means.iloc[i], width=barwidth, 
                     bottom=bottom, color=colors[i], edgecolor='none')
 
-                ax.text(0.5, bottom+data.iloc[0, i]/2, '%0.0f%%' % data.iloc[0, i], 
+                ax.text(0.5, bottom+means.iloc[i]/2, '%0.0f%%' % means.iloc[i], 
                         ha='center', fontsize=font_size_large)
                 
                 b.append(bb)
 
-                bottom += data.iloc[0, i]
+                bottom += means.iloc[i]
 
         else:
             # Line plot
             ax.text(0.5, np.mean(ylim), title,
                     ha='center', fontsize=font_size_small)
 
-            ax.text(0.5, np.meam(ylim)*0.8, label,
+            ax.text(0.5, np.mean(ylim)*0.8, label,
                     ha='center', fontsize=font_size_large)
+
+        ax.set_yticks([])
+        ax.set_xticks([])
+        self._set_spines_color(ax)
 

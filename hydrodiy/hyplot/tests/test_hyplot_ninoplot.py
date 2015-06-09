@@ -28,8 +28,9 @@ class NinoPlotTestCase(unittest.TestCase):
         npl = ninoplot.NinoPlot()
 
         ylim = [-11, 11]
+        yticks = [-5, 0, 5]
 
-        npl.toplot(data, ylim)
+        npl.toplot(data, ylim, yticks=yticks, ygrid=True)
 
         fp = '%s/ninoplot_top.png'%self.FOUT
         npl.savefig(fp)
@@ -49,8 +50,15 @@ class NinoPlotTestCase(unittest.TestCase):
         npl = ninoplot.NinoPlot()
 
         ylim = [-10, 120]
+        yticks = [0, 50, 100]
 
-        npl.bottomplot_line(data, ylim)
+        means = npl.bottomplot_line(data, ylim,
+            yticks = yticks, 
+            ygrid=True)
+
+        npl.bottomplot_average(ylim, colors='',
+            title='average',
+            label='av.')
 
         fp = '%s/ninoplot_bottom_line.png'%self.FOUT
         npl.savefig(fp)
@@ -69,10 +77,18 @@ class NinoPlotTestCase(unittest.TestCase):
         npl = ninoplot.NinoPlot(color_spines='none')
 
         ylim = [0, 100]
+        yticks = np.arange(0, 120, 20)
 
         colors = putils.wafari_tercile_colors[:2]
 
-        npl.bottomplot_bars(data, colors, ylim)
+        means = npl.bottomplot_bars(data, colors, ylim,
+            yticks = yticks, 
+            ygrid=False)
+
+        npl.bottomplot_average(ylim, colors,
+            title='average',
+            label='av.',
+            means = means)
 
         fp = '%s/ninoplot_bottom_bars.png'%self.FOUT
         npl.savefig(fp)
