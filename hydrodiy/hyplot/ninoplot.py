@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 
 import os, json
 
@@ -223,7 +224,7 @@ class NinoPlot:
         ax.fill_between(xx, ylim[0]*np.ones_like(yy), 
                 yy, facecolor='red', alpha=0.7)
 
-        ax.plot([], [], color='red', lw=10, label='El Nino events') 
+        ax.plot([], [], color='red', lw=10, label=u'El Niño events') 
 
         # Decorations
         self._set_decoration(ax, startplot, endplot, 
@@ -421,4 +422,4 @@ class NinoPlot:
         ax.set_yticks([])
         ax.set_xticks([])
         self._set_spines_color(ax)
-
+        ax.set_title(title) 
