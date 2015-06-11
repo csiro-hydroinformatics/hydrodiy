@@ -42,31 +42,48 @@ def _header2comment(header):
     return comment
 
 
-def _csvhead(nrow,ncol,comment,src='uknown'):
+def _csvhead(nrow, ncol, comment, source_file, author=None):
     """ Produces a nice header for csv files """
 
-    comment_list = comment
-    
-    if not isinstance(comment, list):
-        comment_list = [comment]
+    # Generate the comments dict
+    if isinstance(comment, str):
+        comments = {'comment01': comment}
 
+    elif isinstance(comment, list):
+        comments = {'comment%2.2d' % i: comment[i] for i in range(len(comment))}
+
+    elif isinstance(comment, dict):
+        comments = {re.sub('\:', '', k).lower(): comment[k] for k in comment}
+
+    else:
+        comment = list(comment)
+        comments = {'comment%2.2d' % i: comment[i] for i in range(len(comment))}
+
+    # Generate file header
     h = []
     h.append("# --------------------------------------------------")
     
     h.append("# nrow : %d" % nrow)
     h.append("# ncol : %d" % ncol)
 
-    for i in range(len(comment_list)): 
-        h.append("# comment%2.2d : %s" %(i, comment_list[i]))
+    for k in comments: 
+        h.append("# %s : %s" %(k, comments[k]))
 
-    h.append("# time_written : %s" % time.strftime("%Y-%m-%d %H:%M"))
+    h.append("# time_generated : %s" % time.strftime("%Y-%m-%d %H:%M"))
     
-    try:
-        h.append("# author : %s" % os.getlogin())
-    except:
-        h.append("# author : unknwon")
+    # seek author
+    if author is None:
+        try:
+            author = os.getlogin()
+        except:
+            author = 'unknown'
 
-    h.append("# script : %s" % src)
+    h.append("# author : %s" % author)
+
+    # seek source file
+    h.append("# source_file : %s" % source_file)
+
+    # Python config
     h.append("# work_dir : %s" % os.getcwd())
     h.append("# python_environment : %s" % os.name)
     h.append("# python_version : %s" % sys.version.replace("\n"," "))
@@ -82,13 +99,17 @@ def _csvhead(nrow,ncol,comment,src='uknown'):
     return h
 
 
-def write_csv(data, filename, comment, source,
-        index=False,
+def write_csv(data, filename, comment, 
+        source_file,
+        author = None,
+        write_index = False,
         compress=True, **kwargs):
     """ write a pandas dataframe to csv with comments """
     
     head = _csvhead(data.shape[0], data.shape[1], 
-                comment, src=source)
+                comment, 
+                source_file = source_file, 
+                author=author)
    
     # defines file name
     filename_full = filename
@@ -105,7 +126,7 @@ def write_csv(data, filename, comment, source,
     for line in head:
         fcsv.write('%s\n'%line)
 
-    data.to_csv(fcsv, index=index, **kwargs)
+    data.to_csv(fcsv, index=write_index, **kwargs)
 
     fcsv.close()
 
@@ -135,6 +156,7 @@ def read_csv(filename, has_colnames=True, **kwargs):
             header.append(re.sub('^# *|\n$', '', line))
             line = fcsv.readline()
 
+        # Extract comment info from header
         comment = _header2comment(header)
         
         # deals with multi-index columns

@@ -59,7 +59,7 @@ class CsvTestCase(unittest.TestCase):
         d = data.index[0]
         self.assertTrue(isinstance(d, pd.tslib.Timestamp))
 
-    def test_write_csv(self):
+    def test_write_csv1(self):
 
         fcsv = '%s/testwrite.csv'%self.FOUT
 
@@ -68,9 +68,9 @@ class CsvTestCase(unittest.TestCase):
         idx = pd.date_range('1990-01-01', periods=nval, freq='D')
         df1 = pd.DataFrame(np.random.normal(size=(nval, nc)), index=idx)
 
-        csv.write_csv(df1, fcsv, ['Random data'], 
+        csv.write_csv(df1, fcsv, 'Random data', 
                 os.path.abspath(__file__),
-                index=True)
+                write_index=True)
 
         df2, comment = csv.read_csv(fcsv, 
                 parse_dates=[''], index_col=0)
@@ -82,6 +82,31 @@ class CsvTestCase(unittest.TestCase):
         self.assertTrue(isinstance(d, pd.tslib.Timestamp))
 
         self.assertTrue(np.allclose(df1, df2))
+
+
+    def test_write_csv2(self):
+
+        fcsv = '%s/testwrite.csv'%self.FOUT
+
+        nval = 100
+        nc = 5
+        idx = pd.date_range('1990-01-01', periods=nval, freq='D')
+        df1 = pd.DataFrame(np.random.normal(size=(nval, nc)), index=idx)
+
+        comment1 = {'co1':'comment', 'co2':'comment 2'}
+
+        csv.write_csv(df1, fcsv, comment1,
+                author='toto',
+                source_file=os.path.abspath(__file__),
+                write_index=True)
+
+        df2, comment2 = csv.read_csv(fcsv, 
+                parse_dates=[''], index_col=0)
+
+        self.assertTrue(comment1['co1'] == comment2['co1'])
+        self.assertTrue(comment1['co2'] == comment2['co2'])
+        self.assertTrue('toto' == comment2['author'])
+        self.assertTrue(os.path.abspath(__file__) == comment2['source_file'])
 
 
 if __name__ == "__main__":
