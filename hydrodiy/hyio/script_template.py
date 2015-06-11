@@ -8,6 +8,7 @@ now = datetime.datetime.now()
 print(' ## Script run started at %s ##' % now)
 
 import sys, os, re, json, math
+
 #import itertools
 #import requests
 
@@ -40,7 +41,9 @@ def fun(x):
 # Folders
 #------------------------------------------------------------
 
-FROOT = os.path.dirname(os.path.abspath(__file__))
+source_file = os.path.abspath(__file__)
+
+FROOT = os.path.dirname(source_file)
 
 FIMG = '%s/images' % FROOT
 if not os.path.exists(FIMG): os.mkdir(FIMG)
@@ -55,9 +58,19 @@ if not os.path.exists(FDATA): os.mkdir(FDATA)
 #fd = '%s/data.csv' % FDATA
 #data, comment = csv.read_csv(fd)
 
+sites = pd.DataFrame(np.random.uniform(size=(30, 5)))
+
 #------------------------------------------------------------
 # Process
 #------------------------------------------------------------
+
+ns = sites.shape[0]
+count = 0
+
+for idx, row in sites.iterrows():
+    
+    count += 1
+    print('.. dealing with site %3d / %3d ..' % (count, ns))
 
 
 print(' ## Script run completed at %s ##' % datetime.datetime.now())
