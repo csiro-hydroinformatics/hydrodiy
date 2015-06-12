@@ -14,6 +14,7 @@ from subprocess import Popen, PIPE
 
 import numpy as np
 import pandas as pd
+from scipy.ndimage.filters import gaussian_filter
 
 has_basemap = True
 try:
@@ -205,7 +206,12 @@ class HyWap():
                                 timestep, vartype, dt))
 
         co = comment + [''] + ['%s:%s' % (k, header[k]) for k in header] + ['']
-        csv.write_csv(data, fout, co)
+
+        source_file = os.path.abspath(__file__)
+
+        csv.write_csv(data, fout, 
+            comment = co, 
+            source_file = source_file)
 
         return '%s.gz' % fout
 
@@ -214,7 +220,7 @@ class HyWap():
 
         if cfg is None:
             cfg = {'cmap':None, 'clevs':None, 
-                'norm':None, 'sigma':None}
+                'norm':None}
 
         if varname == 'rainfall':
             if cfg['clevs'] is None:
@@ -271,9 +277,8 @@ class HyWap():
         z[z<clevs[0]] = np.nan
         z[z>clevs[-1]] = np.nan
 
-        if not cfg['sigma'] is None:
-            z = scipy.ndimage.gaussian_filter(z, sigma=cfg['sigma'],
-                                                   mode='nearest')
+        if 'sigma' in cfg:
+            z = gaussian_filter(z, sigma=cfg['sigma'], mode='nearest')
 
         # Refine levels
         if np.nanmax(z)<np.max(clevs):
