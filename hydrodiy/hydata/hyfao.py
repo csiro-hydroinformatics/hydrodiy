@@ -7,7 +7,8 @@ import pandas as pd
 class HttpFAOError(Exception):
         pass
 
-faostat_url = 'http://faostat3.fao.org/faostat-api/rest'
+faostat_urls = ['http://faostat3.fao.org/faostat-api/rest',
+        'http://faostat3.fao.org/wds/api']
 
 object_columns = {
         'countries':['country_code', 'country_label'], 
@@ -29,7 +30,7 @@ class HyFAO():
 
         # Run query
         base_url = ('%s/groupsanddomains/faostat/E') % (
-                        faostat_url)
+                        faostat_urls[0])
 
         req = requests.get(base_url)
 
@@ -54,7 +55,8 @@ class HyFAO():
 
         # Run query
         base_url = ('%s/procedures/%s/faostat/%s/E') % (
-                        faostat_url, object_name, domain_code)
+                        faostat_urls[0], 
+                        object_name, domain_code)
 
         req = requests.get(base_url)
 
@@ -97,28 +99,35 @@ class HyFAO():
 
     def get_data(self, 
             domain_code,
-            item_codes,
-            element_codes,
-            years=None,
-            areaCodes=None):
+            item_code,
+            element_code,
+            countries=None):
 
-        # Run query
+        # Query parameters
         params = {
-            'areaCodes':areaCodes,
-            'years':years,
-            'domainCode':domain_code,
-            'itemCodes':item_codes,
-            'elementListCodes':element_codes,
-            'decimalPlaces':2,
-            'units':'true',
-            'codes':'true',
-            'flags':'true',
-            'nullValue':'false'
+            'db':'faostat',
+            'select':'A.AreaCode[FAOST_CODE],'
+                        'D.year[Year],D.value[Value],'
+                        'A.AreaNameE[AreaName],'
+                        'E.elementnamee[ElementName],'
+                        'I.itemnamee[ItemName]',
+            'from':'data[D],element[E],item[I],area[A]',
+            'where': ('D.elementcode(%s),D.itemcode(%s),'
+                    'D.domaincode(\'%s\'),'
+                    'JOIN(D.elementcode:E.elementcode),'
+                    'JOIN(D.itemcode:I.itemcode),'
+                    'JOIN(D.areacode:A.areacode)') % (
+                            element_code, item_code, domain_code),
+            'orderby':'E.elementnamee,D.year',
+            'out':'json'
         }
 
-        base_url = '%s/procedures/data' % faostat_url 
+        if not countries is None:
+            params['where'] = '%s,A.AreaCode(%s)' % (params['where'], 
+                                    ':'.join(countries))
 
-        req = requests.get(base_url, params=params)
+        # Request data
+        req = requests.get(faostat_urls[1], params=params)
 
         if req.status_code != 200:
             raise HttpFAOError('URL : %s\nRequest status : %d' % 
@@ -130,14 +139,12 @@ class HyFAO():
         js = req.json()
 
         df = pd.DataFrame(js)
+        df.columns = list(df.iloc[0, :].values)
+        df = df.iloc[1:,:]
 
-        import pdb; pdb.set_trace()
-
-        cc = ['X0', 'domain_label', 'country_label',
-                'country_code', 'item_label', 'item_code',
-                'element_label', 'element_code', 'year',
-                'unit', 'value', 'flag']
-
+        df['domain_code'] = domain_code
+        df['element_code'] = element_code
+        df['item_code'] = item_code
 
         return df
     

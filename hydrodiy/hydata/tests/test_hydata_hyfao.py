@@ -47,6 +47,9 @@ class HyFAOTestCase(unittest.TestCase):
     
         domain_code = 'QC'
 
+        countries = hyf.search_object_codes('countries',
+                        domain_code, 'China|Australia|India')
+
         items = hyf.search_object_codes('items', 
                     domain_code, '(R|r)ice').squeeze()
 
@@ -54,9 +57,12 @@ class HyFAOTestCase(unittest.TestCase):
                         domain_code, '(P|p)roduction').squeeze()
 
         data = hyf.get_data(
-            domain_code,
-            item_codes = [items['item_code']],
-            element_codes = [elements['element_code']])
+            domain_code = domain_code,
+            item_code = items['item_code'],
+            element_code = elements['element_code'],
+            countries = list(countries['country_code'].values))
+
+        import pdb; pdb.set_trace()
 
 
 if __name__ == "__main__":
