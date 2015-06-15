@@ -46,7 +46,7 @@ def has_duplicates(sites, field):
 def get_sites(project):
 
     # list of sites
-    lf = iutils.find_files(project, '.*report.*.json')
+    lf = iutils.find_files(project, '.*report.*.json$')
 
     sites = None
 
@@ -59,6 +59,7 @@ def get_sites(project):
                 sites = sites.append(s[~s['id'].isin(sites['id'])])
 
         except:
+            print('Cannot read json file %s' % f)
             pass
 
     # Add catchments and basins
@@ -347,39 +348,45 @@ def create_reportjson(sites, project, jsonfile='report.json'):
 def read_basin(PROJECT):
     ''' read basin json file from project '''
 
-    lf = iutils.find_files('%s/data'%PROJECT,'.*basin.json')
+    lf = iutils.find_files('%s/data'%PROJECT,'.*basin.json$')
     basins = []
     catchments = []
     nb = 1
 
     if len(lf)>0:
+
         for f in lf:
-            fj = open(f, 'r')
-            txt = fj.readlines()
-            fj.close() 
-            js = json.loads(' '.join(txt))
 
-            # Extract basins
-            b = {'basin_name':'', 'basin_area':0., 
-                    'basin_description':'', 'basin_id':'B%3.3d'%nb,
-                    'basin_centroid_long':0., 
-                    'basin_centroid_lat':0}
+            try:
+                fj = open(f, 'r')
+                txt = fj.readlines()
+                fj.close() 
+                js = json.loads(' '.join(txt))
 
-            for k in ['name', 'area', 'description']:
-                if k in js: b['basin_%s'%k] = js[k]        
+                # Extract basins
+                b = {'basin_name':'', 'basin_area':0., 
+                        'basin_description':'', 'basin_id':'B%3.3d'%nb,
+                        'basin_centroid_long':0., 
+                        'basin_centroid_lat':0}
 
-            if 'centroidCoordinates' in js:
-                b['basin_centroid_long'] = js['centroidCoordinates'][1]
-                b['basin_centroid_lat'] = js['centroidCoordinates'][0]
+                for k in ['name', 'area', 'description']:
+                    if k in js: b['basin_%s'%k] = js[k]        
 
-            basins.append(b)
-            nb += 1
+                if 'centroidCoordinates' in js:
+                    b['basin_centroid_long'] = js['centroidCoordinates'][1]
+                    b['basin_centroid_lat'] = js['centroidCoordinates'][0]
 
-            # Extract catchment
-            if 'catchment' in js:
-                for catch in js['catchment']:
-                    catchments.append(catch)
-                    catchments[-1]['basin_id'] = b['basin_id']
+                basins.append(b)
+                nb += 1
+
+                # Extract catchment
+                if 'catchment' in js:
+                    for catch in js['catchment']:
+                        catchments.append(catch)
+                        catchments[-1]['basin_id'] = b['basin_id']
+            except:
+                print('Cannot read file %s' % f)
+                pass
     
     basins = pd.DataFrame(basins)
     basins = basins.drop_duplicates(subset=['basin_name'])
