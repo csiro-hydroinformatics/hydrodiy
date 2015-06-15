@@ -9,8 +9,14 @@ import pandas as pd
 class HttpFAOError(Exception):
         pass
 
-faostat_urls = ['http://faostat3.fao.org/faostat-api/rest',
-        'http://faostat3.fao.org/wds/api']
+
+fao_url = 'http://data.fao.org'
+
+fao_auth_key = 'd30aebf0-ab2a-11e1-afa6-0800200c9a66'
+
+faostat_url1 = 'http://faostat3.fao.org/faostat-api/rest'
+
+faostat_url2 = 'http://faostat3.fao.org/wds/api'
 
 object_columns = {
         'countries':['country_code', 'country_label'], 
@@ -23,17 +29,70 @@ object_columns = {
     }
 
 
+def _get_url(type):
+
+    url = fao_url
+
+    if type == 'statistics':
+        url = '%s/statistics' % url
+
+    if type == 'resources':
+        url = '%s/developers/api/resources' % url
+
+    if type == 'catalogue':
+        url = '%s/developers/api/resources' % url
+
+    return url
+
+
 class HyFAO():
 
     def __init__(self):
 
         self.current_url = ''
 
+        self.base_params = {
+                'authKey':fao_auth_key,
+                'version':'1.0'
+            }
+
+    def get_databases(self):
+
+        url = '%s/database' % _get_url('resources')
+        
+        req = requests.get(url, params = self.base_params)
+
+        js = req.json()
+
+        db = pd.DataFrame([it for it in js['result']['list']['items']])
+        
+        return db
+
+    def get_resource(self, uid, format='json'):
+
+        url = '%s/ref/%s.%s' % (fao_url, format) 
+        
+        req = requests.get(url, params = self.base_params)
+
+
+        if format == 'json':
+
+            js = req.json()
+
+            res = pd.DataFrame([it for it in js['result']['list']['items']])
+
+        else:
+            res = 
+        
+        return res
+
+
+
     def get_domain_codes(self):
 
         # Run query
         base_url = ('%s/groupsanddomains/faostat/E') % (
-                        faostat_urls[0])
+                        faostat_url1)
 
         req = requests.get(base_url)
 
@@ -58,7 +117,7 @@ class HyFAO():
 
         # Run query
         base_url = ('%s/procedures/%s/faostat/%s/E') % (
-                        faostat_urls[0], 
+                        faostat_url1, 
                         object_name, domain_code)
 
         req = requests.get(base_url)
@@ -152,7 +211,7 @@ class HyFAO():
         #headers = {'Content-type': 'application/json',
         #            'Accept': 'text/plain'} 
 
-        url = '%s/procedures/data' % faostat_urls[0]
+        url = '%s/procedures/data' % faostat_url1
 
         req = requests.post(url, json = payload)
                 #data = json.dumps(payload),
