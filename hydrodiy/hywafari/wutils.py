@@ -46,13 +46,20 @@ def has_duplicates(sites, field):
 def get_sites(project):
 
     # list of sites
-    lf = iutils.find_files(project, 'report.*.json')
+    lf = iutils.find_files(project, '.*report.*.json')
+
     sites = None
+
     for f in lf:
-        s = flattens_json(f)
-        if sites is None: sites = s
-        else:   
-            sites = sites.append(s[~s['id'].isin(sites['id'])])
+        try:
+            s = flattens_json(f)
+
+            if sites is None: sites = s
+            else:   
+                sites = sites.append(s[~s['id'].isin(sites['id'])])
+
+        except:
+            pass
 
     # Add catchments and basins
     basins, catchments = read_basin(project)
