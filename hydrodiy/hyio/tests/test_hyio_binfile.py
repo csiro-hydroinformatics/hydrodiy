@@ -26,17 +26,13 @@ class BinfileTestCase(unittest.TestCase):
 
         # Writes data
         ft = '%s/binfile_testdata1.bin'%self.FOUT        
-        binfile.write_bin(data1, ft, 
-                calendarstart = start,
-                comment = 'test data')
+        binfile.write_bin(data1, ft, comment = 'test data')
 
         # Reads it back
-        data2, sl, start2, ts, comment = binfile.read_bin(ft)
+        data2, sl, comment = binfile.read_bin(ft)
 
         self.assertTrue(np.allclose(data1, data2))
 
-        self.assertTrue(start == start2)
-        
         F = self.FOUT
         cmd = 'rm %s/*.bind %s/*.bins %s/*.binl %s/*.binh' % (F, F, F, F)
         os.system(cmd)
@@ -50,6 +46,7 @@ class BinfileTestCase(unittest.TestCase):
             size=(self.nrow, self.ncol)))
 
         data1 = pd.concat([data1d, data1l], axis=1)
+
         nc = data1.shape[1]
         cc = np.random.choice(range(nc), size=nc)
         data1 = data1.iloc[:, cc]
@@ -59,7 +56,7 @@ class BinfileTestCase(unittest.TestCase):
         binfile.write_bin(data1, ft, 'test data')
 
         # Reads it back
-        data2, sl, start, ts, comment = binfile.read_bin(ft)
+        data2, sl, comment = binfile.read_bin(ft)
 
         self.assertTrue(np.allclose(data1, data2))
         
@@ -76,10 +73,13 @@ class BinfileTestCase(unittest.TestCase):
                        size=(self.nrow, self.ncol)))
 
        strlength = 40
+
        i = np.random.randint(33, 123, size = strlength * self.nrow * self.ncol)
        i = i.reshape((self.nrow * self.ncol, strlength)).astype(np.int8)
        i = [s.tostring().decode('ascii') for s in i]
+       
        data1s = pd.DataFrame(np.array(i).reshape((self.nrow, self.ncol)))
+       
        data1s = data1s.apply(lambda x: 
            pd.Series([s[:np.random.randint(5, strlength)] for s in x]))
 
@@ -88,6 +88,7 @@ class BinfileTestCase(unittest.TestCase):
        cc  = ['d%0.2d'%i for i in range(self.ncol)] 
        cc += ['l%0.2d'%i for i in range(self.ncol)] 
        cc += ['s%0.2d'%i for i in range(self.ncol)]
+       
        data1.columns = cc
 
        nc = data1.shape[1]
@@ -99,7 +100,7 @@ class BinfileTestCase(unittest.TestCase):
        binfile.write_bin(data1, ft, 'test data', strlength=strlength)
 
        # Reads it back
-       data2, sl, start, ts, comment = binfile.read_bin(ft)
+       data2, sl, comment = binfile.read_bin(ft)
        data2.columns = data1.columns
       
        # Test equality
@@ -141,7 +142,7 @@ class BinfileTestCase(unittest.TestCase):
        binfile.write_bin(data1, ft, 'test data')
 
        # Reads it back
-       data2, sl, start, ts, comment = binfile.read_bin(ft)
+       data2, sl, comment = binfile.read_bin(ft)
        data2.columns = data1.columns
       
        # Test equality
@@ -161,11 +162,7 @@ class BinfileTestCase(unittest.TestCase):
         """ Binfile from hym """
 
         ft = '%s/data/hym_test_iobin_999.bin'%self.FOUT        
-        data, sl, start, ts, comment = binfile.read_bin(ft)
-
-        self.assertTrue(ts == 201)
-
-        self.assertTrue(start == 19900101000000)
+        data, sl, comment = binfile.read_bin(ft)
 
         self.assertTrue(data.shape == (26, 3))
         

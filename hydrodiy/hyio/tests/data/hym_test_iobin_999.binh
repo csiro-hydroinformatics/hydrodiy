@@ -2,6 +2,4 @@
       ncol 3
       nrow 26
  datatypes dls
-  calstart 19900101000000
-  timestep 201
    comment test data 999

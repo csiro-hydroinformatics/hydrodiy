@@ -6,12 +6,15 @@ import pandas as pd
 
 from hydata import dutils
 
-long_types = [np.int64, np.int32, int]
+long_types = [np.int64, 
+            np.int32, int]
 
-double_types = [np.float64, np.float32, float]
+double_types = [np.float64, 
+            np.float32, float]
 
-datetime_types = [np.datetime64, np.dtype('<M8[ns]'),
-        np.dtype('>M8[ns]')]
+datetime_types = [np.datetime64, 
+            np.dtype('<M8[ns]'),
+            np.dtype('>M8[ns]')]
 
 def _todatatypes(data, strlength):
     """ Convert data frame according to datatypes """
@@ -50,9 +53,7 @@ def _todatatypes(data, strlength):
     return data2, datatypes
    
 
-def _binhead(datatypes, strlength, nrow, ncol, 
-        calendarstart, timestep,
-        comment):
+def _binhead(datatypes, strlength, nrow, ncol, comment):
     """ Produces the bin files header """
 
     comment_list = comment
@@ -64,16 +65,12 @@ def _binhead(datatypes, strlength, nrow, ncol,
     h.append('%10s %d\n'%('ncol', ncol))
     h.append('%10s %d\n'%('nrow', nrow))
     h.append('%10s %s\n'%('datatypes', ''.join(datatypes)))
-    h.append('%10s %d\n'%('calstart', calendarstart))
-    h.append('%10s %d\n'%('timestep', timestep))
     h.append('%10s %s\n'%('comment', comment))
 
     return h
 
 def write_bin(data, filebase, comment, 
-        strlength = 30, 
-        calendarstart = 19900101000000,
-        timestep=-1):
+        strlength = 30):
     """ write a pandas dataframe to a bin file with comments """
    
     # Convert to datatypes
@@ -81,9 +78,7 @@ def write_bin(data, filebase, comment,
 
     # write header 
     head = _binhead(datatypes, strlength,  
-        data.shape[0], data.shape[1], 
-        calendarstart, timestep,
-        comment) 
+        data.shape[0], data.shape[1], comment) 
 
     fheader = open('%sh'%filebase, 'w')
     fheader.writelines(head)
@@ -115,17 +110,22 @@ def read_bin(filebase):
 
     # Reads header
     fhead = open('%sh'%filebase, 'r')
+    
     strlength = int(fhead.readline()[10:])
+    
     ncol = int(fhead.readline()[10:])
+    
     nrow = int(fhead.readline()[10:])
-    dt = re.sub(' +', '', fhead.readline()[10:].strip())
-    calendarstart = int(fhead.readline()[10:])
-    timestep = int(fhead.readline()[10:])
+   
+    dt = re.sub(' +', '', fhead.readline()[10:].strip()) 
+
     comment = fhead.readline()[10:].strip()
+
     fhead.close()
 
     # reshape datatypes
     datatypes = np.array([''] * ncol)
+
     for i in range(len(dt)):
         datatypes[i] = dt[i]
    
@@ -134,9 +134,11 @@ def read_bin(filebase):
 
     # reads data
     data_all = {}
+    
     config_unpack = {'d':{'flag':'d', 'nbyte':8}, 
         'l':{'flag':'Q', 'nbyte':8}, 
         's':{'flag':'s', 'nbyte':1}}
+
 
     for datatype in ['d', 'l', 's']:
 
@@ -182,5 +184,5 @@ def read_bin(filebase):
 
     data = pd.DataFrame(data)
 
-    return data, strlength, calendarstart, timestep, comment
+    return data, strlength, comment
   
