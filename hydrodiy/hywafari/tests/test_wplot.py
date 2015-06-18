@@ -40,8 +40,14 @@ class WplotTestCase(unittest.TestCase):
     def test_summary(self):
         FIMG = self.FTEST
 
-        scores = (np.random.normal(size=(20,12))+2)*10
-        scores = pd.DataFrame(scores)
+        nc = 12
+        nr = 20
+        scores = (np.random.normal(size=(nr*nc,))+2)*10
+
+        idx = np.random.choice(range(nr*nc), 20, replace=False)
+        scores[idx] = np.nan
+
+        scores = pd.DataFrame(scores.reshape((nr, nc)))
 
         fig, axs = plt.subplots(ncols=2)
 

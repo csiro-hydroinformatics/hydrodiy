@@ -122,15 +122,21 @@ def summary(scores, ax=None, seasonal=True, title=None, ylim=(-5, 70),
         descriptions = range(1, scores.shape[0]+1)
 
     if scores.shape[1] != 12:
-        return ValueError('score matrix does not have 12 columns (=%d)' % scores.shape[1])
+        return ValueError(('score matrix does not '
+                'have 12 columns (=%d)') % scores.shape[1])
 
     if not descriptions is None:
         if len(descriptions) != scores.shape[0]:
-            return ValueError('description vector does not have %d elements' % scores.shape[0])
+            return ValueError(('description vector does '
+                'not have %d elements') % scores.shape[0])
 
     # Plot data
     x = np.arange(13)
-    pc = ax.pcolor(scores, cmap=cmap, vmin=ylim[0], vmax=ylim[1], edgecolor="white")
+    
+    scores_m = np.ma.masked_where(np.isnan(scores), scores)
+
+    pc = ax.pcolor(scores_m, cmap=cmap, vmin=ylim[0], 
+            vmax=ylim[1], edgecolor="white")
 
     # Decorations
     ax.set_xticks(x+0.5)
