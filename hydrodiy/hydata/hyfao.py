@@ -21,6 +21,7 @@ class HyFAO():
         self.current_url = ''
 
     def databases(self):
+        ''' Returns a pandas data frame containing the list of FAO databases '''
 
         url = '%s/databases.json' % fao_url
         
@@ -40,6 +41,7 @@ class HyFAO():
 
 
     def datasets(self, database):
+        ''' Returns a pandas data frame containing the list of datasets in a given FAO database '''
 
         url = '%s/%s/datasets.json' % (fao_url, database)
 
@@ -63,6 +65,7 @@ class HyFAO():
         return ds
 
     def countries(self):
+        ''' Returns a pandas data frame with the list of countries and their iso 3 code '''
 
         url = ('http://data.fao.org/statistics/named-query?'
                 'database=countryprofiles&'
@@ -82,6 +85,7 @@ class HyFAO():
 
 
     def dataset_info(self, database, dataset):
+        ''' Returns 3 pandas data frame containing the dimensions, members and countries in a given FAO dataset '''
 
         url = '%s/%s/%s' % (fao_url, 
                         database, dataset)
@@ -117,24 +121,5 @@ class HyFAO():
     def data(self, database, dataset, 
             country=None, year=None):
 
-        url = '%s/%s/%s' % (fao_url, 
-                        database, dataset)
-
-        params = {'fields': 'mnemonic%2Clabel%40en'}
-
-        req = requests.get('%s/dimensions.json?' % url0, 
-                params = params)
-        js = req.json()
-        dims = pd.DataFrame([it for it in js['result']['list']['items']])
-        
-        req = requests.get('%s/members.json?' % url0, params = params)
-        js = req.json()
-        membs = pd.DataFrame([it for it in js['result']['list']['items']])
-        
-        req = requests.get('%s/cnt/members.json?' % url0, params = params)
-        js = req.json()
-        countries = pd.DataFrame([it for it in js['result']['list']['items']])
-        
-        return dims, membs, countries
-
+        return data
 
