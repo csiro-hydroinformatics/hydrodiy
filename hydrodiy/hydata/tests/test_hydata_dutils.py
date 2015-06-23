@@ -47,6 +47,8 @@ class UtilsTestCase(unittest.TestCase):
 
             o = dutils.time2osec(t)
 
+            self.assertTrue(isinstance(o, np.uint64))
+
             self.assertEqual(t.toordinal(), int(o/86400))
 
             s = int(o - np.uint64(t.toordinal())*86400)
@@ -62,13 +64,17 @@ class UtilsTestCase(unittest.TestCase):
         t = datetime.datetime(2001, 1, 1)
         n = dutils.secofyear(t)
 
+        self.assertTrue(isinstance(n, np.uint64))
         self.assertEqual(n, 0)
        
         t1 = datetime.datetime(2000, 2, 29)
         n1 = dutils.secofyear(t1)
+
         t2 = datetime.datetime(2000, 3, 1)
         n2 = dutils.secofyear(t2)
 
+        self.assertTrue(isinstance(n1, np.uint64))
+        self.assertTrue(isinstance(n2, np.uint64))
         self.assertEqual(n1, n2)
        
     def test_wyear1(self):
