@@ -11,7 +11,26 @@ import pandas as pd
 from hystat import sutils
 
 def normaliseid(id):
-    ''' Normalise station id '''
+    ''' Normalise station id by removing trailing letters, 
+    underscores and leading zeros
+
+    Parameters
+    -----------
+    params : str
+        Station id
+
+    Returns
+    -----------
+    idn : str
+        Normalise id
+
+    Example
+    -----------
+    Normalise a complex id
+    >>> dutils.normaliseid('00a04567B.100')
+    'A04567'
+
+    '''
 
     idn = '%s' % id
 
@@ -36,14 +55,29 @@ def normaliseid(id):
     return idn
 
 def time2osec(t):
-    ''' 
-        Convert date/time object to ordinal seconds 
-        (number of sec elapsed from 0000/00/00 00:00:00 
+    ''' Convert date/time object to ordinal seconds 
+
+    Parameters
+    -----------
+    t : datetime.datetime
+        Time to be converted
+
+    Returns
+    -----------
+    o : numpy.uint64
+        Number of seconds elapsed since 0000-00-00 00:00:00
+        
+    Example
+    -----------
+    >>> import datetime
+    >>> dutils.time2osec(datetime.datetime(2000,10, 1, 10))
+    63106077600
+
     '''
 
-    o = np.uint64(t.toordinal()) * 86400
-    o += np.uint64(t.hour) * 3600
-    o += np.uint64(t.minute) * 60
+    o = np.uint64(t.toordinal() * 86400)
+    o += np.uint64(t.hour * 3600)
+    o += np.uint64(t.minute * 60)
     o += np.uint64(t.second)
 
     return o
@@ -51,24 +85,61 @@ def time2osec(t):
 def secofyear(t):
     ''' 
         Compute number of seconds elapsed since Jan 1
+
+    Parameters
+    -----------
+    t : datetime.datetime
+        Time to be converted
+
+    Returns
+    -----------
+    n : numpy.uint64
+        Number of seconds elapsed since the first of January of the same year
+        
+    Example
+    -----------
+    >>> import datetime
+    >>> dutils.secofyear(datetime.datetime(2000,10, 1, 10))
+    23623200
+
     '''
 
     o = time2osec(t)
     o0 = time2osec(datetime(t.year, 1, 1))
 
     if calendar.isleap(t.year) & (t.month >= 3):
-        o -= 86400
+        o -= np.uint64(86400)
 
-    return o-o0
+    n = o-o0
+
+    return n
 
 
 def osec2time(o):
     ''' 
-        Convert ordinal seconds 
-        (number of sec elapsed from 0000/00/00 00:00:00)
-        to date/time 
+        Convert ordinal seconds to date/time 
+
+    Parameters
+    -----------
+    o : numpy.uint64
+        Ordinal second (number of sec elapsed from 0000/00/00 00:00:00)
+
+    Returns
+    -----------
+    t : datetime.datetime
+        Time corresponding to o
+        
+    Example
+    -----------
+    >>> import datetime
+    >>> t = datetime.datetime(2000,10, 1, 10)
+    >>> o = dutils.time2osec(t)
+    >>> t2 = dutils.osec2time(o)
+    >>> t == t2
+    True
+
     '''
-    
+   
     oi = int(o)/86400
     d = datetime.fromordinal(oi)
     
