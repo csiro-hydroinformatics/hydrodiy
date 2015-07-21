@@ -50,14 +50,22 @@ def _csvhead(nrow, ncol, comment, source_file, author=None):
         comments = {'comment01': comment}
 
     elif isinstance(comment, list):
-        comments = {'comment%2.2d' % i: comment[i] for i in range(len(comment))}
+        comments = {}
+        for i in range(len(comment)):
+            comments['comment%2.2d' % i] = comment[i] 
 
     elif isinstance(comment, dict):
-        comments = {re.sub('\:', '', k).lower(): comment[k] for k in comment}
+        comments = {}
+        for k in comment:
+            comments[re.sub('\:', '', k).lower()] = comment[k] 
 
     else:
         comment = list(comment)
-        comments = {'comment%2.2d' % i: comment[i] for i in range(len(comment))}
+
+        comments = {}
+        for i in range(len(comment)):
+            comments['comment%2.2d' % i] = comment[i] 
+
 
     # Generate file header
     h = []
