@@ -62,6 +62,3 @@ def script_template(filename, author='J. Lerat, EHP, Bureau of Meteorogoloy'):
     with open(filename, 'w') as fs:
         fs.writelines(txt)
 
-        
-    
-
