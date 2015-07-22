@@ -12,9 +12,16 @@ logpath = os.path.join(tempfile.gettempdir(),
 def log(logdata, label, source, level='DEBUG'):
     ''' Log data to the log file '''
 
-    # Convert logdata to flat list
+    # Convert logdata to dict
     if isinstance(logdata, str):
-        logdata = [logdata]
+        logdata = {'item000':logdata}
+
+    if isinstance(logdata, list):
+        lgd = {}
+        for i in range(len(logdata)):
+            lgd['item%3.3d' % i] = logdata[i]
+
+        logdata = lgd
 
     # create json object
     js = {
@@ -22,10 +29,8 @@ def log(logdata, label, source, level='DEBUG'):
             'label':label,
             'source':source,
             'level':level,
+            'logdata': logdata
         }
-
-    for im in range(len(logdata)):
-        js['logdata_%3.3d' % (im+1)] = logdata[im]
 
     # Write dict data to file
     fs = open(logpath, 'a')
