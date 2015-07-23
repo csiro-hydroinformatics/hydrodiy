@@ -1,5 +1,6 @@
 
 import numpy as np
+import inspect
 
 def foo():
 
@@ -10,9 +11,10 @@ def foo():
         import os
         from hyio import minilog
 
-        source_file = os.path.abspath(__file__)
-
+        line, fname = minilog.where() 
         minilog.log({'a':','.join(a.astype(str)), 'i':i}, 'log1_i%d' % i, 
-                        source_file, 12)
+                        __file__, line, fname)
+
+        line, fname = minilog.where() 
         minilog.log({'a np':a, 'i':i}, 'log2_i%d' % i, 
-                        source_file, 14)
+                        __file__, line, fname)

@@ -1,5 +1,5 @@
 import os, json, tempfile
-
+import inspect
 import datetime
 
 now = datetime.datetime.now
@@ -9,7 +9,15 @@ logpath = os.path.join(tempfile.gettempdir(),
         'log_%s.log' % now().strftime('%Y-%m-%d_%H-%m-%S'))
 
 
-def log(logdata, label, source, line, level='DEBUG'):
+def where():
+    ''' Returns current location in code '''
+    f = inspect.currentframe().f_back
+    fname = f.f_code.co_name
+    line = f.f_lineno
+
+    return line, fname
+
+def log(logdata, label, source, line, fname, level='DEBUG'):
     ''' Log data to the log file '''
 
     # Convert logdata to dict
@@ -29,6 +37,7 @@ def log(logdata, label, source, line, level='DEBUG'):
             'label':label,
             'source':source,
             'line':line,
+            'fname':fname,
             'level':level,
             'logdata': logdata
         }
