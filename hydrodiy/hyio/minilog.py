@@ -9,7 +9,7 @@ logpath = os.path.join(tempfile.gettempdir(),
         'log_%s.log' % now().strftime('%Y-%m-%d_%H-%m-%S'))
 
 
-def log(logdata, label, source, level='DEBUG'):
+def log(logdata, label, source, line, level='DEBUG'):
     ''' Log data to the log file '''
 
     # Convert logdata to dict
@@ -28,14 +28,21 @@ def log(logdata, label, source, level='DEBUG'):
             'time': now().strftime('%Y-%m-%d_%H-%M-%S'),
             'label':label,
             'source':source,
+            'line':line,
             'level':level,
             'logdata': logdata
         }
 
     # Write dict data to file
     fs = open(logpath, 'a')
+    
+    try:
+        jscode = json.dumps(js, indent=4, sort_keys=True)
+    except (TypeError, ValueError) as e:
+        js['logdata'] = {'error':'%s' % e}
+    
+    json.dump(js, fs, indent=4, sort_keys=True)
 
-    json.dump(js, fs, indent=2, sort_keys=True)
     fs.write('\n,\n')
 
     fs.close()

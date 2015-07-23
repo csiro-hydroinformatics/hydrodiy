@@ -27,7 +27,7 @@ class MinilogTestCase(unittest.TestCase):
 
         log = minilog.load()
 
-        self.assertTrue(len(log) == 2)
+        self.assertTrue(len(log) == 4)
         
 
 if __name__ == "__main__":
