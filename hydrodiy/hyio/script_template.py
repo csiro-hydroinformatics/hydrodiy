@@ -33,6 +33,13 @@ import matplotlib.gridspec as gridspec
 #if nargs > 0:
 #    arg1 = sys.argv[1]
 
+# Plotting options
+fig_dpi = 100
+fig_nrows = 2
+fig_ncols = 3
+ax_width = 1000
+ax_height = 1000
+
 #------------------------------------------------------------
 # Functions
 #------------------------------------------------------------
@@ -84,13 +91,15 @@ plt.close('all')
 
 fig = plt.figure()
 
-gs = gridspec.GridSpec(3,3, 
-        width_ratios=[1]*3,
-        height_ratios=[3, 3, 1])
+gs = gridspec.GridSpec(fig_nrows, fig_ncols, 
+        width_ratios=[1] * fig_ncols,
+        height_ratios=[1] * fig_nrows)
 
 nval = 100
 
-for i, j in itertools.product(range(3), range(3)):
+for i, j in itertools.product(range(fig_nrows), 
+                            range(fig_ncols)):
+
     ax = fig.add_subplot(gs[i, j])
 
     xx = np.random.uniform(size=(nval, 2))
@@ -118,14 +127,12 @@ for i, j in itertools.product(range(3), range(3)):
 
 fig.suptitle('Overall title')
 
-dpi = 100
-width = 1000
-height = 1000
-fig.set_size_inches(float(width)/dpi, float(height)/dpi)
+fig.set_size_inches(float(fig_ncols * ax_width)/fig_dpi, 
+                float(fig_nrows * ax_height)/fig_dpi)
 
 gs.tight_layout(fig)
 
 fp = '%s/image.png' % FIMG
-fig.savefig(fp, dpi=dpi)
+fig.savefig(fp, dpi=fig_dpi)
 
 print(' ## Script run completed at %s ##' % time_now())
