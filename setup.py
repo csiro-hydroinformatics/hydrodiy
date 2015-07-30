@@ -51,9 +51,10 @@ setup(name='hydrodiy',
                         libraries=['gsl', 'gslcblas'],
                         library_dirs=['/usr/local/lib', '~/.local/lib'] + gnuwin32lib,
                         include_dirs=[numpy.get_include(), '~/.local/lib/include'] + gnuwin32inc),
-                    Extension('_datacheck', 
-                        sources=['hydrodiy/hydata/_datacheck.pyx', 
-                            'hydrodiy/hydata/c_lindetect.c'],
+                    Extension('c_hydata', 
+                        sources=['hydrodiy/hydata/c_hydata.pyx', 
+                            'hydrodiy/hydata/c_lindetect.c',
+                            'hydrodiy/hydata/c_baseflow.c'],
                         include_dirs=[numpy.get_include()])],
     )
 

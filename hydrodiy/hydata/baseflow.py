@@ -2,49 +2,51 @@
 import numpy as np
 import pandas as pd
 
-# All code converted from 
-# https://source.ggy.bris.ac.uk/wiki/Baseflow_separation
+import c_hydata
 
-def baseflow(q, params, method=1):
+def baseflow(inputs, params, method=1):
+    ''' Compute baseflow time series using the algorithms defined
+    by Chapman (1999)
 
-    # Initialisation
-    nval = q.shape[0]
-    bf = np.ones(nval) * q[0]
-    qq = q[0]
-    qqp = qq
+    Parameters
+    -----------
+    inputs : numpy.array
+        Streamflow data
+    params : list
+        Algorightm parameters. Has 1 item for method 1, 2 for method
+        2 and 3 for method 3.
+    method : int
+        Method selected. 1=Chapman, 2=Boughton, 3=IHACRES
 
-    # Parameters
-    k = min(1., max(0., params[0]))
-    if method>=2:
-        C = max(0., params[1])
-    if method>=3:
-        a = min(0., max(0., params[2]))
+    Returns
+    -----------
+    outputs : numpy.array
+        Baseflow time series
 
-    # Loop
-    for i in range(1, nval):
-        
-        # Takes care of missing values
-        if pd.notnull(q[i]) & (q[i]>=0):
-            qq = q[i]
+    Example
+    -----------
+    >>> import numpy as np
+    >>> q = np.random.uniform(0, 100, size=1000)
+    >>> baseflow.baseflow(q, [0.99])
+    'A04567'
 
-        # Apply base flow method
-        if method == 1:
-            bf[i] = k*bf[i-1]/(2-k) + (1-k)*qq/(2-k)
+    '''
 
-        elif method == 2:
-            bf[i] = k*bf[i-1]/(1+C) + C*qq/(1+C)
+    # Check params length
+    if method >= 2 and len(params)<2:
+        raise ValueError('method=%d and len(params)<2' % method)
 
-        elif method == 3:
-            bf[i] = k*bf[i-1]/(1+C) + C*(qq+a*qqp)/(1+C)
+    if method == 3 and len(params)<3:
+        raise ValueError('method=%d and len(params)<3' % method)
 
-        # Discard floods
-        if bf[i]>qq:
-            bf[i] = qq
+    # run C code via cython
+    method = int(method)
+    outputs = np.zeros(len(inputs), np.float64)
+    params = np.array(params, float)
 
-        qqp = qq
+    ierr = c_hydata.baseflow(method, params, inputs, outputs)
 
-    # Compute BFI
-    idx = pd.notnull(q) & (q>=0)
-    BFI = np.sum(bf[idx]) / np.sum(q[idx])
+    if ierr!=0:
+        raise ValueError('lindetect returns %d'%ierr)
 
-    return bf, BFI
+    return outputs

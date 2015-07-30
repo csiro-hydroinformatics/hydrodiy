@@ -1,5 +1,5 @@
 import numpy as np
-import _datacheck
+import c_hydata
 
 def lindetect(data, params=[1, 1e-5]):
     ''' 
@@ -14,7 +14,7 @@ def lindetect(data, params=[1, 1e-5]):
     # run C code via cython
     linstatus = np.zeros(len(data), np.int32)
     params = np.array(params, float)
-    ierr = _datacheck.lindetect(params, data, linstatus)
+    ierr = c_hydata.lindetect(params, data, linstatus)
 
     if ierr!=0:
         raise ValueError('lindetect returns %d'%ierr)
