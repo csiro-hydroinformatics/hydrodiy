@@ -1,5 +1,35 @@
+import math
 import numpy as np
 
+
+def bounded(a, amin, amax):
+    ab = 1-1./(1+math.exp(a))
+    ab = ab*(amax-amin) + amin
+    return ab
+
+def inversebounded(ab, amin, amax, eps=1e-10):
+    b = (ab-amin)/(amax-amin)
+    if b < eps:
+        return amin
+    elif b > 1.-eps:
+        return amax
+    else:
+        b = math.log(1./(1-b)-1)
+    return b
+
+def getinstance(name):
+    ''' Returns an instance of a particular transform '''
+
+    if name == LogTrans().name:
+        return LogTrans()
+
+    elif name == PowerTrans().name:
+        return PowerTrans()
+
+    else:
+        raise ValueError('Cannot find transform name %s' % name)
+
+    return trans
 
 class Transform:
     ''' Simple interface to common transform functions '''
@@ -10,16 +40,21 @@ class Transform:
         self.params = np.array([np.nan] * nparams)
 
     def __str__(self):
-        s = '\n%s transform\n params = [' % self.name
+        s = '\n%s transform. Params = [' % self.name
+
+        tp = self.trueparams()
+        if not isinstance(tp, list):
+            tp = [tp]
+
         for i in range(self.nparams):
-            s += '%0.2f, ' % self.params[i]
+            s += '%0.2f, ' % tp[i]
         s = s[:-2] + ']'
 
         return s
 
-    def paramcheck(self):
-        ''' Check parameter transforms '''
-        pass
+    def trueparams(self):
+        ''' Returns true parameter values '''
+        return [np.nan] * self.nparams
 
     def forward(self, x):
         ''' Returns the forward transform of x '''
@@ -34,24 +69,52 @@ class Transform:
         return np.nan
 
 
-class LogTransform(Transform):
+class LogTrans(Transform):
 
     def __init__(self):
         Transform.__init__(self, 1, 'Log')
 
+    def trueparams(self):
+        return bounded(self.params[0], 0, 5)
+
     def forward(self, x):
-        b = math.exp(self.params[0])
+        b = self.trueparams()
         f = 1/b * np.log(1.+b*x)
+        # Very close to x/(1+(ax)^1.3) when (ax) -> 0
         return f
 
     def inverse(self, y):
-        b = math.exp(self.params[0])
+        b = self.trueparams()
         i =  (np.exp(b*y)-1.)/b  
         return i
 
     def jac(self, x):
-        b = math.exp(self.params[0])
+        b = self.trueparams()
         j =  1./(1.+b*x) 
+        return j
+
+class PowerTrans(Transform):
+
+    def __init__(self):
+        Transform.__init__(self, 1, 'Power')
+
+    def trueparams(self):
+        return bounded(self.params[0], 0, 4)
+
+    def forward(self, x):
+        b = self.trueparams()
+        y = ((1.+x)**b-1.)/b
+        return y
+
+    def inverse(self, y):
+        b = self.trueparams()
+        x =  (b*y+1.)**(1/b)-1.  
+        # Highly unreliable for b<0 and if y -> -1/b
+        return x
+
+    def jac(self, x):
+        b = self.trueparams()
+        j = (1.+x)**(b-1) 
         return j
 
 
