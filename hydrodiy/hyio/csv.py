@@ -119,6 +119,10 @@ def write_csv(data, filename, comment,
                 source_file = source_file, 
                 author=author)
    
+    # Check source_file exists
+    if not os.path.exists(source_file):
+        raise ValueError('%s file does not exists' % source_file)
+    
     # defines file name
     filename_full = filename
 
