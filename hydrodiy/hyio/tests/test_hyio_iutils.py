@@ -39,9 +39,12 @@ class UtilsTestCase(unittest.TestCase):
          
     def test_script_template(self):
         
-        fs = '%s/script_test.pytest' % self.FOUT
+        fs = '%s/script_test1.pytest' % self.FOUT
         iutils.script_template(fs)
-
+        execfile(fs)
+        
+        fs = '%s/script_test2.pytest' % self.FOUT
+        iutils.script_template(fs, type='plot')
         execfile(fs)
         
 

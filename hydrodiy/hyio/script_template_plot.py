@@ -10,10 +10,9 @@ print(' ## Script run started at %s ##' % time_now())
 import sys, os, re, json, math
 
 import itertools
-#import requests
 
-#from string import ascii_lowercase as letters
-#from calendar import month_abbr as months
+from string import ascii_lowercase as letters
+from calendar import month_abbr as months
 
 import numpy as np
 import pandas as pd
@@ -23,7 +22,7 @@ from scipy import stats
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 
-#from hyio import csv
+from hyio import csv
 
 #------------------------------------------------------------
 # Options
@@ -69,19 +68,6 @@ if not os.path.exists(FDATA): os.mkdir(FDATA)
 #data, comment = csv.read_csv(fd)
 
 sites = pd.DataFrame(np.random.uniform(size=(30, 5)))
-
-#------------------------------------------------------------
-# Process
-#------------------------------------------------------------
-
-ns = sites.shape[0]
-count = 0
-
-for idx, row in sites.iterrows():
-    
-    count += 1
-    print('.. dealing with site %3d / %3d ..' % (count, ns))
-
 
 #------------------------------------------------------------
 # Plot
@@ -134,5 +120,6 @@ gs.tight_layout(fig)
 
 fp = '%s/image.png' % FIMG
 fig.savefig(fp, dpi=fig_dpi)
+
 
 print(' ## Script run completed at %s ##' % time_now())
