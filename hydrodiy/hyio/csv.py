@@ -28,7 +28,7 @@ def _header2comment(header):
         if not bool(re.search('-{10}', s)):
 
             k = re.sub('\:.*$', '', s)
-            val = re.sub('%s:' % k, '', s).strip()
+            val = s[len(k)+1:].strip()
             k = re.sub(' +', '_', k.strip().lower())
 
             if not bool(re.search('\:', s[:key_length_max])):
@@ -47,7 +47,7 @@ def _csvhead(nrow, ncol, comment, source_file, author=None):
 
     # Generate the comments dict
     if isinstance(comment, str):
-        comments = {'comment01': comment}
+        comments = {'comment': comment}
 
     elif isinstance(comment, list):
         comments = {}
