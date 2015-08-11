@@ -129,7 +129,7 @@ def ar1random(params, nval, seed=0):
 
     p = np.array(params).reshape((len(params),))
 
-    ierr = _sutils.ar1random(p, seed, output)
+    ierr = c_hystat.ar1random(p, seed, output)
 
     if ierr!=0:
         raise ValueError('ar1random returns %d'%ierr)
@@ -151,7 +151,7 @@ def ar1innov(params, innov):
 
     p = np.array(params).reshape((len(params),))
 
-    ierr = _sutils.ar1innov(p, innov, output)
+    ierr = c_hystat.ar1innov(p, innov, output)
 
     if ierr!=0:
         raise ValueError('ar1innov returns %d'%ierr)
@@ -170,7 +170,7 @@ def ar1inverse(params, input):
 
     p = np.array(params).reshape((len(params),))
 
-    ierr = _sutils.ar1inverse(p, input, innov)
+    ierr = c_hystat.ar1inverse(p, input, innov)
 
     if ierr!=0:
         raise ValueError('ar1inverse returns %d'%ierr)

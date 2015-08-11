@@ -1,9 +1,14 @@
+       
+import re
+
 import numpy as np
 import pandas as pd
+
 from scipy.special import kolmogorov
 from scipy.stats import kendalltau
 
-import _metrics
+import c_hymod
+
 from hystat import sutils
 
 try:
@@ -13,8 +18,18 @@ except ImportError:
     HAS_FCVF = False
 
 
-def skill(score, ref, perfect):
-    return (score-ref)/(perfect-ref)
+def __checkdims(obs, ens, ref):
+
+    nforc = ens.shape[0]
+
+    if len(obs)!=nforc:
+        raise ValueError('Length of obs(%d) different from length of ens(%d)'%(len(obs), nforc))
+
+    if ref.shape[0]!=nforc:
+        raise ValueError('Length of ref(%d) different from length of ens(%d)'%(ref.shape[0], nforc))
+
+    return nforc
+
 
 def hypit(yobs,ysim,has_ties=True,pp_cst=0.3):
     """
@@ -47,18 +62,43 @@ def hypit(yobs,ysim,has_ties=True,pp_cst=0.3):
 
     return prob_obs
 
-def cut(ysim, single_cats):
-    ''' Convert probabilistic forecasts into categorical forecasts using a common set of categories'''
+def cut(ysim, cats):
+    ''' Convert probabilistic forecasts into categorical forecasts
+        using a common set of categories
+ 
+    Parameters
+    -----------
+    ysim : numpy.ndarray
+        Probabilistic forecasts stored in an NxP matrix.
+        N = Number of forecasts
+        P = Number of ensembles for each forecasts
+    cats : list
+        Values defining the bounds of forecast categories (M values)
+
+    Returns
+    -----------
+    ysim_cat : numpy.ndarray
+        
+    Example
+    -----------
+    >>> import numpy as np
+    >>> np.random.seed(333)  
+    >>> N = 100; P = 500
+    >>> ysim = np.random.uniform(0, 10, size=(N, P))
+    >>> cats = [0, 2, 7, 7]
+    >>> metrics.cut(ysim, cats) 
+
+    '''
 
     # Add -infty and +infty boundaries
-    single_cats = np.array([[-np.infty]+list(np.sort(single_cats))+[np.infty]])
-    single_cats = single_cats.flatten()
+    cats = np.array([[-np.infty]+list(np.sort(cats))+[np.infty]])
+    cats = cats.flatten()
 
     # Ensemble data
     if len(ysim.shape)>1:
         # Special cut functions for ensemble data
         def cutfun(x):
-            xc = pd.cut(x, single_cats)
+            xc = pd.cut(x, cats)
             return x.groupby(xc).apply(lambda u:float(len(u))/x.shape[0])
 
         # Compute categorical data
@@ -67,36 +107,43 @@ def cut(ysim, single_cats):
     # Deterministic data
     else:
         # Compute categorical data
-        ysimc = pd.cut(ysim, single_cats)
-        ysimcd = pd.DataFrame({'idx':range(ysim.shape[0]), 'lab':ysimc.labels, 'count':1})
+        ysimc = pd.cut(ysim, cats)
+
+        ysimcd = pd.DataFrame({
+            'idx':range(ysim.shape[0]), 
+            'lab':ysimc, 
+            'count':1
+        })
+
         ysim_cat =  pd.pivot_table(ysimcd, rows='idx', cols='lab', values='count')
 
-        # Add proper labelling of columns
-        ysim_cat = ysim_cat[np.sort(ysim_cat.columns.values)]
-        ysim_cat.columns = ysimc.levels[ysim_cat.columns]
-        
+        # Reorder columns
+        v2 = [float(re.sub('.*,|\\]', '', cn)) for cn in ysim_cat.columns]
+        kk = np.argsort(v2)
+        ysim_cat = ysim_cat.iloc[:, kk]
+
         # Replace NaN with 0
         ysim_cat = ysim_cat.fillna(0)
 
+
     return ysim_cat
+
 
 def drps(yobs, ysim, cats):
     ''' Compute the DRPS score with categories defined by cats '''
 
-    nforc = ysim.shape[0]
-    if len(yobs)!=nforc:
-        raise ValueError('Length of yobs(%d) different from length of ysim(%d)'%(len(yobs), nforc))
-    if cats.shape[0]!=nforc:
-        raise ValueError('Length of cats(%d) different from length of ysim(%d)'%(cats.shape[0], nforc))
+    nforc = __checkdims(yobs, ysim, yobs)
 
     # find unique cats
     cats_order = np.lexsort(cats.T)
     cats_sort = cats[cats_order]
+
     diff = np.diff(cats_sort, axis=0)
     ui = np.ones(len(cats), 'bool')
     ui[1:] = (diff != 0).any(axis=1)
     cats_unique = cats_sort[ui]
     
+
     # loop through unique cats
     drps_all = []
     drps_value = 0.
@@ -106,7 +153,14 @@ def drps(yobs, ysim, cats):
         ysimc_idx = cut(ysim[idx], ca)
 
         d = (yobsc_idx-ysimc_idx)**2
-        drps_all.append({'drps_value':d.sum(axis=1).mean(), 'idx':idx, 'cats':ca, 'nval':np.sum(idx)})
+
+        drps_all.append({
+            'drps_value':d.sum(axis=1).mean(), 
+            'idx':idx, 
+            'cats':ca, 
+            'nval':np.sum(idx)
+        })
+
         drps_value += d.sum(axis=1).sum()
 
     drps_value /= nforc
@@ -116,6 +170,8 @@ def drps(yobs, ysim, cats):
 
 def crps(yobs, ysim):
     ''' Compute the CRPS decomposition from Hersbach (2000) '''
+
+    __checkdims(yobs, ysim, yobs)
 
     nval = ysim.shape[0]
     ncol = ysim.shape[1]
@@ -128,22 +184,28 @@ def crps(yobs, ysim):
     reliab_table = np.zeros((ncol+1, 7))
     crps_decompos = np.zeros(5)
     is_sorted = 0
-    ierr = _metrics.crps(use_weights, is_sorted, yobs, ysim, 
+    ierr = c_hymod.crps(use_weights, is_sorted, yobs, ysim, 
                     weights, reliab_table, crps_decompos)
 
-    reliab_table.dtype = np.dtype([('freq','double'),
-                ('a','double'), ('b','double'),
-                ('g','double'), ('ensemble_rank','double'),
-                ('reliability','double'), ('crps_potential','double')])
+    reliab_table = pd.DataFrame(reliab_table)
+    reliab_table.columns = ['freq', 'a', 'b', 'g', 'rank', 
+                'reliability', 'crps_potential']
 
-    crps_decompos.dtype = np.dtype([('crps','double'),
-                ('reliability','double'), ('resolution','double'), 
-                ('uncertainty','double'), ('crps_potential','double')])
+    d = crps_decompos
+    crps_decompos= {
+        'crps':d[0],
+        'reliability':d[1],
+        'resolution':d[2],
+        'uncertainty':d[3],
+        'crps_potential':d[4]
+    }
 
     return crps_decompos, reliab_table
 
 def alpha(yobs, ysim, pp_cst = 0.3):
     ''' Score computing the Pvalue of the Kolmogorov-Smirnov test '''
+
+    __checkdims(yobs, ysim, yobs)
 
     pit = [hypit(o,s,pp_cst) 
                     for o,s in zip(yobs,ysim)] 
@@ -154,16 +216,14 @@ def alpha(yobs, ysim, pp_cst = 0.3):
 
     return kolmogorov(np.sqrt(nval)*max_dist)
 
+
 def iqr_scores(obs, ens, ref):
     ''' Compute the interquartile range (iqr) divided by clim and iqr reliability'''
 
-    nforc = ens.shape[0]
-    if len(obs)!=nforc:
-        raise ValueError('Length of obs(%d) different from length of ens(%d)'%(len(obs), nforc))
-    if ref.shape[0]!=nforc:
-        raise ValueError('Length of ref(%d) different from length of ens(%d)'%(ref.shape[0], nforc))
+    nforc = __checkdims(obs, ens, ref)
 
     nens = ens.shape[1]
+
     iqr = np.zeros((nforc,3))
     iqr_clim = np.zeros((nforc,3))
     rel = np.zeros(nforc)
@@ -189,7 +249,9 @@ def iqr_scores(obs, ens, ref):
              'reliability_skill': (1-abs(rel_clim_sc-rel_sc)/rel_clim_sc)*100, 
              'precision_score': pre_sc,
              'reliability_score': rel_sc}
+
     return out, iqr, iqr_clim, rel, rel_clim
+
 
 def median_contingency(obs, ens, ref):
     ''' Compute the contingency matrix for below/above median forecast.
@@ -203,18 +265,17 @@ def median_contingency(obs, ens, ref):
         ----------------------------------------------
     '''
 
-    nforc = ens.shape[0]
-    if len(obs)!=nforc:
-        raise ValueError('Length of obs(%d) different from length of ens(%d)'%(len(obs), nforc))
-    if ref.shape[0]!=nforc:
-        raise ValueError('Length of ref(%d) different from length of ens(%d)'%(ref.shape[0], nforc))
+    nforc = __checkdims(obs, ens, ref)
 
     cont = np.zeros((2,2))
     medians = np.zeros(nforc)
+
     for i in range(nforc):
         obs_med = sutils.percentiles(ref[i,:], 50.).values[0]
+
         medians[i] = obs_med
         med_obs = int(obs[i]>= obs_med)
+
         umed = np.mean(ens[i,:]>= obs_med)
         cont[med_obs, int(round(umed))] += 1
 
@@ -222,6 +283,7 @@ def median_contingency(obs, ens, ref):
     miss_low = (0.+cont[1,0])/np.sum(cont[:,0])
 
     return cont, hit, miss_low, medians
+
 
 def tercile_contingency(obs, ens, ref):
     ''' Compute the contingency matrix for below/above terciles forecast
@@ -242,14 +304,12 @@ def tercile_contingency(obs, ens, ref):
         (provided high value is forecasted, how many times high value occurs)
 
     ''' 
-    nforc = ens.shape[0]
-    if len(obs)!=nforc:
-        raise ValueError('Length of obs(%d) different from length of ens(%d)'%(len(obs), nforc))
-    if ref.shape[0]!=nforc:
-        raise ValueError('Length of ref(%d) different from length of ens(%d)'%(ref.shape[0], nforc))
+
+    nforc = __checkdims(obs, ens, ref)
 
     cont = np.zeros((3,3))
     terciles = np.zeros((nforc, 2))
+
     for i in range(nforc):
         obs_t1 = sutils.percentiles(ref[i,:], 100./3).values[0]
         obs_t2 = sutils.percentiles(ref[i,:], 200./3).values[0]
@@ -267,6 +327,7 @@ def tercile_contingency(obs, ens, ref):
 
     return cont, hit, miss_low, hit_low, hit_high, terciles
 
+
 def det_metrics(yobs,ysim, compute_persistence=False, min_val=0., eps=1):
     """
         Compute deterministic performance metrics
@@ -281,8 +342,7 @@ def det_metrics(yobs,ysim, compute_persistence=False, min_val=0., eps=1):
 
     """
 
-    if len(yobs)!=len(ysim):
-        raise ValueError('Length of yobs(%d) different from length of ysim(%d)'%(len(yobs), len(ysim)))
+    nforc = __checkdims(yobs, ysim, yobs)
 
     # inputs
     yobs = np.array(yobs, copy=False)
@@ -330,8 +390,12 @@ def det_metrics(yobs,ysim, compute_persistence=False, min_val=0., eps=1):
         persist = 1.0 - np.mean(np.square(e))/np.mean(np.square(esh))
         persist_inv = 1.0 - np.mean(np.square(einv))/np.mean(np.square(esh_inv))
 
-    metrics  = {'nse':nse, 'nselog':nselog, 'nseinv':nseinv,
-            'persist':persist, 'persist_inv':persist_inv, 
+    metrics  = {
+            'nse':nse, 
+            'nselog':nselog, 
+            'nseinv':nseinv,
+            'persist':persist, 
+            'persist_inv':persist_inv, 
             'nseinv':nseinv, 
             'bias':bias, 
             'biaslog':biaslog, 
@@ -341,7 +405,8 @@ def det_metrics(yobs,ysim, compute_persistence=False, min_val=0., eps=1):
             'biasinv_skill':(1-abs(biasinv))*100,
             'corr':corr, 'ratiovar':ratiovar, 
             'kendalltau_skill':tau*100,
-            'kendalltau':tau}
+            'kendalltau':tau
+    }
 
     return metrics, idx
 
@@ -362,11 +427,11 @@ def ens_metrics(yobs,ysim, yref=None, pp_cst=0.3, min_val=0.):
     yobs = np.array(yobs, copy=False)
     ysim = np.array(ysim, copy=False)
     nval = len(yobs)
-    if nval!=ysim.shape[0]:
-        raise ValueError('Length of yobs(%d) different from length of ysim(%d)'%(len(yobs), ysim.shape[0]))
 
     if yref is None: 
         yref = np.array([yobs]*nval)
+
+    __checkdims(yobs, ysim, yref)
 
     # find proper data
     idx = np.isfinite(yobs)
@@ -382,7 +447,8 @@ def ens_metrics(yobs,ysim, yref=None, pp_cst=0.3, min_val=0.):
 
     # contingency tables
     cont_med, hit_med, miss_medlow, medians = median_contingency(yobs[idx], ysim[idx,:], yref[idx,:])
-    cont_terc, hit_terc, miss_terclow, hit_terclow, hit_terchigh, terciles = tercile_contingency(yobs[idx], ysim[idx,:], yref[idx,:])
+    cont_terc, hit_terc, miss_terclow, hit_terclow, hit_terchigh, terciles = tercile_contingency(yobs[idx], 
+            ysim[idx,:], yref[idx,:])
 
     # drps
     dr, dr_all = drps(yobs[idx], ysim[idx,:], cats=terciles)
@@ -393,12 +459,17 @@ def ens_metrics(yobs,ysim, yref=None, pp_cst=0.3, min_val=0.):
     rmse_fcvf = np.repeat(np.nan, 3)
     rmsep_fcvf = rmse_fcvf
     crps_fcvf = rmse_fcvf
+
     if HAS_FCVF:
         crps_fcvf = skillscore.crps(yobs[idx],ysim[idx,:],yref[idx])
         rmse_fcvf = skillscore.rmse(yobs[idx],ysim[idx,:],yref[idx])
         rmsep_fcvf = skillscore.rmsep(yobs[idx],ysim[idx,:],yref[idx])
 
-    metrics = {'nval':nval, 'nval_ok':np.sum(idx), 'alpha': al,
+    # Compile all metrics
+    metrics = {
+            'nval':nval, 
+            'nval_ok':np.sum(idx), 
+            'alpha': al,
             'iqr_precision_skill': iqr[0]['precision_skill'],
             'iqr_reliability_skill': iqr[0]['reliability_skill'],
             'iqr_precision_score': iqr[0]['precision_score'],
@@ -411,13 +482,13 @@ def ens_metrics(yobs,ysim, yref=None, pp_cst=0.3, min_val=0.):
             'tercile_missrateslow':miss_terclow,
             'drps': dr,
             'drps_skill': dr_skill,
-            'crps': cr['crps'][0],
-            'crps_potential': cr['crps_potential'][0],
-            'crps_uncertainty': cr['uncertainty'][0],
-            'crps_reliability': cr['reliability'][0],
-            'crps_skill': (1-cr['crps'][0]/cr['uncertainty'][0])*100,
-            'crps_potential_skill' : (1-cr['crps_potential'][0]/cr['uncertainty'][0])*100,
-            'crps_reliability_skill' : (1-cr['reliability']/cr['uncertainty'][0])*100,
+            'crps': cr['crps'],
+            'crps_potential': cr['crps_potential'],
+            'crps_uncertainty': cr['uncertainty'],
+            'crps_reliability': cr['reliability'],
+            'crps_skill': (1-cr['crps']/cr['uncertainty'])*100,
+            'crps_potential_skill' : (1-cr['crps_potential']/cr['uncertainty'])*100,
+            'crps_reliability_skill' : (1-cr['reliability']/cr['uncertainty'])*100,
             'crps_skill_fcvf': crps_fcvf[0],
             'rmse_skill_fcvf': rmse_fcvf[0],
             'rmsep_skill_fcvf': rmsep_fcvf[0],
@@ -426,7 +497,8 @@ def ens_metrics(yobs,ysim, yref=None, pp_cst=0.3, min_val=0.):
             'rmsep_score_fcvf': rmsep_fcvf[1],
             'crps_ref_fcvf': crps_fcvf[2],
             'rmse_ref_fcvf': rmse_fcvf[2],
-            'rmsep_ref_fcvf': rmsep_fcvf[2]}
+            'rmsep_ref_fcvf': rmsep_fcvf[2]
+    }
 
     return metrics, idx, rt, cont_med, cont_terc
 
@@ -435,14 +507,16 @@ def ens_metrics_names():
     
     o = np.random.lognormal(size=10)
     s = np.random.normal(size=(10,20))
-    sc, idx, rt, cont_med, cont_terc = ens_metrics(o, s)
+    sc, idx, rt, cont_med, cont_terc = ensc_hymod(o, s)
     
     return sc.keys()
+
 
 def det_metrics_names():
     
     o = np.random.lognormal(size=10)
     s = np.random.normal(size=(10,1))
-    sc, idx = det_metrics(o, s)
+    sc, idx = detc_hymod(o, s)
     
     return sc.keys()
+

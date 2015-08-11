@@ -14,4 +14,7 @@ package_files.txt
 hydrodiy/hywafari/tests/wafari_project
 hydrodiy/hywafari/tests/*.csv
 hydrodiy/hygis/tests/*
+hydrodiy/hymod/c_hymod.c
+hydrodiy/hydata/c_hydata.c
+hydrodiy/hystat/c_hystat.c
 

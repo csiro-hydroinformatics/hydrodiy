@@ -13,46 +13,63 @@ class MetricsTestCase(unittest.TestCase):
         data = np.loadtxt(fd1)
         self.obs1 = data[:,0].copy() 
         self.sim1 = data[:,1:].copy() 
+
         frt1 = os.path.join(FTEST, 'data', 'crps_testres_crpsmatens_01.txt')
         self.crps_reliabtab1 = np.loadtxt(frt1) 
+
         fv1 = os.path.join(FTEST, 'data', 'crps_testres_crpsvalens_01.txt')
-        self.crps_value1 = np.loadtxt(fv1) 
-        self.crps_value1[2] *= -1
-        
+        c1 = np.loadtxt(fv1) 
+        c1[2] *= -1
+        self.crps_value1 = {
+            'crps':c1[0],
+            'reliability':c1[1],
+            'resolution':c1[2],
+            'uncertainty':c1[3],
+            'crps_potential':c1[4]
+        }
+       
 
         fd2 = os.path.join(FTEST, 'data', 'crps_testdata_02.txt')
         data = np.loadtxt(fd2)
         self.obs2 = data[:,0].copy() 
         self.sim2 = data[:,1:].copy() 
+
         frt2 = os.path.join(FTEST, 'data', 'crps_testres_crpsmatens_02.txt')
         self.crps_reliabtab2 = np.loadtxt(frt2) 
-        fv2 = os.path.join(FTEST, 'data', 'crps_testres_crpsvalens_02.txt')
-        self.crps_value2 = np.loadtxt(fv2) 
-        self.crps_value2[2] *= -1
 
+        fv2 = os.path.join(FTEST, 'data', 'crps_testres_crpsvalens_02.txt')
+        c2 = np.loadtxt(fv2) 
+        c2[2] *= -1
+        self.crps_value2 = {
+            'crps':c2[0],
+            'reliability':c2[1],
+            'resolution':c2[2],
+            'uncertainty':c2[3],
+            'crps_potential':c2[4]
+        }
+
+ 
     def test_crps_reliability_table1(self):
         cr, rt = metrics.crps(self.obs1, self.sim1)
-        self.crps_reliabtab1.dtype = rt.dtype
-        for nm in rt.dtype.names:
-            self.assertTrue(np.allclose(rt[nm], self.crps_reliabtab1[nm], atol=1e-5))
+        for i in range(rt.shape[1]):
+            self.assertTrue(np.allclose(rt.iloc[:, i], self.crps_reliabtab1[:,i], atol=1e-5))
 
     def test_crps_reliability_table2(self):
         cr, rt = metrics.crps(self.obs2, self.sim2)
-        self.crps_reliabtab2.dtype = rt.dtype
-        for nm in rt.dtype.names:
-            self.assertTrue(np.allclose(rt[nm], self.crps_reliabtab2[nm], atol=1e-5))
+        for i in range(rt.shape[1]):
+            self.assertTrue(np.allclose(rt.iloc[:, i], self.crps_reliabtab2[:,i], atol=1e-5))
 
     def test_crps_value1(self):
         cr, rt = metrics.crps(self.obs1, self.sim1)
-        self.crps_value1.dtype = cr.dtype
-        for nm in cr.dtype.names:
-            self.assertTrue(np.allclose(cr[nm], self.crps_value1[nm], atol=1e-5))
+        for nm in cr.keys():
+            ck = np.allclose(cr[nm], self.crps_value1[nm], atol=1e-5)
+            self.assertTrue(ck)
 
     def test_crps_value2(self):
         cr, rt = metrics.crps(self.obs2, self.sim2)
-        self.crps_value2.dtype = cr.dtype
-        for nm in cr.dtype.names:
-            self.assertTrue(np.allclose(cr[nm], self.crps_value2[nm], atol=1e-5))
+        for nm in cr.keys():
+            ck = np.allclose(cr[nm], self.crps_value2[nm], atol=1e-5)
+            self.assertTrue(ck)
 
     def test_iqr(self):
         obs = np.arange(0, 200)
@@ -123,12 +140,14 @@ class MetricsTestCase(unittest.TestCase):
         nval = 10
         cats = np.array([-0.5, 0, 0.5])
         ysim1 = pd.Series(np.random.choice([-1, 0, 1], nval))
+
         returned = metrics.cut(ysim1, cats)
-        expected = np.zeros((nval, 3))
+
+        expected = np.zeros((nval, 4))
         expected[ysim1.values==-1,0] = 1
         expected[ysim1.values==0,1] = 1
-        expected[ysim1.values==1,2] = 1
-        #import pdb; pdb.set_trace()
+        expected[ysim1.values==1,3] = 1
+
         self.assertTrue(np.allclose(returned.values, expected, atol=1e-2))
 
         nens = 100

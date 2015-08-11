@@ -18,9 +18,9 @@ if 'PATH' in os.environ:
 # Cython C extensions
 ext_modules = [
     Extension(
-        name='_metrics', 
+        name='c_hymod', 
         sources=[
-            'hydrodiy/hymod/_metrics.pyx', 
+            'hydrodiy/hymod/c_hymod.pyx', 
             'hydrodiy/hymod/c_crps.c'
         ],
         include_dirs=[numpy.get_include()]),
@@ -46,6 +46,7 @@ ext_modules = [
 # Package config
 js = 'package_config.json'
 cfg = json.load(open(js, 'r'))
+cfg['packages'] = [str(s) for s in cfg['packages']]
 
 # Setup config
 setup(
