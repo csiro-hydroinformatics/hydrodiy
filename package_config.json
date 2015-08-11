@@ -1,0 +1,35 @@
+{
+    "name":"hydrodiy",
+    "version":"0.3",
+    "description":"Tools for hydrological modelling",
+    "author":"Julien Lerat",
+    "author_email":"julien.lerat@gmail.com",
+    "url": "https://bitbucket.org/jlerat/hydrodiy",
+    "packages" : [
+        "hymod", 
+        "hygis", 
+        "hyplot", 
+        "hydata",  
+        "hyio", 
+        "hywafari",
+        "hystat"
+    ],
+    "package_dir" : {
+        "hymod":"hydrodiy/hymod", 
+        "hygis":"hydrodiy/hygis",
+        "hydata":"hydrodiy/hydata",
+        "hyio":"hydrodiy/hyio",
+        "hyplot":"hydrodiy/hyplot",
+        "hywafari":"hydrodiy/hywafari",
+        "hystat":"hydrodiy/hystat"
+    },
+    "package_data" : {
+        "hygis": ["data/*.csv", "data/*.png", "data/*.pngw"],
+        "hyio": ["*.py.gz"],
+        "hyplot": ["*.json"]
+    },
+    "requires":[
+        "pandas (>=11.0)", 
+        "numpy (>=1.7.1)"
+    ]
+}
