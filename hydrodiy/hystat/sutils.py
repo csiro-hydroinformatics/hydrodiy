@@ -2,7 +2,7 @@ import re
 from math import sqrt
 import numpy as np
 import pandas as pd
-import _sutils
+import c_hystat
 
 def percentiles(x, perc=np.linspace(0, 100, 5), prob_cst=0.3):
     ''' Returns percentiles of the input variable as a Pandas Series.
@@ -26,52 +26,6 @@ def percentiles(x, perc=np.linspace(0, 100, 5), prob_cst=0.3):
     idx = [re.sub(' ', '_', 'P%5.1f'%p) for p in perc]
 
     return pd.Series(qq, index=idx)
-
-def categories(x, 
-        bounds=np.linspace(0, 100, 5), 
-        is_percentile=True, 
-        has_ties=True,
-        format_cat='[%4.1f,\n%4.1f['):
-    '''
-        Compute categorical data from continuous data
-
-        :param numpy.array x: data from continuous variable  
-        :param bounds x: boundaries of categories
-        :param bool is_percentile: consider bounds as percentage 
-                    used to compute percentiles
-        :param bool has_ties: Are there ties in x value (e.g. 0.0) ?
-        :param string format_cat: format to use for printing categories
-
-        :return 
-    '''
-
-    # remove ties in x variable
-    y = x 
-    if has_ties:
-        dy = np.max(np.diff(np.sort(y),1))
-        y += np.random.uniform(size=len(y))*dy*1e-6
-
-    # Compute boundaries 
-    yq = bounds
-    if is_percentile:
-        yq = percentiles(y, bounds, 1.)
-        
-        # add a small number to include max
-        yq[len(bounds)-1] += 1e-10 
-
-    yq = np.unique(np.sort(yq))
-
-    # default catval is np.nan
-    catval = np.array([-1]*len(y), dtype='int')
-    catnames = np.array(['NA']*(len(yq)-1), dtype='S50')
-
-    # compute categories
-    for i in range(len(yq)-1):
-        idx = (y>=yq[i]) & (y<yq[i+1])
-        catval[idx] = i
-        catnames[i] = format_cat%(yq[i], yq[i+1])
-
-    return catval, catnames
 
 def empfreq(nval, prob_cst=0.3):
     ''' Compute empirical frequencies for sample of size nval 
