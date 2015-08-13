@@ -48,7 +48,7 @@ class CsvTestCase(unittest.TestCase):
 
     def test_read_csv4(self):
 
-        fcsv = '%s/climate.csv.gz'%self.FOUT
+        fcsv = '%s/climate.csv'%self.FOUT
 
         data, comment = csv.read_csv(fcsv, 
                 parse_dates=[''], index_col=0)
@@ -58,6 +58,14 @@ class CsvTestCase(unittest.TestCase):
 
         d = data.index[0]
         self.assertTrue(isinstance(d, pd.tslib.Timestamp))
+
+    def test_read_csv5(self):
+
+        fcsv = '%s/207004_monthly_total_01.csv'%self.FOUT
+
+        data, comment = csv.read_csv(fcsv, 
+                parse_dates=True, index_col=0)
+
 
     def test_write_csv1(self):
 

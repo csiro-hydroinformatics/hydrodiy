@@ -10,18 +10,6 @@ class UtilsTestCase(unittest.TestCase):
         print('\t=> UtilsTestCase (hystat)')
         FTEST, testfile = os.path.split(__file__)
         self.FOUT = FTEST
-        
-    def test_categories(self):
-        x = np.linspace(1, 100, 100)
-        catval, catname = sutils.categories(x)
-        
-        expected = np.array([-1]*len(x), dtype='int')
-        expected[:25] = 0
-        expected[25:50] = 1
-        expected[50:75] = 2
-        expected[75:100] = 3
-
-        self.assertTrue(np.array_equal(catval, expected))
 
     def test_empfreq(self):
         nval = 10

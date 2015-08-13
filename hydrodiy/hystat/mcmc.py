@@ -1,4 +1,6 @@
 from __future__ import generators
+
+import os
 from math import sqrt, exp, log 
 
 import numpy as np
@@ -218,7 +220,9 @@ def get_parnames(chain_data):
 
 def write_chain_data(chain_data, filename, comment):
     ''' Writes chain data to zipped csv file '''
-    write_csv(pd.DataFrame(chain_data), filename, comment)
+
+    source_file = os.path.abspath(__file__)
+    write_csv(pd.DataFrame(chain_data), filename, comment, source_file)
 
 def read_chain_data(filename):
     ''' Reads zipped csv file containing chain data '''

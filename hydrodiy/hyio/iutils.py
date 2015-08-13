@@ -6,7 +6,22 @@ import datetime
 
 
 def find_files(folder, pattern, recursive=True):
-    ''' Find files recursively based on regexp pattern search '''
+    ''' Find files recursively based on regexp pattern search
+
+    Parameters
+    -----------
+    folder : str
+        Folder to be searched
+    pattern : str
+        Regexp pattern to be used. See re.search function
+    recursive : bool
+        Search folder recursively or not
+
+    Example
+    -----------
+    Look for all python scripts in current folder
+    >>> lf = iutils.find_files('.', '.*\\.py', Fase)
+    '''
 
     found = []
 
@@ -40,13 +55,29 @@ def extracpat(string, regexp):
             pass
     return out
 
-def script_template(filename, author='J. Lerat, EHP, Bureau of Meteorogoloy'):
-    '''
-        Write a script template into a text file
-    '''
+def script_template(filename, 
+        type='process',
+        author='J. Lerat, EHP, Bureau of Meteorogoloy'):
+    ''' Write a script template
 
+    Parameters
+    -----------
+    filename : str
+        Filename to write the script to
+    type : str
+        Type of script: 
+        'process' is a data processing script
+        'plot' is plotting script
+    author : str
+        Script author
+
+    Example
+    -----------
+    >>> iutils.script_template('a_cool_script.py', 'plot', 'Bob Marley')
+
+    '''
     FMOD, modfile = os.path.split(__file__)
-    f = os.path.join(FMOD, 'script_template.py')
+    f = os.path.join(FMOD, 'script_template_%s.py' % type)
     with open(f, 'r') as ft:
         txt = ft.readlines()
 
@@ -61,7 +92,4 @@ def script_template(filename, author='J. Lerat, EHP, Bureau of Meteorogoloy'):
     
     with open(filename, 'w') as fs:
         fs.writelines(txt)
-
-        
-    
 

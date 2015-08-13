@@ -28,7 +28,7 @@ def _header2comment(header):
         if not bool(re.search('-{10}', s)):
 
             k = re.sub('\:.*$', '', s)
-            val = re.sub('%s:' % k, '', s).strip()
+            val = s[len(k)+1:].strip()
             k = re.sub(' +', '_', k.strip().lower())
 
             if not bool(re.search('\:', s[:key_length_max])):
@@ -47,17 +47,25 @@ def _csvhead(nrow, ncol, comment, source_file, author=None):
 
     # Generate the comments dict
     if isinstance(comment, str):
-        comments = {'comment01': comment}
+        comments = {'comment': comment}
 
     elif isinstance(comment, list):
-        comments = {'comment%2.2d' % i: comment[i] for i in range(len(comment))}
+        comments = {}
+        for i in range(len(comment)):
+            comments['comment%2.2d' % i] = comment[i] 
 
     elif isinstance(comment, dict):
-        comments = {re.sub('\:', '', k).lower(): comment[k] for k in comment}
+        comments = {}
+        for k in comment:
+            comments[re.sub('\:', '', k).lower()] = comment[k] 
 
     else:
         comment = list(comment)
-        comments = {'comment%2.2d' % i: comment[i] for i in range(len(comment))}
+
+        comments = {}
+        for i in range(len(comment)):
+            comments['comment%2.2d' % i] = comment[i] 
+
 
     # Generate file header
     h = []
@@ -111,6 +119,10 @@ def write_csv(data, filename, comment,
                 source_file = source_file, 
                 author=author)
    
+    # Check source_file exists
+    if not os.path.exists(source_file):
+        raise ValueError('%s file does not exists' % source_file)
+    
     # defines file name
     filename_full = filename
 

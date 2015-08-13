@@ -1,17 +1,14 @@
 #!/usr/bin/env python
 
-import os
-import re
+import os, re, json
+import numpy as np
 
-# Retrieve list of packages
-with file('setup.py','r') as f:
-    setup_file = '\n'.join(f.readlines())
-l = re.findall(r'packages=\[[^\]]*\]',setup_file)
-s =  re.findall(r'\'\w+', l[0])
-module_names = [re.sub(r'\'', '', u) for u in s]
+js = 'package_config.json'
+package_config = json.load(open(js, 'r'))
 
-l = re.findall(r'\(name=.*', setup_file)
-package_name = re.sub(r'.*\(name=\'|\',', '', l[0])
+package_name = package_config['name']
+module_names = package_config['packages']
+
 
 print('\n\n----- uninstall info -----')
 print('package : %s'%package_name)
