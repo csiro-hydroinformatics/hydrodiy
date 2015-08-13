@@ -26,6 +26,12 @@ def getinstance(name):
     elif name == PowerTrans().name:
         return PowerTrans()
 
+    elif name == YeoJohnsonTrans().name:
+        return YeoJohnsonTrans()
+
+    elif name == LogSinhTrans().name:
+        return LogSinhTrans()
+
     else:
         raise ValueError('Cannot find transform name %s' % name)
 
@@ -68,6 +74,23 @@ class Transform:
         ''' Returns the transformation jacobian dforward(x)/dx '''
         return np.nan
 
+class IdentityTrans(Transform):
+
+    def __init__(self):
+        Transform.__init__(self, 0, 'Identity')
+
+    def trueparams(self):
+        return np.nan
+
+    def forward(self, x):
+        return x
+
+    def inverse(self, y):
+        return y
+
+    def jac(self, x):
+        return np.one_like(x)
+
 
 class LogTrans(Transform):
 
@@ -75,18 +98,17 @@ class LogTrans(Transform):
         Transform.__init__(self, 1, 'Log')
 
     def trueparams(self):
-        return bounded(self.params[0], 0, 5)
+        return math.exp(self.params[0])
 
     def forward(self, x):
         b = self.trueparams()
-        f = 1/b * np.log(1.+b*x)
-        # Very close to x/(1+(ax)^1.3) when (ax) -> 0
-        return f
+        y = 1/b * np.log(1.+b*x)
+        return y
 
     def inverse(self, y):
         b = self.trueparams()
-        i =  (np.exp(b*y)-1.)/b  
-        return i
+        x =  (np.exp(b*y)-1.)/b  
+        return x
 
     def jac(self, x):
         b = self.trueparams()
@@ -118,195 +140,142 @@ class PowerTrans(Transform):
         return j
 
 
-class YeoJohsonTransform(Transform):
+class YeoJohnsonTrans(Transform):
 
     def __init__(self):
-        Transform.__init__(self, 2, 'Yeo-Johnson')
+        Transform.__init__(self, 3, 'YeoJohnson')
+
+    def trueparams(self):
+        return self.params[0], \
+                math.exp(self.params[1]), \
+                bounded(self.params[2], -5, 5) 
 
     def forward(self, x):
-        # TODO
-        b = math.exp(self.params[0])
-        f = 1/b * np.log(1.+b*x)
-        return f
+
+        loc, scale, expon = self.trueparams()
+        
+        y = x*np.nan
+        w = loc+x*scale
+
+        ipos = w >= 0
+
+        if not np.isclose(expon, 0.0):
+            y[ipos] = ((w[ipos]+1)**expon-1)/expon
+        
+        if np.isclose(expon, 0.0):
+            y[ipos] = np.log(w[ipos]+1)
+
+        if not np.isclose(expon, 2.0):
+            y[~ipos] = -((-w[~ipos]+1)**(2-expon)-1)/(2-expon)
+
+        if np.isclose(expon, 2.0):
+            y[~ipos] = -np.log(-w[~ipos]+1)
+
+        return y
+
 
     def inverse(self, y):
-        # TODO
-        b = math.exp(self.params[0])
-        i =  (np.exp(b*y)-1.)/b  
-        return i
+        
+        loc, scale, expon = self.trueparams()
+
+        x = y*np.nan
+        
+        ipos = x >=0
+
+        if not np.isclose(expon, 0.0):
+            x[ipos] = (expon*y[ipos]+1)**(1/expon)-1
+
+        if np.isclose(expon, 0.0):
+            x[ipos] = np.exp(y[ipos])-1
+
+        if not np.isclose(expon, 2.0):
+            x[~ipos] = -(-(2-expon)*y[~ipos]+1)**(1/(2-expon))+1
+
+        if np.isclose(expon, 2.0):
+            x[~ipos] = -np.exp(-y[~ipos])+1
+
+        return (x-loc)/scale
+
 
     def jac(self, x):
-        # TODO
-        b = math.exp(self.params[0])
-        j =  1./(1.+b*x) 
-        return j
 
-    #def _parcheck(self):
-    #    ''' Check parameter bounds '''
-    #    if self.scale<=0:
-    #        raise ValueError('scale parameter <0')
+        loc, scale, expon = self.trueparams()
 
-    #    if self._name == 'yeojohnson':
-    #        if (self.shape<0)|(self.shape>5):
-    #            raise ValueError('Yeo-Jonhson shape parameter <0 or >5')
+        j = x*np.nan
+        
+        w = loc+x*scale
+        
+        ipos = w >=0
+    
+        if not np.isclose(expon, 0.0):
+            j[ipos] = (w[ipos]+1)**(expon-1)
 
-    #def getname(self):
-    #    return self._name
+        if np.isclose(expon, 0.0):
+            j[ipos] = 1/(w[ipos]+1)
 
-    #def r2t(self, x):
-    #    ''' Transform raw inputut data '''
-    #    self._parcheck()
-    #    input = self._toarray(x)
-    #    if self._name == 'yeojohnson':
-    #        output = self._r2t_yj(input)
-    #    if self._name == 'logsinh':
-    #        output = self._r2t_logsinh(input)
-    #    
-    #    return output
+        if not np.isclose(expon, 2.0):
+            j[~ipos] = (-w[~ipos]+1)**(1-expon)
 
-    #def t2r(self, x):
-    #    ''' Inverse transform function '''
-    #    self._parcheck()
-    #    input = self._toarray(x)
-    #    if self._name == 'yeojohnson':
-    #        output = self._t2r_yj(input)
-    #    if self._name == 'logsinh':
-    #        output = self._t2r_logsinh(input)
-    #    
-    #    return output
-
-    #def jac(self, x):
-    #    ''' Jacobian of transform function '''
-    #    self._parcheck()
-    #    input = self._toarray(x)
-    #    if self._name == 'yeojohnson':
-    #        output = self._jac_yj(input)
-    #    if self._name == 'logsinh':
-    #        output = self._jac_logsinh(input)
-
-    #    return output
-
-    #def _toarray(self, input):
-    #    output = np.array(input)
-    #    if len(output.shape)==0:
-    #        output = output.reshape((1,1))
-    #    return output
-
-    #def _r2t_yj(self, input):
-    #    ''' Compute the yeojohnson transform with a single parameter '''
-    #    output = input*np.nan
-    #    w = self.loc+input*self.scale
-    #    expon = self.shape
-    #    ipos = w >=0
-    #    if not np.isclose(expon, 0.0):
-    #        output[ipos] = ((w[ipos]+1)**expon-1)/expon
-    #    if np.isclose(expon, 0.0):
-    #        output[ipos] = np.log(w[ipos]+1)
-    #    if not np.isclose(expon, 2.0):
-    #        output[~ipos] = -((-w[~ipos]+1)**(2-expon)-1)/(2-expon)
-    #    if np.isclose(expon, 2.0):
-    #        output[~ipos] = -np.log(-w[~ipos]+1)
-
-    #    return output
-
-    #def _t2r_yj(self, input):
-    #    ''' Compute the yeojohnson transform 
-    #        with a single parameter 
-    #    '''
-    #    output = input*np.nan
-    #    expon = self.shape
-    #    ipos = input >=0
-    #    if not np.isclose(expon, 0.0):
-    #        output[ipos] = (expon*input[ipos]+1)**(1/expon)-1
-    #    if np.isclose(expon, 0.0):
-    #        output[ipos] = np.exp(input[ipos])-1
-    #    if not np.isclose(expon, 2.0):
-    #        output[~ipos] = -(-(2-expon)*input[~ipos]+1)**(1/(2-expon))+1
-    #    if np.isclose(expon, 2.0):
-    #        output[~ipos] = -np.exp(-input[~ipos])+1
-
-    #    return (output-self.loc)/self.scale
-    #
-    #def _jac_yj(self, input):
-    #    ''' Compute the jac of the yeojohnson transform 
-    #        with a single parameter 
-    #    '''
-    #    output = input*np.nan
-    #    expon = self.shape
-    #    w = self.loc+input*self.scale
-    #    ipos = w >=0
-    #
-    #    if not np.isclose(expon, 0.0):
-    #        output[ipos] = (w[ipos]+1)**(expon-1)
-    #    if np.isclose(expon, 0.0):
-    #        output[ipos] = 1/(w[ipos]+1)
-    #    if not np.isclose(expon, 2.0):
-    #        output[~ipos] = (-w[~ipos]+1)**(1-expon)
-    #    if np.isclose(expon, 2.0):
-    #        output[~ipos] = 1/(-w[~ipos]+1)
-    #
-    #    return output*self.scale
+        if np.isclose(expon, 2.0):
+            j[~ipos] = 1/(-w[~ipos]+1)
+    
+        return j*scale
 
 
-class LogSinhTransform(Transform):
+
+class LogSinhTrans(Transform):
 
     def __init__(self):
         Transform.__init__(self, 2, 'LogSinh')
 
+    def trueparams(self):
+        return math.exp(self.params[0]), \
+                math.exp(self.params[1])
+
     def forward(self, x):
-        # TODO
-        b = math.exp(self.params[0])
-        f = 1/b * np.log(1.+b*x)
-        return f
+
+        a, b = self.trueparams()
+
+        w = a + b*x
+        y = y*np.nan
+
+        idx = w<10.
+
+        if np.sum(idx)>0:
+            y[idx] = np.log(np.sinh(w[idx]))/b
+
+        if np.sum(~idx)>0:
+            y[~idx] = (w[~idx]+np.log((1.-np.exp(-2.*w[~idx]))/2.))/b 
+                    
+        return y
+
 
     def inverse(self, y):
-        # TODO
-        b = math.exp(self.params[0])
-        i =  (np.exp(b*y)-1.)/b  
-        return i
+
+        a, b = self.trueparams()
+
+        w = b*y
+        output = y*np.nan
+        
+        idx = w<10.
+
+        if np.sum(idx)>0:
+            x[idx] = (np.arcsinh(np.exp(w[idx])) - a)/b
+
+        if np.sum(~idx)>0:
+            x[~idx] = y[~idx]
+            x[~idx] += (np.log(1.+np.sqrt(1.+np.exp(-2.*w[~idx])))-a)/b 
+
+        return x
+
 
     def jac(self, x):
-        # TODO
-        b = math.exp(self.params[0])
-        j =  1./(1.+b*x) 
-        return j
 
-    #def _r2t_logsinh(self, input):
-    #    ''' Compute the log-sinh transform '''
-    #    a = self.loc
-    #    b = self.scale
-    #    w = a + b*input
-    #    output = input*np.nan
-    #    idx = w<10.
+        a, b = self.trueparams()
 
-    #    if np.sum(idx)>0:
-    #        output[idx] = np.log(np.sinh(w[idx]))/b
-    #    if np.sum(~idx)>0:
-    #        output[~idx] = (w[~idx]+np.log((1.-np.exp(-2.*w[~idx]))/2.))/b 
-    #                
-    #    return output
-    #
-    #def _t2r_logsinh(self, input):
-    #    ''' Compute the inverse log-sinh transform '''
-    #    a = self.loc
-    #    b = self.scale
-    #    w = b*input
-    #    output = input*np.nan
-    #    idx = w<10.
+        w = a + b*x
 
-    #    if np.sum(idx)>0:
-    #        output[idx] = (np.arcsinh(np.exp(w[idx])) - a)/b
-    #    if np.sum(~idx)>0:
-    #        output[~idx] = input[~idx]
-    #        output[~idx] += (np.log(1.+np.sqrt(1.+np.exp(-2.*w[~idx])))-a)/b 
-    #    return output
-
-    #def _jac_logsinh(self, input): 
-    #    ''' Jacobian of log-sinh transform '''
-    #    a = self.loc
-    #    b = self.scale
-    #    w = a + b*input
-    #    return 1./np.tanh(w)
+        return 1./np.tanh(w)
 
 
 
