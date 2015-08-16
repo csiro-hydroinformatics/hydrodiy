@@ -24,25 +24,32 @@ int c_lindetect(int nval, double *params, double* data, int* linstatus)
     tol = params[1];
 
     /* Check inputs */
-    if((double)npt>(double)(nval/10)){
+    if((tol<0) | (npt<1))
         return EDOM;
-    }
-    if((tol<0) | (npt<1)){
-        return EDOM;
-    }
 
     /* fill up beginning and end of linstatus vector */
-    for(i=0; i<npt; i++) linstatus[i] = 0;
-    for(i=nval-npt; i<nval; i++) linstatus[i] = 0;
+    for(i=0; i<npt; i++) 
+    {
+        linstatus[i] = 0;
+        linstatus[nval-i-1] = 0;
+    }
 
     /* loop through data */
-    for(i=npt; i<nval-npt; i++){
+    for(i=npt; i<nval-npt; i++)
+    {
             v1 = data[i-npt];
+
             v2 = data[i+npt];
-            interp = (v2-v1)/(2*(double)npt)*(double)npt+v1;
+
+            interp = (v1+v2)/2; 
+            
             linstatus[i] = 0;
-            err = fabs(data[i]-interp)/(1+fabs(data[i]+interp)/2);
-            if((err<tol) & ((v1!=0)|(v2!=0))) linstatus[i] = 1;
+    
+            err = fabs(data[i]-interp);
+            err /= (1+fabs(data[i]+interp)/2);
+            
+            if((err<tol) & ((v1!=0)|(v2!=0))) 
+                linstatus[i] = 1;
     }
 
     return 0;
