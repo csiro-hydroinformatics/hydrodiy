@@ -5,27 +5,53 @@ import pandas as pd
 import c_hystat
 
 def percentiles(x, perc=np.linspace(0, 100, 5), prob_cst=0.3):
-    ''' Returns percentiles of the input variable as a Pandas Series.
-        Returns a series filled up with nans if the input type is wrong
+    ''' Compute percentiles
 
-        :param numpy.array x: Sample
-        :param list perc: Percentile values
-        :param float prob_cst: Constant used to compute frequency
+    Parameters
+    -----------
+    x : numpy.ndarray
+        Input variable
+    perc : list
+        Percentiles to be computed
+    prob_cst : float
+        Probability constant to be used for empirical frequency 
+        computation
+
+    Returns
+    -----------
+    pp : pandas.Series
+        Percentile values
+
+    Example
+    -----------
+    >>> import numpy as np
+    >>> from hystat import sutils
+    >>> nval = 1000
+    >>> x = np.random.normal(size=nval)
+    >>> pp = sutils.percentiles(x)
+    
     '''
+
     perc = np.atleast_1d(np.array(perc))
+
     try:
         xx = x.astype(float)
         idx = ~np.isnan(xx)
         xs = np.sort(xx[idx]).astype(np.float)
         ff = empfreq(len(xx[idx]), prob_cst)
-        qq = np.interp((perc+0.)/100, ff, xs, left=np.nan, right=np.nan)
+        qq = np.interp((perc+0.)/100, ff, xs, 
+                left=np.nan, right=np.nan)
         
     except TypeError:
         qq = np.nan * np.zeros(len(perc))
 
-    idx = [re.sub(' ', '_', 'P%5.1f'%p) for p in perc]
+    idx = ['P%3.3d.%1d'%(int(p), int(10*(p-int(p)))) for p in perc]
 
-    return pd.Series(qq, index=idx)
+    pp = pd.Series(qq, index=idx)
+
+    return pp
+
+
 
 def empfreq(nval, prob_cst=0.3):
     ''' Compute empirical frequencies for sample of size nval 
@@ -137,43 +163,87 @@ def ar1random(params, nval, seed=0):
     return output
 
 def ar1innov(params, innov):
-    ''' 
-        Run ar1 model with normal innovation
+    ''' Compute AR1 time series from innovation 
 
-        :param numpy.array params: parameter vector with
-            params[0] = ar1 parameter
-            params[1] = output value at t=0
+    Parameters
+    -----------
+    params : list
+        Parameter vector with
+        params[0] ar1 coefficient
+        params[1] Initial value of the innovation
+    innov : numpy.ndarray
+        Innovation time series 
+
+    Returns
+    -----------
+    data : numpy.ndarray
+        Time series of innovations
+
+    Example
+    -----------
+    >>> import numpy as np
+    >>> from hystat import sutils
+    >>> nval = 100
+    >>> innov1 = np.random.normal(size=nval)
+    >>> data = sutils.ar1innov([0.95, 0.], innov1)
+    >>> innov2 = sutils.ar1inverse([0.95, 0.], data)
+    >>> np.allclose(innov1, innov2)
+    True
+    
     '''
 
     innov = innov.reshape((np.prod(innov.shape),))
 
-    output = np.zeros(innov.shape[0], float)
+    data = np.zeros(innov.shape[0], float)
 
     p = np.array(params).reshape((len(params),))
 
-    ierr = c_hystat.ar1innov(p, innov, output)
+    ierr = c_hystat.ar1innov(p, innov, data)
 
     if ierr!=0:
         raise ValueError('ar1innov returns %d'%ierr)
 
-    return output
+    return data
 
-def ar1inverse(params, input):
+
+def ar1inverse(params, data):
+    ''' Compute innovations from an AR1 time series 
+
+    Parameters
+    -----------
+    params : list
+        Parameter vector with
+        params[0] ar1 coefficient
+        params[1] Initial value of the innovation
+    data : numpy.ndarray
+        Time series of ar1 data
+
+    Returns
+    -----------
+    innov : numpy.ndarray
+        Time series of innovations
+
+    Example
+    -----------
+    >>> import numpy as np
+    >>> from hystat import sutils
+    >>> nval = 100
+    >>> innov1 = np.random.normal(size=nval)
+    >>> data = sutils.ar1innov([0.95, 0.], innov1)
+    >>> innov2 = sutils.ar1inverse([0.95, 0.], data)
+    >>> np.allclose(innov1, innov2)
+    True
+
     ''' 
-        Run ar1 model with normal innovation
 
-        :param numpy.array params: parameter vector with
-            params[0] = ar1 parameter
-    '''
-
-    innov = np.zeros(input.shape[0], float)
+    innov = np.zeros(data.shape[0], float)
 
     p = np.array(params).reshape((len(params),))
 
-    ierr = c_hystat.ar1inverse(p, input, innov)
+    ierr = c_hystat.ar1inverse(p, data, innov)
 
     if ierr!=0:
-        raise ValueError('ar1inverse returns %d'%ierr)
+        raise ValueError('c_hystat.ar1inverse returns %d'%ierr)
 
     return innov
 
@@ -216,3 +286,55 @@ def pit(obs, forc):
         
 
     return pit
+
+
+def lhs(nparams, nsample, pmin, pmax, seed=0):
+    ''' Latin hypercube sampling
+
+    Parameters
+    -----------
+    nparams : int
+        Number of parameters
+    nsample : int
+        Number of sample to draw
+    pmin : list
+        Lower bounds of parameters
+    pmax : list
+        Upper bounds of parameters
+    seed : int
+        Random seed
+
+    Returns
+    -----------
+    samples : numpy.ndarray
+        Parameter samples (nsamples x nparams)
+
+    Example
+    -----------
+    >>> import numpy as np
+    >>> from hystat import sutils
+    >>> nparams = 5; nsamples = 3
+    >>> sutils.lhs(nparams, nsamples)
+    
+    '''
+
+    if not isinstance(pmin, list):
+        pmin = [pmin] * nparams
+
+    if not isinstance(pmax, list):
+        pmax = [pmax] * nparams
+
+    samples = np.zeros((nsample, nparams))
+
+    for i in range(nparams):
+        du = float(pmax[i]-pmin[i])/nsample
+        u = np.linspace(pmin[i]+du/2, pmax[i]-du/2, nsample)
+
+        kk = np.random.permutation(nsample)
+        s = u[kk] + np.random.uniform(-du/2, du/2, size=nsample)
+
+        samples[:, i] = s
+
+    return samples
+
+

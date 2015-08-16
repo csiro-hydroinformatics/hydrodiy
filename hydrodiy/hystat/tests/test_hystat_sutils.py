@@ -1,6 +1,12 @@
-import os
+import os, math
+
 import unittest
 import numpy as np
+
+from scipy.special import kolmogorov
+
+import matplotlib.pyplot as plt
+
 from hyio import csv
 from hystat import sutils
 
@@ -90,6 +96,26 @@ class UtilsTestCase(unittest.TestCase):
 
         self.assertTrue(np.allclose(pit1, pit2))
   
+
+    def test_lhs(self):
+        
+        nparams = 10
+        nsamples = 50
+        pmin = 1
+        pmax = 10
+
+        samples = sutils.lhs(nparams, nsamples, pmin, pmax)
+
+        for i in range(nparams):
+            u = (np.sort(samples[:,i])-pmin)/(pmax-pmin)
+            ff = (np.arange(1, nsamples+1)-0.3)/(nsamples+0.4)
+
+            # Perform two sided KS test on results
+            D = np.max(np.abs(u-ff))
+            p = kolmogorov(D*math.sqrt(nsamples))
+
+            self.assertTrue(p>0.95)
+
 
 if __name__ == "__main__":
     unittest.main()
