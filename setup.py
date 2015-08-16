@@ -37,7 +37,6 @@ ext_modules = [
         name='c_hydata', 
         sources=[
             'hydrodiy/hydata/c_hydata.pyx', 
-            'hydrodiy/hydata/c_lindetect.c',
             'hydrodiy/hydata/c_baseflow.c'
         ],
         include_dirs=[numpy.get_include()])

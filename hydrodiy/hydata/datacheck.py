@@ -1,7 +1,7 @@
 import numpy as np
 import c_hydata
 
-def lindetect(data, params=[1, 1e-5]):
+def lindetect(data, npoints=1, eps=1e-5):
     ''' 
     Detect linearly interpolated data 
 
@@ -9,17 +9,15 @@ def lindetect(data, params=[1, 1e-5]):
     -----------
     data : numpy.ndarray data
         Data series where linear interpolation is suspected
-    params : list 
-        Algorithm parameters
-        params[0] number of points before and after current point considered
-        params[1] absolute/relative tolerance
+    npoints : int
+        Number of points before and after current to test linearity
+    eps : float
+        Maximum distance between current point and linear interpolation to validate interpolation
 
     Returns
     -----------
     linstatus : numpy.ndarray
-        Data status as per linear interpolation
-        0
-        1 
+        Booleans stating if current point is interpolated or not
 
     Example
     -----------
@@ -27,17 +25,21 @@ def lindetect(data, params=[1, 1e-5]):
     >>> from hydata import datacheck
     >>> data = np.array([1., 2., 3., 3., 4., 5.])
     >>> datacheck.lindetect(data)
-    array([0, 1, 0, 0, 1, 0], dtype=int32) 
+    array([False, True, False, False, True, False], dtype=int32) 
 
     '''
-    
-    # run C code via cython
-    linstatus = np.zeros(len(data), np.int32)
-    params = np.array(params, float)
-    ierr = c_hydata.lindetect(params, data, linstatus)
 
-    if ierr!=0:
-        raise ValueError('lindetect returns %d'%ierr)
+    d0 = data[npoints+1:]
+    d1 = data[npoints:-npoints]
+    d2 = data[:-(npoints+1)]
 
-    return linstatus
+    interp = (d0+d2) * 0.5
+
+    dist = np.abs(interp - d1)
+
+    status = np.array([False] * len(data))
+    st = (dist < eps) & ((np.abs(d0)>0)|(np.abs(d2)>0))   
+    status[npoints:-npoints] = st
+
+    return status
 

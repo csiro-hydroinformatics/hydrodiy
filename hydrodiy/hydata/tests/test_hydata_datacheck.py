@@ -16,11 +16,11 @@ class DataCheckTestCase(unittest.TestCase):
         data = np.random.normal(size=nval)
         data[5:9] = np.linspace(0, 1, 4)
         
-        linstatus = datacheck.lindetect(data, params=[1, 1e-5])
-        expected = np.zeros(data.shape[0],int)
-        expected[6:8] = 1
+        status = datacheck.lindetect(data)
+        expected = np.array([False] * data.shape[0])
+        expected[6:8] = True
         
-        self.assertTrue(np.allclose(linstatus, expected)) 
+        self.assertTrue(np.allclose(status, expected)) 
 
 
     def test_lindetect2(self):
@@ -28,21 +28,21 @@ class DataCheckTestCase(unittest.TestCase):
         data = np.random.normal(size=nval)
         data[5:9] = 0.
 
-        linstatus = datacheck.lindetect(data, params=[1, 1e-5])
-        expected = np.zeros(data.shape[0],int)
-        
-        self.assertTrue(np.allclose(linstatus, expected)) 
+        status = datacheck.lindetect(data)
+        expected = np.array([False] * data.shape[0])
+
+        self.assertTrue(np.allclose(status, expected)) 
 
 
     def test_lindetect3(self):
 
         data = np.array([1., 2., 3., 3., 4.])
         
-        linstatus = datacheck.lindetect(data, params=[1, 1e-5])
-        expected = np.zeros(data.shape[0],int)
-        expected[1] = 1
+        status = datacheck.lindetect(data)
+        expected = np.array([False] * data.shape[0])
+        expected[1] = True
 
-        self.assertTrue(np.allclose(linstatus, expected)) 
+        self.assertTrue(np.allclose(status, expected)) 
 
 
 if __name__ == "__main__":
