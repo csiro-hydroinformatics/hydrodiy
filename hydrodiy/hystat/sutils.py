@@ -350,6 +350,8 @@ def schaakeeshuffle(obs, forc, eps = 1e-30):
         Ensemble forecast with 
         M rows representing M ensemble members
         P columns representing P variables
+    eps : float
+        Small quantity added to observed data in case where N < M
 
     Returns
     -----------
@@ -392,3 +394,4 @@ def schaakeeshuffle(obs, forc, eps = 1e-30):
         forc_shuffled[kk, j] = np.sort(forc[:, j])
 
     return forc_shuffled
+
