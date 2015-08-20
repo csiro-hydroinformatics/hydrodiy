@@ -5,6 +5,8 @@ import numpy as np
 
 from scipy.special import kolmogorov
 
+from scipy.stats import spearmanr
+
 import matplotlib.pyplot as plt
 
 from hyio import csv
@@ -116,7 +118,7 @@ class UtilsTestCase(unittest.TestCase):
 
             self.assertTrue(p>0.95)
 
-    def test_schaakeeshuffle(self):
+    def test_schaakeeshuffle1(self):
         # Test from Clark et al. 2004
 
         obs = np.array([
@@ -174,6 +176,38 @@ class UtilsTestCase(unittest.TestCase):
         self.assertTrue(np.allclose(forc_shuffled2, expected2))
 
 
+    def test_schaakeeshuffle2(self):
+        m1 = 0
+        s1 = 10
+
+        m2 = 20
+        s2 = 20
+
+        rho = 0.9
+
+        nensA = 100
+        nensB = 500
+
+        # Generate first ensemble from multivariate 
+        # normal with high correlation
+        cov = rho * math.sqrt(s1 * s2)
+        ensA = np.random.multivariate_normal([m1, m2], [[s1, cov], [cov, s2]],
+                size=nensA)
+
+        # Generate second ensemble from two 
+        # independent normal variables
+        # then reshuffled them
+        ens1 = np.random.normal(m1, s1, size=nensB)
+        ens2 = np.random.normal(m2, s2, size=nensB)
+        ens = np.array([ens1, ens2]).T
+        ensB = sutils.schaakeeshuffle(ensA, ens)
+
+        # Check we are preserving rank correlation
+        rA, pA = spearmanr(ensA[:,0], ensA[:,1])
+        rB, pB = spearmanr(ensB[:,0], ensB[:,1])
+
+        self.assertTrue(abs(rA-rB)<1e-4)
+        
 
 if __name__ == "__main__":
     unittest.main()
