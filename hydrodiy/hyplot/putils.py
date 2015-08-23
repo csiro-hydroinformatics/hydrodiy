@@ -119,8 +119,34 @@ def footer(fig, author=None, copyright=False, version=None):
                                 ha='right', fontsize=9)
 
 def col2cmap(colors):
-    ''' Define a linear cmap from a dictionary of colors '''
+    ''' Define a linear color map from a set of colors 
 
+    Parameters
+    -----------
+    colors : dict
+        A set of colors indexed by a float in [0, 1]. The index
+        provides the location in the color map. Example:
+        colors = {'0.':'#3399FF', '0.1':'#33FFFF', '1.0':'#33FF99'}
+
+    Returns
+    -----------
+    cmap : matplotlib.colormap
+        Colormap
+
+    Example
+    -----------
+    >>> import matplotlib.pyplot as plt
+    >>> import numpy as np
+    >>> from hyplot import putils 
+    >>> colors = {0.:'#3399FF', 0.1:'#33FFFF', 1.0:'#33FF99'}
+    >>> cmap = putils.col2cmap(colors)
+    >>> nval = 500
+    >>> x = np.random.normal(size=nval)
+    >>> y = np.random.normal(size=nval)
+    >>> z = np.random.uniform(0, 1, size=nval)
+    >>> plt.scatter(x, y, c=z, cmap=cmap)
+
+    '''
     keys = np.sort(colors.keys()).astype(float)
 
     if keys[0] < 0.:
@@ -144,5 +170,37 @@ def col2cmap(colors):
 
     return LinearSegmentedColormap('mycmap', cdict, 256)
 
+def line11(ax, *args, **kwargs):
+    ''' Plot a 1:1 line
+
+    Parameters
+    -----------
+    ax : matplotlib.axes
+        Axe to draw the 1:1 line on
+
+    Returns
+    -----------
+    line : matplotlib.lines.Line2D
+        Normalise id
+
+    Example
+    -----------
+    >>> import matplotlib.pyplot as plt
+    >>> from hyplot import putils 
+    >>> fig, ax = plt.subplots()
+    >>> ax.plot([0, 10], [0, 10], 'o')
+    >>> putils.line11(ax)
+
+    '''
+
+    xlim = ax.get_xlim()
+    ylim = ax.get_ylim()
+    lim = [min(xlim[0], ylim[0]), max(xlim[1], ylim[1])]
+ 
+    line = ax.plot(lim, lim, *args, **kwargs)
+
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
    
+    return line
 

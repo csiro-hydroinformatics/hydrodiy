@@ -30,6 +30,7 @@ class UtilsTestCase(unittest.TestCase):
         fo = '%s/storage2.html'%self.FOUT
         html = putils.img2html('Storage data online', df, root_http, fo)
 
+
     def test_col2cmap(self):
 
         colors = {1:'#004C99', 0:'#FF9933', 0.3:'#FF99FF'}
@@ -43,6 +44,23 @@ class UtilsTestCase(unittest.TestCase):
 
         fp = '%s/cmap.png' % self.FOUT
         fig.savefig(fp)
+
+    def test_line11(self):
+
+
+        fig, ax = plt.subplots()
+
+        nval = 100
+        x = np.random.normal(size=nval)
+        y = np.random.normal(scale=2, size=nval)
+
+        ax.plot(x, y)
+
+        putils.line11(ax, 'k--')
+
+        fp = '%s/line11.png' % self.FOUT
+        fig.savefig(fp)
+
 
 if __name__ == "__main__":
     unittest.main()
