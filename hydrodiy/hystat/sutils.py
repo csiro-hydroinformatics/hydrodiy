@@ -337,8 +337,8 @@ def lhs(nparams, nsample, pmin, pmax, seed=0):
 
     return samples
 
-def schaakeeshuffle(obs, forc, eps = 1e-30):
-    ''' Apply the Schaakee shuffle technique to ensemble forecasts
+def schaakeshuffle(obs, forc, eps = 1e-30):
+    ''' Apply the Schaake shuffle technique to ensemble forecasts
 
     Parameters
     -----------
