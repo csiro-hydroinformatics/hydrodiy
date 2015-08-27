@@ -337,8 +337,8 @@ def lhs(nparams, nsample, pmin, pmax, seed=0):
 
     return samples
 
-def schaakeeshuffle(obs, forc, eps = 1e-30):
-    ''' Apply the Schaakee shuffle technique to ensemble forecasts
+def schaakeshuffle(obs, forc, eps = 1e-30):
+    ''' Apply the Schaake shuffle technique to ensemble forecasts
 
     Parameters
     -----------
@@ -347,7 +347,7 @@ def schaakeeshuffle(obs, forc, eps = 1e-30):
         N rows representing N concomittant occurence of data
         P columns representing P variables
     forc : numpy.ndarray
-        Ensemble forecast with 
+        Ensemble forecast to be reshuffled
         M rows representing M ensemble members
         P columns representing P variables
     eps : float
@@ -355,8 +355,7 @@ def schaakeeshuffle(obs, forc, eps = 1e-30):
 
     Returns
     -----------
-    forc_shuffled : numpy.ndarray
-        Reordered forecasts
+    (does not return a value, simply reshuffle forc)
 
     Example
     -----------
@@ -379,19 +378,16 @@ def schaakeeshuffle(obs, forc, eps = 1e-30):
     nens = forc.shape[0]
 
     # Resample obs if nobs < nens
-    obs2 = np.zeros((nens, nvar))
+    obs2 = obs
 
-    for i in range(nens):
-        k = int(i * float(nobs)/nens)
-        obs2[i,:] = obs[k,:] + np.random.uniform(0, eps)
+    if nobs < nens:
+        obs2 = np.zeros((nens, nvar))
+        for i in range(nens):
+            k = int(i * float(nobs)/nens)
+            obs2[i,:] = obs[k,:] + np.random.uniform(0, eps)
 
     # Shuffle ensembles
-    forc_shuffled = np.zeros((nens, nvar))
-
     for j in range(nvar):
-        
         kk = np.argsort(obs2[:,j])
-        forc_shuffled[kk, j] = np.sort(forc[:, j])
-
-    return forc_shuffled
+        forc[kk, j] = np.sort(forc[:, j])
 
