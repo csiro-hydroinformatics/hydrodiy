@@ -27,48 +27,46 @@ int c_baseflow(int method, int nval,
 	double q, qp, bf, bfp,  k=0, C=0, a=0;
 
     /* Check params */
-	k = params[0];
+    k = params[0];
     if(k<0 || k>1)
-	{
         return EDOM;
-	}
 
     if(method >= 2)
-	{
+    {
 		C = params[1];
 		if(C<0)
         	return EDOM;
     }
 
     if(method >= 3)
-	{
+    {
 		a = params[2];
 		if(a<0 || a>1)
         	return EDOM;
     }
 
-	/* Initisalise */
-	q = inputs[0];
-	if(q<0) q=0;
-	qp = q;
-	bf = q;
-	bfp = q;
-	outputs[0] = bf;
+    /* Initisalise */
+    q = inputs[0];
+    if(q<0) q=0;
+    qp = q;
+    bf = q;
+    bfp = q;
+    outputs[0] = bf;
 
     /* loop through data */
     for(i=1; i<nval; i++)
-	{
-		q = inputs[i]>=0 ? inputs[i] : q;
+    {
+        q = inputs[i]>=0 ? inputs[i] : q;
 
-		/* One parameter - Chapman */
+	/* One parameter - Chapman */
         if (method == 1)
             bf = k*bfp/(2-k) + (1-k)*q/(2-k);
 
-		/* Two parameters - Boughton */
+	/* Two parameters - Boughton */
         if (method == 2)
             bf = k*bfp/(1+C) + C*q/(1+C);
 
-		/* Three parameters - IHACRES */
+	/* Three parameters - IHACRES */
         if(method == 3)
             bf = k*bfp/(1+C) + C*(q+a*qp)/(1+C);
 
@@ -76,13 +74,13 @@ int c_baseflow(int method, int nval,
         if (bf>q)
             bf = q;
 
-		/* Loop */
-		qp ++;
-		qp = q;
+	/* Loop */
+	qp ++;
+	qp = q;
 
-		bfp++;
-		bfp = bf;
-		outputs[i] = bf;
+	bfp++;
+	bfp = bf;
+	outputs[i] = bf;
     }
 
     return 0;

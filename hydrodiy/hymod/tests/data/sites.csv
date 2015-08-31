@@ -1,0 +1,54 @@
+# --------------------------------------------------
+# nrow : 38
+# ncol : 5
+# comment : Sites selected
+# time_generated : 2015-08-19 17:41
+# author : magpie
+# source_file : /home/magpie/Code/hrain/scripts/S00_build_sitelist.py
+# work_dir : /home/magpie/Code/hrain
+# python_environment : posix
+# python_version : 2.7.6 (default, Mar 22 2014, 22:59:56)  [GCC 4.8.2]
+# pandas_version : 0.15.2
+# numpy_version : 1.9.2
+# python_inc : /usr/include/python2.7
+# python_lib : /home/magpie/venv/lib/python2.7/site-packages
+# --------------------------------------------------
+basin,catchment,drainage,id,number
+richmond,wiangaree,south_east_coast_nsw,203005,1
+manning,barry,south_east_coast_nsw,208009,2
+manning,rocks_crossing,south_east_coast_nsw,208005,3
+tuross,turossvale,south_east_coast_nsw,218001,4
+clarence,newtonboyd,south_east_coast_nsw,204034,5
+macleay,coninside,south_east_coast_nsw,206014,6
+lachlan,hadley_no2,murray_darling,412066,7
+lachlan,abercrombie,murray_darling,412028,8
+namoi,northcuerindi,murray_darling,419005,9
+gwydir,yarrowyck,murray_darling,418014,10
+condamine-culgoa,emuvale,murray_darling,422313B,11
+upper_murray,maragle,murray_darling,401009,12
+upper_murray,biggara,murray_darling,401012,13
+upper_murray,jingellic,murray_darling,401013,14
+murrumbidgee,old_borambola,murray_darling,410047,15
+murrumbidgee,gingera,murray_darling,410730,16
+murrumbidgee,weejasper,murray_darling,410024,17
+murrumbidgee,tennent,murray_darling,410731,18
+murrumbidgee,batlowrd,murray_darling,410061,19
+murrumbidgee,darbalara,murray_darling,410038,20
+murrumbidgee,lobbshole,murray_darling,410761,21
+murrumbidgee,tinderry,murray_darling,410734,22
+murrumbidgee,lacmalac,murray_darling,410057,23
+tully,powerline,north_east_coast,113004A,24
+brisbane,peachester,north_east_coast,143303A,25
+logan-albert,mainroadbridge,north_east_coast,145107A,26
+logan-albert,upstreammaroondam,north_east_coast,145018A,27
+logan-albert,dieckmansbridge,north_east_coast,145010A,28
+herbert,abergowrie,north_east_coast,116006B,29
+south_coast,beechmont,north_east_coast,146014A,30
+mary,tagiganroad,north_east_coast,138009A,31
+daly,tipperary,tanami_timor_sea_coast,G8140161,32
+frankland-deep,tedspool,south_west_coast,606001,33
+murray_wa,dingo_road,south_west_coast,613002,34
+kangaroo_island,gorgefalls,south_australian_gulf,A5130501,35
+onkaparinga,scottbottom,south_australian_gulf,A5030502,36
+arthur,guilfordjunction,tasmania,61,37
+millicentcoast,struan,south_east_coast_sa,A2390519,38
