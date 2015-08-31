@@ -161,19 +161,27 @@ class UtilsTestCase(unittest.TestCase):
             [12.5, 12.2, 17.6]
         ])
 
+<<<<<<< HEAD
         forc_shuffled1 = sutils.schaakeshuffle(obs, forc1)
         self.assertTrue(np.allclose(forc_shuffled1, expected1))
 
 
         forc2 = np.concatenate([forc1, forc1, forc1], axis=0)
         forc_shuffled2 = sutils.schaakeshuffle(obs, forc2)
+=======
+        sutils.schaakeshuffle(obs, forc1)
+        self.assertTrue(np.allclose(forc1, expected1))
+
+        forc2 = np.concatenate([forc1, forc1, forc1], axis=0)
+        sutils.schaakeshuffle(obs, forc2)
+>>>>>>> a01f365ef8882c973cdfcca4f8bb25564d5f9fd1
 
         expected2 = np.zeros((forc1.shape[0]*3, forc1.shape[1]))
         for i in range(expected2.shape[0]):
             k = int(i * float(forc1.shape[0])/expected2.shape[0])
             expected2[i,:] = expected1[k,:]
 
-        self.assertTrue(np.allclose(forc_shuffled2, expected2))
+        self.assertTrue(np.allclose(forc2, expected2))
 
 
     def test_schaakeshuffle2(self):
@@ -199,8 +207,13 @@ class UtilsTestCase(unittest.TestCase):
         # then reshuffled them
         ens1 = np.random.normal(m1, s1, size=nensB)
         ens2 = np.random.normal(m2, s2, size=nensB)
+<<<<<<< HEAD
         ens = np.array([ens1, ens2]).T
         ensB = sutils.schaakeshuffle(ensA, ens)
+=======
+        ensB = np.array([ens1, ens2]).T
+        sutils.schaakeshuffle(ensA, ensB)
+>>>>>>> a01f365ef8882c973cdfcca4f8bb25564d5f9fd1
 
         # Check we are preserving rank correlation
         rA, pA = spearmanr(ensA[:,0], ensA[:,1])

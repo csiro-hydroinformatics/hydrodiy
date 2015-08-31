@@ -15,12 +15,50 @@ except ImportError:
     has_basemap = False
 
 class Oz:
-    ''' Plot Australia coast lines and state boundaries '''
 
     def __init__(self, ax=None, 
         ulat=-9., llat=-43., llon=108., rlon=151.5,
         resolution='l', 
         remove_axis = True):
+        ''' 
+        Plot data on Australia map
+
+        Parameters
+        -----------
+        ax : matplotlib.axes
+            Axe to draw data on
+        ulat : float
+            Latitude of map upper bound
+        llat : float
+            Latitude of map lower bound
+        llon : float
+            Longitude of map left bound
+        rlon : float
+            Longiture of map right bound
+        resolution : string
+            Map coastline resolution. See mpl_toolkits.basemap
+            'c' : Crude
+            'l' : Low
+            'i' : Intermediate
+            'h' : High
+            'f' : Full
+        remove_axis : bool
+            Hide axis in axe or not
+
+        Example
+        -----------
+        >>> import numpy as np
+        >>> from hygis import oz
+        >>> import matplotlib.pyplot as plt
+        >>> nval = 200
+        >>> x = np.random.uniform(130, 150, nval)
+        >>> y = np.random.uniform(-40, -10, nval)
+        >>> fig, ax = plt.subplots()
+        >>> om = oz.Oz(ax = ax)
+        >>> om.drawcoast()
+        >>> om.plot(x, y, 'o')
+
+        '''
 
         self.ulat = ulat
         self.llat = llat
@@ -70,8 +108,6 @@ class Oz:
 
     def drawpolygons(self, fshp, *args, **kwargs):
         ''' Draw polygon shapefile. Arguments sent to PatchCollection constructor  '''
-    
-
         nm = os.path.basename(fshp)
         self.map.readshapefile(fshp, nm, drawbounds = False)
 
