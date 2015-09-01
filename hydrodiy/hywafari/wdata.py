@@ -90,10 +90,23 @@ def get_daily(id):
         os.remove(f2)
 
         if daily.shape[0] == 0:
-            return None
+            return None, None
         else:
-            return daily
+            k1 = [k for k in comment if re.search('area', k)][0]
+
+            k2 = [k for k in comment if re.search('location', k)][0]
+            txt = comment[k2].split(',')
+            long = float(txt[1])
+            lat = float(txt[3])
+            
+            comment = {
+                'area': float(re.sub('", |,"k.*', '', comment[k1])),
+                'long': long,
+                'lat': lat
+            }
+
+            return daily, comment
 
     else:
-        return None
+        return None, None
 

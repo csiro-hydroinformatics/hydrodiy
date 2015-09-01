@@ -23,10 +23,13 @@ class DataTestCase(unittest.TestCase):
         self.assertTrue(qobs2 is None)
 
     def test_get_daily(self):
-        d1 = wdata.get_daily('410734')
+        d1, comment = wdata.get_daily('410734')
         self.assertTrue(isinstance(d1, pd.DataFrame))
+        self.assertTrue(comment['long'] == 149.35)
+        self.assertTrue(comment['lat'] == 35.61)
+        self.assertTrue(comment['area'] == 490.)
 
-        d2 = wdata.get_daily('bidule')
+        d2, comment = wdata.get_daily('bidule')
         self.assertTrue(d2 is None)
 
 if __name__ == "__main__":
