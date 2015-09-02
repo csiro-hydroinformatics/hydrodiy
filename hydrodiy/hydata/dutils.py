@@ -317,21 +317,55 @@ def runclimcum(data, clim, wateryear_startmonth, nwin=20):
 
     return climc, datat
 
-def to_seasonal(ts):
-    ''' Convert time series to seasonal time step '''
+def to_seasonal(ts, nmonths=3):
+    ''' Convert time series to seasonal time step
+
+    Parameters
+    -----------
+    ts : pandas.core.series.Series
+        Input time series
+    nmonths : int
+        Number of months used for aggregation
+
+    Returns
+    -----------
+    out : pandas.core.series.Series
+        Aggregated time series
+
+    Example
+    -----------
+    >>> import pandas as pd
+    >>> from hydata import dutils
+    >>> idx = pd.date_range('1980-01-01', '1980-12-01', freq='MS')
+    >>> ts = pd.Series(range(12), index=idx)
+    >>> dutils.to_seasonal(ts)
+    1980-01-01     3
+    1980-01-02     6
+    1980-01-03     9
+    1980-01-04    12
+    1980-01-05    15
+    1980-01-06    18
+    1980-01-07    21
+    1980-01-08    24
+    1980-01-09    27
+    1980-01-10    30
+    1980-01-11   NaN
+    1980-01-12   NaN
+    Freq: MS, dtype: float64
+    '''
     
     # Resample to monthly
     tsm = ts.resample('MS', 'sum')
 
-    # Produce 3 shifted series
+    # Shift series
     tss = []
-    for s in range(0, 3):
+    for s in range(0, nmonths):
         tss.append(tsm.shift(-s))
 
     tss = pd.DataFrame(tss)
-    tss.loc[:,tss.columns[-2:]] = np.nan
+    out = tss.sum(axis=0, skipna=False)
 
-    return tss.apply(np.sum, axis=0)
+    return out
 
 def tofloat(x):
     try:

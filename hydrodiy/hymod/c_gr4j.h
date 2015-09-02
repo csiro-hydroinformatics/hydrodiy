@@ -25,7 +25,7 @@
 
 
 /* Number of inputs required by GR4J run */
-#define NINPUTS 2
+#define NINPUTS 5
 
 /* Number of params required by GR4J run */
 #define NPARAMS 4
@@ -34,7 +34,7 @@
 #define NSTATES 5
 
 /* Number of outputs returned by GR4J run */
-#define NOUTPUTS 10
+#define NOUTPUTS 20
 
 /* Maximim number of uh states returned by GR4J run */
 #define NUH 1000

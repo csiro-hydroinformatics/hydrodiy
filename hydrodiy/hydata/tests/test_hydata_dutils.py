@@ -139,16 +139,21 @@ class UtilsTestCase(unittest.TestCase):
        val = np.random.uniform(size=nval)
        index = pd.date_range('1950-01-01', freq='D', periods=nval)
        u = pd.Series(val, index=index)
+       idx = np.random.choice(range(len(u)), len(u)/50)
+       u.iloc[idx] = np.nan
+
        out = dutils.to_seasonal(u)
 
        um = u.resample('MS','sum')
        expected = um+um.shift(-1)+um.shift(-2)
 
-       idx1 = pd.notnull(expected.values)
-       idx2 = pd.notnull(out.values)
+       idx1 = pd.notnull(expected)
+       idx2 = pd.notnull(out)
+       self.assertTrue(np.allclose(expected[idx1], out[idx2]))
 
-       self.assertTrue(np.allclose(expected.values[idx1], out.values[idx2]))
-
+       idx1 = pd.isnull(expected)
+       idx2 = pd.isnull(out)
+       self.assertTrue(np.allclose(idx1, idx2))
 
     def test_atmospress(self):
 

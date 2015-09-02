@@ -293,7 +293,7 @@ int c_gr4j_runtimestep(int nparams, int nuh, int ninputs,
 
 // --------- Component runner --------------------------------------------------
 int c_gr4j_run(int nval, int nparams, int nuh, int ninputs, 
-        int nstates, int noutputs,
+        int nstates, int noutputs, 
 	double * params,
         double * uh,
 	double * inputs,
