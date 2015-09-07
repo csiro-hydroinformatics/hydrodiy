@@ -45,8 +45,8 @@ class UtilsTestCase(unittest.TestCase):
         fp = '%s/cmap.png' % self.FOUT
         fig.savefig(fp)
 
-    def test_line11(self):
 
+    def test_line(self):
 
         fig, ax = plt.subplots()
 
@@ -56,9 +56,12 @@ class UtilsTestCase(unittest.TestCase):
 
         ax.plot(x, y)
 
-        putils.line11(ax, 'k--')
+        putils.line(ax, 1, 1, '-')
+        putils.line(ax, 1, 0, '--')
+        putils.line(ax, 1, np.inf, ':')
+        putils.line(ax, 2, np.inf, '-.')
 
-        fp = '%s/line11.png' % self.FOUT
+        fp = '%s/line.png' % self.FOUT
         fig.savefig(fp)
 
 

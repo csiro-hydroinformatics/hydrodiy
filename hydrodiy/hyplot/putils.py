@@ -170,18 +170,23 @@ def col2cmap(colors):
 
     return LinearSegmentedColormap('mycmap', cdict, 256)
 
-def line11(ax, *args, **kwargs):
-    ''' Plot a 1:1 line
+def line(ax, a, b, *args, **kwargs):
+    ''' Plot a line y = a + bx
+        If b=np.inf, draw a vertical line x=a
 
     Parameters
     -----------
     ax : matplotlib.axes
-        Axe to draw the 1:1 line on
+        Axe to draw the line on
+    a : float
+        Intercept
+    b : float
+        Slope 
 
     Returns
     -----------
     line : matplotlib.lines.Line2D
-        Normalise id
+        Line drawn
 
     Example
     -----------
@@ -189,15 +194,24 @@ def line11(ax, *args, **kwargs):
     >>> from hyplot import putils 
     >>> fig, ax = plt.subplots()
     >>> ax.plot([0, 10], [0, 10], 'o')
-    >>> putils.line11(ax)
+    >>> putils.line(0, 1, ax, '--')
+    >>> putils.line(0, np.inf, ax, '-', color='red')
 
     '''
 
     xlim = ax.get_xlim()
     ylim = ax.get_ylim()
-    lim = [min(xlim[0], ylim[0]), max(xlim[1], ylim[1])]
- 
-    line = ax.plot(lim, lim, *args, **kwargs)
+
+    a = float(a)
+    b = float(b)
+
+    xx = np.array([min(xlim[0], ylim[0]), max(xlim[1], ylim[1])])
+
+    if np.isinf(b):
+        line = ax.plot(np.array([a]*2), xx, *args, **kwargs)
+    else:
+        yy = a + b * xx
+        line = ax.plot(xx, yy, *args, **kwargs)
 
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
