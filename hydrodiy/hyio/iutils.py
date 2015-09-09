@@ -4,6 +4,36 @@ import re
 import gzip
 import datetime
 
+import numpy as np
+
+def password(length=10, chr_start=35, chr_end=128):
+    ''' Generate random password 
+
+    Parameters
+    -----------
+    length : int
+        Number of characters 
+    chr_start : int
+        Ascii code defining the start of allowed characters
+    chr_end : int
+        Ascii code defining the end of allowed characters
+
+    Returns
+    -----------
+    pwd : str
+        Password
+
+    Example
+    -----------
+    >>> pwd = iutils.password()
+    '''
+
+    pwd = ''.join([chr(i) 
+        for i in np.random.randint(chr_start, chr_end, size=length)])
+
+    return pwd
+
+    
 
 def find_files(folder, pattern, recursive=True):
     ''' Find files recursively based on regexp pattern search
@@ -17,10 +47,15 @@ def find_files(folder, pattern, recursive=True):
     recursive : bool
         Search folder recursively or not
 
+    Returns
+    -----------
+    found : list
+        List of filenames
+
     Example
     -----------
     Look for all python scripts in current folder
-    >>> lf = iutils.find_files('.', '.*\\.py', Fase)
+    >>> lf = iutils.find_files('.', '.*\\.py', False)
     '''
 
     found = []

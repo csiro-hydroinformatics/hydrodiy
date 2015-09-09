@@ -13,6 +13,15 @@ class UtilsTestCase(unittest.TestCase):
         FTEST, testfile = os.path.split(__file__)
         self.FOUT = FTEST
         
+    def test_password(self):
+
+        length = 20
+
+        pwd = iutils.password(length)
+
+        self.assertTrue(len(pwd)==length)
+
+
     def test_find_files(self):
 
         # Recursive
