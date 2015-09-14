@@ -27,29 +27,45 @@ with file('package_files.txt', 'r') as fp:
 # Retrieve package folder
 dirn = []
 fegg = None
+fso = []
+
 for fn in files:
     dd = os.path.dirname(fn)
-    se = re.search(pattern, dd)
-    if se is not None:
+    if re.search(pattern, dd) is not None:
         dirn.append(dd)
-    se = re.search('egg-info', fn)
-    if se is not None:
-        fegg = fn
+
+    if re.search('egg-info', fn) is not None:
+        fegg = fn.strip()
+
+    if re.search('.*\.so', fn) is not None:
+        fso.append(fn.strip())
+
 dirn = set(dirn)
+fso = set(fso)
 
 # remove packages folders
 for d in dirn:
-    print('removing folder %s\n'%d)
+    print('removing folder %s'%d)
     os.system('rm -r %s'%d)
 
+# remove so lib
+for f in fso:
+    print('removing lib %s' % f)
+    if not os.path.exists(f):
+        raise ValueError('%f does not exist, cannot remove' % f)
+    os.system('rm -r %s' % f)
+
+
 # remove egg file
-print('removing %s\n'%fegg)
-os.system('rm %s'%fegg)
+print('removing %s'%fegg)
+if not os.path.exists(fegg):
+    raise ValueError('%f does not exist, cannot remove' % f)
+os.system('rm %s' % fegg)
 
 # remove egg folder
-degg = '%s.egg-info'%package_name
-print('removing %s\n'%degg)
-os.system('rm -r %s'%degg)
+degg = '%s.egg-info' % package_name
+print('removing %s' % degg)
+os.system('rm -r %s' % degg)
 
 # Remove build and dist folders
 print('removing build and dist')

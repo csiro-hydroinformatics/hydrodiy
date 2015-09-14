@@ -15,29 +15,24 @@
 
 int c_gr4j_getnstates(void)
 {
-    return NSTATES;
+    return GR4J_NSTATES;
 }
 
 int c_gr4j_getnuh(void)
 {
-    return NUH;
+    return GR4J_NUH;
 }
 
 int c_gr4j_getnoutputs(void)
 {
-    return NOUTPUTS;
-}
-
-int c_gr4j_getesize(void)
-{
-    return ESIZE;
+    return GR4J_NOUTPUTS;
 }
 
 
 double SS1(double I,double C)
 {
     double s = I<0 ? 0 : 
-        I<C ? pow(I/C, UHEXPON) : 1;
+        I<C ? pow(I/C, GR4J_UHEXPON) : 1;
     
     return s;
 }
@@ -45,16 +40,10 @@ double SS1(double I,double C)
 double SS2(double I,double C)
 {
     double s = I<0 ? 0 : 
-        I<C ? 0.5*pow(I/C, UHEXPON) :
-        I<2*C ? 1-0.5*pow(2-I/C, UHEXPON) : 1;
+        I<C ? 0.5*pow(I/C, GR4J_UHEXPON) :
+        I<2*C ? 1-0.5*pow(2-I/C, GR4J_UHEXPON) : 1;
     
     return s;
-}
-
-double minmax(double min,double max,double input)
-{
-    return input < min ? min : 
-            input > max ? max : input;
 }
 
 int gr4j_minmaxparams(int nparams, double * params)
@@ -62,10 +51,10 @@ int gr4j_minmaxparams(int nparams, double * params)
         if(nparams<4)
             return EINVAL;
 
-	params[0] = minmax(1,1e5,params[0]); 	// S
-	params[1] = minmax(-50,50,params[1]);	// IGF
-	params[2] = minmax(1,1e5,params[2]); 	// R
-	params[3] = minmax(0.5,50,params[3]); // TB
+	params[0] = c_hymod_minmax(1,1e5,params[0]); 	// S
+	params[1] = c_hymod_minmax(-50,50,params[1]);	// IGF
+	params[2] = c_hymod_minmax(1,1e5,params[2]); 	// R
+	params[3] = c_hymod_minmax(0.5,50,params[3]); // TB
 
 	return 0;
 }
@@ -86,13 +75,13 @@ int c_gr4j_getuh(double lag,
 
 	/* UH ordinates */
         nuh1 = 0;
-	for(i=0; i<NUH-1; i++) 
+	for(i=0; i<GR4J_NUH-1; i++) 
         {
 	    Sb = SS1((double)(i+1), lag);
             Sa = SS1((double)(i), lag);
             uh[i] = Sb-Sa;
 
-            if(1-Sb < UHEPS)
+            if(1-Sb < GR4J_UHEPS)
             {
                 nuh1 = i+1; 
                 /* ideally we should correct uh here
@@ -102,10 +91,10 @@ int c_gr4j_getuh(double lag,
         }
 
         /* NUH is not big enough */
-        if(1-Sb > UHEPS || nuh1 > (NUH-1)/3)
+        if(1-Sb > GR4J_UHEPS || nuh1 > (GR4J_NUH-1)/3)
         {
-            fprintf(stderr, "%s:%d:ERROR: NUH(%d) is not big enough\n", 
-                __FILE__, __LINE__, NUH);
+            fprintf(stderr, "%s:%d:ERROR: GR4J_NUH(%d) is not big enough\n", 
+                __FILE__, __LINE__, GR4J_NUH);
             return EINVAL;
         }
 
@@ -172,6 +161,9 @@ int c_gr4j_runtimestep(int nparams, int nuh, int ninputs,
 	P = inputs[0] < 0 ? 0 : inputs[0];
 	E = inputs[1] < 0 ? 0 : inputs[1];
 
+        states[0] = c_hymod_minmax(0, params[0], states[0]);
+        states[1] = states[1] < 0 ? 0 : states[1];
+
 	/* Production */
 	if(P>E)	
 	{
@@ -201,7 +193,7 @@ int c_gr4j_runtimestep(int nparams, int nuh, int ninputs,
 	states[0] += PS-ES;
 
 	/* Percolation */
-	S2 = states[0]/pow(1+pow(states[0]/PERCFACTOR/params[0],4),0.25);
+	S2 = states[0]/pow(1+pow(states[0]/GR4J_PERCFACTOR/params[0],4),0.25);
 
 	PERC = states[0]-S2;
 	states[0] = S2;
@@ -303,24 +295,21 @@ int c_gr4j_run(int nval, int nparams, int nuh, int ninputs,
 {
     int ierr=0, i;
 
-    if(ierr > 0)
-        return ESIZE;
-
     /* Check dimensions */
     if(nparams < 4)
-        return ESIZE;
+        return HYMOD_ESIZE;
 
     if(nstates < 2)
-        return ESIZE;
+        return HYMOD_ESIZE;
 
     if(ninputs < 2)
-        return ESIZE;
+        return HYMOD_ESIZE;
 
-    if(noutputs > 9)
-        return ESIZE;
+    if(noutputs > GR4J_NOUTPUTS)
+        return HYMOD_ESIZE;
 
-    if(nuh > NUH)
-        return ESIZE;
+    if(nuh > GR4J_NUH)
+        return HYMOD_ESIZE;
 
     /* Check parameters */
     ierr = gr4j_minmaxparams(nparams, params);

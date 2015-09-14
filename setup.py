@@ -21,9 +21,12 @@ ext_modules = [
         name='c_hymod', 
         sources=[
             'hydrodiy/hymod/c_hymod.pyx', 
+            'hydrodiy/hymod/c_hymod_utils.c',
             'hydrodiy/hymod/c_gr4j.c',
+            'hydrodiy/hymod/c_gr2m.c',
             'hydrodiy/hymod/c_crps.c'
         ],
+        extrac_compile_args = ['-O3'],
         include_dirs=[numpy.get_include()]),
     Extension(
         name='c_hystat', 

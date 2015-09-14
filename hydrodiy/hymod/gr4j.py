@@ -13,7 +13,7 @@ class GR4JSizeException(Exception):
     pass
 
 # Error message number
-esize = c_hymod.gr4j_getesize()
+esize = c_hymod.hymod_getesize()
 
 # Dimensions
 nuh = c_hymod.gr4j_getnuh()

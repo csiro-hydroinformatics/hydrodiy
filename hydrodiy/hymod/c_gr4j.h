@@ -5,47 +5,44 @@
 #include <string.h>
 #include <errno.h>
 
-/* Define Error message for vector size errors */
-#define ESIZE 500
+#include "c_hymod_utils.h"
 
 /* Check on uh sum */
-#define UHEPS 1e-3
+#define GR4J_UHEPS 1e-3
 
 /* UH exponent
     daily = 2.5
     hourly = 1.25
 */
-#define UHEXPON 2.5
+#define GR4J_UHEXPON 2.5
 
 /* Percolation factor :
    daily = 2.25
    hourly = 4
 */
-#define PERCFACTOR 2.25 
+#define GR4J_PERCFACTOR 2.25 
 
 
 /* Number of inputs required by GR4J run */
-#define NINPUTS 5
+#define GR4J_NINPUTS 5
 
 /* Number of params required by GR4J run */
-#define NPARAMS 4
+#define GR4J_NPARAMS 4
 
 /* Number of states returned by GR4J run */
-#define NSTATES 5
+#define GR4J_NSTATES 5
 
 /* Number of outputs returned by GR4J run */
-#define NOUTPUTS 20
+#define GR4J_NOUTPUTS 20
 
 /* Maximim number of uh states returned by GR4J run */
-#define NUH 1000
+#define GR4J_NUH 1000
 
 int c_gr4j_getnstates(void);
 
 int c_gr4j_getnuh(void);
 
 int c_gr4j_getnoutputs(void);
-
-int c_gr4j_getesize(void);
 
 int c_gr4j_getuh(double lag,
         int * nuh_optimised,

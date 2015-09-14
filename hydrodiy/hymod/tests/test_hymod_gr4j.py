@@ -82,7 +82,7 @@ class GR4JTestCases(unittest.TestCase):
             count += 1
 
             id = row['id']
-            d = wdata.get_daily(id)
+            d, comment = wdata.get_daily(id)
 
             idx = np.where(pd.notnull(d['PET']))[0]
             d = d.iloc[idx[0]:idx[-1], :]
