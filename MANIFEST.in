@@ -4,6 +4,7 @@ recursive-include hydrodiy *pngw
 recursive-include hydrodiy *.h
 recursive-include hydrodiy *txt
 recursive-include hydrodiy *csv.gz
+recursive-include hydrodiy *tar.gz
 recursive-include hydrodiy *py.gz
 recursive-include hydrodiy *json
 recursive-include hydrodiy *test*.py

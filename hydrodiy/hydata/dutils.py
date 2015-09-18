@@ -317,7 +317,7 @@ def runclimcum(data, clim, wateryear_startmonth, nwin=20):
 
     return climc, datat
 
-def to_seasonal(ts, nmonths=3):
+def to_seasonal(ts, nmonths=3, ngapmax=6):
     ''' Convert time series to seasonal time step
 
     Parameters
@@ -355,7 +355,23 @@ def to_seasonal(ts, nmonths=3):
     '''
     
     # Resample to monthly
-    tsm = ts.resample('MS', 'sum')
+    tsmm = ts.groupby(ts.index.month).mean()
+
+    def _sum(x):
+        ngap = np.sum(pd.isnull(x))
+
+        if ngap > ngapmax:
+            return np.nan
+
+        elif ngap == 0:
+            return x.sum()
+
+        else:
+            mv = tsmm[x.index.month[0]]
+            xx = x.fillna(mv)
+            return xx.sum()
+
+    tsm = ts.resample('MS', how=_sum)
 
     # Shift series
     tss = []

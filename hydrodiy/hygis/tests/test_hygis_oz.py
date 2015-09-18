@@ -21,7 +21,7 @@ class OzTestCase(unittest.TestCase):
         plt.close('all')
 
         om = Oz()
-        om.drawcoast()
+        om.drawcoastoz()
         om.drawstates()
       
         fp = '%s/oz_plot0.png'%self.FOUT
@@ -51,7 +51,7 @@ class OzTestCase(unittest.TestCase):
 
         om = Oz()
         om.drawrelief()
-        om.drawcoast(color='blue')
+        om.drawcoastoz(color='blue')
         om.drawstates(color='red', linestyle='--')
       
         fp = '%s/oz_plot2.png'%self.FOUT
@@ -97,6 +97,18 @@ class OzTestCase(unittest.TestCase):
 
       
         fp = '%s/oz_plot4.png'%self.FOUT
+        plt.savefig(fp)
+
+
+    def test_oz5(self):
+
+        plt.close('all')
+
+        om = Oz()
+        om.drawcoastoz('k-')
+        om.drawstates()
+
+        fp = '%s/oz_plot5.png'%self.FOUT
         plt.savefig(fp)
 
 

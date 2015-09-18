@@ -1,4 +1,4 @@
-import os
+import re, os, tarfile
 
 import numpy as np
 
@@ -13,6 +13,17 @@ try:
 
 except ImportError:
     has_basemap = False
+
+
+# Decompress australia shoreline shapefile
+FDATA = '%s/data' % os.path.dirname(os.path.abspath(__file__))
+fshp_coastoz = '%s/australia_coastline_simplified.shp' % FDATA
+
+if not os.path.exists(fshp_coastoz):
+    tar = tarfile.open(re.sub('shp', 'tar.gz', fshp_coastoz))
+    for item in tar:
+        tar.extract(item, FDATA)
+
 
 class Oz:
 
@@ -94,12 +105,18 @@ class Oz:
         self.ax.set_xlim((self.llon, self.rlon))
         self.ax.set_ylim((self.ulat, self.llat))
 
+    def drawcoastoz(self, *args, **kwargs):
+        ''' plot coast line for Australia only'''
+
+        self.drawpolygons(re.sub('.shp', '', fshp_coastoz), *args, **kwargs)
+
     def drawcoast(self, *args, **kwargs):
         ''' plot coast line '''
         self.map.drawcoastlines(*args, **kwargs)
 
     def drawrelief(self, *args, **kwargs):
         ''' plot shaded relief map '''
+
         self.map.shadedrelief(*args, **kwargs)
 
     def drawstates(self, *args, **kwargs):

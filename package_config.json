@@ -24,7 +24,7 @@
         "hystat":"hydrodiy/hystat"
     },
     "package_data" : {
-        "hygis": ["data/*.csv", "data/*.png", "data/*.pngw"],
+        "hygis": ["data/*.gz"],
         "hyio": ["*.py.gz"],
         "hyplot": ["*.json"]
     },

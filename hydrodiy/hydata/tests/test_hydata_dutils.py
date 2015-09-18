@@ -142,9 +142,13 @@ class UtilsTestCase(unittest.TestCase):
        idx = np.random.choice(range(len(u)), len(u)/50)
        u.iloc[idx] = np.nan
 
-       out = dutils.to_seasonal(u)
+       out = dutils.to_seasonal(u, ngapmax=0)
 
-       um = u.resample('MS','sum')
+       def _sum(x):
+            return np.sum(x.values)
+
+       um = u.resample('MS', how=_sum)
+
        expected = um+um.shift(-1)+um.shift(-2)
 
        idx1 = pd.notnull(expected)
