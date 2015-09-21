@@ -317,8 +317,8 @@ def runclimcum(data, clim, wateryear_startmonth, nwin=20):
 
     return climc, datat
 
-def to_seasonal(ts, nmonths=3, ngapmax=6):
-    ''' Convert time series to seasonal time step
+def aggmonths(ts, nmonths=3, ngapmax=6, ngapcontmax=3):
+    ''' Convert time series to aggregated monthly time steps
 
     Parameters
     -----------
@@ -326,6 +326,10 @@ def to_seasonal(ts, nmonths=3, ngapmax=6):
         Input time series
     nmonths : int
         Number of months used for aggregation
+    ngapmax : int
+        Maximum number of missing values within a month
+    ngapcontmax : int
+        Maximum number of continuous missing values within a month
 
     Returns
     -----------
@@ -358,9 +362,22 @@ def to_seasonal(ts, nmonths=3, ngapmax=6):
     tsmm = ts.groupby(ts.index.month).mean()
 
     def _sum(x):
+        # Count gaps
         ngap = np.sum(pd.isnull(x))
 
-        if ngap > ngapmax:
+        # Count continuous gaps
+        ngapcont = 0
+        if ngap > 0 :
+            y = []
+            for i in range(ngapcontmax+1):
+                y.append(x.shift(i))
+            y = pd.DataFrame(y).isnull()
+
+            ys = y.sum(axis=0)
+            ngapcont = ys[ngapcontmax:].max()
+
+        # Return sum
+        if (ngap > ngapmax) | (ngapcont > ngapcontmax):
             return np.nan
 
         elif ngap == 0:

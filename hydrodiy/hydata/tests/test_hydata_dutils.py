@@ -13,7 +13,7 @@ class UtilsTestCase(unittest.TestCase):
         self.dt = None # TODO
 
     def test_normaliseid(self):
-        
+
         id = 'GGSDFFSFsdfsdf'
         idn = dutils.normaliseid(id)
         self.assertEqual(idn, id.upper())
@@ -35,10 +35,10 @@ class UtilsTestCase(unittest.TestCase):
         self.assertEqual(idn, '101')
 
     def test_ordinalsec(self):
-        
+
         def rn(x0, x1):
             return np.random.randint(x0, x1)
-        
+
         n = 5000
 
         for i in range(n):
@@ -66,7 +66,7 @@ class UtilsTestCase(unittest.TestCase):
 
         self.assertTrue(isinstance(n, np.uint64))
         self.assertEqual(n, 0)
-       
+
         t1 = datetime.datetime(2000, 2, 29)
         n1 = dutils.secofyear(t1)
 
@@ -76,7 +76,7 @@ class UtilsTestCase(unittest.TestCase):
         self.assertTrue(isinstance(n1, np.uint64))
         self.assertTrue(isinstance(n2, np.uint64))
         self.assertEqual(n1, n2)
-       
+
     def test_wyear1(self):
         day = datetime.datetime(2001, 12, 3)
         yw = dutils.wyear(day)
@@ -133,31 +133,57 @@ class UtilsTestCase(unittest.TestCase):
         #climc[['10%', '50%', '90%']].plot(); plt.show()
         #TODO
 
-    def test_to_seasonal(self):
-       
-       nval = 10000
-       val = np.random.uniform(size=nval)
-       index = pd.date_range('1950-01-01', freq='D', periods=nval)
-       u = pd.Series(val, index=index)
-       idx = np.random.choice(range(len(u)), len(u)/50)
-       u.iloc[idx] = np.nan
+    def test_aggmonths(self):
 
-       out = dutils.to_seasonal(u, ngapmax=0)
+        # Generate daily data with gaps
+        index = pd.date_range('1950-01-01', '1950-12-31', freq='D')
+        nval = len(index)
+        val = np.random.uniform(size=nval)
+        u = pd.Series(val, index=index)
 
-       def _sum(x):
-            return np.sum(x.values)
+        # -> 3 consecutive gaps
+        idx = index >= datetime.datetime(1950, 2, 5)
+        idx = idx & (index <= datetime.datetime(1950, 2, 7))
+        u.loc[idx] = np.nan
 
-       um = u.resample('MS', how=_sum)
+        # -> 4 consecutive gaps
+        idx = index >= datetime.datetime(1950, 3, 5)
+        idx = idx & (index <= datetime.datetime(1950, 3, 8))
+        u.loc[idx] = np.nan
 
-       expected = um+um.shift(-1)+um.shift(-2)
+        for d in [2, 5, 6, 8, 11, 20]:
+            # -> 6 gaps
+            dd = datetime.datetime(1950, 4, d)
+            u.loc[dd] = np.nan
 
-       idx1 = pd.notnull(expected)
-       idx2 = pd.notnull(out)
-       self.assertTrue(np.allclose(expected[idx1], out[idx2]))
+            # -> 6 gaps
+            dd = datetime.datetime(1950, 5, d)
+            u.loc[dd] = np.nan
 
-       idx1 = pd.isnull(expected)
-       idx2 = pd.isnull(out)
-       self.assertTrue(np.allclose(idx1, idx2))
+        # -> one more gap
+        dd = datetime.datetime(1950, 5, 22)
+        u.loc[dd] = np.nan
+
+        # Compute monthly and seasonal data
+        out1 = dutils.aggmonths(u, nmonths=1)
+        out2 = dutils.aggmonths(u, nmonths=3)
+
+        # Test
+        def _sum(x):
+             return np.sum(x.values)
+
+        expected1 = u.resample('MS', how=_sum)
+        expected2 = out1 + out1.shift(-1) + out1.shift(-2)
+
+        idxe = pd.notnull(expected1)
+        self.assertTrue(np.allclose(expected1[idxe], out1[idxe]))
+
+        idxe = pd.isnull(out1)
+        idxo = (out1.index.month == 3) | (out1.index.month == 5)
+        self.assertTrue(np.allclose(idxe, idxo))
+
+        idxo = pd.notnull(out2)
+        self.assertTrue(np.allclose(out2[idxo], expected2[idxo]))
 
     def test_atmospress(self):
 
@@ -165,7 +191,7 @@ class UtilsTestCase(unittest.TestCase):
         p = dutils.atmospress(alt)
         self.assertTrue(np.allclose(p, 101325.))
 
-       
+
         alt = 100
         p = dutils.atmospress(alt)
         self.assertTrue(np.allclose(p, 100130.800974))
@@ -174,6 +200,6 @@ class UtilsTestCase(unittest.TestCase):
         p = dutils.atmospress(alt)
         self.assertTrue(np.allclose(p, 98950.6765392))
 
-     
+
 if __name__ == "__main__":
     unittest.main()
