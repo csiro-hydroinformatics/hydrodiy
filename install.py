@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
-import os, sys, re
+import os, sys, re, socket
+
+host = socket.gethostname()
 
 path = os.path.realpath(__file__)
 
-if re.search('jml548', path):
-    print('I think I am on NCI. I will use the --user option')
+if re.search('raijin', host):
+    print('I think I am on raijin machine from NCI. I will use the --user option')
     os.system('python setup.py install --user --record package_files.txt')
 else:
     print('Normal install, no special options used')
