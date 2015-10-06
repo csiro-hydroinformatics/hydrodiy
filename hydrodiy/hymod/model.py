@@ -20,28 +20,6 @@ class Model:
     def __str__(self):
         str = '\n%s model implementation\n' % self.name.upper()
 
-        str = '\nParams = ['
-
-        tp = self.trueparams()
-        if not isinstance(tp, list):
-            tp = [tp]
-
-        for i in range(self.nparams):
-            s += '%0.2f, ' % tp[i]
-        s = s[:-2] + ']'
-
- 
-        str += '  params = ['
-        %0.1f, %0.1f, %0.1f, %0.1f]\n' % (
-                self.params[0], self.params[1], self.params[2], self.params[3])
-        str += '  states = [%0.1f, %0.1f]\n' % (self.statesini[0], 
-                self.statesini[1])
-        str += '  nuh = %d\n' % self.nuh
-        str += '  nout = %d\n' % self.nout
-
-        return str
-
-
     def setoutputs(self, nval, nout=1):
 
         self.nout = nout
