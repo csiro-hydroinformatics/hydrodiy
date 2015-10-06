@@ -132,10 +132,10 @@ int c_gr2m_runtimestep(int nparams, int ninputs,
             outputs[6] = R2;
 
         if(noutputs>7)
-            outputs[7] = S/Scapacity;
+            outputs[7] = S;
 
         if(noutputs>8)
-            outputs[8] = R/Rcapacity;
+            outputs[8] = R;
 
 	return ierr;
 }

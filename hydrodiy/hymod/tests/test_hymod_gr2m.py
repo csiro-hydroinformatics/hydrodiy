@@ -20,11 +20,6 @@ class GR2MTestCases(unittest.TestCase):
         FTEST, testfile = os.path.split(__file__)
         self.FOUT = FTEST
 
-    def test_getsamples(self):
-
-        nsamples = 100
-        samples = gr2m.get_paramslib(nsamples)
-
     def test_gr2m_dumb(self):
 
         nval = 100
@@ -36,10 +31,20 @@ class GR2MTestCases(unittest.TestCase):
 
         # Run
         gr = gr2m.GR2M()
-        gr.setoutputs(len(inputs), 8)
+        gr.setoutputs(len(inputs), 9)
         gr.setparams(params)
         gr.setstates()
         gr.run(inputs)
+
+        out = gr.getoutputs()
+
+        cols = ['Q[mm/m]', 'ECH[mm/m]', 
+           'P1[mm/m]', 'P2[mm/m]', 'P3[mm/m]',
+           'R1[mm/m]', 'R2[mm/m]', 'S[mm]', 'R[mm]']
+
+        ck = np.all(out.columns.values.astype(str) == np.array(cols))
+        self.assertTrue(ck)
+ 
 
 
 if __name__ == "__main__":

@@ -66,6 +66,19 @@ class GR2M():
                 'exception %d') % ierr)
 
     
+    def getoutputs(self):
+        outputs = pd.DataFrame(self.outputs)
+
+        cols = ['Q[mm/m]', 'ECH[mm/m]', 
+           'P1[mm/m]', 'P2[mm/m]', 'P3[mm/m]',
+           'R1[mm/m]', 'R2[mm/m]', 'S[mm]', 'R[mm]']
+
+        outputs.columns = cols[:self.nout]
+
+        return outputs
+
+
+    
     def calib(self, inputs, outputs):
         pass
 

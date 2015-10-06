@@ -50,11 +50,21 @@ class GR4JTestCases(unittest.TestCase):
 
         # Run
         gr = gr4j.GR4J()
-        gr.setoutputs(len(inputs), 8)
+        gr.setoutputs(len(inputs), 9)
         gr.setparams(params)
         gr.setstates()
         gr.run(inputs)
 
+        out = gr.getoutputs()
+
+        cols = ['Q[mm/d]', 'ECH[mm/d]', 
+           'E[mm/d]', 'PR[mm/d]', 
+           'QR[mm/d]', 'QD[mm/d]',
+           'PERC[mm/d]', 'S[mm]', 'R[mm]']
+
+        ck = np.all(out.columns.values.astype(str) == np.array(cols))
+        self.assertTrue(ck)
+ 
 
     def test_gr4j_detailed(self):
 

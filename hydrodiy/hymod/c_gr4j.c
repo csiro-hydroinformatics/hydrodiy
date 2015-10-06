@@ -31,18 +31,18 @@ int c_gr4j_getnoutputs(void)
 
 double SS1(double I,double C)
 {
-    double s = I<0 ? 0 : 
+    double s = I<0 ? 0 :
         I<C ? pow(I/C, GR4J_UHEXPON) : 1;
-    
+
     return s;
 }
 
 double SS2(double I,double C)
 {
-    double s = I<0 ? 0 : 
+    double s = I<0 ? 0 :
         I<C ? 0.5*pow(I/C, GR4J_UHEXPON) :
         I<2*C ? 1-0.5*pow(2-I/C, GR4J_UHEXPON) : 1;
-    
+
     return s;
 }
 
@@ -75,7 +75,7 @@ int c_gr4j_getuh(double lag,
 
 	/* UH ordinates */
         nuh1 = 0;
-	for(i=0; i<GR4J_NUH-1; i++) 
+	for(i=0; i<GR4J_NUH-1; i++)
         {
 	    Sb = SS1((double)(i+1), lag);
             Sa = SS1((double)(i), lag);
@@ -83,7 +83,7 @@ int c_gr4j_getuh(double lag,
 
             if(1-Sb < GR4J_UHEPS)
             {
-                nuh1 = i+1; 
+                nuh1 = i+1;
                 /* ideally we should correct uh here
                 but I know GR4J UH is accurate */
                 break;
@@ -93,12 +93,12 @@ int c_gr4j_getuh(double lag,
         /* NUH is not big enough */
         if(1-Sb > GR4J_UHEPS || nuh1 > (GR4J_NUH-1)/3)
         {
-            fprintf(stderr, "%s:%d:ERROR: GR4J_NUH(%d) is not big enough\n", 
+            fprintf(stderr, "%s:%d:ERROR: GR4J_NUH(%d) is not big enough\n",
                 __FILE__, __LINE__, GR4J_NUH);
             return EINVAL;
         }
 
-	for(i=0; i < 2*nuh1; i++) 
+	for(i=0; i < 2*nuh1; i++)
         {
 	    Sb = SS2((double)(i+1), lag);
             Sa = SS2((double)(i), lag);
@@ -112,7 +112,7 @@ int c_gr4j_getuh(double lag,
 
 /*******************************************************************************
 * Run time step code for the GR4J rainfall-runoff model
-* 
+*
 * --- Inputs
 * ierr			Error message
 * nconfig		Number of configuration elements (1)
@@ -136,19 +136,19 @@ int c_gr4j_getuh(double lag,
 * states		Output and states variables. 1D Array nstates(11)x1
 *
 *******************************************************************************/
- 
-int c_gr4j_runtimestep(int nparams, int nuh, int ninputs, 
+
+int c_gr4j_runtimestep(int nparams, int nuh, int ninputs,
         int nstates, int noutputs,
 	double * params,
         double * uh,
         double * inputs,
-	double * statesuh, 
+	double * statesuh,
         double * states,
         double * outputs)
 {
         int ierr=0, k,l, nuh1, nuh2;
 
-	double Q, P, E; 
+	double Q, P, E;
 	double ES, PS, PR, WS,S2;
         double PERC,ECH,TP,R2,QR,QD;
 	double EN, ech1,ech2;
@@ -165,25 +165,25 @@ int c_gr4j_runtimestep(int nparams, int nuh, int ninputs,
         states[1] = states[1] < 0 ? 0 : states[1];
 
 	/* Production */
-	if(P>E)	
+	if(P>E)
 	{
 		WS = (P-E)/params[0];
-                WS = WS > 13 ? 13 : WS;
+        WS = WS > 13 ? 13 : WS;
 
 		PS = params[0]*(1-pow(states[0]/params[0],2))*tanh(WS);
-                PS /= (1+states[0]/params[0]*tanh(WS));
+        PS /= (1+states[0]/params[0]*tanh(WS));
 
 		ES = 0;
 		PR = P-E-PS;
 		EN = 0;
 	}
-	else	
+	else
 	{
 		WS =(E-P)/params[0];
-                WS = WS > 13 ? 13 : WS;
+        WS = WS > 13 ? 13 : WS;
 
 		ES = states[0]*(2-states[0]/params[0])*tanh(WS);
-                ES /= (1+(1-states[0]/params[0])*tanh(WS));
+        ES /= (1+(1-states[0]/params[0])*tanh(WS));
 
 		PS = 0;
 		PR = 0;
@@ -205,14 +205,14 @@ int c_gr4j_runtimestep(int nparams, int nuh, int ninputs,
             statesuh[k] = statesuh[1+k]+uh[k]*PR;
 
 	statesuh[nuh1-1] = uh[nuh1-1]*PR;
-			
+
 	/* UH2 */
 	for (l=0;l<nuh2-1;l++)
             statesuh[nuh1+l] = statesuh[nuh1+1+l]+uh[nuh1+l]*PR;
 
 	statesuh[(nuh1+nuh2)-1] = uh[(nuh1+nuh2)-1]*PR;
 
-	/* Potential Water exchange 
+	/* Potential Water exchange
 	ECH=XV(NPX+3)*(X(1)/XV(NPX+1))**3.5  // Formulation initiale
 	ECH=XV(NPX+3)*(X(1)/XV(NPX+1)-XV(NPX+5)) // Formulation N. Lemoine
         */
@@ -223,18 +223,18 @@ int c_gr4j_runtimestep(int nparams, int nuh, int ninputs,
 
 	/* Case where Reservoir content is not sufficient */
 	ech1 = ECH-TP;
-        states[1] = 0; 
+    states[1] = 0;
 
 	if(TP>=0)
-        {
-            states[1]=TP;
-            ech1=ECH;
-        }
+    {
+        states[1]=TP;
+        ech1=ECH;
+    }
 
 	R2 = states[1]/pow(1+pow(states[1]/params[2],4),0.25);
 	QR = states[1]-R2;
 	states[1] = R2;
-	
+
 	/* Direct runoff calculation */
 	QD = 0;
 
@@ -244,10 +244,10 @@ int c_gr4j_runtimestep(int nparams, int nuh, int ninputs,
         QD=0;
 
 	if(TP>0)
-        {
-            QD=TP;
-            ech2=ECH;
-        }
+    {
+        QD=TP;
+        ech2=ECH;
+    }
 
 	/* TOTAL STREAMFLOW */
 	Q = QD+QR;
@@ -255,37 +255,53 @@ int c_gr4j_runtimestep(int nparams, int nuh, int ninputs,
 	/* RESULTS */
 	outputs[0] = Q;
 
-        if(noutputs>1)
+    if(noutputs>1)
 	    outputs[1] = ech1+ech2;
+	else
+		return ierr;
 
-        if(noutputs>2)
+    if(noutputs>2)
 	    outputs[2] = ES+EN;
+	else
+		return ierr;
 
-        if(noutputs>3)
+    if(noutputs>3)
 	    outputs[3] = PR;
+	else
+		return ierr;
 
-        if(noutputs>4)
+   	if(noutputs>4)
 	    outputs[4] = QD;
+	else
+		return ierr;
 
-        if(noutputs>5)
+    if(noutputs>5)
 	    outputs[5] = QR;
+	else
+		return ierr;
 
-        if(noutputs>6)
+    if(noutputs>6)
 	    outputs[6] = PERC;
+	else
+		return ierr;
 
-        if(noutputs>7)
+    if(noutputs>7)
 	    outputs[7] = states[0];
+	else
+		return ierr;
 
-        if(noutputs>8)
+    if(noutputs>8)
 	    outputs[8] = states[1];
+	else
+		return ierr;
 
 	return ierr;
 }
 
 
 // --------- Component runner --------------------------------------------------
-int c_gr4j_run(int nval, int nparams, int nuh, int ninputs, 
-        int nstates, int noutputs, 
+int c_gr4j_run(int nval, int nparams, int nuh, int ninputs,
+        int nstates, int noutputs,
 	double * params,
         double * uh,
 	double * inputs,
@@ -318,7 +334,7 @@ int c_gr4j_run(int nval, int nparams, int nuh, int ninputs,
     for(i = 0; i < nval; i++)
     {
        /* Run timestep model and update states */
-    	ierr = c_gr4j_runtimestep(nparams, nuh, ninputs, 
+    	ierr = c_gr4j_runtimestep(nparams, nuh, ninputs,
                 nstates, noutputs,
     		params,
                 uh,
@@ -327,7 +343,7 @@ int c_gr4j_run(int nval, int nparams, int nuh, int ninputs,
                 statesini,
                 &(outputs[noutputs*i]));
     }
-    
+
     return ierr;
 }
 

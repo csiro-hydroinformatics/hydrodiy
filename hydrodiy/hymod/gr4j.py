@@ -40,7 +40,8 @@ class GR4J():
         return str
 
 
-    def setoutputs(self, nval, nout):
+    def setoutputs(self, nval, nout=1):
+
         self.nout = nout
         self.outputs = np.zeros((nval, nout)).astype(np.float64)
         self.uh = np.zeros(nuh).astype(np.float64)
@@ -87,6 +88,19 @@ class GR4J():
                 'exception %d') % ierr)
 
     
+    def getoutputs(self):
+        outputs = pd.DataFrame(self.outputs)
+
+        cols = ['Q[mm/d]', 'ECH[mm/d]', 
+           'E[mm/d]', 'PR[mm/d]', 
+           'QR[mm/d]', 'QD[mm/d]',
+           'PERC[mm/d]', 'S[mm]', 'R[mm]']
+
+        outputs.columns = cols[:self.nout]
+
+        return outputs
+
+
     def calib(self, inputs, outputs):
         pass
 
