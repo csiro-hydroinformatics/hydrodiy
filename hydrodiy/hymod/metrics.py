@@ -115,7 +115,7 @@ def cut(ysim, cats):
             'count':1
         })
 
-        ysim_cat =  pd.pivot_table(ysimcd, rows='idx', cols='lab', values='count')
+        ysim_cat =  pd.pivot_table(ysimcd, index='idx', columns='lab', values='count')
 
         # Reorder columns
         v2 = [float(re.sub('.*,|\\]', '', cn)) for cn in ysim_cat.columns]
@@ -217,8 +217,8 @@ def alpha(yobs, ysim, pp_cst = 0.3):
     return kolmogorov(np.sqrt(nval)*max_dist)
 
 
-def iqr_scores(obs, ens, ref):
-    ''' Compute the interquartile range (iqr) divided by clim and iqr reliability'''
+def iqr_scores(obs, ens, ref, coverage=50.):
+    ''' Compute the interquantile range (iqr) divided by clim and iqr reliability'''
 
     nforc = __checkdims(obs, ens, ref)
 
@@ -229,7 +229,7 @@ def iqr_scores(obs, ens, ref):
     rel = np.zeros(nforc)
     rel_clim = np.zeros(nforc)
     
-    perc = [25., 75.]
+    perc =[coverage/2, 100.-coverage/2]
 
     for i in range(nforc):
         iqr_clim[i, :2] = sutils.percentiles(ref[i,:], perc)
