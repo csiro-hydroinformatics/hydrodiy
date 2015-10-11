@@ -21,7 +21,7 @@ cdef extern from 'c_gr4j.h':
     int c_gr4j_getnstates()
  
 cdef extern from 'c_gr4j.h':
-    int c_gr4j_getnuh()
+    int c_gr4j_getnuhmax()
  
 cdef extern from 'c_gr4j.h':
     int c_gr4j_getnoutputs()
@@ -96,8 +96,8 @@ def hymod_getesize():
 def gr4j_getnstates():
     return c_gr4j_getnstates()
 
-def gr4j_getnuh():
-    return c_gr4j_getnuh()
+def gr4j_getnuhmax():
+    return c_gr4j_getnuhmax()
 
 
 def gr4j_getnoutputs():
@@ -132,7 +132,7 @@ def gr4j_run(int nuh,
     assert inputs.shape[0] == outputs.shape[0]
     assert inputs.shape[1] == 2
     assert uh.shape[0] == statesuhini.shape[0]
-    assert uh.shape[0] > nuh
+    assert uh.shape[0] >= nuh
 
     ierr = c_gr4j_run(inputs.shape[0], params.shape[0], nuh, 
             2, 2, outputs.shape[1],

@@ -18,9 +18,9 @@ int c_gr4j_getnstates(void)
     return GR4J_NSTATES;
 }
 
-int c_gr4j_getnuh(void)
+int c_gr4j_getnuhmax(void)
 {
-    return GR4J_NUH;
+    return GR4J_NUHMAX;
 }
 
 int c_gr4j_getnoutputs(void)
@@ -75,7 +75,7 @@ int c_gr4j_getuh(double lag,
 
 	/* UH ordinates */
         nuh1 = 0;
-	for(i=0; i<GR4J_NUH-1; i++)
+	for(i=0; i<GR4J_NUHMAX-1; i++)
         {
 	    Sb = SS1((double)(i+1), lag);
             Sa = SS1((double)(i), lag);
@@ -91,10 +91,10 @@ int c_gr4j_getuh(double lag,
         }
 
         /* NUH is not big enough */
-        if(1-Sb > GR4J_UHEPS || nuh1 > (GR4J_NUH-1)/3)
+        if(1-Sb > GR4J_UHEPS || nuh1 > (GR4J_NUHMAX-1)/3)
         {
-            fprintf(stderr, "%s:%d:ERROR: GR4J_NUH(%d) is not big enough\n",
-                __FILE__, __LINE__, GR4J_NUH);
+            fprintf(stderr, "%s:%d:ERROR: GR4J_NUHMAX(%d) is not big enough\n",
+                __FILE__, __LINE__, GR4J_NUHMAX);
             return EINVAL;
         }
 
@@ -324,7 +324,7 @@ int c_gr4j_run(int nval, int nparams, int nuh, int ninputs,
     if(noutputs > GR4J_NOUTPUTS)
         return HYMOD_ESIZE;
 
-    if(nuh > GR4J_NUH)
+    if(nuh > GR4J_NUHMAX)
         return HYMOD_ESIZE;
 
     /* Check parameters */

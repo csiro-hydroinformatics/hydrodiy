@@ -10,10 +10,15 @@ import pandas as pd
 
 from hyio import csv
 
-import gr4j as gr4j_wafari
+has_gr4j_wafari = False
+try:
+    import gr4j as gr4j_wafari
+    has_gr4j_wafari = True
+except ImportError:
+    pass
 
 from hywafari import wdata
-from hymod import gr4j
+from hymod.gr4j import GR4J
 
 class GR4JTestCases(unittest.TestCase):
 
@@ -22,20 +27,22 @@ class GR4JTestCases(unittest.TestCase):
         FTEST, testfile = os.path.split(__file__)
         self.FOUT = FTEST
 
-    def test_getsamples(self):
-
+    def test_get_calparams_sample(self):
         nsamples = 100
-        samples = gr4j.get_paramslib(nsamples)
+        gr = GR4J()
+        samples = gr.get_calparams_sample(nsamples)
+        self.assertTrue(samples.shape == (nsamples, 4))
 
     def test_gr4juh(self):
 
-        gr = gr4j.GR4J()
+        gr = GR4J()
 
         for x4 in np.linspace(0.5, 50, 100):
-            params = [400, -1, 50, x4]
-            gr.setparams(params)
+            gr.set_trueparams([400, -1, 50, x4])
 
             ck = abs(np.sum(gr.uh)-2) < 1e-5
+            if not ck:
+                import pdb; pdb.set_trace()
             self.assertTrue(ck)
  
 
@@ -49,17 +56,17 @@ class GR4JTestCases(unittest.TestCase):
         params = [400, -1, 50, 5]
 
         # Run
-        gr = gr4j.GR4J()
-        gr.setoutputs(len(inputs), 9)
-        gr.setparams(params)
-        gr.setstates()
+        gr = GR4J()
+        gr.create_outputs(len(inputs), 9)
+        gr.set_trueparams(params)
+        gr.set_states()
         gr.run(inputs)
 
-        out = gr.getoutputs()
+        out = gr.get_outputs()
 
-        cols = ['Q[mm/d]', 'ECH[mm/d]', 
+        cols = ['Q[mm/d]', 'Ech[mm/d]', 
            'E[mm/d]', 'PR[mm/d]', 
-           'QR[mm/d]', 'QD[mm/d]',
+           'Qd[mm/d]', 'Qr[mm/d]',
            'PERC[mm/d]', 'S[mm]', 'R[mm]']
 
         ck = np.all(out.columns.values.astype(str) == np.array(cols))
@@ -67,6 +74,8 @@ class GR4JTestCases(unittest.TestCase):
  
 
     def test_gr4j_detailed(self):
+        if not has_gr4j_wafari:
+            return
 
         sites, comment = csv.read_csv('%s/data/sites.csv' % self.FOUT)
 

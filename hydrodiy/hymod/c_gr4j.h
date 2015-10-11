@@ -35,12 +35,13 @@
 /* Number of outputs returned by GR4J run */
 #define GR4J_NOUTPUTS 20
 
-/* Maximim number of uh states returned by GR4J run */
-#define GR4J_NUH 1000
+/* Maximum number of uh states returned by GR4J run */
+#define GR4J_NUHMAX 1000
 
 int c_gr4j_getnstates(void);
 
-int c_gr4j_getnuh(void);
+int c_gr4j_getnuhmax(void);
+
 
 int c_gr4j_getnoutputs(void);
 
