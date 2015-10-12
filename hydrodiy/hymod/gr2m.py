@@ -39,7 +39,7 @@ class GR2M(Model):
 
     def run(self, inputs):
         ierr = c_hymod.gr2m_run(self.trueparams, inputs, 
-            self.statesini,
+            self.states,
             self.outputs)
 
         if ierr == esize:
@@ -51,7 +51,7 @@ class GR2M(Model):
 
 
     def cal2true(self):
-        x = self.calparams
+        xt = self.calparams
         self.trueparams = np.array([np.exp(xt[0]), np.exp(xt[1])])
 
 

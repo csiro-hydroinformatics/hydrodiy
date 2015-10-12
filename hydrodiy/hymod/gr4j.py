@@ -53,8 +53,8 @@ class GR4J(Model):
         ierr = c_hymod.gr4j_run(self.nuh, \
             self.trueparams, self.uh, \
             inputs, \
-            self.statesuhini, \
-            self.statesini, \
+            self.statesuh, \
+            self.states, \
             self.outputs)
 
         if ierr == esize:
@@ -65,7 +65,7 @@ class GR4J(Model):
                 'exception %d') % ierr)
 
     def cal2true(self):
-        x = self.calparams
+        xt = self.calparams
         self.trueparams = np.array([np.exp(xt[0]), np.sinh(xt[1]),
                 np.exp(xt[2]), 0.5+np.exp(xt[3])])
 

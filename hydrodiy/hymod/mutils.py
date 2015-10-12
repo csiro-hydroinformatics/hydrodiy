@@ -5,14 +5,6 @@ import numpy as np
 
 import sh
 
-def turc_mezentsev(n, P, PE):
-    ''' Returns runoff computed with the Turc-Mezentsev model  
-        Usually n=2.5
-    '''
-    QT = P*(1.-1./(1.+(P/PE)**float(n))**(1./float(n)))
-
-    return QT
-
 def getmemusage():
     ''' Returns memory usage of current python process 
 

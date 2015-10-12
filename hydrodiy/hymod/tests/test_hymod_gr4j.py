@@ -5,6 +5,8 @@ import unittest
 from timeit import Timer
 import time
 
+import requests
+import tarfile
 import numpy as np
 import pandas as pd
 
@@ -20,12 +22,25 @@ except ImportError:
 from hywafari import wdata
 from hymod.gr4j import GR4J
 
+# Get test data
+url_testdata = 'https://drive.google.com/file/d/0B9m81HeozSRzcmNkVmdibEpmMTg'
+FOUT = os.path.dirname(os.path.abspath(__file__))
+ftar = '%s/rrtests.tar.gz' % FOUT
+FRR = re.sub('\\.tar\\.gz', '', ftar)
+
+if not os.path.exists(FRR):
+    os.mkdir(FRR)
+    req = requests.get(url_testdata, params={'alt':'media'})
+    tar = tarfile.open(fileobj=req, mode='r:gz')
+    tar.extractall()
+
+
+
 class GR4JTestCases(unittest.TestCase):
 
     def setUp(self):
         print('\t=> GR4JTestCase')
-        FTEST, testfile = os.path.split(__file__)
-        self.FOUT = FTEST
+        self.FOUT = FOUT
 
     def test_get_calparams_sample(self):
         nsamples = 100
@@ -59,7 +74,7 @@ class GR4JTestCases(unittest.TestCase):
         gr = GR4J()
         gr.create_outputs(len(inputs), 9)
         gr.set_trueparams(params)
-        gr.set_states()
+        gr.initialise()
         gr.run(inputs)
 
         out = gr.get_outputs()
@@ -174,6 +189,44 @@ class GR4JTestCases(unittest.TestCase):
                 print('  failing %s - ee = %f / bb = %f' % (id, ee, bb))
 
             self.assertTrue(ck)
+
+
+    def test_gr4j_detailed2(self):
+
+        warmup = 365 * 5
+        gr = GR4J()
+
+        for count in range(1, 11):
+
+            fd = '%s/rrtest_%2.2d_timeseries.csv' % (FRR, count)
+            d, comment = csv.read_csv(fd)
+
+            fp = '%s/rrtest_%2.2d_grparams.csv' % (FRR, count)
+            params, comment = csv.read_csv(fp)
+
+            inputs = d.loc[:, ['rainfall', 'APET']].values
+            inputs = np.ascontiguousarray(inputs, np.float64)
+            nval = inputs.shape[0]
+            ny = nval/365
+
+            # Run gr4j
+            gr.create_outputs(len(inputs), 1)
+            gr.set_trueparams(params['parvalue'].values)
+            gr.initialise()
+            gr.run(inputs)
+            qsim = gr.get_outputs().squeeze()
+
+            # Compare
+            idx = np.arange(len(inputs)) > warmup
+            expected = d['gr4j'].values[idx]
+            err = np.abs(qsim.values[idx] - expected) 
+            err_thresh = 7e-3
+            ck = np.max(err) < err_thresh
+            if not ck:
+                print('\tTEST %2d : max abs err = %0.5f < %0.5f ? %s' % (count, \
+                        np.max(err), err_thresh, ck)) 
+            self.assertTrue(ck)
+
 
 if __name__ == "__main__":
     unittest.main()
