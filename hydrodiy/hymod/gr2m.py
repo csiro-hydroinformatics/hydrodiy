@@ -4,6 +4,7 @@ import pandas as pd
 
 from hystat import sutils
 
+from model import Model
 import c_hymod
 
 class GR2MException(Exception):
@@ -21,40 +22,23 @@ nstates = c_hymod.gr2m_getnstates()
 noutputs = c_hymod.gr2m_getnoutputs()
 
 
-class GR2M():
+class GR2M(Model):
 
     def __init__(self):
-        pass
 
-    def __str__(self):
-        str = '\nGR2M model implementation\n'
-        str += '  params = [%0.1f, %0.1f]\n' % (
-                self.params[0], self.params[1])
-        str += '  states = [%0.1f, %0.1f]\n' % (self.statesini[0], 
-                self.statesini[1])
-        str += '  nout = %d\n' % self.nout
+        Model.__init__(self, 'gr2m', 0, nstates, \
+            2, 2, \
+            ['Q[mm/m]', 'Ech[mm/m]', \
+                'P1[mm/m]', 'P2[mm/m]', 'P3[mm/m]', \
+                'R1[mm/m]', 'R2[mm/m]', 'S[mm]', 'R[mm]'],
+            [1, -2], \
+            [20, 1], \
+            [5.7, -0.2], \
+            [[3, 0], [0, 1]])
 
-        return str
-
-
-    def setoutputs(self, nval, nout):
-        self.nout = nout
-        self.outputs = np.zeros((nval, nout)).astype(np.float64)
-        self.statesini = np.zeros(nstates).astype(np.float64)
-
-    def setparams(self, params):
-        # Set params value
-        self.params = np.array(params).astype(np.float64)
-
-    def setstates(self, statesini=None, statesuhini=None):
-        if statesini is None:
-            statesini = [self.params[0]/2, self.params[1]/2]
-
-        ns = len(statesini)
-        self.statesini[:ns] = np.array(statesini).astype(np.float64)
 
     def run(self, inputs):
-        ierr = c_hymod.gr2m_run(self.params, inputs, 
+        ierr = c_hymod.gr2m_run(self.trueparams, inputs, 
             self.statesini,
             self.outputs)
 
@@ -65,33 +49,9 @@ class GR2M():
             raise GR2MKernelException(('gr2m_run returns an '
                 'exception %d') % ierr)
 
-    
-    def getoutputs(self):
-        outputs = pd.DataFrame(self.outputs)
 
-        cols = ['Q[mm/m]', 'ECH[mm/m]', 
-           'P1[mm/m]', 'P2[mm/m]', 'P3[mm/m]',
-           'R1[mm/m]', 'R2[mm/m]', 'S[mm]', 'R[mm]']
-
-        outputs.columns = cols[:self.nout]
-
-        return outputs
+    def cal2true(self):
+        x = self.calparams
+        self.trueparams = np.array([np.exp(xt[0]), np.exp(xt[1])])
 
 
-    
-    def calib(self, inputs, outputs):
-        pass
-
-
-def get_paramslib(nsamples, seed=333):
-    
-    np.random.seed(seed)
-    
-    pmin = [4.5, 0.8]
-    pmax = [7.5, 1.2] 
-    samples = sutils.lhs(4, nsamples, pmin, pmax)
-
-    samples[:,0] = np.exp(samples[:,0])
-
-    return samples
-    

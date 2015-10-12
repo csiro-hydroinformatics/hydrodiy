@@ -30,8 +30,8 @@ class GR4J(Model):
 
         Model.__init__(self, 'gr4j', nuhmax, nstates, \
             4, 4, \
-            ['Q[mm/d]', 'Ech[mm/d]', 'E[mm/d]', 'PR[mm/d]',\
-                'Qd[mm/d]', 'Qr[mm/d]', 'PERC[mm/d]',\
+            ['Q[mm/d]', 'Ech[mm/d]', 'E[mm/d]', 'Pr[mm/d]',\
+                'Qd[mm/d]', 'Qr[mm/d]', 'Perc[mm/d]',\
                 'S[mm]', 'R[mm]'], \
             [1, -5, 1, -10], \
             [20, 5, 9, 4], \

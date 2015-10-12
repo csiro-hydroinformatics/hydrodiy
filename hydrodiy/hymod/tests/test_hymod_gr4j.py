@@ -65,9 +65,9 @@ class GR4JTestCases(unittest.TestCase):
         out = gr.get_outputs()
 
         cols = ['Q[mm/d]', 'Ech[mm/d]', 
-           'E[mm/d]', 'PR[mm/d]', 
+           'E[mm/d]', 'Pr[mm/d]', 
            'Qd[mm/d]', 'Qr[mm/d]',
-           'PERC[mm/d]', 'S[mm]', 'R[mm]']
+           'Perc[mm/d]', 'S[mm]', 'R[mm]']
 
         ck = np.all(out.columns.values.astype(str) == np.array(cols))
         self.assertTrue(ck)
