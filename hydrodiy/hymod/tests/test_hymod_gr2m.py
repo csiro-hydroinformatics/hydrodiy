@@ -20,6 +20,13 @@ class GR2MTestCases(unittest.TestCase):
         FTEST, testfile = os.path.split(__file__)
         self.FOUT = FTEST
 
+    def test_get_calparams_sample(self):
+        nsamples = 100
+        gr = GR2M()
+        samples = gr.get_calparams_samples(nsamples)
+        self.assertTrue(samples.shape == (nsamples, 2))
+
+
     def test_gr2m_dumb(self):
 
         nval = 100
@@ -99,21 +106,23 @@ class GR2MTestCases(unittest.TestCase):
         gr = GR2M()
 
         idx_cal = np.arange(len(obs)) > 12
-        idx_cal = idx_cal & (np.arange(len(obs)) < len(obs)-50)
+        idx_cal = idx_cal & (np.arange(len(obs)) < 12+50)
 
         def errfun1(obs, sim):
             alpha = 1.
             err = np.sum((obs**alpha-sim**alpha)**2)
             return err
 
-        p1, out1, objf1, p1_ex, objf1_exp = gr.calib(inputs, obs, errfun1, idx_cal)
+        p1, out1, objf1, p1_ex, objf1_exp = gr.calib(inputs, \
+                obs, errfun1, idx_cal)
         pt1 = gr.trueparams
         import pdb; pdb.set_trace()
 
         def errfun2(obs, sim, alpha):
             return np.sum((obs**alpha-sim**alpha)**2)
 
-        p2, out2, objf2, p2_ex, objf2_exp = gr.calib(inputs, obs, errfun2, idx_cal, 
+        p2, out2, objf2, p2_ex, objf2_exp = gr.calib(inputs, \
+                obs, errfun2, idx_cal, 
                 errfun_args=(0.5,))
         pt2 = gr.trueparams
 

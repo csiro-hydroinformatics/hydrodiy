@@ -45,7 +45,7 @@ class GR4JTestCases(unittest.TestCase):
     def test_get_calparams_sample(self):
         nsamples = 100
         gr = GR4J()
-        samples = gr.get_calparams_sample(nsamples)
+        samples = gr.get_calparams_samples(nsamples)
         self.assertTrue(samples.shape == (nsamples, 4))
 
     def test_gr4juh(self):
