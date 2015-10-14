@@ -11,7 +11,7 @@ import pandas as pd
 from hyio import csv
 
 from hywafari import wdata
-from hymod.turcmezentsev import TurcMezentsev
+from hymod.models.turcmezentsev import TurcMezentsev
 
 class TurcMezentsevTestCases(unittest.TestCase):
 

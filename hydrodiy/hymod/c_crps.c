@@ -1,7 +1,4 @@
-#include <math.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <errno.h>
+#include "c_crps.h"
 
 /* comparison function for qsort ***/
 static int compare(const void* p1, const void* p2){

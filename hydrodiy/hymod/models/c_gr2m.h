@@ -5,7 +5,7 @@
 #include <string.h>
 #include <errno.h>
 
-#include "c_hymod_utils.h"
+#include "c_utils.h"
 
 /* Number of inputs required by GR2M run */
 #define GR2M_NINPUTS 5

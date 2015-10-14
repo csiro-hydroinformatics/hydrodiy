@@ -7,6 +7,7 @@
     "url": "https://bitbucket.org/jlerat/hydrodiy",
     "packages" : [
         "hymod", 
+        "hymod.models", 
         "hygis", 
         "hyplot", 
         "hydata",  

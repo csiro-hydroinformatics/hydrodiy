@@ -4,8 +4,8 @@ import pandas as pd
 
 from hystat import sutils
 
-from model import Model
-import c_hymod
+from hymod.model import Model
+import c_hymod_models
 
 class GR2MException(Exception):
     pass
@@ -14,12 +14,12 @@ class GR2MSizeException(Exception):
     pass
 
 # Error message number
-esize = c_hymod.hymod_getesize()
+esize = c_hymod_models.getesize()
 
 # Dimensions
-nstates = c_hymod.gr2m_getnstates()
+nstates = c_hymod_models.gr2m_getnstates()
 
-noutputs = c_hymod.gr2m_getnoutputs()
+noutputs = c_hymod_models.gr2m_getnoutputs()
 
 
 class GR2M(Model):
@@ -38,7 +38,7 @@ class GR2M(Model):
 
 
     def run(self, inputs):
-        ierr = c_hymod.gr2m_run(self.trueparams, inputs, 
+        ierr = c_hymod_models.gr2m_run(self.trueparams, inputs, 
             self.states,
             self.outputs)
 

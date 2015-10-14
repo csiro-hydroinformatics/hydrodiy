@@ -51,10 +51,10 @@ int gr4j_minmaxparams(int nparams, double * params)
         if(nparams<4)
             return EINVAL;
 
-	params[0] = c_hymod_minmax(1,1e5,params[0]); 	// S
-	params[1] = c_hymod_minmax(-50,50,params[1]);	// IGF
-	params[2] = c_hymod_minmax(1,1e5,params[2]); 	// R
-	params[3] = c_hymod_minmax(0.5,50,params[3]); // TB
+	params[0] = c_model_minmax(1,1e5,params[0]); 	// S
+	params[1] = c_model_minmax(-50,50,params[1]);	// IGF
+	params[2] = c_model_minmax(1,1e5,params[2]); 	// R
+	params[3] = c_model_minmax(0.5,50,params[3]); // TB
 
 	return 0;
 }
@@ -161,7 +161,7 @@ int c_gr4j_runtimestep(int nparams, int nuh, int ninputs,
 	P = inputs[0] < 0 ? 0 : inputs[0];
 	E = inputs[1] < 0 ? 0 : inputs[1];
 
-        states[0] = c_hymod_minmax(0, params[0], states[0]);
+        states[0] = c_model_minmax(0, params[0], states[0]);
         states[1] = states[1] < 0 ? 0 : states[1];
 
 	/* Production */
@@ -313,19 +313,19 @@ int c_gr4j_run(int nval, int nparams, int nuh, int ninputs,
 
     /* Check dimensions */
     if(nparams < 4)
-        return HYMOD_ESIZE;
+        return MODEL_ESIZE;
 
     if(nstates < 2)
-        return HYMOD_ESIZE;
+        return MODEL_ESIZE;
 
     if(ninputs < 2)
-        return HYMOD_ESIZE;
+        return MODEL_ESIZE;
 
     if(noutputs > GR4J_NOUTPUTS)
-        return HYMOD_ESIZE;
+        return MODEL_ESIZE;
 
     if(nuh > GR4J_NUHMAX)
-        return HYMOD_ESIZE;
+        return MODEL_ESIZE;
 
     /* Check parameters */
     ierr = gr4j_minmaxparams(nparams, params);

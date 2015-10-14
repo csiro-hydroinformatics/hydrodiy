@@ -1,6 +1,6 @@
 
-#ifndef __HYMOD_UTILS__
-#define __HYMOD_UTILS__
+#ifndef __UTILS__
+#define __UTILS__
 
 #include <math.h>
 #include <stdlib.h>
@@ -9,10 +9,10 @@
 #include <errno.h>
 
 /* Define Error message for vector size errors */
-#define HYMOD_ESIZE 500
+#define MODEL_ESIZE 500
 
-int c_hymod_getesize(void);
+int c_model_getesize(void);
 
-double c_hymod_minmax(double min,double max,double input);
+double c_model_minmax(double min,double max,double input);
 
 #endif

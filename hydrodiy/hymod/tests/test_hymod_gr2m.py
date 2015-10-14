@@ -11,7 +11,7 @@ import pandas as pd
 from hyio import csv
 
 from hywafari import wdata
-from hymod.gr2m import GR2M
+from hymod.models.gr2m import GR2M
 
 class GR2MTestCases(unittest.TestCase):
 
@@ -116,7 +116,7 @@ class GR2MTestCases(unittest.TestCase):
         p1, out1, objf1, p1_ex, objf1_exp = gr.calib(inputs, \
                 obs, errfun1, idx_cal)
         pt1 = gr.trueparams
-        import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
 
         def errfun2(obs, sim, alpha):
             return np.sum((obs**alpha-sim**alpha)**2)

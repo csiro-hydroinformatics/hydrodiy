@@ -4,8 +4,8 @@ import pandas as pd
 
 from hystat import sutils
 
-from model import Model
-import c_hymod
+from hymod.model import Model
+import c_hymod_models
 
 class GR4JException(Exception):
     pass
@@ -14,14 +14,14 @@ class GR4JSizeException(Exception):
     pass
 
 # Error message number
-esize = c_hymod.hymod_getesize()
+esize = c_hymod_models.getesize()
 
 # Dimensions
-nuhmax = c_hymod.gr4j_getnuhmax()
+nuhmax = c_hymod_models.gr4j_getnuhmax()
 
-nstates = c_hymod.gr4j_getnstates()
+nstates = c_hymod_models.gr4j_getnstates()
 
-noutputs = c_hymod.gr4j_getnoutputs()
+noutputs = c_hymod_models.gr4j_getnoutputs()
 
 
 class GR4J(Model):
@@ -43,14 +43,14 @@ class GR4J(Model):
     def set_uhparams(self):
         nuh_optimised = np.zeros(2).astype(np.int32)
 
-        ierr = c_hymod.gr4j_getuh(self.trueparams[3], nuh_optimised, self.uh)
+        ierr = c_hymod_models.gr4j_getuh(self.trueparams[3], nuh_optimised, self.uh)
         if ierr > 0:
             raise GR4JException('gr4j_getuh raised the exception %d' % ierr)
 
         self.nuh = nuh_optimised[0]
 
     def run(self, inputs):
-        ierr = c_hymod.gr4j_run(self.nuh, \
+        ierr = c_hymod_models.gr4j_run(self.nuh, \
             self.trueparams, self.uh, \
             inputs, \
             self.statesuh, \

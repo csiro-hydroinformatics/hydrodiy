@@ -20,7 +20,7 @@ except ImportError:
     pass
 
 from hywafari import wdata
-from hymod.gr4j import GR4J
+from hymod.models.gr4j import GR4J
 
 # Get test data
 url_testdata = 'https://drive.google.com/file/d/0B9m81HeozSRzcmNkVmdibEpmMTg'

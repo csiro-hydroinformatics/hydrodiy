@@ -4,7 +4,7 @@ import pandas as pd
 
 from hystat import sutils
 
-from model import Model
+from hymod.model import Model
 
 class TurcMezentsev(Model):
 

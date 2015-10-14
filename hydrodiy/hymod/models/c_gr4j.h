@@ -5,7 +5,7 @@
 #include <string.h>
 #include <errno.h>
 
-#include "c_hymod_utils.h"
+#include "c_utils.h"
 
 /* Check on uh sum */
 #define GR4J_UHEPS 1e-3
