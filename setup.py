@@ -7,14 +7,6 @@ from Cython.Distutils import build_ext
 
 import os, re
 
-# Find gnuwin32 for windows compilation
-gnuwin32lib = []
-gnuwin32inc = []
-if 'PATH' in os.environ:
-	path = os.environ['PATH']
-	gnuwin32lib = [p for p in path.split(';') if re.search('gnuwin32.*lib', p)]
-	gnuwin32inc = [p for p in path.split(';') if re.search('gnuwin32.*include', p)]
-
 # Cython C extensions
 ext_modules = [
     Extension(
@@ -42,8 +34,8 @@ ext_modules = [
             'hydrodiy/hystat/c_ar1.c'
         ],
         libraries=['gsl', 'gslcblas'],
-        library_dirs=['/usr/local/lib', '~/.local/lib'] + gnuwin32lib,
-        include_dirs=[numpy.get_include(), '~/.local/lib/include'] + gnuwin32inc),
+        library_dirs=['/usr/local/lib', '~/.local/lib'],
+        include_dirs=[numpy.get_include(), '~/.local/lib/include']),
     Extension(
         name='c_hydata', 
         sources=[

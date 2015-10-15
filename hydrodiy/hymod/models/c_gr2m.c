@@ -26,8 +26,8 @@ int gr2m_minmaxparams(int nparams, double * params)
         if(nparams<4)
             return EINVAL;
 
-	params[0] = c_model_minmax(1,1e5,params[0]); 	// S
-	params[1] = c_model_minmax(0,3,params[1]);	// IGF
+	params[0] = c_utils_minmax(1,1e5,params[0]); 	// S
+	params[1] = c_utils_minmax(0,3,params[1]);	// IGF
 
 	return 0;
 }
@@ -81,7 +81,7 @@ int c_gr2m_runtimestep(int nparams, int ninputs,
 	P = inputs[0] < 0 ? 0 : inputs[0];
 	E = inputs[1] < 0 ? 0 : inputs[1];
 
-        S = c_model_minmax(0, params[0], states[0]);
+        S = c_utils_minmax(0, params[0], states[0]);
         R = states[1] < 0 ? 0 : states[1];
 
         /* main GR2M procedure */

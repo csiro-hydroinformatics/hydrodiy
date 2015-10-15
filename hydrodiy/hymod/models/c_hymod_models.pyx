@@ -9,7 +9,7 @@ init = ""
 # -- HEADERS --
 
 cdef extern from 'c_utils.h':
-    int c_model_getesize()
+    int c_utils_getesize()
  
 cdef extern from 'c_gr4j.h':
     int c_gr4j_getnstates()
@@ -54,7 +54,7 @@ cdef extern from 'c_gr2m.h':
 
 
 def getesize():
-    return c_model_getesize()
+    return c_utils_getesize()
 
 # -- GR4J FUNCTIONS --
 

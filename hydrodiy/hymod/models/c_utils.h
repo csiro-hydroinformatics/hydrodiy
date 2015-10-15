@@ -11,8 +11,8 @@
 /* Define Error message for vector size errors */
 #define MODEL_ESIZE 500
 
-int c_model_getesize(void);
+int c_utils_getesize(void);
 
-double c_model_minmax(double min,double max,double input);
+double c_utils_minmax(double min,double max,double input);
 
 #endif
