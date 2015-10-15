@@ -7,15 +7,6 @@
 
 #include "c_utils.h"
 
-/* Check on uh sum */
-#define GR4J_UHEPS 1e-3
-
-/* UH exponent
-    daily = 2.5
-    hourly = 1.25
-*/
-#define GR4J_UHEXPON 2.5
-
 /* Percolation factor :
    daily = 2.25
    hourly = 4
@@ -35,13 +26,7 @@
 /* Number of outputs returned by GR4J run */
 #define GR4J_NOUTPUTS 20
 
-/* Maximum number of uh states returned by GR4J run */
-#define GR4J_NUHMAX 1000
-
 int c_gr4j_getnstates(void);
-
-int c_gr4j_getnuhmax(void);
-
 
 int c_gr4j_getnoutputs(void);
 
@@ -49,12 +34,23 @@ int c_gr4j_getuh(double lag,
         int * nuh_optimised,
         double * uh);
 
-int c_gr4j_run(int nval, int nparams, int nuh, int ninputs, 
-        int nstates, int noutputs,
+int c_gr4j_production(double P, double E, 
+        double S, 
+        double state0, 
+        double * prod);
+
+int c_gr4j_run(int nval, 
+    int nparams, 
+    int nuh1, 
+    int nuh2,  
+    int ninputs, 
+    int nstates, 
+    int noutputs,
 	double * params,
-        double * uh,
+    double * uh1,
+    double * uh2,
 	double * inputs,
-        double * statesuhini,
+    double * statesuhini,
 	double * statesini,
-        double * outputs);
+    double * outputs);
 

@@ -35,7 +35,7 @@ int gr2m_minmaxparams(int nparams, double * params)
 
 /*******************************************************************************
 * Run time step code for the GR2M rainfall-runoff model
-* 
+*
 * --- Inputs
 * ierr			Error message
 * nconfig		Number of configuration elements (1)
@@ -57,92 +57,92 @@ int gr2m_minmaxparams(int nparams, double * params)
 * states		Output and states variables. 1D Array nstates(11)x1
 *
 *******************************************************************************/
- 
-int c_gr2m_runtimestep(int nparams, int ninputs, 
+
+int c_gr2m_runtimestep(int nparams, int ninputs,
         int nstates, int noutputs,
 	double * params,
         double * inputs,
         double * states,
         double * outputs)
 {
-        int ierr=0;
-        
-        /* parameters */
-        double Scapacity = params[0];
-        double IGFcoef = params[1];
-        double Rcapacity = 60;
+    int ierr=0;
 
-        /* model variables */
-        double P, E;
-        double S, R, S1, S2, PHI, PSI, P1, P2, P3;
-        double R1, R2, F, Q;
+    /* parameters */
+    double Scapacity = params[0];
+    double IGFcoef = params[1];
+    double Rcapacity = 60;
 
-    	/* inputs */
+    /* model variables */
+    double P, E;
+    double S, R, S1, S2, PHI, PSI, P1, P2, P3;
+    double R1, R2, F, Q;
+
+   	/* inputs */
 	P = inputs[0] < 0 ? 0 : inputs[0];
 	E = inputs[1] < 0 ? 0 : inputs[1];
 
-        S = c_utils_minmax(0, params[0], states[0]);
-        R = states[1] < 0 ? 0 : states[1];
+    S = c_utils_minmax(0, params[0], states[0]);
+    R = states[1] < 0 ? 0 : states[1];
 
-        /* main GR2M procedure */
+    /* main GR2M procedure */
 
-        /* production */
-        PHI = tanh(P/Scapacity);
-        S1 = (S+Scapacity*PHI)/(1+PHI*S/Scapacity);
-        P1 = P+S-S1;
+    /* production */
+    PHI = tanh(P/Scapacity);
+    S1 = (S+Scapacity*PHI)/(1+PHI*S/Scapacity);
+    P1 = P+S-S1;
 
-        PSI = tanh(E/Scapacity);
-        S2 = S1*(1-PSI)/(1+PSI*(1-S1/Scapacity)); 
+    PSI = tanh(E/Scapacity);
+    S2 = S1*(1-PSI)/(1+PSI*(1-S1/Scapacity));
 
-        S = S2/pow(1+pow(S2/Scapacity, 3), 1./3);
-        P2 = S2-S;
-        P3 = P1 + P2;
+    S = S2/pow(1+pow(S2/Scapacity, 3), 1./3);
+    P2 = S2-S;
+    P3 = P1 + P2;
 
-        /* routing */
-        R1 = R + P3; 
-        R2 = IGFcoef * R1; 
-        F = (IGFcoef-1)*R1;
-        Q = pow(R2,2)/(R2+Rcapacity);
-        R = R2-Q;
+    /* routing */
+    R1 = R + P3;
+    R2 = IGFcoef * R1;
+    F = (IGFcoef-1)*R1;
+    Q = pow(R2,2)/(R2+Rcapacity);
+    R = R2-Q;
 
-        /* states */
-        states[0] = S;
-        states[1] = R;
+    /* states */
+    states[0] = S;
+    states[1] = R;
 
-        /* output */
-        outputs[0] = Q;
+    /* output */
+    outputs[0] = Q;
 
-        if(noutputs>1)
-            outputs[1] = F;
+    if(noutputs>1)
+        outputs[1] = F;
 
-        if(noutputs>2)
-            outputs[2] = P1;
+    if(noutputs>2)
+        outputs[2] = P1;
 
-        if(noutputs>3)
-            outputs[3] = P2;
+    if(noutputs>3)
+        outputs[3] = P2;
 
-        if(noutputs>4)
-            outputs[4] = P3;
+    if(noutputs>4)
+        outputs[4] = P3;
 
-        if(noutputs>5)
-            outputs[5] = R1;
-        
-        if(noutputs>6)
-            outputs[6] = R2;
+    if(noutputs>5)
+        outputs[5] = R1;
 
-        if(noutputs>7)
-            outputs[7] = S;
+    if(noutputs>6)
+        outputs[6] = R2;
 
-        if(noutputs>8)
-            outputs[8] = R;
+    if(noutputs>7)
+        outputs[7] = S;
+
+    if(noutputs>8)
+        outputs[8] = R;
 
 	return ierr;
 }
 
 
 // --------- Component runner --------------------------------------------------
-int c_gr2m_run(int nval, int nparams, int ninputs, 
-        int nstates, int noutputs, 
+int c_gr2m_run(int nval, int nparams, int ninputs,
+        int nstates, int noutputs,
 	double * params,
 	double * inputs,
 	double * statesini,
@@ -170,14 +170,14 @@ int c_gr2m_run(int nval, int nparams, int ninputs,
     for(i = 0; i < nval; i++)
     {
        /* Run timestep model and update states */
-    	ierr = c_gr2m_runtimestep(nparams, ninputs, 
+    	ierr = c_gr2m_runtimestep(nparams, ninputs,
                 nstates, noutputs,
     		params,
                 &(inputs[ninputs*i]),
                 statesini,
                 &(outputs[noutputs*i]));
     }
-    
+
     return ierr;
 }
 

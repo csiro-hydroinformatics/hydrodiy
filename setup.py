@@ -15,17 +15,16 @@ ext_modules = [
             'hydrodiy/hymod/c_hymod.pyx', 
             'hydrodiy/hymod/c_crps.c'
         ],
-        extrac_compile_args = ['-O2'],
         include_dirs=[numpy.get_include()]),
     Extension(
         name='c_hymod_models', 
         sources=[
             'hydrodiy/hymod/models/c_hymod_models.pyx', 
             'hydrodiy/hymod/models/c_utils.c',
+            'hydrodiy/hymod/models/c_uh.c',
             'hydrodiy/hymod/models/c_gr4j.c',
             'hydrodiy/hymod/models/c_gr2m.c'
         ],
-        extrac_compile_args = ['-O2'],
         include_dirs=[numpy.get_include()]),
     Extension(
         name='c_hystat', 

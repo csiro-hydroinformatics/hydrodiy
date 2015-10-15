@@ -22,6 +22,10 @@ except ImportError:
 from hywafari import wdata
 from hymod.models.gr4j import GR4J
 
+
+import c_hymod_models
+UHEPS = c_hymod_models.uh_getuheps()
+
 # Get test data
 url_testdata = 'https://drive.google.com/file/d/0B9m81HeozSRzcmNkVmdibEpmMTg'
 FOUT = os.path.dirname(os.path.abspath(__file__))
@@ -42,6 +46,11 @@ class GR4JTestCases(unittest.TestCase):
         print('\t=> GR4JTestCase')
         self.FOUT = FOUT
 
+    def test_print(self):
+        gr = GR4J()
+        str_gr = '%s' % gr
+
+
     def test_get_calparams_sample(self):
         nsamples = 100
         gr = GR4J()
@@ -55,11 +64,11 @@ class GR4JTestCases(unittest.TestCase):
         for x4 in np.linspace(0.5, 50, 100):
             gr.set_trueparams([400, -1, 50, x4])
 
-            ck = abs(np.sum(gr.uh)-2) < 1e-5
+            ck = abs(np.sum(gr.uh)-2) < UHEPS * 2
             if not ck:
                 import pdb; pdb.set_trace()
             self.assertTrue(ck)
- 
+
 
     def test_gr4j_dumb(self):
 
@@ -79,14 +88,14 @@ class GR4JTestCases(unittest.TestCase):
 
         out = gr.get_outputs()
 
-        cols = ['Q[mm/d]', 'Ech[mm/d]', 
-           'E[mm/d]', 'Pr[mm/d]', 
+        cols = ['Q[mm/d]', 'Ech[mm/d]',
+           'E[mm/d]', 'Pr[mm/d]',
            'Qd[mm/d]', 'Qr[mm/d]',
            'Perc[mm/d]', 'S[mm]', 'R[mm]']
 
         ck = np.all(out.columns.values.astype(str) == np.array(cols))
         self.assertTrue(ck)
- 
+
 
     def test_gr4j_detailed(self):
         if not has_gr4j_wafari:
@@ -138,7 +147,7 @@ class GR4JTestCases(unittest.TestCase):
 
                 # First run
                 params = samples[ip,:]
-                
+
                 # Run
                 t0 = time.time()
 
@@ -157,7 +166,7 @@ class GR4JTestCases(unittest.TestCase):
                 gr2.X2 = params[1]
                 gr2.X3 = params[2]
                 gr2.X4 = params[3]
-                
+
                 gr2.init()
                 gr2.Sp = params[0]/2
                 gr2.Sr = params[2]/2
@@ -170,7 +179,7 @@ class GR4JTestCases(unittest.TestCase):
                 # Comparison
                 e = np.abs(qsim2[warmup:] - qsim[warmup:, 0])
                 if np.max(e) > ee:
-                    ee = np.max(e) 
+                    ee = np.max(e)
 
                 b = np.abs(np.mean(qsim2[warmup:]) - np.mean(qsim[warmup:, 0]))
                 b /= np.mean(qsim2[warmup:])
@@ -219,14 +228,39 @@ class GR4JTestCases(unittest.TestCase):
             # Compare
             idx = np.arange(len(inputs)) > warmup
             expected = d['gr4j'].values[idx]
-            err = np.abs(qsim.values[idx] - expected) 
+            err = np.abs(qsim.values[idx] - expected)
             err_thresh = 7e-3
             ck = np.max(err) < err_thresh
             if not ck:
-                print('\tTEST %2d : max abs err = %0.5f < %0.5f ? %s' % (count, \
-                        np.max(err), err_thresh, ck)) 
+                print(('\tTEST %2d : max abs err = '
+                    '%0.5f < %0.5f ? %s') % (count, \
+                    np.max(err), err_thresh, ck))
             self.assertTrue(ck)
 
+
+    def test_gr4j_calibrate(self):
+
+        warmup = 365 * 5
+        gr = GR4J()
+        count = 1
+
+        for count in range(1, 11):
+            fd = '%s/rrtest_%2.2d_timeseries.csv' % (FRR, count)
+            d, comment = csv.read_csv(fd)
+
+            fp = '%s/rrtest_%2.2d_grparams.csv' % (FRR, count)
+            params, comment = csv.read_csv(fp)
+
+            inputs = d.loc[:, ['rainfall', 'APET']].values
+            inputs = np.ascontiguousarray(inputs, np.float64)
+            obs = d.loc[:, 'gr4j'].values
+            nval = inputs.shape[0]
+            idx_cal = pd.notnull(obs) & (np.arange(nval)> 365*5)
+
+            # Calibrate
+            nval = inputs.shape[0]
+            gr.create_outputs(nval, 1)
+            gr.calibrate(inputs, obs, idx_cal, iprint=10, timeit=True)
 
 if __name__ == "__main__":
     unittest.main()

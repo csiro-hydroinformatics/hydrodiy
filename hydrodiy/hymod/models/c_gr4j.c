@@ -1,49 +1,15 @@
 #include "c_gr4j.h"
-
-
-/*** GR4J Model *********************************************
-* Code written by Julien Lerat, Bureau of Meteorology
-*
-	nstates = 11
-
-	nparams = 4
-	params[0] : S
-	params[1] : IGF
-	params[2] : R
-	params[3] : TB
-*/
+#include "c_uh.h"
 
 int c_gr4j_getnstates(void)
 {
     return GR4J_NSTATES;
 }
 
-int c_gr4j_getnuhmax(void)
-{
-    return GR4J_NUHMAX;
-}
 
 int c_gr4j_getnoutputs(void)
 {
     return GR4J_NOUTPUTS;
-}
-
-
-double SS1(double I,double C)
-{
-    double s = I<0 ? 0 :
-        I<C ? pow(I/C, GR4J_UHEXPON) : 1;
-
-    return s;
-}
-
-double SS2(double I,double C)
-{
-    double s = I<0 ? 0 :
-        I<C ? 0.5*pow(I/C, GR4J_UHEXPON) :
-        I<2*C ? 1-0.5*pow(2-I/C, GR4J_UHEXPON) : 1;
-
-    return s;
 }
 
 int gr4j_minmaxparams(int nparams, double * params)
@@ -59,158 +25,95 @@ int gr4j_minmaxparams(int nparams, double * params)
 	return 0;
 }
 
-/*******************************************************************************
-* Initialise gr4j uh and states
-*
-*
-*******************************************************************************/
-int c_gr4j_getuh(double lag,
-        int * nuh_optimised,
-        double * uh)
+int c_gr4j_production(double P, double E, 
+        double Scapacity, 
+        double S, 
+        double * prod)
 {
-	int i, nuh1;
-        double Sa, Sb;
+    double WS, PS, ES, EN=0, PR, PERC, S2;
 
-        lag = lag < 0 ? 0 : lag;
-
-	/* UH ordinates */
-        nuh1 = 0;
-	for(i=0; i<GR4J_NUHMAX-1; i++)
-        {
-	    Sb = SS1((double)(i+1), lag);
-            Sa = SS1((double)(i), lag);
-            uh[i] = Sb-Sa;
-
-            if(1-Sb < GR4J_UHEPS)
-            {
-                nuh1 = i+1;
-                /* ideally we should correct uh here
-                but I know GR4J UH is accurate */
-                break;
-            }
-        }
-
-        /* NUH is not big enough */
-        if(1-Sb > GR4J_UHEPS || nuh1 > (GR4J_NUHMAX-1)/3)
-        {
-            fprintf(stderr, "%s:%d:ERROR: GR4J_NUHMAX(%d) is not big enough\n",
-                __FILE__, __LINE__, GR4J_NUHMAX);
-            return EINVAL;
-        }
-
-	for(i=0; i < 2*nuh1; i++)
-        {
-	    Sb = SS2((double)(i+1), lag);
-            Sa = SS2((double)(i), lag);
-            uh[nuh1 + i] = Sb-Sa;
-        }
-
-        *nuh_optimised = 3*nuh1;
-
-	return 0;
-}
-
-/*******************************************************************************
-* Run time step code for the GR4J rainfall-runoff model
-*
-* --- Inputs
-* ierr			Error message
-* nconfig		Number of configuration elements (1)
-* nparams			Number of paramsameters (4)
-* ninputs		Number of inputs (2)
-* nstates		Number of states (1 output + 2 model states + 8 variables = 11)
-* nuh			Number of uh ordinates (2 uh)
-*
-* params			Model paramsameters. 1D Array nparams(4)x1
-*					params[0] = S
-*					params[1] = IGF
-*					params[2] = R
-*					params[3] = TB
-*
-* uh			uh ordinates. 1D Array nuhx1
-*
-* inputs		Model inputs. 1D Array ninputs(2)x1
-*
-* statesuh		uh content. 1D Array nuhx1
-*
-* states		Output and states variables. 1D Array nstates(11)x1
-*
-*******************************************************************************/
-
-int c_gr4j_runtimestep(int nparams, int nuh, int ninputs,
-        int nstates, int noutputs,
-	double * params,
-        double * uh,
-        double * inputs,
-	double * statesuh,
-        double * states,
-        double * outputs)
-{
-        int ierr=0, k,l, nuh1, nuh2;
-
-	double Q, P, E;
-	double ES, PS, PR, WS,S2;
-        double PERC,ECH,TP,R2,QR,QD;
-	double EN, ech1,ech2;
-
-	/* UH dimensions */
-	nuh1 = nuh/3;
-	nuh2 = 2*nuh/3;
-
-	/* inputs */
-	P = inputs[0] < 0 ? 0 : inputs[0];
-	E = inputs[1] < 0 ? 0 : inputs[1];
-
-        states[0] = c_utils_minmax(0, params[0], states[0]);
-        states[1] = states[1] < 0 ? 0 : states[1];
-
-	/* Production */
-	if(P>E)
+	/* production store */
+	if(P>E)	
 	{
-		WS = (P-E)/params[0];
-        WS = WS > 13 ? 13 : WS;
-
-		PS = params[0]*(1-pow(states[0]/params[0],2))*tanh(WS);
-        PS /= (1+states[0]/params[0]*tanh(WS));
+		WS =(P-E)/Scapacity;
+        WS = WS >= 13 ? 13 : WS;
 
 		ES = 0;
+		PS = Scapacity*(1-pow(S/Scapacity,2))*tanh(WS);
+        PS /= (1+S/Scapacity*tanh(WS));
 		PR = P-E-PS;
 		EN = 0;
 	}
-	else
+	else	
 	{
-		WS =(E-P)/params[0];
-        WS = WS > 13 ? 13 : WS;
+		WS = (E-P)/Scapacity;
+        WS = WS >= 13 ? 13 : WS;
 
-		ES = states[0]*(2-states[0]/params[0])*tanh(WS);
-        ES /= (1+(1-states[0]/params[0])*tanh(WS));
-
+		ES = S*(2-S/Scapacity)*tanh(WS);
+        ES /= (1+(1-S/Scapacity)*tanh(WS));
 		PS = 0;
 		PR = 0;
 		EN = E-P;
 	}
+	S += PS-ES;
 
-	states[0] += PS-ES;
-
-	/* Percolation */
-	S2 = states[0]/pow(1+pow(states[0]/GR4J_PERCFACTOR/params[0],4),0.25);
-
-	PERC = states[0]-S2;
-	states[0] = S2;
-
+	/* percolation */
+	S2 = S/pow(1+pow(S/GR4J_PERCFACTOR/Scapacity,4),0.25);
+	PERC = S-S2;
+	S = S2;
 	PR += PERC;
 
-	/* UH1 */
-	for (k=0;k<nuh1-1;k++)
-            statesuh[k] = statesuh[1+k]+uh[k]*PR;
+    prod[0] = EN;
+    prod[1] = PS;
+    prod[2] = ES;
+    prod[3] = PERC;
+    prod[4] = PR;
+	prod[5] = S;
 
-	statesuh[nuh1-1] = uh[nuh1-1]*PR;
+    return 0;
+}
 
-	/* UH2 */
-	for (l=0;l<nuh2-1;l++)
-            statesuh[nuh1+l] = statesuh[nuh1+1+l]+uh[nuh1+l]*PR;
 
-	statesuh[(nuh1+nuh2)-1] = uh[(nuh1+nuh2)-1]*PR;
+int c_gr4j_runtimestep(int nparams, 
+    int nuh1, int nuh2, int ninputs,
+    int nstates, int noutputs,
+	double * params,
+    double * uh1,
+    double * uh2,
+    double * inputs,
+	double * statesuh,
+    double * states,
+    double * outputs)
+{
+    int ierr=0;
+
+	double Q, P, E;
+    double prod[6];
+	double ES, PS, PR;
+    double PERC,ECH,TP,R2,QR,QD;
+	double EN, ech1,ech2;
+    double uhoutput1[1], uhoutput2[1];
+
+	/* inputs */
+	P = inputs[0];
+    P = P < 0 ? 0 : P;
+
+	E = inputs[1];
+    E = E < 0 ? 0 : E; 
+
+    /* Production */
+    c_gr4j_production(P, E, params[0], states[0], prod);
+
+    EN = prod[0];
+    PS = prod[1];
+    ES = prod[2];
+    PERC = prod[3];
+    PR = prod[4];
+    states[0] = prod[5];
+
+	/* UH */
+    c_uh_runtimestep(nuh1, PR, uh1, statesuh, uhoutput1); 
+    c_uh_runtimestep(nuh2, PR, uh2, &(statesuh[nuh1]), uhoutput2); 
 
 	/* Potential Water exchange
 	ECH=XV(NPX+3)*(X(1)/XV(NPX+1))**3.5  // Formulation initiale
@@ -219,7 +122,7 @@ int c_gr4j_runtimestep(int nparams, int nuh, int ninputs,
 	ECH = params[1]*pow(states[1]/params[2],3.5);
 
 	/* Routing store calculation */
-	TP = states[1]+statesuh[0]*0.9+ECH;
+	TP = states[1] + *uhoutput1 * 0.9 + ECH;
 
 	/* Case where Reservoir content is not sufficient */
 	ech1 = ECH-TP;
@@ -239,18 +142,18 @@ int c_gr4j_runtimestep(int nparams, int nuh, int ninputs,
 	QD = 0;
 
 	/* Case where the UH cannot provide enough water */
-	TP = statesuh[nuh1]*0.1+ECH;
+	TP = *uhoutput2 * 0.1 + ECH;
 	ech2 = ECH-TP;
-        QD=0;
+    QD = 0;
 
 	if(TP>0)
     {
-        QD=TP;
-        ech2=ECH;
+        QD = TP;
+        ech2 = ECH;
     }
 
 	/* TOTAL STREAMFLOW */
-	Q = QD+QR;
+	Q = QD + QR;
 
 	/* RESULTS */
 	outputs[0] = Q;
@@ -300,14 +203,16 @@ int c_gr4j_runtimestep(int nparams, int nuh, int ninputs,
 
 
 // --------- Component runner --------------------------------------------------
-int c_gr4j_run(int nval, int nparams, int nuh, int ninputs,
-        int nstates, int noutputs,
+int c_gr4j_run(int nval, int nparams, 
+    int nuh1, int nuh2, int ninputs,
+    int nstates, int noutputs,
 	double * params,
-        double * uh,
+    double * uh1,
+    double * uh2,
 	double * inputs,
-        double * statesuhini,
+    double * statesuhini,
 	double * statesini,
-        double * outputs)
+    double * outputs)
 {
     int ierr=0, i;
 
@@ -324,7 +229,10 @@ int c_gr4j_run(int nval, int nparams, int nuh, int ninputs,
     if(noutputs > GR4J_NOUTPUTS)
         return MODEL_ESIZE;
 
-    if(nuh > GR4J_NUHMAX)
+    if(nuh1 > NUHMAXLENGTH)
+        return MODEL_ESIZE;
+
+    if(nuh2 > NUHMAXLENGTH)
         return MODEL_ESIZE;
 
     /* Check parameters */
@@ -333,11 +241,12 @@ int c_gr4j_run(int nval, int nparams, int nuh, int ninputs,
     /* Run timeseries */
     for(i = 0; i < nval; i++)
     {
-       /* Run timestep model and update states */
-    	ierr = c_gr4j_runtimestep(nparams, nuh, ninputs,
+        /* Run timestep model and update states */
+    	ierr = c_gr4j_runtimestep(nparams, 
+                nuh1, nuh2, ninputs,
                 nstates, noutputs,
-    		params,
-                uh,
+    		    params,
+                uh1, uh2,
                 &(inputs[ninputs*i]),
                 statesuhini,
                 statesini,
