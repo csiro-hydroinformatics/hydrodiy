@@ -139,29 +139,6 @@ def acf(data, lag=range(1,6),
 
     return out
 
-def ar1random(params, nval, seed=0):
-    ''' 
-        Run ar1 model with normal innovation
-
-        :param numpy.array params: parameter vector with
-            params[0] = ar1 parameter
-            params[1] = sigma of innovation (used if innov is None)
-            params[2] = output value at t=0
-        :param int nval: Number of values
-        :param int seed: Random generator seed number
-    '''
-
-    output = np.zeros(nval, float)
-
-    p = np.array(params).reshape((len(params),))
-
-    ierr = c_hystat.ar1random(p, seed, output)
-
-    if ierr!=0:
-        raise ValueError('ar1random returns %d'%ierr)
-
-    return output
-
 def ar1innov(params, innov):
     ''' Compute AR1 time series from innovation 
 

@@ -2,59 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
-#include <gsl/gsl_rng.h>
-#include <gsl/gsl_randist.h>
 
-/* ************** Core subroutine ******************************
-* Generate ar1 process:
-*   y[i+1] = ar1 x y[i] + e[i]
-*   e[i] ~ N(0, sigma)
-*
-* nval = length of output vectors (number of values)
-* seed = random generator seed
-* params = algorithm parameters
-*   params[0] = ar1 parameter
-*   params[1] = sigma of innovation
-*   params[2] = initial value 
-* output = model output
-*
-************************************************/
-int c_ar1random(int nval, double *params, 
-       unsigned long int seed, double* output)
-{
-    const gsl_rng_type * T;
-    gsl_rng * r;
-
-	int i;
-    double ar1, mu=0., sigma, y0, innov;
-
-    /* Get parameters */
-    ar1 = params[0];
-    sigma = params[1];
-    y0 = params[2];
-
-    /* Check inputs */
-    if((ar1<=-1)|(ar1>=1)|(sigma<0)){
-        return EDOM;
-    }
-
-    /* initialise random generator */
-    gsl_rng_env_setup();
-    T = gsl_rng_default;
-    r = gsl_rng_alloc(T);
-    gsl_rng_set(r, seed);
-
-    /* loop through data */
-    for(i=0; i<nval; i++){
-        innov = mu + gsl_ran_gaussian(r, sigma);
-        y0 = ar1*y0 +innov;
-        output[i] = y0;
-    }
-    
-    gsl_rng_free(r);
-
-    return 0;
-}
 
 /* ************** Core subroutine ******************************
 * Generate ar1 process:

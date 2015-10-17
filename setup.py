@@ -17,12 +17,27 @@ ext_modules = [
         ],
         include_dirs=[numpy.get_include()]),
     Extension(
-        name='c_hymod_models', 
+        name='c_hymod_models_dummy', 
         sources=[
-            'hydrodiy/hymod/models/c_hymod_models.pyx', 
+            'hydrodiy/hymod/models/c_hymod_models_dummy.pyx', 
+            'hydrodiy/hymod/models/c_utils.c',
+            'hydrodiy/hymod/models/c_dummy.c'
+        ],
+        include_dirs=[numpy.get_include()]),
+    Extension(
+        name='c_hymod_models_gr4j', 
+        sources=[
+            'hydrodiy/hymod/models/c_hymod_models_gr4j.pyx', 
             'hydrodiy/hymod/models/c_utils.c',
             'hydrodiy/hymod/models/c_uh.c',
-            'hydrodiy/hymod/models/c_gr4j.c',
+            'hydrodiy/hymod/models/c_gr4j.c'
+        ],
+        include_dirs=[numpy.get_include()]),
+     Extension(
+        name='c_hymod_models_gr2m', 
+        sources=[
+            'hydrodiy/hymod/models/c_hymod_models_gr2m.pyx', 
+            'hydrodiy/hymod/models/c_utils.c',
             'hydrodiy/hymod/models/c_gr2m.c'
         ],
         include_dirs=[numpy.get_include()]),
@@ -32,8 +47,6 @@ ext_modules = [
             'hydrodiy/hystat/c_hystat.pyx', 
             'hydrodiy/hystat/c_ar1.c'
         ],
-        libraries=['gsl', 'gslcblas'],
-        library_dirs=['/usr/local/lib', '~/.local/lib'],
         include_dirs=[numpy.get_include(), '~/.local/lib/include']),
     Extension(
         name='c_hydata', 
