@@ -73,10 +73,13 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_ar1(self):
         nval = 10
-        params = np.array([0.9, 10., 5.])
-        y = sutils.ar1random(params, nval)
-        innov = sutils.ar1inverse(params[:2], y)
-        y2 = sutils.ar1innov(params[:2], innov)
+        innov0 = np.random.normal(size=nval)
+
+        params = np.array([0.9, 10])
+        y = sutils.ar1innov(params, innov0)
+
+        innov = sutils.ar1inverse(params, y)
+        y2 = sutils.ar1innov(params, innov)
         self.assertTrue(np.allclose(y, y2))
  
     def test_pit(self):
@@ -161,20 +164,11 @@ class UtilsTestCase(unittest.TestCase):
             [12.5, 12.2, 17.6]
         ])
 
-<<<<<<< HEAD
-        forc_shuffled1 = sutils.schaakeshuffle(obs, forc1)
-        self.assertTrue(np.allclose(forc_shuffled1, expected1))
-
-
-        forc2 = np.concatenate([forc1, forc1, forc1], axis=0)
-        forc_shuffled2 = sutils.schaakeshuffle(obs, forc2)
-=======
         sutils.schaakeshuffle(obs, forc1)
         self.assertTrue(np.allclose(forc1, expected1))
 
         forc2 = np.concatenate([forc1, forc1, forc1], axis=0)
         sutils.schaakeshuffle(obs, forc2)
->>>>>>> a01f365ef8882c973cdfcca4f8bb25564d5f9fd1
 
         expected2 = np.zeros((forc1.shape[0]*3, forc1.shape[1]))
         for i in range(expected2.shape[0]):
@@ -207,13 +201,8 @@ class UtilsTestCase(unittest.TestCase):
         # then reshuffled them
         ens1 = np.random.normal(m1, s1, size=nensB)
         ens2 = np.random.normal(m2, s2, size=nensB)
-<<<<<<< HEAD
-        ens = np.array([ens1, ens2]).T
-        ensB = sutils.schaakeshuffle(ensA, ens)
-=======
         ensB = np.array([ens1, ens2]).T
         sutils.schaakeshuffle(ensA, ensB)
->>>>>>> a01f365ef8882c973cdfcca4f8bb25564d5f9fd1
 
         # Check we are preserving rank correlation
         rA, pA = spearmanr(ensA[:,0], ensA[:,1])
