@@ -22,8 +22,8 @@ from hywafari import wdata
 from hymod.models.gr4j import GR4J
 
 
-import c_hymod_models_gr4j
-UHEPS = c_hymod_models_gr4j.uh_getuheps()
+import c_hymod_models_utils
+UHEPS = c_hymod_models_utils.uh_getuheps()
 
 # Get test data
 url_testdata = 'https://drive.google.com/file/d/0B9m81HeozSRzcmNkVmdibEpmMTg'
@@ -59,7 +59,7 @@ class GR4JTestCases(unittest.TestCase):
     def test_gr4juh(self):
         gr = GR4J()
 
-        for x4 in np.linspace(0, 1000, 100):
+        for x4 in np.linspace(0, 50, 100):
             gr.set_trueparams([400, -1, 50, x4])
 
             ck = abs(np.sum(gr.uh)-2) < UHEPS * 2
@@ -67,7 +67,6 @@ class GR4JTestCases(unittest.TestCase):
 
 
     def test_gr4j_dumb(self):
-
         nval = 1000
         p = np.exp(np.random.normal(0, 2, size=nval))
         pe = np.ones(nval) * 5.
@@ -94,7 +93,6 @@ class GR4JTestCases(unittest.TestCase):
 
 
     def test_gr4j_detailed(self):
-        return
 
         if not has_gr4j_wafari:
             return
@@ -234,31 +232,25 @@ class GR4JTestCases(unittest.TestCase):
             ck = np.max(err) < err_thresh
 
             if not ck:
-                print(('\tTEST %2d : max abs err = '
+                print(('\t\tTEST %2d : max abs err = '
                     '%0.5f < %0.5f ? %s') % (count, \
                     np.max(err), err_thresh, ck))
-
-                import matplotlib.pyplot as plt
-                plt.close('all')
-                plt.plot(qsim.values[:50])
-                plt.plot(expected[:50])
-                plt.savefig('%s/test.png' % self.FOUT)
-
             else:
-                print('\tTEST %2d : max abs err = %0.5f ~ %0.2fms/yr' % ( \
+                print('\t\tTEST %2d : max abs err = %0.5f ~ %0.2fms/yr' % ( \
                     count, np.max(err), dta))
 
             self.assertTrue(ck)
 
 
     def test_gr4j_calibrate(self):
-        return
+
         gr = GR4J()
         warmup = 365*5
 
         for count in range(1, 11):
             fd = '%s/rrtest_%2.2d_timeseries.csv' % (FRR, count)
-            d, comment = csv.read_csv(fd, index_col=0, parse_dates=True)
+            d, comment = csv.read_csv(fd, index_col=0, \
+                    parse_dates=True)
             idx = np.where(d['obs']>=0)
             d = d[np.min(idx)-warmup:]
 
@@ -270,12 +262,34 @@ class GR4JTestCases(unittest.TestCase):
             inputs = np.ascontiguousarray(inputs, np.float64)
             obs = d.loc[:, 'gr4j'].values
             nval = inputs.shape[0]
-            idx_cal = np.where((obs>=0) & (np.arange(len(obs))>=warmup))[0]
+            idx_cal = obs>=0
+            idx_cal = obs>=0 & (np.arange(len(obs))>=warmup)
+            idx_cal = np.where(idx_cal)[0]
 
             # Calibrate
             nval = inputs.shape[0]
             gr.create_outputs(nval, 1)
-            gr.calibrate(inputs, obs, idx_cal, iprint=10, timeit=True)
+
+            def errfun(obs, sim):
+                return np.sum((obs-sim)**2)
+
+            gr.calibrate(inputs, obs, idx_cal, \
+                    errfun=errfun, \
+                    iprint=0, \
+                    timeit=True)
+
+            err = np.abs(gr.trueparams - params['parvalue'])
+            ck = np.max(err[[0, 2]]) < 1
+            ck = ck & (err[1] < 1e-1)
+            ck = ck & (err[3] < 1e-4)
+
+            print('\t\tTEST CALIB %2d : max abs err = %0.5f' % ( \
+                    count, np.max(err)))
+
+            if not ck:
+                import pdb; pdb.set_trace()
+
+            self.assertTrue(ck)
 
 
 

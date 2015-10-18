@@ -4,8 +4,7 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import fmin_powell as fmin
 
-import c_hymod_models_dummy
-
+import c_hymod_models_utils
 
 
 class ModelError(Exception):
@@ -18,11 +17,10 @@ class ModelError(Exception):
 
 
     def __str__(self):
-
         txt = '%s model : error %d (%s) : %s' % ( \
-                self.model, 
-                self.ierr, 
-                self.ierr_id, 
+                self.model,
+                self.ierr,
+                self.ierr_id,
                 self.message)
 
         return repr(txt)
@@ -30,7 +28,7 @@ class ModelError(Exception):
 
     def set_ierr_id(self):
         esize = np.zeros(50).astype(np.int32)
-        c_hymod_models_dummy.getesize(esize)
+        c_hymod_models_utils.getesize(esize)
         esize = {
                 esize[0] : 'ESIZE_INPUTS',
                 esize[1] : 'ESIZE_OUTPUTS',
@@ -45,10 +43,10 @@ class ModelError(Exception):
 
     def set_ierr(self):
         esize = np.zeros(50).astype(np.int32)
-        c_hymod_models_dummy.getesize(esize)
+        c_hymod_models_utils.getesize(esize)
         esize = {
                 'ESIZE_INPUTS' : esize[0],
-                'ESIZE_OUTPUTS' : esize[1], 
+                'ESIZE_OUTPUTS' : esize[1],
                 'ESIZE_PARAMS' : esize[2],
                 'ESIZE_STATES' : esize[3],
                 'ESIZE_STATESUH': esize[4]
@@ -57,6 +55,7 @@ class ModelError(Exception):
         self.ierr_id = -1
         if self.ierr_id in esize:
             self.ierr = esize[self.ierr_id]
+
 
 def checklength(x, nx, model, message):
     if len(x) != nx:
@@ -70,21 +69,6 @@ def vect2txt(x):
     for i in range(len(x)):
         txt += ' %0.2f' % x[i]
     return txt
-
-def errfun_abg(obs, sim, alpha, beta):
-    E1 = 0.
-    if alpha > 1e-10:
-        E1 = np.sum((obs**beta-sim**beta)**2)
-
-    E2 = 0.
-    if alpha < 1-1e-10:
-        E2 = np.sum((np.sort(obs)**beta-np.sort(sim)**beta)**2)
-
-    mobs = np.mean(obs)
-    msim = np.mean(sim)
-    B = abs(mobs-msim)/mobs
-
-    return (alpha*E1 + (1-alpha)*E2)* B*B*B/(1+B*B)
 
 
 class Model:
@@ -133,8 +117,11 @@ class Model:
                 'Problem with calparams_means')
 
         self.calparams_stdevs = np.atleast_2d(calparams_stdevs)
-        checklength(self.calparams_stdevs.flat[:], ncalparams*ncalparams, self, \
+        checklength(self.calparams_stdevs.flat[:], \
+                ncalparams*ncalparams, self, \
                 'Problem with calparams_stdevs')
+
+        self.set_trueparams(self.trueparams_default)
 
 
     def __str__(self):
@@ -169,9 +156,9 @@ class Model:
         self.outputs = np.zeros((nval, nout)).astype(np.float64)
 
 
-    def cal2true(self):
+    def cal2true(self, calparams):
         trueparams = np.ones(len(self.ntrueparams)) * np.nan
-        self.set_trueparams(trueparams)
+        return trueparams
 
 
     def set_uhparams(self):
@@ -203,7 +190,8 @@ class Model:
     def set_calparams(self, calparams):
         calparams = np.atleast_1d(calparams)
         self.calparams = np.atleast_1d(calparams[:self.ncalparams])
-        self.cal2true()
+        self.trueparams = np.atleast_1d(self.cal2true(self.calparams))
+        self.set_uhparams()
 
 
     def initialise(self, states=None, statesuh=None):
@@ -240,8 +228,7 @@ class Model:
 
 
     def calibrate(self, inputs, observations, idx_cal, \
-            errfun=errfun_abg,
-            errfun_args=(0.1, 2,),\
+            errfun, \
             nsamples=500,\
             noutputs=1, \
             iprint=10, \
@@ -263,7 +250,7 @@ class Model:
         nobs = observations.shape[1]
 
         if noutputs != nobs:
-            moderr =  ModelError(self.name, 
+            moderr =  ModelError(self.name,
                     'noutputs(%d) != nobs(%d)' % (noutputs, nobs))
 
         if nvalobs != nvalinputs:
@@ -292,18 +279,11 @@ class Model:
                 t1 = time.time()
                 self.runtime = 1000 * (t1-t0)
 
-            if not errfun_args is None:
-                ofun = errfun(observations[idx_cal, :], \
-                        self.outputs[idx_cal, :], \
-                        *errfun_args)
-            else:
-                ofun = errfun(observations[idx_cal, :], \
-                        self.outputs[idx_cal, :])
+            ofun = errfun(observations[idx_cal, :], \
+                self.outputs[idx_cal, :])
 
             if not minimize:
                 ofun *= -1
-
-            import pdb; pdb.set_trace()
 
             return ofun
 
@@ -319,8 +299,9 @@ class Model:
             ofun = objfun(calparams)
             ofun_explore[i] = ofun
 
-            if i%iprint == 0 and iprint>0:
-                print('Exploration %d/%d : %03.3e [%s] ~ %0.2f ms' % ( \
+            if iprint>0:
+                if i%iprint == 0:
+                    print('Exploration %d/%d : %03.3e [%s] ~ %0.2f ms' % ( \
                         i, nsamples, ofun, vect2txt(calparams), \
                         self.runtime))
 

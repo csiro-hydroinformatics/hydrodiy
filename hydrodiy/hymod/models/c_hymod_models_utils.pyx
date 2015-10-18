@@ -4,9 +4,21 @@ cimport numpy as np
 np.import_array()
 
 # -- HEADERS --
-
 cdef extern from 'c_utils.h':
     int c_utils_getesize(int * esize)
+
+cdef extern from 'c_uh.h':
+    int c_uh_getnuhmaxlength()
+
+cdef extern from 'c_uh.h':
+    double c_uh_getuheps()
+
+cdef extern from 'c_uh.h':
+    int c_uh_getuh(int nuhlengthmax,
+            int uhid, 
+            double lag,
+            int * nuh, 
+            double * uh)
 
 cdef extern from 'c_dummy.h':
     int c_dummy_getnstates()
@@ -36,7 +48,26 @@ def getesize(np.ndarray[int, ndim=1, mode='c'] esize not None):
     return ierr
 
 
-# -- DUMMY MODEL FUNCTIONS --
+def uh_getnuhmaxlength():
+    return c_uh_getnuhmaxlength()
+
+def uh_getuheps():
+    return c_uh_getuheps()
+
+def uh_getuh(int nuhlengthmax, int uhid, double lag,
+        np.ndarray[int, ndim=1, mode='c'] nuh not None,
+        np.ndarray[double, ndim=1, mode='c'] uh not None):
+
+    cdef int ierr
+
+    ierr = c_uh_getuh(nuhlengthmax,
+            uhid, 
+            lag,
+            <int*> np.PyArray_DATA(nuh),
+            <double*> np.PyArray_DATA(uh))
+
+    return ierr
+
 
 def dummy_getnstates():
     return c_dummy_getnstates()

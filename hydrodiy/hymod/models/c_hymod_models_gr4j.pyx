@@ -3,23 +3,7 @@ cimport numpy as np
 
 np.import_array()
 
-# To force initialisation - Cython compilation bugs otherwise
-init = ""
-
 # -- HEADERS --
-cdef extern from 'c_uh.h':
-    int c_uh_getnuhmaxlength()
-
-cdef extern from 'c_uh.h':
-    double c_uh_getuheps()
-
-cdef extern from 'c_uh.h':
-    int c_uh_getuh(int nuhlengthmax,
-            int uhid, 
-            double lag,
-            int * nuh, 
-            double * uh)
-
 cdef extern from 'c_gr4j.h':
     int c_gr4j_getnstates()
 
@@ -41,26 +25,6 @@ cdef extern from 'c_gr4j.h':
 
 def __cinit__(self):
     pass
-
-def uh_getnuhmaxlength():
-    return c_uh_getnuhmaxlength()
-
-def uh_getuheps():
-    return c_uh_getuheps()
-
-def uh_getuh(int nuhlengthmax, int uhid, double lag,
-        np.ndarray[int, ndim=1, mode='c'] nuh not None,
-        np.ndarray[double, ndim=1, mode='c'] uh not None):
-
-    cdef int ierr
-
-    ierr = c_uh_getuh(nuhlengthmax,
-            uhid, 
-            lag,
-            <int*> np.PyArray_DATA(nuh),
-            <double*> np.PyArray_DATA(uh))
-
-    return ierr
 
 
 def gr4j_getnstates():
@@ -93,6 +57,12 @@ def gr4j_run(int nuh1,
 
     if inputs.shape[1] != 2:
         raise ValueError('inputs.shape[1] != 2')
+
+    if nuh1 == 0:
+        raise ValueError('nuh1 == 0')
+
+    if nuh2 == 0:
+        raise ValueError('nuh2 == 0')
 
     if uh1.shape[0] < nuh1:
         raise ValueError('uh1.shape[0] < nuh1')

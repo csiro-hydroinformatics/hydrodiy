@@ -62,7 +62,8 @@ int gr4j_production(double P, double E,
 	S += PS-ES;
 
 	/* percolation */
-	S2 = S/sqrt(sqrt(1+UTILS_QUADRATIC(S/GR4J_PERCFACTOR/Scapacity)));
+	S2 = S/sqrt(sqrt(1
+        + UTILS_QUADRATIC(S/GR4J_PERCFACTOR/Scapacity)));
 	PERC = S-S2;
 	S = S2;
 	PR += PERC;
@@ -121,10 +122,7 @@ int gr4j_runtimestep(int nparams,
     uh_runtimestep(nuh1, PR, uh1, statesuh, uhoutput1);
     uh_runtimestep(nuh2, PR, uh2, &(statesuh[nuh1]), uhoutput2);
 
-	/* Potential Water exchange
-	ECH=XV(NPX+3)*(X(1)/XV(NPX+1))**3.5  // Formulation initiale
-	ECH=XV(NPX+3)*(X(1)/XV(NPX+1)-XV(NPX+5)) // Formulation N. Lemoine
-        */
+	/* Potential Water exchange */
     RR = states[1]/params[2];
 	ECH = params[1]*UTILS_CUBE(RR)*sqrt(RR);
 
@@ -210,7 +208,7 @@ int gr4j_runtimestep(int nparams,
 }
 
 
-// --------- Component runner --------------------------------------------------
+/* --------- Model runner ----------*/
 int c_gr4j_run(int nval, int nparams,
     int nuh1, int nuh2,
     int ninputs,
@@ -240,6 +238,9 @@ int c_gr4j_run(int nval, int nparams,
         return ESIZE_OUTPUTS;
 
     if(nuh1 > NUHMAXLENGTH || nuh2 > NUHMAXLENGTH)
+        return ESIZE_STATESUH;
+
+    if(nuh1 <= 0 || nuh2 <= 0)
         return ESIZE_STATESUH;
 
     /* Check parameters */

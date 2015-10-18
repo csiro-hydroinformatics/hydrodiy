@@ -7,12 +7,12 @@ from hystat import sutils
 from hymod.model import Model
 from hymod.model import ModelError
 
-import c_hymod_models_dummy
+import c_hymod_models_utils
 
 # Dimensions
-nstates = c_hymod_models_dummy.dummy_getnstates()
+nstates = c_hymod_models_utils.dummy_getnstates()
 
-noutputs = c_hymod_models_dummy.dummy_getnoutputs()
+noutputs = c_hymod_models_utils.dummy_getnoutputs()
 
 
 class Dummy(Model):
@@ -32,14 +32,14 @@ class Dummy(Model):
 
     def run(self, inputs):
 
-        ierr = c_hymod_models_dummy.dummy_run(self.trueparams, \
+        ierr = c_hymod_models_utils.dummy_run(self.trueparams, \
             inputs, \
             self.states, \
             self.outputs)
 
         if ierr > 0:
             moderr = ModelError(self.name, ierr, 
-                    'c_hymod_models_dummy.dummy_run')
+                    'c_hymod_models_utils.dummy_run')
             moderr.set_ierr_id()
             raise moderr
 

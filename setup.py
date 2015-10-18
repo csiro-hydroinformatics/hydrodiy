@@ -17,10 +17,11 @@ ext_modules = [
         ],
         include_dirs=[numpy.get_include()]),
     Extension(
-        name='c_hymod_models_dummy', 
+        name='c_hymod_models_utils', 
         sources=[
-            'hydrodiy/hymod/models/c_hymod_models_dummy.pyx', 
+            'hydrodiy/hymod/models/c_hymod_models_utils.pyx', 
             'hydrodiy/hymod/models/c_utils.c',
+            'hydrodiy/hymod/models/c_uh.c',
             'hydrodiy/hymod/models/c_dummy.c'
         ],
         include_dirs=[numpy.get_include()]),
