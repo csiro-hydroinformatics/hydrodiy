@@ -14,8 +14,8 @@ int c_gr4j_getnoutputs(void)
 
 int gr4j_minmaxparams(int nparams, double * params)
 {
-        if(nparams<4)
-            return EINVAL;
+    if(nparams<4)
+        return ESIZE_PARAMS;
 
 	params[0] = c_utils_minmax(1,1e5,params[0]); 	// S
 	params[1] = c_utils_minmax(-50,50,params[1]);	// IGF
@@ -25,22 +25,25 @@ int gr4j_minmaxparams(int nparams, double * params)
 	return 0;
 }
 
-int c_gr4j_production(double P, double E, 
-        double Scapacity, 
-        double S, 
+int gr4j_production(double P, double E,
+        double Scapacity,
+        double S,
         double * prod)
 {
-    double WS, PS, ES, EN=0, PR, PERC, S2;
+    double SR, TWS, WS, PS, ES, EN=0, PR, PERC, S2;
 
 	/* production store */
+    SR = S/Scapacity;
+
 	if(P>E)	
 	{
 		WS =(P-E)/Scapacity;
         WS = WS >= 13 ? 13 : WS;
+        TWS = tanh(WS);
 
 		ES = 0;
-		PS = Scapacity*(1-pow(S/Scapacity,2))*tanh(WS);
-        PS /= (1+S/Scapacity*tanh(WS));
+		PS = Scapacity*(1-UTILS_SQUARE(SR))*TWS;
+        PS /= (1+SR*TWS);
 		PR = P-E-PS;
 		EN = 0;
 	}
@@ -48,9 +51,10 @@ int c_gr4j_production(double P, double E,
 	{
 		WS = (E-P)/Scapacity;
         WS = WS >= 13 ? 13 : WS;
+        TWS = tanh(WS);
 
-		ES = S*(2-S/Scapacity)*tanh(WS);
-        ES /= (1+(1-S/Scapacity)*tanh(WS));
+		ES = S*(2-SR)*TWS;
+        ES /= (1+(1-SR)*TWS);
 		PS = 0;
 		PR = 0;
 		EN = E-P;
@@ -58,7 +62,7 @@ int c_gr4j_production(double P, double E,
 	S += PS-ES;
 
 	/* percolation */
-	S2 = S/pow(1+pow(S/GR4J_PERCFACTOR/Scapacity,4),0.25);
+	S2 = S/sqrt(sqrt(1+UTILS_QUADRATIC(S/GR4J_PERCFACTOR/Scapacity)));
 	PERC = S-S2;
 	S = S2;
 	PR += PERC;
@@ -74,9 +78,11 @@ int c_gr4j_production(double P, double E,
 }
 
 
-int c_gr4j_runtimestep(int nparams, 
-    int nuh1, int nuh2, int ninputs,
-    int nstates, int noutputs,
+int gr4j_runtimestep(int nparams,
+    int nuh1, int nuh2,
+    int ninputs,
+    int nstates,
+    int noutputs,
 	double * params,
     double * uh1,
     double * uh2,
@@ -91,7 +97,7 @@ int c_gr4j_runtimestep(int nparams,
     double prod[6];
 	double ES, PS, PR;
     double PERC,ECH,TP,R2,QR,QD;
-	double EN, ech1,ech2;
+	double EN, ech1,ech2, RR;
     double uhoutput1[1], uhoutput2[1];
 
 	/* inputs */
@@ -99,10 +105,10 @@ int c_gr4j_runtimestep(int nparams,
     P = P < 0 ? 0 : P;
 
 	E = inputs[1];
-    E = E < 0 ? 0 : E; 
+    E = E < 0 ? 0 : E;
 
     /* Production */
-    c_gr4j_production(P, E, params[0], states[0], prod);
+    gr4j_production(P, E, params[0], states[0], prod);
 
     EN = prod[0];
     PS = prod[1];
@@ -112,14 +118,15 @@ int c_gr4j_runtimestep(int nparams,
     states[0] = prod[5];
 
 	/* UH */
-    c_uh_runtimestep(nuh1, PR, uh1, statesuh, uhoutput1); 
-    c_uh_runtimestep(nuh2, PR, uh2, &(statesuh[nuh1]), uhoutput2); 
+    uh_runtimestep(nuh1, PR, uh1, statesuh, uhoutput1);
+    uh_runtimestep(nuh2, PR, uh2, &(statesuh[nuh1]), uhoutput2);
 
 	/* Potential Water exchange
 	ECH=XV(NPX+3)*(X(1)/XV(NPX+1))**3.5  // Formulation initiale
 	ECH=XV(NPX+3)*(X(1)/XV(NPX+1)-XV(NPX+5)) // Formulation N. Lemoine
         */
-	ECH = params[1]*pow(states[1]/params[2],3.5);
+    RR = states[1]/params[2];
+	ECH = params[1]*UTILS_CUBE(RR)*sqrt(RR);
 
 	/* Routing store calculation */
 	TP = states[1] + *uhoutput1 * 0.9 + ECH;
@@ -134,7 +141,8 @@ int c_gr4j_runtimestep(int nparams,
         ech1=ECH;
     }
 
-	R2 = states[1]/pow(1+pow(states[1]/params[2],4),0.25);
+    RR = states[1]/params[2];
+	R2 = states[1]/sqrt(sqrt(1+UTILS_QUADRATIC(RR)));
 	QR = states[1]-R2;
 	states[1] = R2;
 
@@ -203,37 +211,36 @@ int c_gr4j_runtimestep(int nparams,
 
 
 // --------- Component runner --------------------------------------------------
-int c_gr4j_run(int nval, int nparams, 
-    int nuh1, int nuh2, int ninputs,
-    int nstates, int noutputs,
+int c_gr4j_run(int nval, int nparams,
+    int nuh1, int nuh2,
+    int ninputs,
+    int nstates,
+    int noutputs,
 	double * params,
     double * uh1,
     double * uh2,
 	double * inputs,
-    double * statesuhini,
-	double * statesini,
+    double * statesuh,
+	double * states,
     double * outputs)
 {
     int ierr=0, i;
 
     /* Check dimensions */
     if(nparams < 4)
-        return MODEL_ESIZE;
+        return ESIZE_PARAMS;
 
     if(nstates < 2)
-        return MODEL_ESIZE;
+        return ESIZE_STATES;
 
     if(ninputs < 2)
-        return MODEL_ESIZE;
+        return ESIZE_INPUTS;
 
     if(noutputs > GR4J_NOUTPUTS)
-        return MODEL_ESIZE;
+        return ESIZE_OUTPUTS;
 
-    if(nuh1 > NUHMAXLENGTH)
-        return MODEL_ESIZE;
-
-    if(nuh2 > NUHMAXLENGTH)
-        return MODEL_ESIZE;
+    if(nuh1 > NUHMAXLENGTH || nuh2 > NUHMAXLENGTH)
+        return ESIZE_STATESUH;
 
     /* Check parameters */
     ierr = gr4j_minmaxparams(nparams, params);
@@ -242,14 +249,16 @@ int c_gr4j_run(int nval, int nparams,
     for(i = 0; i < nval; i++)
     {
         /* Run timestep model and update states */
-    	ierr = c_gr4j_runtimestep(nparams, 
-                nuh1, nuh2, ninputs,
-                nstates, noutputs,
+    	ierr = gr4j_runtimestep(nparams,
+                nuh1, nuh2,
+                ninputs,
+                nstates,
+                noutputs,
     		    params,
                 uh1, uh2,
                 &(inputs[ninputs*i]),
-                statesuhini,
-                statesini,
+                statesuh,
+                states,
                 &(outputs[noutputs*i]));
     }
 

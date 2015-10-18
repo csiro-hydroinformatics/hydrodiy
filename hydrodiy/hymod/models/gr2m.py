@@ -5,21 +5,19 @@ import pandas as pd
 from hystat import sutils
 
 from hymod.model import Model
-import c_hymod_models
+from hymod.model import ModelError
 
-class GR2MException(Exception):
-    pass
+import c_hymod_models_gr2m
 
-class GR2MSizeException(Exception):
-    pass
+
 
 # Error message number
-esize = c_hymod_models.getesize()
+esize = c_hymod_models_gr2m.getesize()
 
 # Dimensions
-nstates = c_hymod_models.gr2m_getnstates()
+nstates = c_hymod_models_gr2m.gr2m_getnstates()
 
-noutputs = c_hymod_models.gr2m_getnoutputs()
+noutputs = c_hymod_models_gr2m.gr2m_getnoutputs()
 
 
 class GR2M(Model):
@@ -34,20 +32,21 @@ class GR2M(Model):
             [1, -2], \
             [20, 1], \
             [5.7, -0.2], \
-            [[3, 0], [0, 1]])
+            [[3, 0], [0, 1]], \
+            [400, 0.8])
 
 
     def run(self, inputs):
-        ierr = c_hymod_models.gr2m_run(self.trueparams, inputs, 
+        ierr = c_hymod_models_gr2m.gr2m_run(self.trueparams, inputs, 
             self.states,
             self.outputs)
 
-        if ierr == esize:
-            raise GR2MKernelSizeException(('gr2m_run returns a '
-                'size exception %d') % ierr)
         if ierr > 0:
-            raise GR2MKernelException(('gr2m_run returns an '
-                'exception %d') % ierr)
+
+            moderr = ModelError(self.name, ierr, 
+                    'c_hymod_models_gr2m.gr2m_run')
+            moderr.set_ierr_id()
+            raise moderr
 
 
     def cal2true(self):

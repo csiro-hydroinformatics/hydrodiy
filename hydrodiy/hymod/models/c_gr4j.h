@@ -30,14 +30,21 @@ int c_gr4j_getnstates(void);
 
 int c_gr4j_getnoutputs(void);
 
-int c_gr4j_getuh(double lag,
-        int * nuh_optimised,
-        double * uh);
-
-int c_gr4j_production(double P, double E, 
+int gr4j_production(double P, double E, 
         double S, 
         double state0, 
         double * prod);
+
+int gr4j_runtimestep(int nparams, 
+    int nuh1, int nuh2, int ninputs,
+    int nstates, int noutputs,
+	double * params,
+    double * uh1,
+    double * uh2,
+    double * inputs,
+	double * statesuh,
+    double * states,
+    double * outputs);
 
 int c_gr4j_run(int nval, 
     int nparams, 

@@ -15,7 +15,9 @@ hydrodiy/hywafari/tests/wafari_project
 hydrodiy/hywafari/tests/*.csv
 hydrodiy/hygis/tests/*
 hydrodiy/hymod/c_hymod.c
-hydrodiy/hymod/models/c_hymod_models.c
+hydrodiy/hymod/models/c_hymod_models_dummy.c
+hydrodiy/hymod/models/c_hymod_models_gr2m.c
+hydrodiy/hymod/models/c_hymod_models_gr4j.c
 hydrodiy/hydata/c_hydata.c
 hydrodiy/hystat/c_hystat.c
 

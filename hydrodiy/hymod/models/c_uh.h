@@ -8,7 +8,7 @@
 #include "c_utils.h"
 
 /* Maximum number of uh states*/
-#define NUHMAXLENGTH 1000
+#define NUHMAXLENGTH 3000
 
 /* Check on uh sum */
 #define UHEPS 0.0001
@@ -26,11 +26,13 @@ int c_uh_getnuhmaxlength(void);
 
 double c_uh_getuheps(void);
 
-int c_uh_getuh(int uhid, double lag,
+int c_uh_getuh(int nuhlengthmax,
+        int uhid, 
+        double lag,
         int * nuh,
         double * uh);
 
-int c_uh_runtimestep(int nuh, 
+int uh_runtimestep(int nuh, 
         double input, 
         double * uh, 
         double * states,

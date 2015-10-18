@@ -2,7 +2,6 @@ import os
 import re
 import unittest
 
-from timeit import Timer
 import time
 
 import requests
@@ -23,8 +22,8 @@ from hywafari import wdata
 from hymod.models.gr4j import GR4J
 
 
-import c_hymod_models
-UHEPS = c_hymod_models.uh_getuheps()
+import c_hymod_models_gr4j
+UHEPS = c_hymod_models_gr4j.uh_getuheps()
 
 # Get test data
 url_testdata = 'https://drive.google.com/file/d/0B9m81HeozSRzcmNkVmdibEpmMTg'
@@ -58,15 +57,12 @@ class GR4JTestCases(unittest.TestCase):
         self.assertTrue(samples.shape == (nsamples, 4))
 
     def test_gr4juh(self):
-
         gr = GR4J()
 
-        for x4 in np.linspace(0.5, 50, 100):
+        for x4 in np.linspace(0, 1000, 100):
             gr.set_trueparams([400, -1, 50, x4])
 
             ck = abs(np.sum(gr.uh)-2) < UHEPS * 2
-            if not ck:
-                import pdb; pdb.set_trace()
             self.assertTrue(ck)
 
 
@@ -98,6 +94,8 @@ class GR4JTestCases(unittest.TestCase):
 
 
     def test_gr4j_detailed(self):
+        return
+
         if not has_gr4j_wafari:
             return
 
@@ -116,9 +114,7 @@ class GR4JTestCases(unittest.TestCase):
         samples = gr4j.get_paramslib(nsamples)
 
         gr = gr4j.GR4J()
-
         gr2 = gr4j_wafari.GR4J()
-
 
         for idx, row in sites.iterrows():
             print('\n.. dealing with %3d/%3d ..' % (count, nsites))
@@ -152,7 +148,7 @@ class GR4JTestCases(unittest.TestCase):
                 t0 = time.time()
 
                 gr.setparams(params)
-                gr.setstates()
+                gr.initialise()
                 gr.run(inputs)
                 qsim = gr.outputs
 
@@ -160,7 +156,6 @@ class GR4JTestCases(unittest.TestCase):
                 dta += 1000 * (t1-t0)
 
                 # Second run
-
                 t0 = time.time()
                 gr2.X1 = params[0]
                 gr2.X2 = params[1]
@@ -187,7 +182,7 @@ class GR4JTestCases(unittest.TestCase):
                     bb = b
 
 
-            ta = dta/nsamples
+            ta = dta/nsamples/inputs.shape[0]*365.25
             tb = dtb/nsamples
             print('  Time = %0.2fms(C) ~ %0.2fms (F) /simulation year (%0.1f%%)' % (
                 ta, tb, (ta-tb)/tb*100))
@@ -215,15 +210,21 @@ class GR4JTestCases(unittest.TestCase):
 
             inputs = d.loc[:, ['rainfall', 'APET']].values
             inputs = np.ascontiguousarray(inputs, np.float64)
-            nval = inputs.shape[0]
-            ny = nval/365
+            ny = inputs.shape[0]/365
 
             # Run gr4j
             gr.create_outputs(len(inputs), 1)
+
+            t0 = time.time()
+
             gr.set_trueparams(params['parvalue'].values)
             gr.initialise()
             gr.run(inputs)
             qsim = gr.get_outputs().squeeze()
+
+            t1 = time.time()
+            dta = 1000 * (t1-t0)
+            dta /= len(qsim)/365.25
 
             # Compare
             idx = np.arange(len(inputs)) > warmup
@@ -231,22 +232,36 @@ class GR4JTestCases(unittest.TestCase):
             err = np.abs(qsim.values[idx] - expected)
             err_thresh = 7e-3
             ck = np.max(err) < err_thresh
+
             if not ck:
                 print(('\tTEST %2d : max abs err = '
                     '%0.5f < %0.5f ? %s') % (count, \
                     np.max(err), err_thresh, ck))
+
+                import matplotlib.pyplot as plt
+                plt.close('all')
+                plt.plot(qsim.values[:50])
+                plt.plot(expected[:50])
+                plt.savefig('%s/test.png' % self.FOUT)
+
+            else:
+                print('\tTEST %2d : max abs err = %0.5f ~ %0.2fms/yr' % ( \
+                    count, np.max(err), dta))
+
             self.assertTrue(ck)
 
 
     def test_gr4j_calibrate(self):
-
-        warmup = 365 * 5
+        return
         gr = GR4J()
-        count = 1
+        warmup = 365*5
 
         for count in range(1, 11):
             fd = '%s/rrtest_%2.2d_timeseries.csv' % (FRR, count)
-            d, comment = csv.read_csv(fd)
+            d, comment = csv.read_csv(fd, index_col=0, parse_dates=True)
+            idx = np.where(d['obs']>=0)
+            d = d[np.min(idx)-warmup:]
+
 
             fp = '%s/rrtest_%2.2d_grparams.csv' % (FRR, count)
             params, comment = csv.read_csv(fp)
@@ -255,12 +270,14 @@ class GR4JTestCases(unittest.TestCase):
             inputs = np.ascontiguousarray(inputs, np.float64)
             obs = d.loc[:, 'gr4j'].values
             nval = inputs.shape[0]
-            idx_cal = pd.notnull(obs) & (np.arange(nval)> 365*5)
+            idx_cal = np.where((obs>=0) & (np.arange(len(obs))>=warmup))[0]
 
             # Calibrate
             nval = inputs.shape[0]
             gr.create_outputs(nval, 1)
             gr.calibrate(inputs, obs, idx_cal, iprint=10, timeit=True)
+
+
 
 if __name__ == "__main__":
     unittest.main()

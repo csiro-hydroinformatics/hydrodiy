@@ -2,6 +2,7 @@
 
 double uh_gr4j_ss1_daily(double ordinate, double lag)
 {
+    lag = lag < 0.5 ? 0.5 : lag;
     double s = ordinate < 0 ? 0 :
         ordinate <= lag ? pow(ordinate/lag, 2.5) : 1;
 
@@ -10,6 +11,7 @@ double uh_gr4j_ss1_daily(double ordinate, double lag)
 
 double uh_gr4j_ss2_daily(double ordinate,double lag)
 {
+    lag = lag < 0.5 ? 0.5 : lag;
     double s = ordinate <0 ? 0 :
         ordinate <= lag ? 0.5*pow(ordinate/lag, 2.5) :
         ordinate < 2*lag ? 1-0.5*pow(2-ordinate/lag, 2.5) : 1;
@@ -19,6 +21,7 @@ double uh_gr4j_ss2_daily(double ordinate,double lag)
 
 double uh_gr4j_ss1_hourly(double ordinate, double lag)
 {
+    lag = lag < 0.5 ? 0.5 : lag;
     double s = ordinate < 0 ? 0 :
         ordinate < lag ? pow(ordinate/lag, 1.25) : 1;
 
@@ -27,6 +30,7 @@ double uh_gr4j_ss1_hourly(double ordinate, double lag)
 
 double uh_gr4j_ss2_hourly(double ordinate,double lag)
 {
+    lag = lag < 0.5 ? 0.5 : lag;
     double s = ordinate <0 ? 0 :
         ordinate < lag ? 0.5*pow(ordinate/lag, 1.25) :
         ordinate < 2*lag ? 1-0.5*pow(2-ordinate/lag, 1.25) : 1;
@@ -96,7 +100,9 @@ double c_uh_getuheps(void)
 }
 
 
-int c_uh_getuh(int uhid, double lag,
+int c_uh_getuh(int nuhlengthmax,
+        int uhid, 
+        double lag,
         int * nuh,
         double * uh)
 {
@@ -108,8 +114,7 @@ int c_uh_getuh(int uhid, double lag,
 	/* UH ordinates */
     *nuh = 0;
     suh = 0;
-    fprintf(stdout, "\n");
-	for(i=0; i < NUHMAXLENGTH-1; i++)
+	for(i=0; i < nuhlengthmax-1; i++)
     {
         if(suh < 1-UHEPS)
             *nuh += 1;
@@ -121,11 +126,11 @@ int c_uh_getuh(int uhid, double lag,
     }
 
     /* NUH is not big enough */
-    if(1-suh > UHEPS || *nuh > NUHMAXLENGTH)
+    if(1-suh > UHEPS || *nuh > nuhlengthmax)
     {
         fprintf(stderr, "%s:%d:ERROR: Problem with UH computation "
                 "(NUHMAXLENGTH=%d, nuh=%d, suh=%4.03e)\n",
-            __FILE__, __LINE__, NUHMAXLENGTH, *nuh, suh);
+            __FILE__, __LINE__, nuhlengthmax, *nuh, suh);
         return EINVAL;
     }
 
@@ -133,7 +138,7 @@ int c_uh_getuh(int uhid, double lag,
 }
 
 
-int c_uh_runtimestep(int nuh, 
+int uh_runtimestep(int nuh, 
         double input, 
         double * uh, 
         double * states,

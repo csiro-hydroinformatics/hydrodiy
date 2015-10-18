@@ -152,16 +152,16 @@ int c_gr2m_run(int nval, int nparams, int ninputs,
 
     /* Check dimensions */
     if(nparams < 2)
-        return MODEL_ESIZE;
+        return ESIZE_PARAMS;
 
     if(nstates < 2)
-        return MODEL_ESIZE;
+        return ESIZE_STATES;
 
     if(ninputs < 2)
-        return MODEL_ESIZE;
+        return ESIZE_INPUTS;
 
     if(noutputs > 9)
-        return MODEL_ESIZE;
+        return ESIZE_OUTPUTS;
 
     /* Check parameters */
     ierr = gr2m_minmaxparams(nparams, params);
@@ -172,7 +172,7 @@ int c_gr2m_run(int nval, int nparams, int ninputs,
        /* Run timestep model and update states */
     	ierr = c_gr2m_runtimestep(nparams, ninputs,
                 nstates, noutputs,
-    		params,
+    		    params,
                 &(inputs[ninputs*i]),
                 statesini,
                 &(outputs[noutputs*i]));

@@ -4,36 +4,87 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import fmin_powell as fmin
 
-def atleast2d(data):
-    data2d = np.ascontiguousarray(np.atleast_2d(data))
-
-    shp = np.array(data).shape
-    if len(shp) == 1:
-        data2d = data2d.T
-    elif len(shp) in [0, 2]:
-        pass
-    else:
-        raise ValueError('len(data.shape)(%d) not in [0, 1, 2]' % \
-                len(shp))
-
-    return data2d
+import c_hymod_models_dummy
 
 
-def errfun_abg(obs, sim, alpha, beta, gamma):
 
+class ModelError(Exception):
+
+    def __init__(self, model, ierr, message='no context'):
+        self.model = model
+        self.ierr = ierr
+        self.ierr_id = 'UNKNOWN ID'
+        self.message = message
+
+
+    def __str__(self):
+
+        txt = '%s model : error %d (%s) : %s' % ( \
+                self.model, 
+                self.ierr, 
+                self.ierr_id, 
+                self.message)
+
+        return repr(txt)
+
+
+    def set_ierr_id(self):
+        esize = np.zeros(50).astype(np.int32)
+        c_hymod_models_dummy.getesize(esize)
+        esize = {
+                esize[0] : 'ESIZE_INPUTS',
+                esize[1] : 'ESIZE_OUTPUTS',
+                esize[2] : 'ESIZE_PARAMS',
+                esize[3] : 'ESIZE_STATES',
+                esize[4] : 'ESIZE_STATESUH'
+        }
+
+        self.ierr_id = 'UNKNOWN ID'
+        if self.ierr in esize:
+            self.ierr_id = esize[self.ierr]
+
+    def set_ierr(self):
+        esize = np.zeros(50).astype(np.int32)
+        c_hymod_models_dummy.getesize(esize)
+        esize = {
+                'ESIZE_INPUTS' : esize[0],
+                'ESIZE_OUTPUTS' : esize[1], 
+                'ESIZE_PARAMS' : esize[2],
+                'ESIZE_STATES' : esize[3],
+                'ESIZE_STATESUH': esize[4]
+        }
+
+        self.ierr_id = -1
+        if self.ierr_id in esize:
+            self.ierr = esize[self.ierr_id]
+
+def checklength(x, nx, model, message):
+    if len(x) != nx:
+        moderr = ModelError(model.name, -1, message)
+        raise moderr
+
+
+def vect2txt(x):
+    txt = ''
+    x = np.atleast_1d(x)
+    for i in range(len(x)):
+        txt += ' %0.2f' % x[i]
+    return txt
+
+def errfun_abg(obs, sim, alpha, beta):
     E1 = 0.
     if alpha > 1e-10:
-        E1 = np.sum(obs**gamma-sim**gamma)
+        E1 = np.sum((obs**beta-sim**beta)**2)
 
     E2 = 0.
     if alpha < 1-1e-10:
-        E2 = np.sum(np.sort(obs)**gamma-np.sort(sim)**gamma)
+        E2 = np.sum((np.sort(obs)**beta-np.sort(sim)**beta)**2)
 
     mobs = np.mean(obs)
     msim = np.mean(sim)
     B = abs(mobs-msim)/mobs
 
-    return (alpha*E1 + (1-alpha)*E2)*(1+B**beta)
+    return (alpha*E1 + (1-alpha)*E2)* B*B*B/(1+B*B)
 
 
 class Model:
@@ -42,12 +93,14 @@ class Model:
             nstates, \
             ntrueparams, ncalparams, \
             outputs_names, \
-            calparams_mins, calparams_maxs, \
-            calparams_means, calparams_stdevs):
+            calparams_means, calparams_stdevs, \
+            trueparams_mins, trueparams_maxs, \
+            trueparams_default):
 
         self.name = name
         self.outputs_names = outputs_names
         self.runtime = np.nan
+        self.hitbounds = False
 
         self.nuhmaxlength = nuhmaxlength
         self.nuhlength = 0
@@ -60,28 +113,28 @@ class Model:
         self.ntrueparams = ntrueparams
         self.trueparams = np.ones(ntrueparams) * np.nan
 
+        self.trueparams_default = np.atleast_1d(trueparams_default).astype(np.float64)
+        checklength(self.trueparams_default, ntrueparams, self, \
+                'Problem with trueparams_default')
+
+        self.trueparams_mins = np.atleast_1d(trueparams_mins).astype(np.float64)
+        checklength(self.trueparams_default, ntrueparams, self, \
+                'Problem with trueparams_mins')
+
+        self.trueparams_maxs = np.atleast_1d(trueparams_maxs).astype(np.float64)
+        checklength(self.trueparams_maxs, ntrueparams, self, \
+                'Problem with trueparams_maxs')
+
         self.ncalparams = ncalparams
         self.calparams = np.ones(ncalparams) * np.nan
 
-        if len(calparams_mins) != ncalparams:
-            raise ValueError('len(calparams_mins)(%d) != ncalparams(%d)' % (
-                len(calparams_mins), ncalparams))
-        self.calparams_mins = calparams_mins
+        self.calparams_means = np.atleast_1d(calparams_means).astype(np.float64)
+        checklength(self.calparams_means, ncalparams, self, \
+                'Problem with calparams_means')
 
-        if len(calparams_maxs) != ncalparams:
-            raise ValueError('len(calparams_maxs)(%d) != ncalparams(%d)' % (
-                len(calparams_maxs), ncalparams))
-        self.calparams_maxs = calparams_maxs
-
-        if len(calparams_means) != ncalparams:
-            raise ValueError('len(calparams_means)(%d) != ncalparams(%d)' % (
-                len(calparams_means), ncalparams))
-        self.calparams_means = calparams_means
-
-        if np.prod(np.array(calparams_stdevs).shape) != ncalparams**2:
-            raise ValueError('np.prod(calparams_means.shape)(%d) != ncalparams**2(%d)' % (
-                np.prod(np.array(calparams_means).shape), ncalparams**2))
-        self.calparams_stdevs = calparams_stdevs
+        self.calparams_stdevs = np.atleast_2d(calparams_stdevs)
+        checklength(self.calparams_stdevs.flat[:], ncalparams*ncalparams, self, \
+                'Problem with calparams_stdevs')
 
 
     def __str__(self):
@@ -128,6 +181,22 @@ class Model:
     def set_trueparams(self, trueparams):
         trueparams = np.atleast_1d(trueparams).astype(np.float64)
         self.trueparams = np.atleast_1d(trueparams[:self.ntrueparams])
+        self.hitbounds = False
+
+        # Check parameters bounds
+        for i in range(self.ntrueparams):
+            x = self.trueparams[i]
+            xmin = self.trueparams_mins[i]
+            xmax = self.trueparams_maxs[i]
+
+            if x < xmin:
+                x = xmin
+                self.hitbounds = True
+
+            elif x > xmax:
+                x = xmax
+                self.hitbounds = True
+
         self.set_uhparams()
 
 
@@ -145,10 +214,12 @@ class Model:
             statesuh = [0.] * self.nuhmaxlength
 
         states = np.atleast_1d(states).astype(np.float64)
-        self.states[:self.nstates] = states[:self.nstates]
+        states = np.atleast_1d(states[:self.nstates])
+        self.states[:self.nstates] = states
 
         statesuh = np.array(statesuh).astype(np.float64)
-        self.statesuh[:self.nuhlength] = statesuh[:self.nuhlength]
+        statesuh = np.atleast_1d(statesuh[:self.nuhlength])
+        self.statesuh[:self.nuhlength] = statesuh
 
 
     def run(self, inputs):
@@ -168,39 +239,43 @@ class Model:
                 nsamples)
 
 
-    def calibrate(self, inputs, observations, idx_cal,\
-            ioutputs_cal=[0],\
+    def calibrate(self, inputs, observations, idx_cal, \
             errfun=errfun_abg,
-            errfun_args=(0.1, 2, 0.5,),\
+            errfun_args=(0.1, 2,),\
             nsamples=500,\
+            noutputs=1, \
             iprint=10, \
             minimize=True, \
             timeit=False):
 
         # check inputs
-        observations = atleast2d(observations)
-        inputs = atleast2d(inputs)
+        if idx_cal.dtype == np.dtype('bool'):
+            idx_cal = np.where(idx_cal)[0]
+
+        if len(observations.shape) <= 1:
+            observations = np.atleast_2d(observations).T
+
+        if len(inputs.shape) <= 1:
+            inputs = np.atleast_2d(inputs).T
 
         nvalobs = observations.shape[0]
         nvalinputs = inputs.shape[0]
         nobs = observations.shape[1]
 
-        if len(ioutputs_cal) != nobs:
-            raise ValueError(('len(ioutputs_cal)(%d) != ' \
-                'nobs(%d)') % (
-                len(ioutputs_cal), nobs))
+        if noutputs != nobs:
+            moderr =  ModelError(self.name, 
+                    'noutputs(%d) != nobs(%d)' % (noutputs, nobs))
+
+        if nvalobs != nvalinputs:
+            raise ValueError('nvalobs(%d) != nvalinputs(%d)' % \
+                    nvalobs, nvalinputs)
 
         if np.max(idx_cal) >= nvalobs:
             raise ValueError(('np.max(idx_cal)(%d) >= ' \
                     'nvalobs(%d)') % (
                 np.max(idx_cal), nvalobs))
 
-        if nvalobs != nvalinputs:
-            raise ValueError('nvalobs(%d) != nvalinputs(%d)' % \
-                    nvalobs, nvalinputs)
-
         # Allocate memory
-        noutputs = np.max(ioutputs_cal) + 1
         self.create_outputs(nvalobs, noutputs)
 
         # Define objective function
@@ -209,8 +284,8 @@ class Model:
             if timeit:
                 t0 = time.time()
 
-            self.initialise()
             self.set_calparams(calparams)
+            self.initialise()
             self.run(inputs)
 
             if timeit:
@@ -219,15 +294,16 @@ class Model:
 
             if not errfun_args is None:
                 ofun = errfun(observations[idx_cal, :], \
-                        self.outputs[idx_cal, ioutputs_cal], \
+                        self.outputs[idx_cal, :], \
                         *errfun_args)
             else:
                 ofun = errfun(observations[idx_cal, :], \
-                        self.outputs[idx_cal, \
-                        ioutputs_cal])
+                        self.outputs[idx_cal, :])
 
             if not minimize:
                 ofun *= -1
+
+            import pdb; pdb.set_trace()
 
             return ofun
 
@@ -244,8 +320,9 @@ class Model:
             ofun_explore[i] = ofun
 
             if i%iprint == 0 and iprint>0:
-                print('Exploration %d/%d : %03.3e [%s] ~ %0.2fms' % ( \
-                        i, nsamples, ofun, calparams, self.runtime))
+                print('Exploration %d/%d : %03.3e [%s] ~ %0.2f ms' % ( \
+                        i, nsamples, ofun, vect2txt(calparams), \
+                        self.runtime))
 
             if ofun < ofun_min:
                 ofun_min = ofun
@@ -253,16 +330,16 @@ class Model:
 
         # Minisation
         if iprint>0:
-            print('\nOptimization start: %03.3e [%s] ~ %0.2fms\n' % ( \
-                    ofun_min, calparams_ini, self.runtime))
+            print('\nOptimization start: %03.3e [%s] ~ %0.2f ms\n' % ( \
+                    ofun_min, vect2txt(calparams_ini), self.runtime))
 
         calparams_final = fmin(objfun, calparams_ini, disp=iprint>0)
         ofun_final = objfun(calparams_final)
         outputs_final = self.outputs
 
         if iprint>0:
-            print('\nOptimization end: %03.3e [%s] ~ %0.2fms\n' % ( \
-                    ofun_final, calparams_final, self.runtime))
+            print('\nOptimization end: %03.3e [%s] ~ %0.2f ms\n' % ( \
+                    ofun_final, vect2txt(calparams_final), self.runtime))
 
         return calparams_final, outputs_final, ofun_final, \
                 calparams_explore, ofun_explore
