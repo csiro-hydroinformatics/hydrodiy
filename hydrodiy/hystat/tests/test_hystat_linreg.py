@@ -179,17 +179,17 @@ class LinregTestCase(unittest.TestCase):
         lm.boot(nsample=500)
 
         p1 = lm.params['estimate']
-        p2 = lm.params_boot_percentiles['P_50.0']
+        p2 = lm.params_boot_percentiles['P050.0']
         ck1 = np.allclose(p1, p2, atol=2e-1)
         self.assertTrue(ck1)
 
         p1 = lm.params['confint_025']
-        p2 = lm.params_boot_percentiles['P__2.5']
+        p2 = lm.params_boot_percentiles['P002.5']
         ck2= np.allclose(p1, p2, atol=2e-1)
         self.assertTrue(ck2)
 
         p1 = lm.params['confint_975']
-        p2 = lm.params_boot_percentiles['P_97.5']
+        p2 = lm.params_boot_percentiles['P097.5']
         ck3 = np.allclose(p1, p2, atol=2e-1)
         self.assertTrue(ck3)
      

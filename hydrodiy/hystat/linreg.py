@@ -53,10 +53,10 @@ def ar1_loglikelihood_objfun(theta, X, Y):
 class Linreg:
     ''' Class to handle linear regression '''
 
-    def __init__(self, x, y, 
-            has_intercept = True, 
-            polyorder = 1, 
-            type = 'ols', 
+    def __init__(self, x, y,
+            has_intercept = True,
+            polyorder = 1,
+            type = 'ols',
             varnames = None):
         ''' Initialise regression model
 
@@ -94,8 +94,8 @@ class Linreg:
         for idx, row in self.params.iterrows():
 
             if self.type == 'ols':
-                str += '\t  %s = %5.2f [%5.2f, %5.2f] P(>|t|)=%0.3f\n'%(idx, 
-                    row['estimate'], row['confint_025'], 
+                str += '\t  %s = %5.2f [%5.2f, %5.2f] P(>|t|)=%0.3f\n'%(idx,
+                    row['estimate'], row['confint_025'],
                     row['confint_975'], row['Pr(>|t|)'])
 
             if self.type == 'gls_ar1':
@@ -108,7 +108,7 @@ class Linreg:
             str += '\n\tLikelihood component (AR1 GLS only):\n'
             for k in self.loglikelihood:
                 str += '\t  ll[%5s] = %6.3f\n' % (k, self.loglikelihood[k])
- 
+
         str += '\n\tPerformance:\n'
         str += '\t  R2        = %6.3f\n' % self.diagnostic['R2']
         str += '\t  Bias      = %6.3f\n' % self.diagnostic['bias']
@@ -125,22 +125,8 @@ class Linreg:
         dw = self.diagnostic['durbinwatson_residuals_stat']
         mess = '(<1 : residuals may not be independent)'
         str += '\t  Statistic = %6.3f %s\n' % (dw, mess)
-        
+
         return str
-
-    def _getdim(self, xx):
-
-        xx = np.array(xx)
-
-         # Dimensions
-        nsamp = xx.shape[0]
-        
-        if len(xx.shape) == 1:
-            npred = 1
-        else:
-            npred = xx.shape[-1]
-
-        return nsamp, npred
 
     def _buildXmatrix(self, xx0=None):
         ''' Build regression input matrix, i.e. the matrix [1,xx] for standard regressions
@@ -153,17 +139,18 @@ class Linreg:
             xx = np.array(xx0)
 
         # Dimensions
-        nsamp, npred = self._getdim(xx)
+        XX = np.atleast_2d(xx)
+        if len(xx.shape) == 1:
+            XX = XX.T
+        nsamp = xx.shape[0]
+        npred = XX.shape[1]
 
         if xx0 is None:
             self.npredictors = npred
         else:
             if npred != self.npredictors:
-                raise ValueError('Number of predictors in input data(%d) different from regression(%d)' %(npred,
-                    self.npredictors))
-
-        # Reshape array
-        XX = xx.reshape(nsamp, self.npredictors)
+                raise ValueError(('Number of predictors in input data(%d)' + \
+                    ' different from regression(%d)') %(npred, self.npredictors))
 
         # Produce X matrix
         X = np.empty((XX.shape[0], XX.shape[1] * self.polyorder), float)
@@ -171,7 +158,7 @@ class Linreg:
         for j in range(XX.shape[1]):
 
             for k in range(self.polyorder):
-                
+
                 # populate X matrix
                 X[:, j*self.polyorder+k] = XX[:, j]**(k+1)
 
@@ -220,7 +207,7 @@ class Linreg:
             or [xx] if the intercept is not included in the regression equation.
 
         '''
- 
+
         # Build X matrix
         X, nsamp, npredictors = self._buildXmatrix()
         self.X = X
@@ -233,7 +220,7 @@ class Linreg:
         # build input and output matrix
         self.tXXinv = np.linalg.inv(np.dot(X.T,X))
 
-        self.Y = np.array(self.y).reshape((nsamp, 1))
+        self.Y = np.atleast_2d(np.array(self.y)).reshape((nsamp, 1))
         self.npredictands = self.Y.shape[1]
 
 
@@ -241,13 +228,13 @@ class Linreg:
         ''' Estimate parameter with ordinary least squares '''
 
         # OLS parameter estimate
-        pars = np.dot(self.tXXinv, np.dot(self.X.T, self.Y)) 
+        pars = np.dot(self.tXXinv, np.dot(self.X.T, self.Y))
         Yhat = np.dot(self.X, pars)
         residuals = self.Y-Yhat
 
         # Degrees of freedom
         df = self.Y.shape[0]-len(pars)
-        
+
         # Sigma of residuals and parameters
         sigma = math.sqrt(np.dot(residuals.T, residuals)/df)
         sigma_pars = sigma * np.sqrt(np.diag(self.tXXinv))
@@ -256,14 +243,14 @@ class Linreg:
         params = pd.DataFrame({'estimate':pars[:,0], 'stderr':sigma_pars})
         params['parameter'] = self.params_names
         params = params.set_index('parameter')
-        
+
         params['tvalue'] = params['estimate']/params['stderr']
         params['confint_025'] = params['estimate']+\
                             params['stderr']*student.ppf(2.5e-2, df)
         params['confint_975'] = params['estimate']+\
                             params['stderr']*student.ppf(97.5e-2, df)
         params['Pr(>|t|)'] = (1-student.cdf(np.abs(params['tvalue']), df))*2
-        params = params[['estimate', 'stderr', 'confint_025', 
+        params = params[['estimate', 'stderr', 'confint_025',
                             'confint_975', 'tvalue', 'Pr(>|t|)']]
 
         return params, sigma, df
@@ -278,10 +265,10 @@ class Linreg:
         return P
 
     def _fit_gls_ar1(self):
-        ''' Estimate parameter with generalized least squares 
+        ''' Estimate parameter with generalized least squares
             assuming ar1 residuals
         '''
-        
+
         # OLS regression to define starting point for optimisation
         params, sigma, df = self._fit_ols()
 
@@ -319,7 +306,7 @@ class Linreg:
         # Compute residuals
         residuals = Y-Yhat
 
-        # Extract innovation from AR1 if GLS AR1 
+        # Extract innovation from AR1 if GLS AR1
         if self.type == 'gls_ar1':
             r = residuals.reshape((len(residuals),))
             residuals = sutils.ar1inverse([self.phi, 0.], r)
@@ -356,13 +343,13 @@ class Linreg:
         rv = np.var(Yhat)/np.var(Y)
 
         # Store data
-        diag = {'bias':b, 
+        diag = {'bias':b,
             'mean_error':me,
             'coef_determination':d,
             'ratio_variance':rv,
-            'shapiro_residuals_stat': s[0], 
+            'shapiro_residuals_stat': s[0],
             'shapiro_residuals_pvalue':s[1],
-            'durbinwatson_residuals_stat': dw, 
+            'durbinwatson_residuals_stat': dw,
             'R2': R2}
 
         return diag
@@ -396,19 +383,19 @@ class Linreg:
         Yhat = np.dot(self.X, self.params['estimate'])
         self.Yhat = Yhat.reshape((self.nsample, 1))
 
-        # Run diagnostic 
+        # Run diagnostic
         diag = self.compute_diagnostic(self.Y, self.Yhat)
         self.diagnostic = diag
 
     def predict(self, x0=None, coverage=[95, 80]):
-        ''' Pediction with intervals 
-            
+        ''' Pediction with intervals
+
             :param numpy.array x0: regression input
             :param list quantiles: Coverage of prediction intervals
         '''
-        
+
         # Generate regression inputs
-        X0, nsamp, npred = self._buildXmatrix(x0) 
+        X0, nsamp, npred = self._buildXmatrix(x0)
 
         Y0 = np.dot(X0, self.params['estimate'])
         nq = len(coverage)*2
@@ -420,7 +407,7 @@ class Linreg:
             PI = pd.DataFrame(np.zeros((nsamp ,nq)))
             cols = []
             for c in coverage:
-                cols += ['predint_%3.3d'%(5*(100.-c)), 
+                cols += ['predint_%3.3d'%(5*(100.-c)),
                             'predint_%3.3d'%(1000-5*(100.-c))]
             PI.columns = cols
 
@@ -469,8 +456,8 @@ class Linreg:
             y_boot = self.Yhat.flatten() + residuals_boot
 
             # Fit regression
-            lmboot = Linreg(self.x, y_boot, 
-                type=self.type, 
+            lmboot = Linreg(self.x, y_boot,
+                type=self.type,
                 has_intercept=self.has_intercept,
                 polyorder=self.polyorder,
                 varnames=self.varnames)
@@ -488,7 +475,7 @@ class Linreg:
 
         self.diagnostic_boot = pd.DataFrame(self.diagnostic_boot)
         self.diagnostic_boot_percentiles = self.diagnostic_boot.apply(fp).T
-            
+
     def scatterplot(self, ax=None, log=False):
         ''' plot Yhat vs Y '''
 
@@ -515,6 +502,6 @@ class Linreg:
         ax.set_ylabel(r'$Y$')
 
         # R2
-        ax.annotate(r'$R^2$ = %0.2f' % self.diagnostic['R2'], 
+        ax.annotate(r'$R^2$ = %0.2f' % self.diagnostic['R2'],
                 xy=(0.05, 0.93), xycoords='axes fraction')
 
