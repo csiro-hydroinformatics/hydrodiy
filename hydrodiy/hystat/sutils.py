@@ -314,8 +314,10 @@ def lhs(nparams, nsample, pmin, pmax, seed=0):
 
     return samples
 
-def schaakeshuffle(obs, forc, eps = 1e-30):
+def schaakeshuffle(obs, forc_input, eps=1e-30, copy=True):
     ''' Apply the Schaake shuffle technique to ensemble forecasts
+    The function does not returns a value.
+    It only reshuffles the forc array.
 
     Parameters
     -----------
@@ -324,29 +326,54 @@ def schaakeshuffle(obs, forc, eps = 1e-30):
         N rows representing N concomittant occurence of data
         P columns representing P variables
     forc : numpy.ndarray
-        Ensemble forecast to be reshuffled
+        Ensemble forecast with
         M rows representing M ensemble members
         P columns representing P variables
     eps : float
         Small quantity added to observed data in case where N < M
+    copy: bool
+        Creates a copy of the forecast input
+        If set to false, then the forc_input array gets reshuffled in place
 
     Returns
     -----------
-    (does not return a value, simply reshuffle forc)
+    forc : numpy.ndarray
+        Reshuffled forecasts. Array NxP
 
     Example
     -----------
     >>> import numpy as np
-    >>> from hystat import sutils
-    
+    >>> import schaakeshuffle
+    >>> # Correlated observations
+    >>> nobs = 30
+    >>> mu = [10, 30]
+    >>> sig = [[25, 45], [45, 100]]
+    >>> obs = np.random.multivariate_normal(mu, sig, nobs)
+    >>> # Uncorrelated forecasts
+    >>> nens = 1000
+    >>> sig = [[25, 0], [0, 100]]
+    >>> forc = np.random.multivariate_normal(mu, sig, nens)
+    >>> schaakeshuffle.schaakeshuffle(obs, forc)
+
     '''
 
+    if copy:
+        forc = forc_input.copy()
+    else:
+        forc = forc_input
+
+    if len(obs.shape) != 2:
+        raise ValueError('if len(obs.shape)({0}) != 2'.format(len(obs.shape)))
+
+    if len(forc.shape) != 2:
+        raise ValueError('if len(forc.shape)({0}) != 2'.format(len(forc.shape)))
+
     if obs.shape[1] != forc.shape[1]:
-        raise ValueError('obs.shape[1](%d) != forc.shape[1](%d)' % (
+        raise ValueError('obs.shape[1]({0}) != forc.shape[1]({1})'.format(
             obs.shape[1], forc.shape[1]))
 
     if obs.shape[0] > forc.shape[0]:
-        raise ValueError('obs.shape[0](%d) > forc.shape[0](%d)' % (
+        raise ValueError('obs.shape[0]({0}) > forc.shape[0]({1}'.format(
             obs.shape[0], forc.shape[0]))
 
     # Get dimensions
@@ -357,14 +384,21 @@ def schaakeshuffle(obs, forc, eps = 1e-30):
     # Resample obs if nobs < nens
     obs2 = obs
 
-    if nobs < nens:
-        obs2 = np.zeros((nens, nvar))
+    if nens > nobs:
+        obs2 = np.zeros_like(forc)
+
         for i in range(nens):
-            k = int(i * float(nobs)/nens)
-            obs2[i,:] = obs[k,:] + np.random.uniform(0, eps)
+            k = (i * nobs)/nens
+            obs2[i,:] = obs[k,:]
+
+        obs2 += np.random.uniform(0, eps, size=(nens,1))
 
     # Shuffle ensembles
     for j in range(nvar):
-        kk = np.argsort(obs2[:,j])
-        forc[kk, j] = np.sort(forc[:, j])
+        k = np.argsort(obs2[:, j])
+        forc[k, j] = np.sort(forc[:, j])
+
+
+    return forc
+
 
