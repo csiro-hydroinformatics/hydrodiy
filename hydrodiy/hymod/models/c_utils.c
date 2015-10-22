@@ -18,3 +18,12 @@ double c_utils_minmax(double min, double max, double input)
             input > max ? max : input;
 }
 
+double cutils_tanh(double x)
+{
+    double a, b, xsq;
+    x = x > 4.9 ? 4.9 : x;
+    xsq = x*x;
+    a = (((36.*xsq+6930.)*xsq+270270.)*xsq+2027025.)*x;
+    b = (((xsq+630.)*xsq+51975.)*xsq+945945.)*xsq+2027025.;
+    return a/b;
+}

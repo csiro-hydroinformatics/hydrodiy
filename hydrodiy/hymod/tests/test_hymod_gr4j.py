@@ -195,10 +195,10 @@ class GR4JTestCases(unittest.TestCase):
             fact = 1./nsamples/inputs.shape[0]*365.25
             ta = dta * fact
             tb = dtb * fact
-            print('  Time = %0.2fms/yr(C) ~ %0.2fms/yr (F) (%0.1f%%)' % (
+            print('  Time = %0.4fms/yr(C) ~ %0.4fms/yr (F) (%0.1f%%)' % (
                 ta, tb, (ta-tb)/tb*100))
 
-            ck = (ee1 < 1e-3) & (ee2 < 3e-3) & (bb < 1e-5)
+            ck = (ee1 < 3e-3) & (ee2 < 4e-3) & (bb < 1e-4)
 
             if not ck:
                 print('  failing %s - ee1 = %f / ee2 = %f / bb = %f' % (id, 
