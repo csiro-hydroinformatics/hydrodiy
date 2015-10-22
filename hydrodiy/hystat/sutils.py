@@ -353,7 +353,7 @@ def schaakeshuffle(obs, forc_input, eps=1e-30, copy=True):
     >>> nens = 1000
     >>> sig = [[25, 0], [0, 100]]
     >>> forc = np.random.multivariate_normal(mu, sig, nens)
-    >>> schaakeshuffle.schaakeshuffle(obs, forc)
+    >>> forc2 = schaakeshuffle.schaakeshuffle(obs, forc)
 
     '''
 
