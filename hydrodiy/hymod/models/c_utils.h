@@ -19,6 +19,7 @@ int c_utils_getesize(int * esize);
 
 double c_utils_minmax(double min,double max,double input);
 
-double cutils_tanh(double x);
+double c_utils_tanh(double x);
+
 
 #endif

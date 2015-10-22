@@ -39,7 +39,7 @@ int gr4j_production(double P, double E,
     if(P>E)
     {
         WS =(P-E)/Scapacity;
-        TWS = cutils_tanh(WS);
+        TWS = c_utils_tanh(WS);
 
         ES = 0;
         PS = Scapacity*(1-SR*SR)*TWS;
@@ -50,7 +50,7 @@ int gr4j_production(double P, double E,
     else
     {
     	WS = (E-P)/Scapacity;
-        TWS = cutils_tanh(WS);
+        TWS = c_utils_tanh(WS);
 
     	ES = S*(2-SR)*TWS;
         ES /= (1+(1-SR)*TWS);
@@ -159,7 +159,7 @@ int gr4j_runtimestep(int nparams,
 
     /* TOTAL STREAMFLOW */
     Q = QD + QR;
-    
+
     /* RESULTS */
     outputs[0] = Q;
 
@@ -170,28 +170,28 @@ int gr4j_runtimestep(int nparams,
 
     if(noutputs>2)
 	    outputs[2] = ES+EN;
-	else
-		return ierr;
+    else
+	return ierr;
 
     if(noutputs>3)
 	    outputs[3] = PR;
-	else
-		return ierr;
+    else
+	return ierr;
 
-   	if(noutputs>4)
-	    outputs[4] = QD;
-	else
-		return ierr;
+    if(noutputs>4)
+        outputs[4] = QD;
+    else
+        return ierr;
 
     if(noutputs>5)
-	    outputs[5] = QR;
-	else
-		return ierr;
+        outputs[5] = QR;
+    else
+        return ierr;
 
     if(noutputs>6)
-	    outputs[6] = PERC;
-	else
-		return ierr;
+	outputs[6] = PERC;
+    else
+	return ierr;
 
     if(noutputs>7)
 	    outputs[7] = states[0];
