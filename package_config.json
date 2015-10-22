@@ -12,7 +12,6 @@
         "hyplot", 
         "hydata",  
         "hyio", 
-        "hywafari",
         "hystat"
     ],
     "package_dir" : {
@@ -21,7 +20,6 @@
         "hydata":"hydrodiy/hydata",
         "hyio":"hydrodiy/hyio",
         "hyplot":"hydrodiy/hyplot",
-        "hywafari":"hydrodiy/hywafari",
         "hystat":"hydrodiy/hystat"
     },
     "package_data" : {
