@@ -21,5 +21,6 @@ double c_utils_minmax(double min,double max,double input);
 
 double c_utils_tanh(double x);
 
+double c_utils_doublesqrt1(double x);
 
 #endif

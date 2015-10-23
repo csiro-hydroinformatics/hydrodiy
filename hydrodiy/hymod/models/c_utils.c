@@ -28,4 +28,12 @@ double c_utils_tanh(double x)
     return a/b;
 }
 
+double c_utils_doublesqrt1(double x)
+{
+	double a, b;
+	a = 2560. + x * (4160. + x * (1872. + 195.*x));
+	b = 2560. + x * (3520. + x * (1232. + 77.*x));
+	
+	return a/b;
+}
 

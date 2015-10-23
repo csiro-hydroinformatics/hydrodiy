@@ -31,7 +31,7 @@ int gr4j_production(double P, double E,
         double S,
         double * prod)
 {
-    double SR, TWS, WS, PS, ES, EN=0, PR, PERC, S2;
+    double SR, SR2, TWS, WS, PS, ES, EN=0, PR, PERC, S2;
 
     /* production store */
     SR = S/Scapacity;
@@ -62,7 +62,10 @@ int gr4j_production(double P, double E,
 
     /* percolation */
     SR = S/Scapacity;
-    S2 = S/sqrt(sqrt(1+SR*SR*SR*SR/25.62890625));
+    //S2 = S/sqrt(sqrt(1+SR*SR*SR*SR/25.62890625));
+	SR2 = SR*SR;
+	S2 = S/c_utils_doublesqrt1(SR2*SR2/25.62890625);
+
     PERC = S-S2;
     S = S2;
     PR += PERC;
@@ -97,7 +100,7 @@ int gr4j_runtimestep(int nparams,
     double prod[6];
     double ES, PS, PR;
     double PERC,ECH,TP,R2,QR,QD;
-    double EN, ech1,ech2, RR;
+    double EN, ech1,ech2, RR, RR2;
     double uhoutput1[1], uhoutput2[1];
 
     /* inputs */
@@ -139,7 +142,9 @@ int gr4j_runtimestep(int nparams,
     }
 
     RR = states[1]/params[2];
-    R2 = states[1]/sqrt(sqrt(1.+RR*RR*RR*RR));
+	RR2 = RR*RR;
+    R2 = states[1]/sqrt(sqrt(1.+RR2*RR2));
+	//R2 = states[1]/c_utils_doublesqrt1(RR2*RR2);
     QR = states[1]-R2;
     states[1] = R2;
 
@@ -224,15 +229,6 @@ int c_gr4j_run(int nval, int nparams,
     int ierr=0, i;
 
     /* Check dimensions */
-    if(nparams < 4)
-        return ESIZE_PARAMS;
-
-    if(nstates < 2)
-        return ESIZE_STATES;
-
-    if(ninputs < 2)
-        return ESIZE_INPUTS;
-
     if(noutputs > GR4J_NOUTPUTS)
         return ESIZE_OUTPUTS;
 
