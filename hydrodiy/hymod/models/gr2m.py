@@ -8,11 +8,8 @@ from hymod.model import Model
 from hymod.model import ModelError
 
 import c_hymod_models_gr2m
+import c_hymod_models_utils
 
-
-
-# Error message number
-esize = c_hymod_models_gr2m.getesize()
 
 # Dimensions
 nstates = c_hymod_models_gr2m.gr2m_getnstates()
@@ -29,24 +26,21 @@ class GR2M(Model):
             ['Q[mm/m]', 'Ech[mm/m]', \
                 'P1[mm/m]', 'P2[mm/m]', 'P3[mm/m]', \
                 'R1[mm/m]', 'R2[mm/m]', 'S[mm]', 'R[mm]'],
-            [1, -2], \
-            [20, 1], \
             [5.7, -0.2], \
             [[3, 0], [0, 1]], \
+            [10, 0.1], \
+            [20000, 3], \
             [400, 0.8])
 
 
     def run(self, inputs):
-        ierr = c_hymod_models_gr2m.gr2m_run(self.trueparams, inputs, 
-            self.states,
+        ierr = c_hymod_models_gr2m.gr2m_run(self.trueparams, inputs, \
+            self.states, \
             self.outputs)
 
         if ierr > 0:
-
-            moderr = ModelError(self.name, ierr, 
-                    'c_hymod_models_gr2m.gr2m_run')
-            moderr.set_ierr_id()
-            raise moderr
+            raise ModelError(self.name, ierr, \
+                    message='c_hymod_models_gr2m.gr2m_run')
 
 
     def cal2true(self):

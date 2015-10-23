@@ -2,6 +2,7 @@ import math
 import time
 import numpy as np
 import pandas as pd
+
 from scipy.optimize import fmin_powell as fmin
 
 import c_hymod_models_utils
@@ -9,10 +10,52 @@ import c_hymod_models_utils
 
 class ModelError(Exception):
 
-    def __init__(self, model, ierr, message='no context'):
+    def __init__(self, model, \
+            ierr=None, \
+            ierr_id=None, \
+            message=''):
+
         self.model = model
-        self.ierr = ierr
-        self.ierr_id = 'UNKNOWN ID'
+
+        # Set error messages
+        esize = np.zeros(50).astype(np.int32)
+        c_hymod_models_utils.getesize(esize)
+        esize = { \
+                -1 : 'UNKNOWN', \
+                esize[0] : 'ESIZE_INPUTS', \
+                esize[1] : 'ESIZE_OUTPUTS', \
+                esize[2] : 'ESIZE_PARAMS', \
+                esize[3] : 'ESIZE_STATES', \
+                esize[4] : 'ESIZE_STATESUH', \
+                esize[5] : 'EMODEL_RUN' \
+        }
+
+        # Initialse
+        if not ierr is None:
+            self.ierr = ierr
+            if ierr in esize:
+                self.ierr_id = esize[ierr]
+            else:
+                self.ierr = -1
+                self.ierr_id = esize[ierr]
+
+            return
+
+        if not ierr_id is None:
+            self.ierr_id = ierr_id
+            for ierr in esize:
+                if esize[ierr] == ierr_id:
+                    self.ierr = ierr
+                    return
+
+            self.ierr = -1
+            self.ierr_id = esize[ierr]
+            return
+
+
+        raise ValueError('Either one of ierr or ierr_id should be' + \
+            ' different from None')
+
         self.message = message
 
 
@@ -25,36 +68,6 @@ class ModelError(Exception):
 
         return repr(txt)
 
-
-    def set_ierr_id(self):
-        esize = np.zeros(50).astype(np.int32)
-        c_hymod_models_utils.getesize(esize)
-        esize = {
-                esize[0] : 'ESIZE_INPUTS',
-                esize[1] : 'ESIZE_OUTPUTS',
-                esize[2] : 'ESIZE_PARAMS',
-                esize[3] : 'ESIZE_STATES',
-                esize[4] : 'ESIZE_STATESUH'
-        }
-
-        self.ierr_id = 'UNKNOWN ID'
-        if self.ierr in esize:
-            self.ierr_id = esize[self.ierr]
-
-    def set_ierr(self):
-        esize = np.zeros(50).astype(np.int32)
-        c_hymod_models_utils.getesize(esize)
-        esize = {
-                'ESIZE_INPUTS' : esize[0],
-                'ESIZE_OUTPUTS' : esize[1],
-                'ESIZE_PARAMS' : esize[2],
-                'ESIZE_STATES' : esize[3],
-                'ESIZE_STATESUH': esize[4]
-        }
-
-        self.ierr_id = -1
-        if self.ierr_id in esize:
-            self.ierr = esize[self.ierr_id]
 
 
 def checklength(x, nx, model, message):
@@ -71,7 +84,7 @@ def vect2txt(x):
     return txt
 
 
-class Model:
+class Model(object):
 
     def __init__(self, name, nuhmaxlength, \
             nstates, \
@@ -121,7 +134,7 @@ class Model:
                 ncalparams*ncalparams, self, \
                 'Problem with calparams_stdevs')
 
-        self.set_trueparams(self.trueparams_default)
+        self.set_trueparams_default()
 
 
     def __str__(self):
@@ -165,6 +178,10 @@ class Model:
         pass
 
 
+    def set_trueparams_default(self):
+        self.set_trueparams(self.trueparams_default)
+
+
     def set_trueparams(self, trueparams):
         trueparams = np.atleast_1d(trueparams).astype(np.float64)
         self.trueparams = np.atleast_1d(trueparams[:self.ntrueparams])
@@ -190,7 +207,9 @@ class Model:
     def set_calparams(self, calparams):
         calparams = np.atleast_1d(calparams)
         self.calparams = np.atleast_1d(calparams[:self.ncalparams])
+
         self.trueparams = np.atleast_1d(self.cal2true(self.calparams))
+
         self.set_uhparams()
 
 

@@ -6,6 +6,7 @@ from hystat import sutils
 
 from hymod.model import Model
 from hymod.model import ModelError
+
 import c_hymod_models_gr4j
 import c_hymod_models_utils
 
@@ -38,6 +39,7 @@ class GR4J(Model):
 
 
     def set_uhparams(self):
+
         # First uh
         nuh1 = np.zeros(1).astype(np.int32)
         uh1 = np.zeros(self.nuhmaxlength).astype(np.float64)
@@ -47,10 +49,8 @@ class GR4J(Model):
         self.nuh1 = nuh1[0]
 
         if ierr > 0:
-            moderr = ModelError(self.name, ierr, \
-                    'c_hymod_models_utils.uh_getuh')
-            moderr.set_ierr_id()
-            raise moderr
+            raise ModelError(self.name, ierr, \
+                    message='c_hymod_models_utils.uh_getuh')
 
         self.uh[:self.nuh1] = uh1[:self.nuh1]
 
@@ -63,20 +63,16 @@ class GR4J(Model):
         self.nuh2 = nuh2[0]
 
         if ierr > 0:
-            moderr = ModelError(self.name, ierr, \
-                    'exception raised by gr4j_getuh')
-            moderr.set_ierr_id()
-            raise moderr
+            raise ModelError(self.name, ierr, \
+                    message='exception raised by gr4j_getuh')
 
         if self.nuh1 + self.nuh2 > self.nuhmaxlength:
-            moderr = ModelError(self.name, -1, 'gr4j.set_uhparams')
-            moderr.ierr_id = 'ESIZE_STATESUH'
-            moderr.set_ierr_id()
-            raise moderr
+            raise ModelError(self.name, \
+                ierr_id = 'ESIZE_STATESUH', \
+                message='gr4j.set_uhparams')
 
         self.uh[self.nuh1:self.nuh1+self.nuh2] = uh2[:self.nuh2]
         self.nuhlength = self.nuh1 + self.nuh2
-
 
 
     def initialise(self, states=None, statesuh=None):
@@ -84,17 +80,10 @@ class GR4J(Model):
         # initialise GR4J with reservoir levels
         if states is None:
             states = np.zeros(self.nstates)
-            states[0] = self.trueparams[0]/2
-            states[1] = self.trueparams[2]/2
+            states[0] = self.trueparams[0] * 0.5
+            states[1] = self.trueparams[2] * 0.4
 
-        if statesuh is None:
-            statesuh = np.zeros(self.nuhmaxlength)
-
-        states = np.atleast_1d(states).astype(np.float64)
-        self.states[:self.nstates] = states[:self.nstates]
-
-        statesuh = np.array(statesuh).astype(np.float64)
-        self.statesuh[:self.nuhlength] = statesuh[:self.nuhlength]
+        super(GR4J, self).initialise(states, statesuh)
 
 
     def run(self, inputs):
@@ -110,9 +99,8 @@ class GR4J(Model):
             self.outputs)
 
         if ierr > 0:
-            moderr = ModelError(self.name, ierr, 'c_hymod_models_gr4j.gr4j_run')
-            moderr.set_ierr_id()
-            raise moderr
+            raise ModelError(self.name, ierr, \
+                message='c_hymod_models_gr4j.gr4j_run')
 
 
     def cal2true(self, calparams):

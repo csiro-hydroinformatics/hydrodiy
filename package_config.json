@@ -28,7 +28,9 @@
         "hyplot": ["*.json"]
     },
     "requires":[
-        "pandas (>=11.0)", 
-        "numpy (>=1.7.1)"
+        "pandas (>=0.14.0)", 
+        "scipy (>=0.14.0)", 
+        "Cython (>=0.20.1)", 
+        "numpy (>=1.8)"
     ]
 }

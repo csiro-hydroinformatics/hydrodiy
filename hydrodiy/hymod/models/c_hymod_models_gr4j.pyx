@@ -58,12 +58,6 @@ def gr4j_run(int nuh1,
     if inputs.shape[1] != 2:
         raise ValueError('inputs.shape[1] != 2')
 
-    if nuh1 == 0:
-        raise ValueError('nuh1 == 0')
-
-    if nuh2 == 0:
-        raise ValueError('nuh2 == 0')
-
     if uh1.shape[0] < nuh1:
         raise ValueError('uh1.shape[0] < nuh1')
 
