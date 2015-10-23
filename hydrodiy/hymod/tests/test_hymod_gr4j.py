@@ -249,7 +249,6 @@ class GR4JTestCases(unittest.TestCase):
 
 
     def test_gr4j_detailed2(self):
-        return 
 
         warmup = 365 * 5
         gr = GR4J()
@@ -268,7 +267,15 @@ class GR4JTestCases(unittest.TestCase):
 
             # Run gr4j
             gr.create_outputs(len(inputs), 1)
-            dta = gr.get_runtime(params['parvalue'].values, inputs)
+            t0 = time.time()
+                    
+            gr.set_trueparams(params['parvalue'])
+            gr.initialise()
+            gr.run(inputs)
+            qsim = gr.outputs[:,0]
+
+            t1 = time.time()
+            dta = 1000 * (t1-t0)
             dta /= len(qsim)/365.25
 
             qsim = gr.get_outputs().squeeze()
@@ -286,7 +293,7 @@ class GR4JTestCases(unittest.TestCase):
                     '%0.5f < %0.5f ? %s') % (count, \
                     np.max(err), err_thresh, ck))
             else:
-                print('\t\tTEST %2d : max abs err = %0.5f ~ %0.2fms/yr' % ( \
+                print('\t\tTEST %2d : max abs err = %0.5f ~ %0.5fms/yr' % ( \
                     count, np.max(err), dta))
 
             self.assertTrue(ck)
