@@ -22,6 +22,9 @@ class GR4J(Model):
 
     def __init__(self):
 
+        self.nuh1 = 0
+        self.nuh2 = 0
+
         Model.__init__(self, 'gr4j', \
             nuhmaxlength, nstates, 4, 4, \
             ['Q[mm/d]', 'Ech[mm/d]', 'E[mm/d]', 'Pr[mm/d]',\
@@ -33,9 +36,6 @@ class GR4J(Model):
             [10, -50, 10, 0.5], \
             [20000, 50, 5000, 100], \
             [400, -1, 50, 0.5])
-
-        self.nuh1 = 0
-        self.nuh2 = 0
 
 
     def set_uhparams(self):
@@ -64,7 +64,7 @@ class GR4J(Model):
 
         if ierr > 0:
             raise ModelError(self.name, ierr, \
-                    message='exception raised by gr4j_getuh')
+                    message='c_hymod_models_utils.uh_getuh')
 
         if self.nuh1 + self.nuh2 > self.nuhmaxlength:
             raise ModelError(self.name, \

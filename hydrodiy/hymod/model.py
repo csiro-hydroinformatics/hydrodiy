@@ -30,14 +30,13 @@ class ModelError(Exception):
                 esize[5] : 'EMODEL_RUN' \
         }
 
-        # Initialse
+        # Initialise
         if not ierr is None:
             self.ierr = ierr
             if ierr in esize:
                 self.ierr_id = esize[ierr]
             else:
-                self.ierr = -1
-                self.ierr_id = esize[ierr]
+                self.ierr_id = esize[-1]
 
             return
 
@@ -49,7 +48,6 @@ class ModelError(Exception):
                     return
 
             self.ierr = -1
-            self.ierr_id = esize[ierr]
             return
 
 

@@ -127,12 +127,7 @@ int c_uh_getuh(int nuhlengthmax,
 
     /* NUH is not big enough */
     if(1-suh > UHEPS || *nuh > nuhlengthmax)
-    {
-        fprintf(stderr, "%s:%d:ERROR: Problem with UH computation "
-                "(NUHMAXLENGTH=%d, nuh=%d, suh=%4.03e)\n",
-            __FILE__, __LINE__, nuhlengthmax, *nuh, suh);
-        return EINVAL;
-    }
+        return ESIZE_STATESUH;
 
 	return 0;
 }
