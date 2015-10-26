@@ -97,7 +97,6 @@ class GR2MTestCases(unittest.TestCase):
  
 
     def test_gr2m_irstea_calib(self):
-        return
 
         fd = '%s/GR2M.csv' % self.FOUT
         data, comment =csv.read_csv(fd)
@@ -117,7 +116,7 @@ class GR2MTestCases(unittest.TestCase):
         def errfun(obs, sim):
             E = np.sum((np.sqrt(obs)-np.sqrt(sim))**2)
             B = np.mean(obs-sim)
-            return E * (1+B)
+            return E * (1+abs(B))
 
         # loop through parameters
         for i in range(nsamples):
@@ -136,10 +135,9 @@ class GR2MTestCases(unittest.TestCase):
                     iprint=0,
                     errfun=errfun)
             err = np.abs(gr.trueparams-expected)
-            ck = err < 1e-2
+            ck = np.max(err) < 1e-5
 
-            print('{0}'.format(gr.trueparams)) 
-            #self.assertTrue(ck)
+            self.assertTrue(ck)
 
 
 
