@@ -90,6 +90,7 @@ class Model(object):
             nstates, \
             ntrueparams, \
             ncalparams, \
+            trueparams_names, \
             outputs_names, \
             calparams_means, \
             calparams_stdevs, \
@@ -112,6 +113,10 @@ class Model(object):
 
         self.ntrueparams = ntrueparams
         self.trueparams = np.ones(ntrueparams) * np.nan
+
+        self.trueparams_names = trueparams_names
+        checklength(self.trueparams_names, ntrueparams, self, \
+                'Problem with trueparams_names')
 
         self.trueparams_default = np.atleast_1d(trueparams_default).astype(np.float64)
         checklength(self.trueparams_default, ntrueparams, self, \
@@ -141,27 +146,27 @@ class Model(object):
 
 
     def __str__(self):
-        str = '\n%s model implementation\n' % self.name
-        str += '  nuhlength  = %d\n' % self.nuhlength
-        str += '  nuhmaxlength  = %d\n' % self.nuhmaxlength
-        str += '  nstates = %d\n' % len(self.states)
+        str = '\n{0} model implementation\n'.format(self.name)
+        str += '  nuhlength  = {0}\n'.format(self.nuhlength)
+        str += '  nuhmaxlength  = {0}\n'.format(self.nuhmaxlength)
+        str += '  nstates = {0}\n'.format(len(self.states))
 
         if hasattr(self, 'nout'):
-            str += '  nout    = %d\n' % self.nout
+            str += '  nout    = {0}\n'.format(self.nout)
 
         str += '  calparams  = ['
         for i in range(self.ncalparams):
-            str += ' %0.3f' % self.calparams[i]
+            str += ' {0:.3f}'.format(self.calparams[i])
         str += ']\n'
 
         str += '  trueparams = ['
         for i in range(self.ntrueparams):
-            str += ' %0.3f' % self.trueparams[i]
+            str += ' {0}:{1:.3f}'.format(self.trueparams_names[i], self.trueparams[i])
         str += ']\n'
 
         str += '  states     = ['
         for i in range(self.nstates):
-            str += ' %0.3f' % self.states[i]
+            str += ' {0:.3f}'.format(self.states[i])
         str += ']\n'
 
         return str
@@ -262,6 +267,7 @@ class Model(object):
             idx_cal=None, \
             errfun=None, \
             nsamples=None,\
+            calparams_explore = None, \
             iprint=10, \
             minimize=True, \
             timeit=False):
@@ -287,6 +293,9 @@ class Model(object):
         nsamples : int
             Number of parameter samples used for initial pre-filtering of parameter sets
             Default is 200xsqrt(ncalparams)
+        calparams_explore : numpy.ndarray
+            Parameter library used for initial pre-filtering
+            Default is sampled from self.get_calparams_samples
         iprint : int
             Prints detailed log every [iprint] iterations
         minimize : bool
@@ -325,6 +334,14 @@ class Model(object):
 
         if nsamples is None:
             nsamples = int(200*math.sqrt(self.ncalparams))
+
+        if calparams_explore is None:
+            calparams_explore = self.get_calparams_samples(nsamples)
+        else:
+            calparams_explore = np.atleast_2d(calparams_explore)
+            if calparams_explore.shape[0] == 1:
+                calparams_explore = calparam_explore.T
+            nsamples = calparams_explore.shape[0]
 
         # check inputs
         if idx_cal.dtype == np.dtype('bool'):
@@ -386,7 +403,6 @@ class Model(object):
 
 
         # Systematic exploration
-        calparams_explore = self.get_calparams_samples(nsamples)
         ofun_explore = np.zeros(nsamples) * np.nan
         ofun_min = np.inf
 

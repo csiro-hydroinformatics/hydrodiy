@@ -12,11 +12,12 @@ class TurcMezentsev(Model):
     def __init__(self):
         Model.__init__(self, 'turcmezentsev', 0, 0, \
             1, 1, \
-            ['Q[mm/m]'],
-            [0.833],
-            [[0.3]],
-            [0.5],
-            [4.],
+            ['n'], \
+            ['Q[mm/m]'], \
+            [0.833], \
+            [[0.3]], \
+            [0.5], \
+            [4.], \
             [2.3])
 
 

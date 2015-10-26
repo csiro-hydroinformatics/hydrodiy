@@ -27,6 +27,7 @@ class GR4J(Model):
 
         Model.__init__(self, 'gr4j', \
             nuhmaxlength, nstates, 4, 4, \
+            ['S', 'IGF', 'R', 'TB'], \
             ['Q[mm/d]', 'Ech[mm/d]', 'E[mm/d]', 'Pr[mm/d]',\
                 'Qd[mm/d]', 'Qr[mm/d]', 'Perc[mm/d]',\
                 'S[mm]', 'R[mm]'], \
