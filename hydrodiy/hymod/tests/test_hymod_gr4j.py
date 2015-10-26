@@ -20,6 +20,7 @@ except ImportError:
 
 from hymod.model import ModelError
 from hymod.models.gr4j import GR4J
+from hymod import errfun
 
 
 import c_hymod_models_utils
@@ -343,14 +344,8 @@ class GR4JTestCases(unittest.TestCase):
             obs = gr.outputs[:,0].copy()
 
             # Calibrate on this output
-
-            def errfun(obs, sim):
-                E = np.sum((obs-sim)**2)
-                B = np.mean(obs-sim)
-                return E * (1+abs(B))
-
             gr.calibrate(inputs, obs, idx_cal, \
-                    errfun=errfun, \
+                    errfun=errfun.ssqe_bias, \
                     iprint=0, \
                     timeit=True)
 

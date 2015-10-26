@@ -5,6 +5,7 @@
 dist
 build
 *.png
+*.pstats
 *.html
 *.gz
 *.bin
