@@ -1,4 +1,5 @@
 
+import math
 import numpy as np
 import pandas as pd
 
@@ -12,10 +13,11 @@ class TurcMezentsev(Model):
         Model.__init__(self, 'turcmezentsev', 0, 0, \
             1, 1, \
             ['Q[mm/m]'],
-            [-1], \
-            [2], \
-            [1], \
-            [0.5])
+            [0.833],
+            [[0.3]],
+            [0.5],
+            [4.],
+            [2.3])
 
 
     def run(self, inputs):
@@ -25,7 +27,7 @@ class TurcMezentsev(Model):
         self.outputs = P*(1.-1./(1.+(P/PE)**exponent)**(1./exponent))
 
 
-    def cal2true(self):
-        x = self.calparams
-        self.trueparams = np.array([np.exp(xt[0])])
+    def cal2true(self, calparams):
+        return math.exp(calparams[0])
+        
 

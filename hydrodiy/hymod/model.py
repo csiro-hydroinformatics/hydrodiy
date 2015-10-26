@@ -1,4 +1,5 @@
 import math
+import random
 import time
 import numpy as np
 import pandas as pd
@@ -16,6 +17,7 @@ class ModelError(Exception):
             message=''):
 
         self.model = model
+        self.message = message
 
         # Set error messages
         esize = np.zeros(50).astype(np.int32)
@@ -29,6 +31,7 @@ class ModelError(Exception):
                 esize[4] : 'ESIZE_STATESUH', \
                 esize[5] : 'EMODEL_RUN' \
         }
+
 
         # Initialise
         if not ierr is None:
@@ -50,15 +53,13 @@ class ModelError(Exception):
             self.ierr = -1
             return
 
-
         raise ValueError('Either one of ierr or ierr_id should be' + \
             ' different from None')
 
-        self.message = message
 
 
     def __str__(self):
-        txt = '%s model : error %d (%s) : %s' % ( \
+        txt = '{0} model : error {1} - {2} : {3}'.format( \
                 self.model,
                 self.ierr,
                 self.ierr_id,
@@ -84,12 +85,16 @@ def vect2txt(x):
 
 class Model(object):
 
-    def __init__(self, name, nuhmaxlength, \
+    def __init__(self, name, \
+            nuhmaxlength, \
             nstates, \
-            ntrueparams, ncalparams, \
+            ntrueparams, \
+            ncalparams, \
             outputs_names, \
-            calparams_means, calparams_stdevs, \
-            trueparams_mins, trueparams_maxs, \
+            calparams_means, \
+            calparams_stdevs, \
+            trueparams_mins, \
+            trueparams_maxs, \
             trueparams_default):
 
         self.name = name
@@ -183,21 +188,11 @@ class Model(object):
     def set_trueparams(self, trueparams):
         trueparams = np.atleast_1d(trueparams).astype(np.float64)
         self.trueparams = np.atleast_1d(trueparams[:self.ntrueparams])
-        self.hitbounds = False
 
         # Check parameters bounds
-        for i in range(self.ntrueparams):
-            x = self.trueparams[i]
-            xmin = self.trueparams_mins[i]
-            xmax = self.trueparams_maxs[i]
-
-            if x < xmin:
-                x = xmin
-                self.hitbounds = True
-
-            elif x > xmax:
-                x = xmax
-                self.hitbounds = True
+        self.trueparams = np.clip(self.trueparams, \
+            self.trueparams_mins, \
+            self.trueparams_maxs)
 
         self.set_uhparams()
 
@@ -206,7 +201,8 @@ class Model(object):
         calparams = np.atleast_1d(calparams)
         self.calparams = np.atleast_1d(calparams[:self.ncalparams])
 
-        self.trueparams = np.atleast_1d(self.cal2true(self.calparams))
+        trueparams = self.cal2true(self.calparams)
+        self.set_trueparams(trueparams)
 
         self.set_uhparams()
 
@@ -238,19 +234,97 @@ class Model(object):
         return outputs
 
 
-    def get_calparams_samples(self, nsamples):
-        return np.random.multivariate_normal(self.calparams_means, \
+    def get_calparams_samples(self, nsamples, seed=333):
+
+        # Save random state
+        random_state = random.getstate()
+
+        # Set seed
+        np.random.seed(seed)
+
+        # sample parameters
+        samples = np.random.multivariate_normal(self.calparams_means, \
                 self.calparams_stdevs, \
                 nsamples)
 
+        samples = np.atleast_2d(samples)
 
-    def calibrate(self, inputs, observations, idx_cal, \
-            errfun, \
-            nsamples=500,\
-            noutputs=1, \
+        if samples.shape[0] == 1:
+            samples = samples.T
+
+        # Reset random state
+        random.setstate(random_state)
+
+        return samples
+
+
+    def calibrate(self, inputs, observations,
+            idx_cal=None, \
+            errfun=None, \
+            nsamples=None,\
             iprint=10, \
             minimize=True, \
             timeit=False):
+        ''' Perform model calibration
+
+        Parameters
+        -----------
+        inputs : numpy.ndarray
+            Model input over the calibration period
+        obs : numpy.ndarray
+            Observation to be matched by model output over the calibration period
+        idx_cal : numpy.ndarray
+            Indexes to be used for computing the objective function.
+            idx_cal is useful when performing split sample tests or cross validation.
+            Default considers all data points.
+        errfun : function
+            Objective function to be minimised or maximised during calibration.
+            Arguments of errfun should be:
+            - obs : observed data
+            - sim : model output to match observed data
+            Function should return a float.
+            Default is the sum of squared errors.
+        nsamples : int
+            Number of parameter samples used for initial pre-filtering of parameter sets
+            Default is 200xsqrt(ncalparams)
+        iprint : int
+            Prints detailed log every [iprint] iterations
+        minimize : bool
+            Indicate if errfun should be minimised (True) or maximised (False).
+        timeit : bool
+            Indicate if the log should contain model runtime
+
+        Returns
+        -----------
+        calparams_final : numpy.ndarray
+            Optimal parameter set
+        outputs_final : numpy.ndarray
+            Model output generated with the optimal parameter set
+        ofun_final : float
+            Value of the objective function corresponding to the optimal parameter set
+        calparams_explore : numpy.ndarray
+            Parameter sets used for the pre-filtering
+        ofun_explore : numpy.ndarray
+            Objective function values corresponding to the pre-filtering parameter sets.
+
+        Example
+        -----------
+        TODO
+        >>> dutils.normaliseid('00a04567B.100')
+        'A04567'
+
+        '''
+
+        # Set defaults
+        if idx_cal is None:
+            idx_cal = observations == observations
+
+        if errfun is None:
+            def fun(obs, sim): return np.sum((obs-sim)**2)
+            errfun = fun
+
+        if nsamples is None:
+            nsamples = int(200*math.sqrt(self.ncalparams))
 
         # check inputs
         if idx_cal.dtype == np.dtype('bool'):
@@ -265,18 +339,20 @@ class Model(object):
         nvalobs = observations.shape[0]
         nvalinputs = inputs.shape[0]
         nobs = observations.shape[1]
-
-        if noutputs != nobs:
-            moderr =  ModelError(self.name,
-                    'noutputs(%d) != nobs(%d)' % (noutputs, nobs))
+        noutputs = nobs
 
         if nvalobs != nvalinputs:
-            raise ValueError('nvalobs(%d) != nvalinputs(%d)' % \
-                    nvalobs, nvalinputs)
+            raise ModelError(self.name,
+                ierr_id='ESIZE_INPUTS',
+                message = \
+                'model.calibrate, nvalobs({0}) != nvalinputs({1})'.format( \
+                nvalobs, nvalinputs))
 
         if np.max(idx_cal) >= nvalobs:
-            raise ValueError(('np.max(idx_cal)(%d) >= ' \
-                    'nvalobs(%d)') % (
+            raise ModelError(self.name,
+                ierr_id='ESIZE_INPUTS',
+                message = \
+                'model.calibrate, np.max(idx_cal)({0}) >= nvalobs({1})'.format( \
                 np.max(idx_cal), nvalobs))
 
         # Allocate memory
@@ -296,8 +372,12 @@ class Model(object):
                 t1 = time.time()
                 self.runtime = 1000 * (t1-t0)
 
-            ofun = errfun(observations[idx_cal, :], \
-                self.outputs[idx_cal, :])
+            if noutputs > 1:
+                ofun = errfun(observations[idx_cal, :], \
+                    self.outputs[idx_cal, :])
+            else:
+                ofun = errfun(observations[idx_cal], \
+                    self.outputs[idx_cal])
 
             if not minimize:
                 ofun *= -1

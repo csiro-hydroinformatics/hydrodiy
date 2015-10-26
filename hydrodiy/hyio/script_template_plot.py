@@ -19,6 +19,12 @@ import pandas as pd
 
 from scipy import stats
 
+import matplotlib as mpl
+
+# Desable X11 running
+if mpl.get_backend().lower() != 'agg':
+    mpl.use('Agg')
+
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 

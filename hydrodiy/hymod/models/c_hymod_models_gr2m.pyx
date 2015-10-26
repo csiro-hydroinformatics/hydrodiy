@@ -55,8 +55,11 @@ def gr2m_run(np.ndarray[double, ndim=1, mode='c'] params not None,
     if inputs.shape[1] != 2:
         raise ValueError('inputs.shape[1] != 2')
 
-    ierr = c_gr2m_run(inputs.shape[1], params.shape[0], \
-            2, 2, outputs.shape[0], \
+    ierr = c_gr2m_run(inputs.shape[0], \
+            params.shape[0], \
+            inputs.shape[1], \
+            statesini.shape[0], \
+            outputs.shape[1], \
             <double*> np.PyArray_DATA(params), \
             <double*> np.PyArray_DATA(inputs), \
             <double*> np.PyArray_DATA(statesini), \

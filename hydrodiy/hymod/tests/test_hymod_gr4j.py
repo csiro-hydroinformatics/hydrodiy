@@ -72,9 +72,10 @@ class GR4JTestCases(unittest.TestCase):
 
         ierr_id = ''
         gr = GR4J()
+        gr.trueparams[3] = 1000
 
         try:
-            gr.set_trueparams([400, -1, 50, 1000])
+            gr.set_uhparams()
         except ModelError as  e:
             ierr_id = e.ierr_id
 
@@ -89,7 +90,7 @@ class GR4JTestCases(unittest.TestCase):
         self.assertTrue(samples.shape == (nsamples, 4))
 
 
-    def test_gr4juh(self):
+    def test_uh(self):
 
         gr = GR4J()
 
@@ -100,7 +101,7 @@ class GR4JTestCases(unittest.TestCase):
             self.assertTrue(ck)
 
 
-    def test_gr4j_dumb(self):
+    def test_run1(self):
 
         nval = 1000
         p = np.exp(np.random.normal(0, 2, size=nval))
@@ -127,7 +128,7 @@ class GR4JTestCases(unittest.TestCase):
         self.assertTrue(ck)
 
 
-    def test_gr4j_detailed(self):
+    def test_run2(self):
 
         count = 0
         warmup = 365 * 5
@@ -151,6 +152,7 @@ class GR4JTestCases(unittest.TestCase):
                 samples[i, k] = u
 
         tam = 0
+        tbm = 0
         ncatchments = 10
 
         for count in range(1, ncatchments+1):
@@ -240,6 +242,7 @@ class GR4JTestCases(unittest.TestCase):
             if gr2 is None:
                 dtb = dta
             tb = dtb * fact
+            tbm += tb
 
             print('  runtime = %0.4fms/yr(C) ~ %0.4fms/yr (F) (%0.1f%%)' % (
                 ta, tb, (ta-tb)/tb*100))
@@ -252,10 +255,12 @@ class GR4JTestCases(unittest.TestCase):
 
             self.assertTrue(ck)
 
-        print('\n  Average runtime = %0.4fms/yr(C)\n' % (tam/ncatchments))
+        print(('\n  Average runtime = {0:0.4f}ms/yr(C)' + \
+            ' ~ {1:0.4f}ms/yr(F) ({2:0.1f})\n').format( \
+            tam/ncatchments, tbm/ncatchments, (tam-tbm)/tbm * 100))
 
 
-    def test_gr4j_detailed2(self):
+    def test_run3(self):
 
         warmup = 365 * 5
         gr = GR4J()
@@ -305,7 +310,7 @@ class GR4JTestCases(unittest.TestCase):
             self.assertTrue(ck)
 
 
-    def test_gr4j_calibrate(self):
+    def test_calibrate(self):
 
         gr = GR4J()
         warmup = 365*5
