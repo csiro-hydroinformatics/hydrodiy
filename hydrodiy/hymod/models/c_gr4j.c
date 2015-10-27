@@ -224,7 +224,6 @@ int c_gr4j_run(int nval, int nparams,
     double * outputs)
 {
     int ierr=0, i;
-	double RR, RR4, RR4max = 0;
 
     /* Check dimensions */
     if(noutputs > GR4J_NOUTPUTS)

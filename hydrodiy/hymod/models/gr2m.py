@@ -24,6 +24,7 @@ class GR2M(Model):
 
         Model.__init__(self, 'gr2m',
             0, \
+            0, \
             nstates, \
             2, \
             2, \

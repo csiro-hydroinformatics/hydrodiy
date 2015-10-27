@@ -86,6 +86,7 @@ def vect2txt(x):
 class Model(object):
 
     def __init__(self, name, \
+            nconfig, \
             nuhmaxlength, \
             nstates, \
             ntrueparams, \
@@ -102,6 +103,8 @@ class Model(object):
         self.outputs_names = outputs_names
         self.runtime = np.nan
         self.hitbounds = False
+
+        self.nconfig = nconfig
 
         self.nuhmaxlength = nuhmaxlength
         self.nuhlength = 0
@@ -147,12 +150,19 @@ class Model(object):
 
     def __str__(self):
         str = '\n{0} model implementation\n'.format(self.name)
+        str += '  nconfig  = {0}\n'.format(self.nconfig)
         str += '  nuhlength  = {0}\n'.format(self.nuhlength)
         str += '  nuhmaxlength  = {0}\n'.format(self.nuhmaxlength)
         str += '  nstates = {0}\n'.format(len(self.states))
 
         if hasattr(self, 'nout'):
             str += '  nout    = {0}\n'.format(self.nout)
+
+        if hasattr(self, 'config'):
+            str += '  config  = ['
+            for i in range(self.nconfig):
+                str += ' {0:.3f}'.format(self.config[i])
+            str += ']\n'
 
         str += '  calparams  = ['
         for i in range(self.ncalparams):
@@ -184,6 +194,10 @@ class Model(object):
 
     def set_uhparams(self):
         pass
+
+
+    def set_config(self, config):
+        self.config = np.atleast_1d(config[:self.nconfig])
 
 
     def set_trueparams_default(self):
