@@ -26,7 +26,9 @@ class GR4J(Model):
         self.nuh2 = 0
 
         Model.__init__(self, 'gr4j', \
-            0, \
+            1, \
+            ['catcharea[km2]'], \
+            [0], \
             nuhmaxlength, \
             nstates, \
             4, \

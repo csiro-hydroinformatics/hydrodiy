@@ -23,7 +23,9 @@ class GR2M(Model):
     def __init__(self):
 
         Model.__init__(self, 'gr2m',
-            0, \
+            1, \
+            ['catcharea[km2]'], \
+            [0], \
             0, \
             nstates, \
             2, \

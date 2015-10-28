@@ -10,7 +10,7 @@ from hymod.model import Model
 class TurcMezentsev(Model):
 
     def __init__(self):
-        Model.__init__(self, 'turcmezentsev', 0, 0, 0, \
+        Model.__init__(self, 'turcmezentsev', 1, ['dummy'], [0], 0, 0, \
             1, 1, \
             ['n'], \
             ['Q[mm/m]'], \

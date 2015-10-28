@@ -71,7 +71,8 @@ class ModelError(Exception):
 
 def checklength(x, nx, model, message):
     if len(x) != nx:
-        moderr = ModelError(model.name, -1, message)
+        moderr = ModelError(model.name, -1, 
+            message='{0}, len(x)({1}) != {2}'.format(message, len(x), nx))
         raise moderr
 
 
@@ -87,6 +88,8 @@ class Model(object):
 
     def __init__(self, name, \
             nconfig, \
+            config_names, \
+            config_default, \
             nuhmaxlength, \
             nstates, \
             ntrueparams, \
@@ -104,16 +107,28 @@ class Model(object):
         self.runtime = np.nan
         self.hitbounds = False
 
+        # Config data
         self.nconfig = nconfig
+        self.config_names = config_names
+        checklength(self.config_names, nconfig, self, \
+                'Problem with config_names')
 
+        self.config_default = config_default
+        checklength(self.config_default, nconfig, self, \
+                'Problem with config_default')
+        self.set_config_default()
+
+        # UH data
         self.nuhmaxlength = nuhmaxlength
         self.nuhlength = 0
         self.uh = np.zeros(nuhmaxlength).astype(np.float64)
         self.statesuh = np.zeros(nuhmaxlength).astype(np.float64)
 
+        # States data
         self.nstates = nstates
         self.states = np.zeros(nstates).astype(np.float64)
 
+        # Parameter data
         self.ntrueparams = ntrueparams
         self.trueparams = np.ones(ntrueparams) * np.nan
 
@@ -161,7 +176,8 @@ class Model(object):
         if hasattr(self, 'config'):
             str += '  config  = ['
             for i in range(self.nconfig):
-                str += ' {0:.3f}'.format(self.config[i])
+                str += ' {0}:{1:.3f}'.format(self.config_names[i], \
+                    self.config[i])
             str += ']\n'
 
         str += '  calparams  = ['
@@ -171,7 +187,8 @@ class Model(object):
 
         str += '  trueparams = ['
         for i in range(self.ntrueparams):
-            str += ' {0}:{1:.3f}'.format(self.trueparams_names[i], self.trueparams[i])
+            str += ' {0}:{1:.3f}'.format(self.trueparams_names[i], \
+                self.trueparams[i])
         str += ']\n'
 
         str += '  states     = ['
@@ -198,6 +215,10 @@ class Model(object):
 
     def set_config(self, config):
         self.config = np.atleast_1d(config[:self.nconfig])
+
+
+    def set_config_default(self):
+        self.set_config(self.config_default)
 
 
     def set_trueparams_default(self):
