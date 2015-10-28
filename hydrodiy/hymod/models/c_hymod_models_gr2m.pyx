@@ -3,9 +3,6 @@ cimport numpy as np
 
 np.import_array()
 
-# To force initialisation - Cython compilation bugs otherwise
-init = ""
-
 # -- HEADERS --
 
 cdef extern from 'c_gr2m.h':
