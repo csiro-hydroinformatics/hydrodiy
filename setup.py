@@ -16,6 +16,7 @@ ext_modules = [
             'hydrodiy/hymod/c_crps.c'
         ],
         include_dirs=[numpy.get_include()]),
+
     Extension(
         name='c_hymod_models_utils', 
         sources=[
@@ -25,6 +26,7 @@ ext_modules = [
             'hydrodiy/hymod/models/c_dummy.c'
         ],
         include_dirs=[numpy.get_include()]),
+
     Extension(
         name='c_hymod_models_gr4j', 
         sources=[
@@ -34,6 +36,7 @@ ext_modules = [
             'hydrodiy/hymod/models/c_gr4j.c'
         ],
         include_dirs=[numpy.get_include()]),
+
      Extension(
         name='c_hymod_models_gr2m', 
         sources=[
@@ -42,6 +45,17 @@ ext_modules = [
             'hydrodiy/hymod/models/c_gr2m.c'
         ],
         include_dirs=[numpy.get_include()]),
+
+     Extension(
+        name='c_hymod_models_lagroute', 
+        sources=[
+            'hydrodiy/hymod/models/c_hymod_models_lagroute.pyx', 
+            'hydrodiy/hymod/models/c_utils.c',
+            'hydrodiy/hymod/models/c_uh.c',
+            'hydrodiy/hymod/models/c_lagroute.c'
+        ],
+        include_dirs=[numpy.get_include()]),
+
     Extension(
         name='c_hystat', 
         sources=[
@@ -49,6 +63,7 @@ ext_modules = [
             'hydrodiy/hystat/c_ar1.c'
         ],
         include_dirs=[numpy.get_include(), '~/.local/lib/include']),
+
     Extension(
         name='c_hydata', 
         sources=[
