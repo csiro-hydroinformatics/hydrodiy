@@ -29,20 +29,31 @@ class LagRouteTestCases(unittest.TestCase):
 
 
     def test_print(self):
-        gr = LagRoute()
-        str_gr = '%s' % gr
+        lr = LagRoute()
+        str_lr = '%s' % lr
+
+
+    def test_run(self):
+
+        ierr_id = ''
+        lr = LagRoute()
+        lr.create_outputs(20, 5)
+        lr.initialise()
+        inputs = np.zeros((20, 1))
+        inputs[1,0] = 100
+        lr.run(inputs)
 
 
     def test_error1(self):
 
         ierr_id = ''
-        gr = LagRoute()
-        gr.create_outputs(20, 30)
-        gr.initialise()
+        lr = LagRoute()
+        lr.create_outputs(20, 30)
+        lr.initialise()
         inputs = np.random.uniform(size=(20, 1))
 
         try:
-            gr.run(inputs)
+            lr.run(inputs)
         except ModelError as  e:
             ierr_id = e.ierr_id
 
@@ -52,13 +63,13 @@ class LagRouteTestCases(unittest.TestCase):
     def test_error2(self):
 
         ierr_id = ''
-        gr = LagRoute()
-        gr.create_outputs(20, 2)
-        gr.initialise()
+        lr = LagRoute()
+        lr.create_outputs(20, 2)
+        lr.initialise()
         inputs = np.random.uniform(size=(20, 3))
 
         try:
-            gr.run(inputs)
+            lr.run(inputs)
         except ModelError as  e:
             ierr_id = e.ierr_id
 
@@ -68,22 +79,20 @@ class LagRouteTestCases(unittest.TestCase):
     def test_get_calparams_sample(self):
 
         nsamples = 100
-        gr = LagRoute()
-        samples = gr.get_calparams_samples(nsamples)
+        lr = LagRoute()
+        samples = lr.get_calparams_samples(nsamples)
         self.assertTrue(samples.shape == (nsamples, 2))
 
 
     def test_uh1(self):
 
-        gr = LagRoute()
+        lr = LagRoute()
 
         for u, a in itertools.product(np.linspace(0, 10, 20), \
                 np.linspace(0, 1, 20)):
-            gr.set_trueparams([u, a])
+            lr.set_trueparams([u, a])
 
-            ck = abs(np.sum(gr.uh)-1) < UHEPS
-            if not ck:
-                import pdb; pdb.set_trace()
+            ck = abs(np.sum(lr.uh)-1) < UHEPS
             self.assertTrue(ck)
 
 
@@ -129,17 +138,18 @@ class LagRouteTestCases(unittest.TestCase):
         L = 86400 # 86.4 km reach
         qstar = 50 # qstar = 50 m3/s
 
+        # Set outputs
+        lr.create_outputs(len(inputs), 4)
+
         for theta2 in [1, 2]:
 
             lr.set_config([dt, L, qstar, theta2])
-
-            # Set outputs
-            lr.create_outputs(len(inputs))
 
             # Run
             UU = np.linspace(0.1, 20, 20)
             aa = np.linspace(0., 1., 20)
             dta = 0
+            count = 0
 
             for U, alpha in itertools.product(UU, aa):
 
