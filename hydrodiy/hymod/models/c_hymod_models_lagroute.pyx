@@ -11,10 +11,14 @@ cdef extern from 'c_lagroute.h':
     int c_lagroute_getnoutputs()
 
 cdef extern from 'c_lagroute.h':
-    int c_lagroute_run(int nval, int nparams, 
+    int c_lagroute_run(int nval, 
+            int nparams, 
             int nuh,
+            int nconfig,
             int ninputs,
-            int nstates, int noutputs,
+            int nstates, 
+            int noutputs,
+    	    double * config,
     	    double * params,
             double * uh,
     	    double * inputs,
@@ -33,6 +37,7 @@ def lagroute_getnoutputs():
     return c_lagroute_getnoutputs()
 
 def lagroute_run(int nuh, 
+        np.ndarray[double, ndim=1, mode='c'] config not None,
         np.ndarray[double, ndim=1, mode='c'] params not None,
         np.ndarray[double, ndim=1, mode='c'] uh not None,
         np.ndarray[double, ndim=2, mode='c'] inputs not None,
@@ -63,15 +68,14 @@ def lagroute_run(int nuh,
             params.shape[0], \
             nuh, 
             inputs.shape[1], \
+            config.shape[1], \
             states.shape[0], \
             outputs.shape[1], \
+            <double*> np.PyArray_DATA(config), \
             <double*> np.PyArray_DATA(params), \
             <double*> np.PyArray_DATA(uh), \
             <double*> np.PyArray_DATA(inputs), \
             <double*> np.PyArray_DATA(statesuh), \
             <double*> np.PyArray_DATA(states), \
             <double*> np.PyArray_DATA(outputs))
-
-    return ierr
-
 

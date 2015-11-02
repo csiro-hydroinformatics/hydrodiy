@@ -10,7 +10,7 @@ from hymod.model import Model
 class TurcMezentsev(Model):
 
     def __init__(self):
-        Model.__init__(self, 'turcmezentsev', 1, ['dummy'], [0], 0, 0, \
+        Model.__init__(self, 'turcmezentsev', 1, ['dummy'], [0], 2, 0, 0, \
             1, 1, \
             ['n'], \
             ['Q[mm/m]'], \
@@ -22,6 +22,12 @@ class TurcMezentsev(Model):
 
 
     def run(self, inputs):
+
+        if inputs.shape[1] != self.ninputs:
+            raise ModelError(self.name, 
+                    ierr_id='ESIZE_INPUTS', \
+                    message='returned from TurcMezentsev.run')
+
         P = inputs[:,0] 
         PE = inputs[:,1]
         exponent = self.trueparams[0]

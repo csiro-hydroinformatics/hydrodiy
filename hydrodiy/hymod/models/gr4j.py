@@ -29,6 +29,7 @@ class GR4J(Model):
             1, \
             ['catcharea[km2]'], \
             [0], \
+            2, \
             nuhmaxlength, \
             nstates, \
             4, \
@@ -94,6 +95,11 @@ class GR4J(Model):
 
 
     def run(self, inputs):
+
+        if inputs.shape[1] != self.ninputs:
+            raise ModelError(self.name, 
+                    ierr_id='ESIZE_INPUTS', \
+                    message='returned from GR4J.run')
 
         ierr = c_hymod_models_gr4j.gr4j_run(self.nuh1, \
             self.nuh2, \

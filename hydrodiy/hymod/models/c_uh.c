@@ -106,15 +106,15 @@ int c_uh_getuh(int nuhlengthmax,
         int * nuh,
         double * uh)
 {
-	int i;
+    int i;
     double suh;
 
     lag = lag < 0 ? 0 : lag;
 
-	/* UH ordinates */
+    /* UH ordinates */
     *nuh = 0;
     suh = 0;
-	for(i=0; i < nuhlengthmax-1; i++)
+    for(i=0; i < nuhlengthmax-1; i++)
     {
         if(suh < 1-UHEPS)
             *nuh += 1;
@@ -129,7 +129,7 @@ int c_uh_getuh(int nuhlengthmax,
     if(1-suh > UHEPS || *nuh > nuhlengthmax)
         return ESIZE_STATESUH;
 
-	return 0;
+    return 0;
 }
 
 
@@ -141,13 +141,13 @@ int uh_runtimestep(int nuh,
 {
     int ierr=0, k;
 
-	for (k=0;k<nuh-1;k++)
-            states[k] = states[1+k]+uh[k]*input;
-
-	states[nuh-1] = uh[nuh-1]*input;
+    for (k=0;k<nuh-1;k++)
+        states[k] = states[1+k]+uh[k]*input;
+    
+    states[nuh-1] = uh[nuh-1]*input;
     *outputs = states[0];
-
-	return ierr;
+    
+    return ierr;
 }
 
 

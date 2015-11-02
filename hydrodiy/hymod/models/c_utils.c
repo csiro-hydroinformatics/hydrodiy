@@ -1,14 +1,16 @@
 #include "c_utils.h"
 
 
-int c_utils_getesize(int * esize)
+int c_utils_geterror(int * error)
 {
-    esize[0] = ESIZE_INPUTS;
-    esize[1] = ESIZE_OUTPUTS;
-    esize[2] = ESIZE_PARAMS; 
-    esize[3] = ESIZE_STATES;
-    esize[4] = ESIZE_STATESUH;
-    esize[5] = EMODEL_RUN;
+    error[0] = ESIZE_INPUTS;
+    error[1] = ESIZE_OUTPUTS;
+    error[2] = ESIZE_PARAMS; 
+    error[3] = ESIZE_STATES;
+    error[4] = ESIZE_STATESUH;
+    error[5] = ESIZE_STATESUH;
+
+    error[10] = EMODEL_RUN;
 
     return 0;
 }

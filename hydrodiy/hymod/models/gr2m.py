@@ -26,6 +26,7 @@ class GR2M(Model):
             1, \
             ['catcharea[km2]'], \
             [0], \
+            2, \
             0, \
             nstates, \
             2, \
@@ -42,6 +43,12 @@ class GR2M(Model):
 
 
     def run(self, inputs):
+
+        if inputs.shape[1] != self.ninputs:
+            raise ModelError(self.name, 
+                    ierr_id='ESIZE_INPUTS', \
+                    message='returned from GR2M.run')
+
         ierr = c_hymod_models_gr2m.gr2m_run(self.trueparams, inputs, \
             self.states, \
             self.outputs)

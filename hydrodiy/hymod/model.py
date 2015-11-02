@@ -20,33 +20,34 @@ class ModelError(Exception):
         self.message = message
 
         # Set error messages
-        esize = np.zeros(50).astype(np.int32)
-        c_hymod_models_utils.getesize(esize)
-        esize = { \
+        error = np.zeros(50).astype(np.int32)
+        c_hymod_models_utils.geterror(error)
+        error = { \
                 -1 : 'UNKNOWN', \
-                esize[0] : 'ESIZE_INPUTS', \
-                esize[1] : 'ESIZE_OUTPUTS', \
-                esize[2] : 'ESIZE_PARAMS', \
-                esize[3] : 'ESIZE_STATES', \
-                esize[4] : 'ESIZE_STATESUH', \
-                esize[5] : 'EMODEL_RUN' \
+                error[0] : 'ESIZE_INPUTS', \
+                error[1] : 'ESIZE_OUTPUTS', \
+                error[2] : 'ESIZE_PARAMS', \
+                error[3] : 'ESIZE_STATES', \
+                error[4] : 'ESIZE_STATESUH', \
+                error[5] : 'ESIZE_CONFIG', \
+                error[10] : 'EMODEL_RUN' \
         }
 
 
         # Initialise
         if not ierr is None:
             self.ierr = ierr
-            if ierr in esize:
-                self.ierr_id = esize[ierr]
+            if ierr in error:
+                self.ierr_id = error[ierr]
             else:
-                self.ierr_id = esize[-1]
+                self.ierr_id = error[-1]
 
             return
 
         if not ierr_id is None:
             self.ierr_id = ierr_id
-            for ierr in esize:
-                if esize[ierr] == ierr_id:
+            for ierr in error:
+                if error[ierr] == ierr_id:
                     self.ierr = ierr
                     return
 
@@ -69,9 +70,10 @@ class ModelError(Exception):
 
 
 
-def checklength(x, nx, model, message):
+def checklength(x, nx, model, ierr_id, message):
     if len(x) != nx:
-        moderr = ModelError(model.name, -1, 
+        moderr = ModelError(model.name, 
+            ierr_id = ierr_id, 
             message='{0}, len(x)({1}) != {2}'.format(message, len(x), nx))
         raise moderr
 
@@ -90,6 +92,7 @@ class Model(object):
             nconfig, \
             config_names, \
             config_default, \
+            ninputs, \
             nuhmaxlength, \
             nstates, \
             ntrueparams, \
@@ -103,6 +106,7 @@ class Model(object):
             trueparams_default):
 
         self.name = name
+        self.ninputs = ninputs
         self.outputs_names = outputs_names
         self.runtime = np.nan
         self.hitbounds = False
@@ -111,11 +115,11 @@ class Model(object):
         self.nconfig = nconfig
         self.config_names = config_names
         checklength(self.config_names, nconfig, self, \
-                'Problem with config_names')
+                'ESIZE_CONFIG', 'Problem with config_names')
 
         self.config_default = config_default
         checklength(self.config_default, nconfig, self, \
-                'Problem with config_default')
+                'ESIZE_CONFIG', 'Problem with config_default')
         self.set_config_default()
 
         # UH data
@@ -134,31 +138,31 @@ class Model(object):
 
         self.trueparams_names = trueparams_names
         checklength(self.trueparams_names, ntrueparams, self, \
-                'Problem with trueparams_names')
+                'ESIZE_PARAMS', 'Problem with trueparams_names')
 
         self.trueparams_default = np.atleast_1d(trueparams_default).astype(np.float64)
         checklength(self.trueparams_default, ntrueparams, self, \
-                'Problem with trueparams_default')
+                'ESIZE_PARAMS', 'Problem with trueparams_default')
 
         self.trueparams_mins = np.atleast_1d(trueparams_mins).astype(np.float64)
         checklength(self.trueparams_default, ntrueparams, self, \
-                'Problem with trueparams_mins')
+                'ESIZE_PARAMS', 'Problem with trueparams_mins')
 
         self.trueparams_maxs = np.atleast_1d(trueparams_maxs).astype(np.float64)
         checklength(self.trueparams_maxs, ntrueparams, self, \
-                'Problem with trueparams_maxs')
+                'ESIZE_PARAMS', 'Problem with trueparams_maxs')
 
         self.ncalparams = ncalparams
         self.calparams = np.ones(ncalparams) * np.nan
 
         self.calparams_means = np.atleast_1d(calparams_means).astype(np.float64)
         checklength(self.calparams_means, ncalparams, self, \
-                'Problem with calparams_means')
+                'ESIZE_PARAMS', 'Problem with calparams_means')
 
         self.calparams_stdevs = np.atleast_2d(calparams_stdevs)
         checklength(self.calparams_stdevs.flat[:], \
                 ncalparams*ncalparams, self, \
-                'Problem with calparams_stdevs')
+                'ESIZE_PARAMS', 'Problem with calparams_stdevs')
 
         self.set_trueparams_default()
 
@@ -205,8 +209,8 @@ class Model(object):
 
 
     def cal2true(self, calparams):
-        trueparams = np.ones(len(self.ntrueparams)) * np.nan
-        return trueparams
+        ''' No transform by default '''
+        return calparams
 
 
     def set_uhparams(self):

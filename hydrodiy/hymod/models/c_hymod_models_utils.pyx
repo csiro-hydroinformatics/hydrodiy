@@ -5,7 +5,7 @@ np.import_array()
 
 # -- HEADERS --
 cdef extern from 'c_utils.h':
-    int c_utils_getesize(int * esize)
+    int c_utils_geterror(int * esize)
 
 cdef extern from 'c_uh.h':
     int c_uh_getnuhmaxlength()
@@ -39,11 +39,11 @@ cdef extern from 'c_dummy.h':
 def __cinit__(self):
     pass
 
-def getesize(np.ndarray[int, ndim=1, mode='c'] esize not None):
+def geterror(np.ndarray[int, ndim=1, mode='c'] esize not None):
 
     cdef int ierr
 
-    ierr = c_utils_getesize(<int*> np.PyArray_DATA(esize))
+    ierr = c_utils_geterror(<int*> np.PyArray_DATA(esize))
 
     return ierr
 

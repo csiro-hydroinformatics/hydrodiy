@@ -15,7 +15,7 @@
 #define LAGROUTE_NSTATES 5
 
 /* Number of outputs returned by LAG ROUTE run */
-#define LAGROUTE_NOUTPUTS 20
+#define LAGROUTE_NOUTPUTS 10
 
 int c_lagroute_getnstates(void);
 

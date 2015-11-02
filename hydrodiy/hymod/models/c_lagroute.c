@@ -132,8 +132,13 @@ int c_lagroute_runtimestep(int nparams,
 }
 
 // --------- Component runner --------------------------------------------------
-int c_lagroute_run(int nval, int nparams, int nuh, int ninputs, 
-        int nconfig, int nstates, int noutputs, 
+int c_lagroute_run(int nval, 
+        int nparams, 
+        int nuh, 
+        int ninputs, 
+        int nconfig, 
+        int nstates, 
+        int noutputs, 
         double * config,
 	double * params,
         double * uh,
@@ -161,7 +166,7 @@ int c_lagroute_run(int nval, int nparams, int nuh, int ninputs,
     if(noutputs < 4)
         return ESIZE_OUTPUTS;
 
-    if(nuh > NUH_MAXLENGTH)
+    if(nuh > NUHMAXLENGTH)
         return ESIZE_STATESUH;
  
     /* Config data */
