@@ -40,40 +40,7 @@ class Simplot(object):
         pass
 
     def draw_balance(self):
+        pass
 
 
 
-#nval = 100
-#
-#for i, j in itertools.product(range(fig_nrows),
-#                            range(fig_ncols)):
-#
-#    ax = fig.add_subplot(gs[i, j])
-#
-#    xx = np.random.uniform(size=(nval, 2))
-#    x = xx[:,0]
-#    y = xx[:,1]
-#
-#    # Scatter plot
-#    ax.plot(x, y, 'o',
-#        markersize=10,
-#        mec='black',
-#        mfc='pink',
-#        alpha=0.5,
-#        label='points')
-#
-#    # Decoration
-#    ax.legend(frameon=True,
-#        shadow=True,
-#        fancybox=True,
-#        framealpha=0.7,
-#        numpoints=1)
-#
-#    ax.set_title('Title')
-#    ax.set_xlabel('X label')
-#    ax.set_xlabel('Y label')
-#
-#fig.suptitle('Overall title')
-#
-#
-#
