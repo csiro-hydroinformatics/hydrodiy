@@ -10,7 +10,8 @@ int c_utils_geterror(int * error)
     error[4] = ESIZE_STATESUH;
     error[5] = ESIZE_STATESUH;
 
-    error[10] = EMODEL_RUN;
+    error[10] = EINVAL;
+    error[11] = EMODEL_RUN;
 
     return 0;
 }

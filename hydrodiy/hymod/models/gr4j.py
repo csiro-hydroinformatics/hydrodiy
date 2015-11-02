@@ -79,7 +79,8 @@ class GR4J(Model):
                 ierr_id = 'ESIZE_STATESUH', \
                 message='gr4j.set_uhparams')
 
-        self.uh[self.nuh1:self.nuh1+self.nuh2] = uh2[:self.nuh2]
+        nend = len(self.uh)-self.nuh1
+        self.uh[self.nuh1:] = uh2[:nend]
         self.nuhlength = self.nuh1 + self.nuh2
 
 

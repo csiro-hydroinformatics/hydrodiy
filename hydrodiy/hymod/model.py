@@ -30,7 +30,8 @@ class ModelError(Exception):
                 error[3] : 'ESIZE_STATES', \
                 error[4] : 'ESIZE_STATESUH', \
                 error[5] : 'ESIZE_CONFIG', \
-                error[10] : 'EMODEL_RUN' \
+                error[10] : 'EINVAL', \
+                error[11] : 'EMODEL_RUN' \
         }
 
 
@@ -218,7 +219,7 @@ class Model(object):
 
 
     def set_config(self, config):
-        self.config = np.atleast_1d(config[:self.nconfig])
+        self.config = np.atleast_1d(config[:self.nconfig]).astype(np.float64)
 
 
     def set_config_default(self):
@@ -247,8 +248,6 @@ class Model(object):
 
         trueparams = self.cal2true(self.calparams)
         self.set_trueparams(trueparams)
-
-        self.set_uhparams()
 
 
     def initialise(self, states=None, statesuh=None):

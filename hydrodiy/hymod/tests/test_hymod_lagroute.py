@@ -39,7 +39,7 @@ class LagRouteTestCases(unittest.TestCase):
         gr = LagRoute()
         gr.create_outputs(20, 30)
         gr.initialise()
-        inputs = np.random.uniform(size=(20, 2))
+        inputs = np.random.uniform(size=(20, 1))
 
         try:
             gr.run(inputs)
@@ -47,6 +47,22 @@ class LagRouteTestCases(unittest.TestCase):
             ierr_id = e.ierr_id
 
         self.assertTrue(ierr_id == 'ESIZE_OUTPUTS')
+
+
+    def test_error2(self):
+
+        ierr_id = ''
+        gr = LagRoute()
+        gr.create_outputs(20, 2)
+        gr.initialise()
+        inputs = np.random.uniform(size=(20, 3))
+
+        try:
+            gr.run(inputs)
+        except ModelError as  e:
+            ierr_id = e.ierr_id
+
+        self.assertTrue(ierr_id == 'ESIZE_INPUTS')
 
 
     def test_get_calparams_sample(self):
@@ -66,6 +82,8 @@ class LagRouteTestCases(unittest.TestCase):
             gr.set_trueparams([u, a])
 
             ck = abs(np.sum(gr.uh)-1) < UHEPS
+            if not ck:
+                import pdb; pdb.set_trace()
             self.assertTrue(ck)
 
 

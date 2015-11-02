@@ -73,14 +73,16 @@ class GR4JTestCases(unittest.TestCase):
 
         ierr_id = ''
         gr = GR4J()
-        gr.trueparams[3] = 1000
+        gr.create_outputs(20, 5)
+        gr.initialise()
+        inputs = np.random.uniform(size=(20, 3))
 
         try:
-            gr.set_uhparams()
+            gr.run(inputs)
         except ModelError as  e:
             ierr_id = e.ierr_id
 
-        self.assertTrue(ierr_id == 'ESIZE_STATESUH')
+        self.assertTrue(ierr_id == 'ESIZE_INPUTS')
 
 
     def test_get_calparams_sample(self):

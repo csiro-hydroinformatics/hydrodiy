@@ -79,3 +79,5 @@ def lagroute_run(int nuh,
             <double*> np.PyArray_DATA(states), \
             <double*> np.PyArray_DATA(outputs))
 
+    return ierr
+

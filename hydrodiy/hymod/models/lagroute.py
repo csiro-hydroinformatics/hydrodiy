@@ -26,7 +26,7 @@ class LagRoute(Model):
             4, \
             ['timestep[s]', 'length[m]', 'flowref[m3/s]', 'storageexpon[-]'], \
             [86400, 1e5, 1, 1], \
-            2, 
+            1, 
             nuhmaxlength, \
             nstates, \
             2, \
@@ -45,6 +45,7 @@ class LagRoute(Model):
         # Lag = alpha * U * L / dt
         delta = self.config[1] * self.trueparams[0] * self.trueparams[1]
         delta /= self.config[0]
+        delta = np.float64(delta)
 
         # First uh
         nuh = np.zeros(1).astype(np.int32)
@@ -52,14 +53,13 @@ class LagRoute(Model):
         ierr = c_hymod_models_utils.uh_getuh(nuhmaxlength,
                 5, delta, \
                 nuh, uh)
-        self.nuh = nuh[0]
 
         if ierr > 0:
             raise ModelError(self.name, ierr, \
                     message='c_hymod_models_utils.uh_getuh')
 
-        self.uh[:self.nuh] = uh[:self.nuh]
-        self.nuhlength = self.nuh
+        self.uh = uh
+        self.nuhlength = nuh[0]
 
 
     def run(self, inputs):
@@ -69,7 +69,7 @@ class LagRoute(Model):
                     ierr_id='ESIZE_INPUTS', \
                     message='returned from LagRoute.run')
 
-        ierr = c_hymod_models_lagroute.lagroute_run(self.nuh, \
+        ierr = c_hymod_models_lagroute.lagroute_run(self.nuhlength, \
             self.config, \
             self.trueparams, \
             self.uh, \

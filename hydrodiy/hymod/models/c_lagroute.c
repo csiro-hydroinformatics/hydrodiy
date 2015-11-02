@@ -160,14 +160,12 @@ int c_lagroute_run(int nval,
     if(nstates < 1)
         return ESIZE_STATES;
 
-    if(ninputs < 1)
-        return ESIZE_INPUTS;
-
-    if(noutputs < 4)
-        return ESIZE_OUTPUTS;
-
     if(nuh > NUHMAXLENGTH)
         return ESIZE_STATESUH;
+ 
+    if(noutputs > LAGROUTE_NOUTPUTS)
+        return ESIZE_OUTPUTS;
+
  
     /* Config data */
     dt = config[0];
