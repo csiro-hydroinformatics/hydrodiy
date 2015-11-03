@@ -61,7 +61,7 @@ class ModelError(Exception):
 
 
     def __str__(self):
-        txt = '{0} model : error {1} - {2} : {3}'.format( \
+        txt = '{0} model : error {1} (TAG {2}) : {3}'.format( \
                 self.model,
                 self.ierr,
                 self.ierr_id,
