@@ -2,6 +2,8 @@
 from datetime import datetime
 from dateutil.relativedelta import relativedelta as delta
 
+from string import ascii_letters as letters
+
 import pandas as pd
 import numpy as np
 
@@ -11,15 +13,6 @@ from matplotlib import colors
 
 from hydata import dutils
 from hyplot import putils
-
-
-#COLS = [colors.rgb2hex([float(coo)/255 for coo in co]) for co in [
-#        (31, 119, 180), (174, 199, 232), (255, 127, 14), (255, 187, 120), \
-#        (44, 160, 44), (152, 223, 138), (214, 39, 40), (255, 152, 150), \
-#        (148, 103, 189), (197, 176, 213), (140, 86, 75), (196, 156, 148), \
-#        (227, 119, 194), (247, 182, 210), (127, 127, 127), (199, 199, 199), \
-#        (188, 189, 34), (219, 219, 141), (23, 190, 207), (158, 218, 229)] ]
-#
 
 COLS = [colors.rgb2hex([float(coo)/255 for coo in co]) for co in [ \
             (31, 119, 180), (255, 127, 14), (44, 160, 44), \
@@ -31,9 +24,9 @@ COLS = [colors.rgb2hex([float(coo)/255 for coo in co]) for co in [ \
 class Simplot(object):
 
     def __init__(self, \
-        fig, \
         obs, \
         sim, \
+        fig = None, \
         wateryear_start =7, \
         nfloods=4, \
         nbeforepeak = 30, \
@@ -62,6 +55,8 @@ class Simplot(object):
         self._get_flood_indexes()
 
         # Figure to draw on
+        if fig is None:
+            fig = plt.figure()
         self.fig = fig
 
         # Grid spec
@@ -69,7 +64,7 @@ class Simplot(object):
         fig_nrows = 3
         self.gs = gridspec.GridSpec(fig_nrows, fig_nCOLS,
                 width_ratios=[1] * fig_nCOLS,
-                height_ratios=[1] * (fig_nrows-1) + [0.5] * 1)
+                height_ratios=[0.5] * 1 + [1] * (fig_nrows-1))
 
 
     def _get_flood_indexes(self):
@@ -100,31 +95,31 @@ class Simplot(object):
 
     def draw(self):
 
-        # Draw flow duration curves
+        # Draw water balance
         ax = plt.subplot(self.gs[0, 0])
+        self.draw_balance(ax)
+
+        # Draw annual time series
+        ax = plt.subplot(self.gs[0, 1:])
+        self.draw_annual(ax)
+
+        # Draw flow duration curves
+        ax = plt.subplot(self.gs[1, 0])
         self.draw_fdc(ax)
 
-        ax = plt.subplot(self.gs[1, 0])
-        self.draw_fdc(ax, xlog=True, ylog=False)
+        ax = plt.subplot(self.gs[2, 0])
+        self.draw_fdc(ax, 'd', xlog=True, ylog=False)
 
         # Draw flood events
         for iflood in range(self.nfloods):
-            ix = iflood/2 % self.nfloods
+            ix = 1 + iflood/2 % self.nfloods
             iy = 1 + iflood % (self.nfloods/2)
             ax = plt.subplot(self.gs[ix, iy])
-            self.draw_floods(ax, iflood)
-
-        # Draw annual time series
-        ax = plt.subplot(self.gs[2, 1:])
-        self.draw_annual(ax)
-
-        # Draw water balance
-        ax = plt.subplot(self.gs[2, 0])
-        self.draw_balance(ax)
+            self.draw_floods(ax, iflood, letters[4+iflood])
 
 
 
-    def draw_fdc(self, ax, xlog=False, ylog=True):
+    def draw_fdc(self, ax, ax_letter='c', xlog=False, ylog=True):
 
         if xlog:
             ax.set_xscale('log', nonposx='clip')
@@ -146,25 +141,29 @@ class Simplot(object):
 
         ax.set_xlabel('Frequency')
         ax.set_ylabel('Flow')
-        ax.set_title('Flow duration curve')
+        ax.set_title('({0}) Flow duration curve'.format(ax_letter))
         ax.legend(loc=1, frameon=False)
         ax.grid()
 
 
-    def draw_floods(self, ax, iflood):
+    def draw_floods(self, ax, iflood, ax_letter):
 
         data = self.data
         idx = self.flood_idx[iflood]['index']
-        data.loc[idx, :].plot(ax=ax, color=COLS, lw=2)
+        data.loc[idx, :].plot(ax=ax, color=COLS, lw=2, legend=iflood==0)
+
+        if iflood == 0:
+            lines, labels = ax.get_legend_handles_labels()
+            ax.legend(lines, labels, loc=2, frameon=False)
 
         date_max = self.flood_idx[iflood]['date_max']
-        title = 'Flood #{0} - {1:%Y-%m}'.format(iflood+1, date_max)
+        title = '({0}) Flood #{1} - {2:%Y-%m}'.format(ax_letter, iflood+1, date_max)
         ax.set_title(title)
         ax.grid()
         ax.set_ylabel('Flow')
 
 
-    def draw_annual(self, ax):
+    def draw_annual(self, ax, ax_letter='b'):
 
         # Compute annual time series
         datam = self.data.apply(dutils.aggmonths, args=(1,))
@@ -177,16 +176,20 @@ class Simplot(object):
         datay = datay.shift(-1)
 
         # plot
-        datay.plot(ax=ax, color=COLS, lw=2)
+        datay.iloc[:-1, :].plot(ax=ax, color=COLS, lw=3)
+
+        lines, labels = ax.get_legend_handles_labels()
+        ax.legend(lines, labels, loc=2, frameon=False)
 
         month = datetime(1900, self.wateryear_start, 1).strftime('%B')
-        title = 'Annual time series - Start of water year in {0}'.format(month)
+        title = '({0}) Annual time series - Start of water year in {1}'.format( \
+                    ax_letter, month)
         ax.set_title(title)
-        ax.set_ylabel('Annual flow')
+        ax.set_ylabel('({0}) Annual flow'.format(ax_letter))
         ax.grid()
 
 
-    def draw_balance(self, ax):
+    def draw_balance(self, ax, ax_letter='a'):
         data = self.data
         datab = data.loc[self.idx, :].mean()
 
@@ -194,8 +197,12 @@ class Simplot(object):
         datab.plot(ax=ax, kind='bar', color=COLS, edgecolor='none')
 
         ax.set_ylabel('Average flow')
-        ax.set_title('Water Balance')
+        ax.set_title('({0}) Water Balance'.format(ax_letter))
         ax.grid()
 
 
+    def savefig(self, filename, size=(15, 15)):
+        self.fig.set_size_inches(size)
+        self.gs.tight_layout(self.fig)
+        self.fig.savefig(filename)
 
