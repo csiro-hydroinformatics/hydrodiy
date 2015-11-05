@@ -1,15 +1,32 @@
 
 from datetime import datetime
+from dateutil.relativedelta import relativedelta as delta
 
 import pandas as pd
 import numpy as np
 
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+from matplotlib import colors
 
 from hydata import dutils
 from hyplot import putils
 
+
+#COLS = [colors.rgb2hex([float(coo)/255 for coo in co]) for co in [
+#        (31, 119, 180), (174, 199, 232), (255, 127, 14), (255, 187, 120), \
+#        (44, 160, 44), (152, 223, 138), (214, 39, 40), (255, 152, 150), \
+#        (148, 103, 189), (197, 176, 213), (140, 86, 75), (196, 156, 148), \
+#        (227, 119, 194), (247, 182, 210), (127, 127, 127), (199, 199, 199), \
+#        (188, 189, 34), (219, 219, 141), (23, 190, 207), (158, 218, 229)] ]
+#
+
+COLS = [colors.rgb2hex([float(coo)/255 for coo in co]) for co in [ \
+            (31, 119, 180), (255, 127, 14), (44, 160, 44), \
+            (214, 39, 40), (148, 103, 189), (140, 86, 75), \
+            (227, 119, 194), (127, 127, 127), (188, 189, 34), \
+            (23, 190, 207)
+        ] ]
 
 class Simplot(object):
 
@@ -27,11 +44,11 @@ class Simplot(object):
 
         # data
         self.idx = pd.notnull(obs) & (obs >= 0)
-        
+
         if obs.name is None:
             obs = pd.Series(obs, name='obs')
         self.data = pd.DataFrame(obs)
-        
+
         self.nsim = 1
         if sim.name is None:
             sim = pd.Series(sim, name='sim {0}'.format(self.nsim))
@@ -48,27 +65,28 @@ class Simplot(object):
         self.fig = fig
 
         # Grid spec
-        fig_ncols = 1 + nfloods/2
+        fig_nCOLS = 1 + nfloods/2
         fig_nrows = 3
-        self.gs = gridspec.GridSpec(fig_nrows, fig_ncols,
-                width_ratios=[1] * fig_ncols,
+        self.gs = gridspec.GridSpec(fig_nrows, fig_nCOLS,
+                width_ratios=[1] * fig_nCOLS,
                 height_ratios=[1] * (fig_nrows-1) + [0.5] * 1)
 
 
     def _get_flood_indexes(self):
-        
+
         obs_tmp = self.data['obs'].copy()
+        dates = self.data.index.astype(datetime).values
         nval = len(obs_tmp)
         self.flood_idx = []
 
         for iflood in range(self.nfloods):
             imax = np.where(obs_tmp == obs_tmp.max())[0]
-            i1 = max(0, imax - self.nbeforepeak)
-            i2 = min(nval-1, imax + self.nafterpeak)
-            idx = range(i1, i2+1)
-            self.flood_idx.append(idx)
+            date_max = pd.to_datetime(dates[imax][0])
+            idx = dates >= date_max - delta(days=self.nbeforepeak)
+            idx = idx & (dates <= date_max + delta(days=self.nafterpeak))
+            self.flood_idx.append({'index':idx, 'date_max':date_max})
 
-            obs_tmp.iloc[idx] = np.nan
+            obs_tmp.loc[idx] = np.nan
 
 
     def add_sim(self, sim):
@@ -91,7 +109,7 @@ class Simplot(object):
 
         # Draw flood events
         for iflood in range(self.nfloods):
-            ix = iflood/2 % self.nfloods 
+            ix = iflood/2 % self.nfloods
             iy = 1 + iflood % (self.nfloods/2)
             ax = plt.subplot(self.gs[ix, iy])
             self.draw_floods(ax, iflood)
@@ -105,9 +123,9 @@ class Simplot(object):
         self.draw_balance(ax)
 
 
-    
+
     def draw_fdc(self, ax, xlog=False, ylog=True):
-        
+
         if xlog:
             ax.set_xscale('log', nonposx='clip')
 
@@ -120,10 +138,12 @@ class Simplot(object):
         ff = (np.arange(1, nval+1)-0.3)/(nval+0.4)
         data = self.data
 
+        icol = 0
         for cn in data.columns:
             value = np.sort(data.loc[idx, cn].values)[::-1]
-            ax.plot(ff, value, label=cn)
-        
+            ax.plot(ff, value, '-', label=cn, color=COLS[icol], lw=2)
+            icol += 1
+
         ax.set_xlabel('Frequency')
         ax.set_ylabel('Flow')
         ax.set_title('Flow duration curve')
@@ -134,18 +154,13 @@ class Simplot(object):
     def draw_floods(self, ax, iflood):
 
         data = self.data
-        idx = self.flood_idx[iflood]
-        dates = data.index.values[idx]
+        idx = self.flood_idx[iflood]['index']
+        data.loc[idx, :].plot(ax=ax, color=COLS, lw=2)
 
-        data.loc[dates, :].plot(ax=ax)
-
-        values = data.loc[dates, 'obs'].values
-        yy = dates[values == np.max(values)][0]
-        title = 'Flood #{0} - {1:%Y-%m}'.format(iflood+1, pd.to_datetime(yy))
+        date_max = self.flood_idx[iflood]['date_max']
+        title = 'Flood #{0} - {1:%Y-%m}'.format(iflood+1, date_max)
         ax.set_title(title)
         ax.grid()
-
-        ax.set_xlabel('Date')
         ax.set_ylabel('Flow')
 
 
@@ -162,8 +177,11 @@ class Simplot(object):
         datay = datay.shift(-1)
 
         # plot
-        datay.plot(ax=ax)
+        datay.plot(ax=ax, color=COLS, lw=2)
 
+        month = datetime(1900, self.wateryear_start, 1).strftime('%B')
+        title = 'Annual time series - Start of water year in {0}'.format(month)
+        ax.set_title(title)
         ax.set_ylabel('Annual flow')
         ax.grid()
 
@@ -173,7 +191,7 @@ class Simplot(object):
         datab = data.loc[self.idx, :].mean()
 
         # plot
-        datab.plot(ax=ax, kind='bar')
+        datab.plot(ax=ax, kind='bar', color=COLS, edgecolor='none')
 
         ax.set_ylabel('Average flow')
         ax.set_title('Water Balance')
