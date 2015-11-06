@@ -150,14 +150,16 @@ class Simplot(object):
 
         data = self.data
         idx = self.flood_idx[iflood]['index']
-        data.loc[idx, :].plot(ax=ax, color=COLS, lw=2, legend=iflood==0)
+        data.loc[idx, :].plot(ax=ax, color=COLS, lw=2, \
+                marker='o', legend=iflood==0)
 
         if iflood == 0:
             lines, labels = ax.get_legend_handles_labels()
             ax.legend(lines, labels, loc=2, frameon=False)
 
         date_max = self.flood_idx[iflood]['date_max']
-        title = '({0}) Flood #{1} - {2:%Y-%m}'.format(ax_letter, iflood+1, date_max)
+        title = '({0}) Flood #{1} - {2:%Y-%m}'.format(ax_letter, \
+            iflood+1, date_max)
         ax.set_title(title)
         ax.grid()
         ax.set_ylabel('Flow')
@@ -176,7 +178,7 @@ class Simplot(object):
         datay = datay.shift(-1)
 
         # plot
-        datay.iloc[:-1, :].plot(ax=ax, color=COLS, lw=3)
+        datay.iloc[:-1, :].plot(ax=ax, color=COLS, marker='o', lw=3)
 
         lines, labels = ax.get_legend_handles_labels()
         ax.legend(lines, labels, loc=2, frameon=False)
@@ -192,6 +194,13 @@ class Simplot(object):
     def draw_balance(self, ax, ax_letter='a'):
         data = self.data
         datab = data.loc[self.idx, :].mean()
+
+        freq = data.index.freqstr
+        freqfact = {'H':24*365.25, 'D':365.25, 'MS':12, 'ME':12}
+        if freq not in freqfact:
+            raise ValueError('Frequency {0} not recognised'.format(freq))
+        fact = freqfact[freq]
+        datab = datab * fact
 
         # plot
         datab.plot(ax=ax, kind='bar', color=COLS, edgecolor='none')
