@@ -73,8 +73,8 @@ class ModelError(Exception):
 
 def checklength(x, nx, model, ierr_id, message):
     if len(x) != nx:
-        moderr = ModelError(model.name, 
-            ierr_id = ierr_id, 
+        moderr = ModelError(model.name,
+            ierr_id = ierr_id,
             message='{0}, len(x)({1}) != {2}'.format(message, len(x), nx))
         raise moderr
 
@@ -109,7 +109,6 @@ class Model(object):
         self.name = name
         self.ninputs = ninputs
         self.outputs_names = outputs_names
-        self.runtime = np.nan
         self.hitbounds = False
 
         # Config data
@@ -301,178 +300,178 @@ class Model(object):
         return samples
 
 
-    def calibrate(self, inputs, observations,
-            idx_cal=None, \
+
+class Calibration(object):
+
+    def __init__(self, model, inputs, observations,
             errfun=None, \
-            nsamples=None,\
-            calparams_explore = None, \
-            iprint=10, \
             minimize=True, \
             timeit=False):
-        ''' Perform model calibration
 
-        Parameters
-        -----------
-        inputs : numpy.ndarray
-            Model input over the calibration period
-        obs : numpy.ndarray
-            Observation to be matched by model output over the calibration period
-        idx_cal : numpy.ndarray
-            Indexes to be used for computing the objective function.
-            idx_cal is useful when performing split sample tests or cross validation.
-            Default considers all data points.
-        errfun : function
-            Objective function to be minimised or maximised during calibration.
-            Arguments of errfun should be:
-            - obs : observed data
-            - sim : model output to match observed data
-            Function should return a float.
-            Default is the sum of squared errors.
-        nsamples : int
-            Number of parameter samples used for initial pre-filtering of parameter sets
-            Default is 200xsqrt(ncalparams)
-        calparams_explore : numpy.ndarray
-            Parameter library used for initial pre-filtering
-            Default is sampled from self.get_calparams_samples
-        iprint : int
-            Prints detailed log every [iprint] iterations
-        minimize : bool
-            Indicate if errfun should be minimised (True) or maximised (False).
-        timeit : bool
-            Indicate if the log should contain model runtime
-
-        Returns
-        -----------
-        calparams_final : numpy.ndarray
-            Optimal parameter set
-        outputs_final : numpy.ndarray
-            Model output generated with the optimal parameter set
-        ofun_final : float
-            Value of the objective function corresponding to the optimal parameter set
-        calparams_explore : numpy.ndarray
-            Parameter sets used for the pre-filtering
-        ofun_explore : numpy.ndarray
-            Objective function values corresponding to the pre-filtering parameter sets.
-
-        Example
-        -----------
-        TODO
-        >>> dutils.normaliseid('00a04567B.100')
-        'A04567'
-
-        '''
-
-        # Set defaults
-        if idx_cal is None:
-            idx_cal = observations == observations
-
-        if errfun is None:
-            def fun(obs, sim): return np.sum((obs-sim)**2)
-            errfun = fun
-
-        if nsamples is None:
-            nsamples = int(200*math.sqrt(self.ncalparams))
-
-        if calparams_explore is None:
-            calparams_explore = self.get_calparams_samples(nsamples)
-        else:
-            calparams_explore = np.atleast_2d(calparams_explore)
-            if calparams_explore.shape[0] == 1:
-                calparams_explore = calparam_explore.T
-            nsamples = calparams_explore.shape[0]
-
-        # check inputs
-        if idx_cal.dtype == np.dtype('bool'):
-            idx_cal = np.where(idx_cal)[0]
-
-        if len(observations.shape) <= 1:
-            observations = np.atleast_2d(observations).T
+        self.model = model
+        self.minimize = minimize
+        self.timeit = timeit
+        self.ieval = 0
+        self.iprint = 0
 
         if len(inputs.shape) <= 1:
-            inputs = np.atleast_2d(inputs).T
+            self.inputs = np.atleast_2d(inputs).T
+        else:
+            self.inputs = inputs
 
-        nvalobs = observations.shape[0]
-        nvalinputs = inputs.shape[0]
-        nobs = observations.shape[1]
-        noutputs = nobs
+        if len(observations.shape) <= 1:
+            self.observations = np.atleast_2d(observations).T
+        else:
+            self.observations = observations
 
-        if nvalobs != nvalinputs:
+        self.nval = self.observations.shape[0]
+        self.nobs = self.observations.shape[1]
+        nvalinputs = self.inputs.shape[0]
+
+        if self.nval != nvalinputs:
             raise ModelError(self.name,
                 ierr_id='ESIZE_INPUTS',
                 message = \
-                'model.calibrate, nvalobs({0}) != nvalinputs({1})'.format( \
-                nvalobs, nvalinputs))
-
-        if np.max(idx_cal) >= nvalobs:
-            raise ModelError(self.name,
-                ierr_id='ESIZE_INPUTS',
-                message = \
-                'model.calibrate, np.max(idx_cal)({0}) >= nvalobs({1})'.format( \
-                np.max(idx_cal), nvalobs))
+                'model.calibrate, nval({0}) != nvalinputs({1})'.format( \
+                self.nval, nvalinputs))
 
         # Allocate memory
-        self.create_outputs(nvalobs, noutputs)
+        self.model.create_outputs(self.nval, self.nobs)
 
         # Define objective function
+        self.timeit = timeit
+        self.runtime = np.nan
+
         def objfun(calparams):
 
-            if timeit:
+            if self.timeit:
                 t0 = time.time()
 
-            self.set_calparams(calparams)
-            self.initialise()
-            self.run(inputs)
+            self.model.set_calparams(calparams)
+            self.model.initialise()
+            self.model.run(inputs)
+            self.ieval += 1
 
-            if timeit:
+            if self.timeit:
                 t1 = time.time()
-                self.runtime = 1000 * (t1-t0)
+                self.runtime = (t1-t0)*1000
 
-            if noutputs > 1:
-                ofun = errfun(observations[idx_cal, :], \
-                    self.outputs[idx_cal, :])
-            else:
-                ofun = errfun(observations[idx_cal], \
-                    self.outputs[idx_cal])
+            ofun = self.errfun(self.observations[self.idx_cal, :], \
+                    self.model.outputs[self.idx_cal, :])
 
-            if not minimize:
+            if not self.minimize:
                 ofun *= -1
+
+            if self.iprint>0:
+                if self.ieval%self.iprint == 0:
+                    print('Fit %d : %03.3e [%s] ~ %0.2f ms' % ( \
+                        self.ieval, ofun, vect2txt(calparams), \
+                        self.runtime))
+
 
             return ofun
 
+        self.objfun = objfun
 
-        # Systematic exploration
+        self.set_idx_cal()
+        self.set_errfun()
+
+
+    def __str__(self):
+        str = 'Calibration instance for model {0}\n'.format(self.model.name)
+        str += '    nval = {0}\n'.format(self.nval)
+        str += '    nobs = {0}\n'.format(self.nobs)
+
+
+    def reset_ieval(self):
+        self.ieval = 0
+
+
+    def set_idx_cal(self, idx_cal=None):
+        if idx_cal is None:
+            idx_cal = np.where(np.ones_like(self.observations) == 1)[0]
+
+        if idx_cal.dtype == np.dtype('bool'):
+            self.idx_cal = np.where(idx_cal)[0]
+        else:
+            self.idx_cal = idx_cal
+
+        if np.max(self.idx_cal) >= self.nval:
+            raise ModelError(self.name,
+                ierr_id='ESIZE_INPUTS',
+                message = \
+                'model.calibrate, np.max(idx_cal)({0}) >= nval({1})'.format( \
+                np.max(self.idx_cal), self.nval))
+
+
+    def set_errfun(self, errfun=None):
+        if errfun is None:
+            def errfun(obs, sim):
+                err = (obs-sim)
+                return np.sum(err*err)
+            self.errfun = errfun
+        else:
+            self.errfun = errfun
+
+
+    def explore(self, calparams_explore=None, \
+            nsamples = None, \
+            iprint=0, \
+            seed=333):
+
+        self.iprint = iprint
+
+        if nsamples is None:
+            nsamples = int(200 * math.sqrt(self.model.ncalparams))
+
         ofun_explore = np.zeros(nsamples) * np.nan
         ofun_min = np.inf
 
-        calparams_ini = []
+        if calparams_explore is None:
+            calparams_explore = self.model.get_calparams_samples(nsamples, seed)
+        else:
+            calparams_explore = np.atleast_2d(calparams_explore)
+            if calparams_explore.shape[0] == 1:
+                calparams_explore = calparams_explore.T
+
+        # Systematic exploration
+        calparams_best = None
+
         for i in range(nsamples):
             calparams = calparams_explore[i,:]
-            ofun = objfun(calparams)
+            ofun = self.objfun(calparams)
             ofun_explore[i] = ofun
+            self.ieval += 1
 
-            if iprint>0:
-                if i%iprint == 0:
+            if self.iprint>0:
+                if self.ieval%self.iprint == 0:
                     print('Exploration %d/%d : %03.3e [%s] ~ %0.2f ms' % ( \
-                        i, nsamples, ofun, vect2txt(calparams), \
+                        self.ieval, nsamples, ofun, vect2txt(calparams), \
                         self.runtime))
 
             if ofun < ofun_min:
                 ofun_min = ofun
-                calparams_ini = calparams
+                calparams_best = calparams
 
-        # Minisation
-        if iprint>0:
+        return calparams_best, calparams_explore, ofun_explore
+
+
+    def fit(self, calparams_ini, iprint=0):
+
+        self.iprint = iprint
+
+        if self.iprint>0:
+            ofun_ini = self.objfun(calparams_ini)
             print('\nOptimization start: %03.3e [%s] ~ %0.2f ms\n' % ( \
-                    ofun_min, vect2txt(calparams_ini), self.runtime))
+                    ofun_ini, vect2txt(calparams_ini), self.runtime))
 
-        calparams_final = fmin(objfun, calparams_ini, disp=iprint>0)
-        ofun_final = objfun(calparams_final)
-        outputs_final = self.outputs
+        calparams_final = fmin(self.objfun, calparams_ini, disp=self.iprint>0)
+        ofun_final = self.objfun(calparams_final)
+        outputs_final = self.model.outputs
 
-        if iprint>0:
+        if self.iprint>0:
             print('\nOptimization end: %03.3e [%s] ~ %0.2f ms\n' % ( \
                     ofun_final, vect2txt(calparams_final), self.runtime))
 
-        return calparams_final, outputs_final, ofun_final, \
-                calparams_explore, ofun_explore
+        return calparams_final, outputs_final, ofun_final
 

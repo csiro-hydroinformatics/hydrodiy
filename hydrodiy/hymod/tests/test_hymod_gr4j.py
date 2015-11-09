@@ -18,7 +18,7 @@ try:
 except ImportError:
     pass
 
-from hymod.model import ModelError
+from hymod.model import ModelError, Calibration
 from hymod.models.gr4j import GR4J
 from hymod import errfun
 
@@ -345,11 +345,13 @@ class GR4JTestCases(unittest.TestCase):
             gr.run(inputs)
             obs = gr.outputs[:,0].copy()
 
-            # Calibrate on this output
-            gr.calibrate(inputs, obs, idx_cal, \
-                    errfun=errfun.ssqe_bias, \
-                    iprint=0, \
-                    timeit=True)
+            # Calibrate
+            calib = Calibration(gr, inputs, obs)
+            calib.set_errfun(errfun.ssqe_bias)
+            calib.set_idx_cal(idx_cal)
+                        
+            calparams_ini, _, _ = calib.explore()
+            calparams_final, _, _ = calib.fit(calparams_ini)
 
             err = np.abs(gr.trueparams - params['parvalue'])
             ck = np.max(err[[0, 2]]) < 1

@@ -12,6 +12,8 @@ from hyio import csv
 
 from hywafari import wdata
 from hymod.models.gr2m import GR2M
+from hymod.model import Calibration
+from hymod import errfun
 
 class GR2MTestCases(unittest.TestCase):
 
@@ -111,12 +113,6 @@ class GR2MTestCases(unittest.TestCase):
         # Parameter samples
         nsamples = 200
         samples = gr.get_calparams_samples(nsamples)
-        
-        # Objective function
-        def errfun(obs, sim):
-            E = np.sum((np.sqrt(obs)-np.sqrt(sim))**2)
-            B = np.mean(obs-sim)
-            return E * (1+abs(B))
 
         # loop through parameters
         for i in range(nsamples):
@@ -130,10 +126,14 @@ class GR2MTestCases(unittest.TestCase):
             idx_cal = np.arange(12, len(inputs))
 
             # Calibrate
-            p1, out1, objf1, p1_ex, objf1_exp = gr.calibrate(inputs, obs, \
-                    idx_cal=idx_cal,
-                    iprint=0,
-                    errfun=errfun)
+            calib = Calibration(gr, inputs, obs)
+            calib.set_errfun(errfun.ssqe_bias)
+            calib.set_idx_cal(idx_cal)
+                        
+            calparams_ini, _, _ = calib.explore()
+            calparams_final, _, _ = calib.fit(calparams_ini)
+
+
             err = np.abs(gr.trueparams-expected)
             ck = np.max(err) < 1e-5
 
