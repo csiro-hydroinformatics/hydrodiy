@@ -70,240 +70,275 @@ class ModelError(Exception):
         return repr(txt)
 
 
+class Vector(object):
 
-def checklength(x, nx, model, ierr_id, message):
-    if len(x) != nx:
-        moderr = ModelError(model.name,
-            ierr_id = ierr_id,
-            message='{0}, len(x)({1}) != {2}'.format(message, len(x), nx))
-        raise moderr
+    def __init__(self, id, nval):
+        self._id = id
+        self._nval = nval
+        self._data = np.zeros(nval).astype(np.float64)
+        self._names = ['X{0}'.format(i) for i in range(nval)]
+        self._min = -np.inf * np.ones(nval).astype(np.float64)
+        self._max = np.inf * np.ones(nval).astype(np.float64)
+        self._default = np.nan * np.ones(nval).astype(np.float64)
+
+    def __str__(self):
+        str = '{0} : ['.format(self._id)
+        str += ', '.join(['{0}:{1}'.format(self._names[i], self._data[i]) \
+                for i in range(self._nval)])
+        str += ']'
+
+        return str
+
+    def __set_value(self, target, source):
+        _source = np.atleast_1d(source)
+
+        if target != '_names':
+            _source = _source.astype(np.float64)
+
+        if len(_source) != self.nval:
+            raise ValueError('Tried setting {0}, got wrong size ({1} instead of {2})'.format(\
+                target, len(_source), self._nval))
+
+        setattr(self, target, _source)
 
 
-def vect2txt(x):
-    txt = ''
-    x = np.atleast_1d(x)
-    for i in range(len(x)):
-        txt += ' %0.2f' % x[i]
-    return txt
+    def reset(self):
+        self._data = self._default
+
+
+    @property
+    def nval(self):
+        return self._nval
+
+
+    @property
+    def data(self):
+        return self._data
+
+
+    @data.setter
+    def data(self, value):
+
+        if isinstance(value, dict):
+            _value = np.zero(self._nval)
+            for k in value:
+                idx = np.where(self._names == k)[0]
+                _value[idx] = value[k]
+        else:
+            _value = value
+
+        self.__set_value('_data', _value)
+
+        self._data = np.clip(self._data, self._min, self._max)
+    
+
+    @property
+    def min(self):
+        return self._min
+
+
+    @min.setter
+    def min(self, value):
+        self.__set_value('_min', value)
+
+
+    @property
+    def max(self):
+        return self._max
+
+    @max.setter
+    def max(self, value):
+        self.__set_value('_max', value)
+
+    @property
+    def default(self):
+        return self._default
+
+    @default.setter
+    def default(self, value):
+        self.__set_value('_default', value)
+        self._default = np.clip(self._default, self._min, self._max)
+
+    @property
+    def names(self):
+        return self._names
+
+    @names.setter
+    def names(self, value):
+        self.__set_value('_names', value)
+
+
+class Matrix(object):
+
+    def __init__(self, id, nval, nvar):
+        self._id = id
+        self._nval = nval
+        self._data = np.zeros((nval, nvar)).astype(np.float64)
+        self._names = ['X{0}'.format(i) for i in range(nvar)]
+
+
+    def __str__(self):
+        str = '{0} : [nval={0} nvar={1}]'.format(self._id, self._nval, self.nvar)
+
+        return str
+
+    def reset(self):
+        self._data = 0. * self._data
+
+    @property
+    def nval(self):
+        return self._nval
+
+    @property
+    def nvar(self):
+        return self._nvar
+
+    @property
+    def data(self):
+        return self._data
+
+    @data.setter
+    def data(self, value):
+        _value = np.atleast_2d(value)
+        if _value.shape[0] == 1:
+            _value = _value.T
+
+        if _value.shape[0] != self._nval
+            raise ValueError(('Tried setting data,' + \
+                    ' got wrong number of values ({1} instead of {2})'.format(\
+                _value.shape[0], self._nval))
+
+        if _value.shape[1] != self._nvar
+            raise ValueError(('Tried setting data,' + \
+                    ' got wrong number of variables ({1} instead of {2})'.format(\
+                _value.shape[1], self._nvar))
+
+        self._data = _value 
+
 
 
 class Model(object):
 
     def __init__(self, name, \
             nconfig, \
-            config_names, \
-            config_default, \
             ninputs, \
+            noutputs, \
             nuhmaxlength, \
             nstates, \
-            ntrueparams, \
-            ncalparams, \
-            trueparams_names, \
-            outputs_names, \
-            calparams_means, \
-            calparams_stdevs, \
-            trueparams_mins, \
-            trueparams_maxs, \
-            trueparams_default):
+            nparams):
 
-        self.name = name
-        self.ninputs = ninputs
-        self.outputs_names = outputs_names
-        self.hitbounds = False
+        self._name = name
+        self._nval = nval
+        self._ninputs = ninputs
+        self._nuhmaxlength = nuhmaxlength
+        self._nuhlength = 0
 
-        # Config data
-        self.nconfig = nconfig
-        self.config_names = config_names
-        checklength(self.config_names, nconfig, self, \
-                'ESIZE_CONFIG', 'Problem with config_names')
-
-        self.config_default = config_default
-        checklength(self.config_default, nconfig, self, \
-                'ESIZE_CONFIG', 'Problem with config_default')
-        self.set_config_default()
-
-        # UH data
-        self.nuhmaxlength = nuhmaxlength
-        self.nuhlength = 0
-        self.uh = np.zeros(nuhmaxlength).astype(np.float64)
-        self.statesuh = np.zeros(nuhmaxlength).astype(np.float64)
-
-        # States data
-        self.nstates = nstates
-        self.states = np.zeros(nstates).astype(np.float64)
-
-        # Parameter data
-        self.ntrueparams = ntrueparams
-        self.trueparams = np.ones(ntrueparams) * np.nan
-
-        self.trueparams_names = trueparams_names
-        checklength(self.trueparams_names, ntrueparams, self, \
-                'ESIZE_PARAMS', 'Problem with trueparams_names')
-
-        self.trueparams_default = np.atleast_1d(trueparams_default).astype(np.float64)
-        checklength(self.trueparams_default, ntrueparams, self, \
-                'ESIZE_PARAMS', 'Problem with trueparams_default')
-
-        self.trueparams_mins = np.atleast_1d(trueparams_mins).astype(np.float64)
-        checklength(self.trueparams_default, ntrueparams, self, \
-                'ESIZE_PARAMS', 'Problem with trueparams_mins')
-
-        self.trueparams_maxs = np.atleast_1d(trueparams_maxs).astype(np.float64)
-        checklength(self.trueparams_maxs, ntrueparams, self, \
-                'ESIZE_PARAMS', 'Problem with trueparams_maxs')
-
-        self.ncalparams = ncalparams
-        self.calparams = np.ones(ncalparams) * np.nan
-
-        self.calparams_means = np.atleast_1d(calparams_means).astype(np.float64)
-        checklength(self.calparams_means, ncalparams, self, \
-                'ESIZE_PARAMS', 'Problem with calparams_means')
-
-        self.calparams_stdevs = np.atleast_2d(calparams_stdevs)
-        checklength(self.calparams_stdevs.flat[:], \
-                ncalparams*ncalparams, self, \
-                'ESIZE_PARAMS', 'Problem with calparams_stdevs')
-
-        self.set_trueparams_default()
+        self._config = Vector('config', nconfig)
+        self._states = Vector('states', nstates)
+        self._params = Vector('params', nparams)
 
 
     def __str__(self):
-        str = '\n{0} model implementation\n'.format(self.name)
-        str += '  nconfig  = {0}\n'.format(self.nconfig)
-        str += '  nuhlength  = {0}\n'.format(self.nuhlength)
-        str += '  nuhmaxlength  = {0}\n'.format(self.nuhmaxlength)
-        str += '  nstates = {0}\n'.format(len(self.states))
+        str = '\n{0} model implementation\n'.format(self._name)
+        str += '  ninputs      = {0}\n'.format(self._ninputs)
+        str += '  nuhmaxlength = {0}\n'.format(self._nuhmaxlength)
+        str += '  nuhlength    = {0}\n'.format(self._nuhlength)
 
-        if hasattr(self, 'nout'):
-            str += '  nout    = {0}\n'.format(self.nout)
+        if hasattr(self, '_noutputs'):
+            str += '  noutputs    = {0}\n'.format(self._noutputs)
 
-        if hasattr(self, 'config'):
-            str += '  config  = ['
-            for i in range(self.nconfig):
-                str += ' {0}:{1:.3f}'.format(self.config_names[i], \
-                    self.config[i])
-            str += ']\n'
+        if hasattr(self, '_nval'):
+            str += '  nval    = {0}\n'.format(self._nval)
 
-        str += '  calparams  = ['
-        for i in range(self.ncalparams):
-            str += ' {0:.3f}'.format(self.calparams[i])
-        str += ']\n'
-
-        str += '  trueparams = ['
-        for i in range(self.ntrueparams):
-            str += ' {0}:{1:.3f}'.format(self.trueparams_names[i], \
-                self.trueparams[i])
-        str += ']\n'
-
-        str += '  states     = ['
-        for i in range(self.nstates):
-            str += ' {0:.3f}'.format(self.states[i])
-        str += ']\n'
+        str += '  {0}\n'.format(self._config)
+        str += '  {0}\n'.format(self._states)
+        str += '  {0}\n'.format(self._params)
 
         return str
 
 
-    def create_outputs(self, nval, nout=1):
-        self.nout = nout
-        self.outputs = np.zeros((nval, nout)).astype(np.float64)
+    @property
+    def config(self):
+        return self._config.data
 
 
-    def cal2true(self, calparams):
-        ''' No transform by default '''
-        return calparams
+    @config.setter
+    def config(self, value):
+        self._config.data = value
+
+
+    @property
+    def states(self):
+        return self._states.data
+
+
+    @states.setter
+    def states(self, value):
+        self._states.data = value
+
+
+    @property
+    def params(self):
+        return self._params.data
+
+
+    @params.setter
+    def params(self, value):
+        self._params.data = value
+        self.set_uhparams()
+
+
+    @property
+    def inputs(self):
+        return self._inputs.data
+
+
+    @inputs.setter
+    def inputs(self, value):
+        self._inputs.data = value
+
+
+    @property
+    def outputs(self):
+        return self._outputs.data
+
+
+    @outputs.setter
+    def outputs(self, value):
+        self._outputs.data = value
+
+
+    def allocate(self, nval, noutputs=1):
+        self._noutputs = noutputs
+        self._nval = nval
+        self._inputs = Matrix('inputs', nval, self._ninputs)
+        self._outputs = Matrix('outputs', nval, self._noutputs)
 
 
     def set_uhparams(self):
         pass
 
 
-    def set_config(self, config):
-        self.config = np.atleast_1d(config[:self.nconfig]).astype(np.float64)
-
-
-    def set_config_default(self):
-        self.set_config(self.config_default)
-
-
-    def set_trueparams_default(self):
-        self.set_trueparams(self.trueparams_default)
-
-
-    def set_trueparams(self, trueparams):
-        trueparams = np.atleast_1d(trueparams).astype(np.float64)
-        self.trueparams = np.atleast_1d(trueparams[:self.ntrueparams])
-
-        # Check parameters bounds
-        self.trueparams = np.clip(self.trueparams, \
-            self.trueparams_mins, \
-            self.trueparams_maxs)
-
-        self.set_uhparams()
-
-
-    def set_calparams(self, calparams):
-        calparams = np.atleast_1d(calparams)
-        self.calparams = np.atleast_1d(calparams[:self.ncalparams])
-
-        trueparams = self.cal2true(self.calparams)
-        self.set_trueparams(trueparams)
-
-
     def initialise(self, states=None, statesuh=None):
         if states is None:
             states = [0.] * self.nstates
+        self.states = states
 
         if statesuh is None:
             statesuh = [0.] * self.nuhmaxlength
-
-        states = np.atleast_1d(states).astype(np.float64)
-        states = np.atleast_1d(states[:self.nstates])
-        self.states[:self.nstates] = states
-
-        statesuh = np.array(statesuh).astype(np.float64)
-        statesuh = np.atleast_1d(statesuh[:self.nuhlength])
-        self.statesuh[:self.nuhlength] = statesuh
+        self.statesuh = statesuh
 
 
     def run(self, inputs):
         pass
 
 
-    def get_outputs(self):
-        outputs = pd.DataFrame(self.outputs)
-        outputs.columns = self.outputs_names[:self.nout]
-
-        return outputs
-
-
-    def get_calparams_samples(self, nsamples, seed=333):
-
-        # Save random state
-        random_state = random.getstate()
-
-        # Set seed
-        np.random.seed(seed)
-
-        # sample parameters
-        samples = np.random.multivariate_normal(self.calparams_means, \
-                self.calparams_stdevs, \
-                nsamples)
-
-        samples = np.atleast_2d(samples)
-
-        if samples.shape[0] == 1:
-            samples = samples.T
-
-        # Reset random state
-        random.setstate(random_state)
-
-        return samples
-
-
 
 class Calibration(object):
 
-    def __init__(self, model, inputs, observations,
+    def __init__(self, model, \
+            ncalparams, \
+            observations, \
             errfun=None, \
             minimize=True, \
             timeit=False):
@@ -314,34 +349,27 @@ class Calibration(object):
         self.ieval = 0
         self.iprint = 0
 
-        if len(inputs.shape) <= 1:
-            self.inputs = np.atleast_2d(inputs).T
-        else:
-            self.inputs = inputs
+        self.observations = Matrix('observations', , self.model._outputs.nvar)
 
-        if len(observations.shape) <= 1:
-            self.observations = np.atleast_2d(observations).T
-        else:
-            self.observations = observations
+        self.calparams = Vector('calparams', ncalparams)
+        self.calparams_means = Vector('calparams_means', ncalparams)
+        self.calparams_stdev = Vector('calparams_stdev', \ 
+                ncalparams*ncalparams)
+    
+    @property
+    def inputs(self):
+        return self.model._inputs.data
+ 
+    @inputs.setter
+    def inputs(self, value):
+        self.model._inputs.data = value
 
-        self.nval = self.observations.shape[0]
-        self.nobs = self.observations.shape[1]
-        nvalinputs = self.inputs.shape[0]
+    @property
+    def outputs(self):
+        return self._outputs.data
 
-        if self.nval != nvalinputs:
-            raise ModelError(self.name,
-                ierr_id='ESIZE_INPUTS',
-                message = \
-                'model.calibrate, nval({0}) != nvalinputs({1})'.format( \
-                self.nval, nvalinputs))
 
-        # Allocate memory
-        self.model.create_outputs(self.nval, self.nobs)
-
-        # Define objective function
-        self.timeit = timeit
-        self.runtime = np.nan
-
+       
         def objfun(calparams):
 
             if self.timeit:
@@ -381,6 +409,30 @@ class Calibration(object):
         str = 'Calibration instance for model {0}\n'.format(self.model.name)
         str += '    nval = {0}\n'.format(self.nval)
         str += '    nobs = {0}\n'.format(self.nobs)
+
+    def calparams_samples(self, nsamples, seed=333):
+
+        # Save random state
+        random_state = random.getstate()
+
+        # Set seed
+        np.random.seed(seed)
+
+        # sample parameters
+        samples = np.random.multivariate_normal(self.calparams_means, \
+                self.calparams_stdevs, \
+                nsamples)
+
+        samples = np.atleast_2d(samples)
+
+        if samples.shape[0] == 1:
+            samples = samples.T
+
+        # Reset random state
+        random.setstate(random_state)
+
+        return samples
+
 
 
     def reset_ieval(self):
