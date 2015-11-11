@@ -19,12 +19,6 @@
 /* Number of outputs returned by GR2M run */
 #define GR2M_NOUTPUTS 20
 
-int c_gr2m_getnstates(void);
-
-int c_gr2m_getnoutputs(void);
-
-int c_gr2m_getesize(void);
-
 int c_gr2m_run(int nval, int nparams, int ninputs, 
         int nstates, int noutputs,
 	double * params,

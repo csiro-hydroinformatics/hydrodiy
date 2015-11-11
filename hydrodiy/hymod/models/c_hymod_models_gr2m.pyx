@@ -6,15 +6,6 @@ np.import_array()
 # -- HEADERS --
 
 cdef extern from 'c_gr2m.h':
-    int c_gr2m_getnstates()
-
-cdef extern from 'c_gr2m.h':
-    int c_gr2m_getnoutputs()
-
-cdef extern from 'c_gr2m.h':
-    int c_gr2m_getesize()
-
-cdef extern from 'c_gr2m.h':
     int c_gr2m_run(int nval, int nparams, int ninputs,
             int nstates, int noutputs,
     	    double * params,
@@ -24,13 +15,6 @@ cdef extern from 'c_gr2m.h':
 
 def __cinit__(self):
     pass
-
-
-def gr2m_getnstates():
-    return c_gr2m_getnstates()
-
-def gr2m_getnoutputs():
-    return c_gr2m_getnoutputs()
 
 def gr2m_run(np.ndarray[double, ndim=1, mode='c'] params not None,
         np.ndarray[double, ndim=2, mode='c'] inputs not None,

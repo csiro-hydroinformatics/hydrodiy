@@ -20,7 +20,7 @@ class Vector(object):
 
     def __str__(self):
         str = '{0} : {{'.format(self._id)
-        str += ', '.join(['{0}: {1}[{2}]'.format( \
+        str += ', '.join(['{0}: {1:3.3e}[{2}]'.format( \
                 self._names[i], self._data[i], self._units[i]) \
                 for i in range(self._nval)])
         str += '}'
@@ -286,16 +286,15 @@ class Model(object):
         str += '  nuhmaxlength = {0}\n'.format(self._statesuh.nval)
         str += '  nuhlength    = {0}\n'.format(self._nuhlength)
 
+        str += '  {0}\n'.format(self._config)
+        str += '  {0}\n'.format(self._states)
+        str += '  {0}\n'.format(self._params)
+
         if not self._inputs is None:
             str += '  {0}\n'.format(self._inputs)
 
         if not self._outputs is None:
-            str += '  nval         = {0}\n'.format(self._outputs.nval)
             str += '  {0}\n'.format(self._outputs)
-
-        str += '  {0}\n'.format(self._config)
-        str += '  {0}\n'.format(self._states)
-        str += '  {0}\n'.format(self._params)
 
         return str
 

@@ -1,26 +1,6 @@
 #include "c_gr2m.h"
 
 
-/*** GR2M Model *********************************************
-* Code written by Julien Lerat, Bureau of Meteorology
-*
-	nstates = 11
-
-	nparams = 4
-	params[0] : S
-	params[1] : IGF
-*/
-
-int c_gr2m_getnstates(void)
-{
-    return GR2M_NSTATES;
-}
-
-int c_gr2m_getnoutputs(void)
-{
-    return GR2M_NOUTPUTS;
-}
-
 int gr2m_minmaxparams(int nparams, double * params)
 {
         if(nparams<4)
