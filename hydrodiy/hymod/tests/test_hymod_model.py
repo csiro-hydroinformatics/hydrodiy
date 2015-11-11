@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 
 from hyio import csv
-from hymod.model import Model, Vector, Matrix, Calibration
+from hymod.model import Model, Vector, Matrix
 
 
 class Dummy(Model):
@@ -22,7 +22,9 @@ class Dummy(Model):
             ninputs=2, \
             nparams=2, \
             nstates=2, \
-            noutputs_max = 9)
+            noutputs_max=2, 
+            inputs_names=['I1', 'I2'], \
+            outputs_names=['O1', 'O2'])
 
         self.config.names = 'Config1'
         self.states.names = ['State1', 'State2']
@@ -53,7 +55,7 @@ class VectorTestCases(unittest.TestCase):
             v.names = ['a', 'b']
         except ValueError as e:
             pass
-        self.assertTrue(e.message.startswith('Tried setting _names'))
+        self.assertTrue(e.message.startswith('Vector test: tried setting _names'))
 
 
     def test_vector2(self):
@@ -64,7 +66,7 @@ class VectorTestCases(unittest.TestCase):
             v.units = ['m2', 'mm/d']
         except ValueError as e:
             pass
-        self.assertTrue(e.message.startswith('Tried setting _units'))
+        self.assertTrue(e.message.startswith('Vector test: tried setting _units'))
 
 
     def test_vector3(self):
@@ -75,7 +77,7 @@ class VectorTestCases(unittest.TestCase):
             v.min = [5, 3]
         except ValueError as e:
             pass
-        self.assertTrue(e.message.startswith('Tried setting _min'))
+        self.assertTrue(e.message.startswith('Vector test: tried setting _min'))
 
 
     def test_vector4(self):
@@ -86,34 +88,29 @@ class VectorTestCases(unittest.TestCase):
             v.max = [5, 3]
         except ValueError as e:
             pass
-        self.assertTrue(e.message.startswith('Tried setting _max'))
+        self.assertTrue(e.message.startswith('Vector test: tried setting _max'))
 
 
     def test_vector5(self):
         v = Vector('test', 3)
         v.min = [-1, 10, 2]
-        v.data = [-100, 50, 2]
-        self.assertTrue(list(v.data.astype(int)) == [-1, 50, 2])
+        v.data = [-100, 50, 2.001]
+        self.assertTrue(np.allclose(v.data, [-1, 50, 2.001]))
+        self.assertTrue(np.allclose(v.hitbounds, [1, 0, 0]))
+
         try:
             v.data = [5, 3]
         except ValueError as e:
             pass
-        self.assertTrue(e.message.startswith('Tried setting _data'))
+        self.assertTrue(e.message.startswith('Vector test: tried setting _data'))
 
 
     def test_vector6(self):
         v = Vector('test', 3)
-        v.names = ['a', 'b', 'c']
-        v['b'] = 30
-        self.assertTrue(np.allclose(v.data[1], 30))
-
-
-    def test_vector7(self):
-        v = Vector('test', 3)
         str = '{0}'.format(v)
 
 
-    def test_vector8(self):
+    def test_vector7(self):
         v = Vector('test', 1)
         v.data = 10
         self.assertTrue(v.data.shape == (1, ) and v.data[0] == 10.)
@@ -131,7 +128,7 @@ class MatrixTestCases(unittest.TestCase):
             m1.names = ['a', 'b']
         except ValueError as e:
             pass
-        self.assertTrue(e.message.startswith('Tried setting _names'))
+        self.assertTrue(e.message.startswith('Matrix test: tried setting _names'))
 
 
     def test_matrix2(self):
@@ -147,7 +144,7 @@ class MatrixTestCases(unittest.TestCase):
             m1.data = np.random.uniform(0, 1, (10, 5))
         except ValueError as e:
             pass
-        self.assertTrue(e.message.startswith('Tried setting _data'))
+        self.assertTrue(e.message.startswith('Matrix test: tried setting _data'))
 
 
     def test_matrix4(self):
@@ -167,15 +164,6 @@ class MatrixTestCases(unittest.TestCase):
         self.assertTrue(m2.data.shape == (100, 6))
 
 
-    def test_matrix7(self):
-        m1 = Matrix.fromdims('test', 100, 5)
-        m1.names = ['a', 'b', 'c', 'd', 'e']
-        m1['b'] = -2 * np.ones(100)
-        m1['e'] = -3 * np.ones(100)
-        ms = np.sum(m1.data, 0)
-        self.assertTrue(ms[1] == -200 and ms[4] == -300)
-
-
 class ModelTestCases(unittest.TestCase):
 
     def setUp(self):
@@ -192,14 +180,14 @@ class ModelTestCases(unittest.TestCase):
     def test_model2(self):
         inputs = np.random.uniform(0, 1, (1000, 2))
         dum = Dummy()
-        dum.allocate(len(inputs), 9)
+        dum.allocate(len(inputs), 2)
 
 
     def test_model3(self):
         inputs = np.random.uniform(0, 1, (1000, 2))
         params = [0.5, 10.]
         dum = Dummy()
-        dum.allocate(len(inputs), 9)
+        dum.allocate(len(inputs), 2)
         dum.params.data = params
 
 
@@ -207,7 +195,7 @@ class ModelTestCases(unittest.TestCase):
         inputs = np.random.uniform(0, 1, (1000, 2))
         params = [0.5, 10.]
         dum = Dummy()
-        dum.allocate(len(inputs), 9)
+        dum.allocate(len(inputs), 2)
         dum.params.data = params
         dum.initialise(states=[10, 0])
         dum.inputs.data = inputs
@@ -217,7 +205,7 @@ class ModelTestCases(unittest.TestCase):
         inputs = np.random.uniform(0, 1, (1000, 2))
         params = [0.5, 10.]
         dum = Dummy()
-        dum.allocate(len(inputs), 9)
+        dum.allocate(len(inputs), 2)
         dum.params.data = params
         dum.initialise(states=[10, 0])
         dum.inputs.data = inputs
@@ -232,61 +220,24 @@ class ModelTestCases(unittest.TestCase):
         self.assertTrue(ck2)
 
 
-class CalibrationTestCases(unittest.TestCase):
-
-    def setUp(self):
-        print('\t=> CalibrationTestCase')
-
-    def test_calibration1(self):
+    def test_model6(self):
         inputs = np.random.uniform(0, 1, (1000, 2))
         params = [0.5, 10.]
         dum = Dummy()
-        dum.allocate(len(inputs), 9)
-        dum.inputs.data = inputs
-
+        dum.allocate(len(inputs), 2)
         dum.params.data = params
-        dum.run()
-        observations = dum.outputs.data[:, 0].copy()
-
-        calib = Calibration(dum, \
-            2, \
-            observations, \
-            timeit = True)
-
-        calib.calparams_means.data =  [0, 0]
-        calib.calparams_stdevs.data = [1, 0, 0, 1]
-
-        str = '{0}'.format(calib)
-
-
-    def test_calibration2(self):
-        inputs = np.random.uniform(0, 1, (1000, 2))
-        params = [0.5, 10.]
-        dum = Dummy()
-        dum.allocate(len(inputs), 9)
+        dum.initialise(states=[10, 0])
         dum.inputs.data = inputs
+     
+        dum2 = dum.clone()
+        
+        d1 = dum.inputs.data
+        d2 = dum2.inputs.data
 
-        dum.params.data = params
-        dum.run()
-        observations = dum.outputs.data[:, 0].copy()
+        self.assertTrue(np.allclose(d1, d2))
 
-        calib = Calibration(dum, \
-            2, \
-            observations, \
-            timeit = True)
-
-        calib.calparams_means.data =  [0, 0]
-        calib.calparams_stdevs.data = [1, 0, 0, 1]
-
-        start, explo, explo_ofun = calib.explore(iprint=0)
-        final, out, _ = calib.fit(start, iprint=100, ftol=1e-8)
-
-        import pdb; pdb.set_trace()
-
-
-
-        self.assertTrue(np.allclose(calib.model.params.data[0], params[0]))
-
+        d2[0, 0] += 1
+        self.assertTrue(np.allclose(d1[0, 0]+1, d2[0, 0]))
 
 if __name__ == "__main__":
     unittest.main()
