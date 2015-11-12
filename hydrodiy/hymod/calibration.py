@@ -66,10 +66,16 @@ class Calibration(object):
         str += '  ncalparams : {0}\n'.format(self.calparams_means.nval)
         str += '  ieval      : {0}\n'.format(self._ieval)
         str += '  runtime    : {0}\n'.format(self._runtime)
-        str += '  {0}\n'.format(self._model.params)
         str += '  {0}\n'.format(self.calparams_means)
+        str += '  {0}\n'.format(self.calparams)
+        str += '  {0}\n'.format(self._model.params)
 
         return str
+
+
+    @property
+    def calparams(self):
+        return self._calparams
 
 
     @property
