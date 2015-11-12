@@ -47,22 +47,17 @@ class Dummy(Model):
 
 class CalibrationDummy(Calibration):
 
-    def __init__(self, observations, inputs):
+    def __init__(self):
 
         model = Dummy()
 
         Calibration.__init__(self, 
             model = model, \
             ncalparams = 2, \
-            observations = observations, \
             timeit = True)
 
         self.calparams_means.data =  [0, 0]
         self.calparams_stdevs.data = [1, 0, 0, 1]
-
-        self._model.allocate(self._observations.nval, 1)
-        self._model.inputs.data = inputs
-
 
     def cal2true(self, calparams):
         return np.exp(calparams)
@@ -85,12 +80,38 @@ class CalibrationTestCases(unittest.TestCase):
         dum.run()
         observations = dum.outputs.data[:, 0].copy()
 
-        calib = CalibrationDummy(observations, inputs)
+        calib = CalibrationDummy()
+        calib.setup(observations, inputs)
 
         str = '{0}'.format(calib)
 
 
     def test_calibration2(self):
+        inputs = np.random.uniform(0, 1, (1000, 2))
+        obs = np.random.uniform(0, 1, 1000)
+        calib = CalibrationDummy()
+       
+        try:
+            calib.idx_cal = obs==obs
+        except ValueError as e:
+            pass
+        self.assertTrue(e.message.startswith('No observations data'))
+
+
+    def test_calibration3(self):
+        inputs = np.random.uniform(0, 1, (1000, 2))
+        obs = np.random.uniform(0, 1, 1000)
+        calib = CalibrationDummy()
+        calib.setup(obs, inputs)
+       
+        try:
+            start, explo, explo_ofun = calib.explore(iprint=0, nsamples=10)
+        except ValueError as e:
+            pass
+        self.assertTrue(e.message.startswith('No idx_cal data'))
+
+
+    def test_calibration4(self):
         inputs = np.random.uniform(0, 1, (1000, 2))
         params = [0.5, 10.]
         dum = Dummy()
@@ -99,9 +120,12 @@ class CalibrationTestCases(unittest.TestCase):
 
         dum.params.data = params
         dum.run()
-        observations = dum.outputs.data[:, 0].copy()
-        
-        calib = CalibrationDummy(observations, inputs)
+        obs = dum.outputs.data[:, 0].copy()
+
+        calib = CalibrationDummy()
+        calib.setup(obs, inputs)
+        calib.idx_cal = obs == obs
+       
         start, explo, explo_ofun = calib.explore(iprint=0, nsamples=10)
         final, out, _ = calib.fit(start, iprint=0, ftol=1e-8)
 

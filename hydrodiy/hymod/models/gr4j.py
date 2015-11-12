@@ -120,14 +120,13 @@ class GR4J(Model):
 
 class CalibrationGR4J(Calibration):
 
-    def __init__(self, observations, inputs, timeit=False):
+    def __init__(self, timeit=False):
 
         gr = GR4J()
 
         Calibration.__init__(self, 
             model = gr, \
             ncalparams = 4, \
-            observations = observations, \
             timeit = timeit)
 
         self.calparams_means.data =  [5.8, -0.88, 4.4, -1.]
@@ -135,9 +134,6 @@ class CalibrationGR4J(Calibration):
         stdevs = 3*np.eye(4)
         stdevs[3, 3] = 1.
         self.calparams_stdevs.data = stdevs.flat[:]
-
-        self._model.allocate(self._observations.nval, 1)
-        self._model.inputs.data = inputs
 
 
     def cal2true(self, calparams):

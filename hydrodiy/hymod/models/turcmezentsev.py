@@ -52,21 +52,17 @@ class TurcMezentsev(Model):
 
 class CalibrationTurcMezentsev(Calibration):
 
-    def __init__(self, observations, inputs, timeit=False):
+    def __init__(self, timeit=False):
 
         tm = TurcMezentsev()
 
         Calibration.__init__(self, 
             model = tm, \
             ncalparams = 1, \
-            observations = observations, \
             timeit = timeit)
 
         self.calparams_means.data =  [2.3]
         self.calparams_stdevs.data = [1.]
-
-        self._model.allocate(self._observations.nval, 1)
-        self._model.inputs.data = inputs
 
 
     def cal2true(self, calparams):

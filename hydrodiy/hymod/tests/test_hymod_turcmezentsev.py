@@ -112,7 +112,9 @@ class TurcMezentsevTestCases(unittest.TestCase):
 
         inputs = np.array([P, E]).T
         obs = np.array(Q)
-        calib = CalibrationTurcMezentsev(obs, inputs)
+        calib = CalibrationTurcMezentsev()
+        calib.setup(obs, inputs)
+        calib.idx_cal = obs == obs
 
         start, _, _ = calib.explore()
         end, _, _ = calib.fit(start)

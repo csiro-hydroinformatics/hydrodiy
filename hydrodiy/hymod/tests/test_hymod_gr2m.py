@@ -29,7 +29,7 @@ class GR2MTestCases(unittest.TestCase):
         nsamples = 100
         obs = np.zeros(10)
         inputs = np.zeros((10, 2))
-        calib = CalibrationGR2M(obs, inputs)
+        calib = CalibrationGR2M()
         samples = calib.sample(nsamples)
         self.assertTrue(samples.shape == (nsamples, 2))
 
@@ -111,7 +111,8 @@ class GR2MTestCases(unittest.TestCase):
 
         # Parameter samples
         nsamples = 200
-        calib = CalibrationGR2M(np.zeros(len(inputs)), inputs)
+        calib = CalibrationGR2M()
+        calib.errfun = calibration.ssqe_bias
         samples = calib.sample(nsamples)
 
         # loop through parameters
@@ -126,13 +127,11 @@ class GR2MTestCases(unittest.TestCase):
             idx_cal = np.arange(12, len(inputs))
 
             # Calibrate
-            calib = CalibrationGR2M(np.zeros(len(inputs)), inputs, False)
-            calib.errfun = calibration.ssqe_bias
+            calib.setup(obs, inputs)
             calib.idx_cal = idx_cal
                         
             calparams_ini, _, _ = calib.explore()
             calparams_final, _, _ = calib.fit(calparams_ini, iprint=0)
-
 
             err = np.abs(gr.params.data-expected)
             ck = np.max(err) < 1e-5

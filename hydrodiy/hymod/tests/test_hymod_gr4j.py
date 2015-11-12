@@ -76,7 +76,7 @@ class GR4JTestCases(unittest.TestCase):
         nsamples = 100
         obs = np.zeros(10)
         inputs = np.zeros((10, 2))
-        calib = CalibrationGR4J(obs, inputs)
+        calib = CalibrationGR4J()
         samples = calib.sample(nsamples)
         self.assertTrue(samples.shape == (nsamples, 4))
 
@@ -298,6 +298,9 @@ class GR4JTestCases(unittest.TestCase):
     def test_calibrate(self):
         gr = GR4J()
         warmup = 365*5
+        
+        calib = CalibrationGR4J()
+        calib.errfun = calibration.ssqe_bias
 
         for count in range(1, 11):
             fd = '%s/rrtest_%2.2d_timeseries.csv' % (FRR, count)
@@ -327,8 +330,7 @@ class GR4JTestCases(unittest.TestCase):
             obs = gr.outputs.data[:,0]
 
             # Calibrate
-            calib = CalibrationGR4J(obs, inputs)
-            calib.errfun = calibration.ssqe_bias
+            calib.setup(obs, inputs)
             calib.idx_cal = idx_cal
                         
             calparams_ini, explo, explo_ofun = calib.explore()

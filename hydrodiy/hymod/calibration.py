@@ -35,7 +35,6 @@ class Calibration(object):
 
     def __init__(self, model, \
             ncalparams, \
-            observations, \
             errfun=None, \
             minimize=True, \
             optimizer=fmin, \
@@ -51,14 +50,13 @@ class Calibration(object):
         self._optimizer = optimizer
         self._initialise_model = initialise_model
 
-        self._observations = Matrix.fromdata('observations', observations)
+        self._observations = None
+        self._idx_cal = None
 
         self._calparams = Vector('calparams', ncalparams)
         self._calparams_means = Vector('calparams_means', ncalparams)
         self._calparams_stdevs = Vector('calparams_stdevs', \
                 ncalparams*ncalparams)
-
-        self.idx_cal = np.where(np.ones((self._observations.nval)) == 1)[0]
 
         self.errfun = sse
 
@@ -155,17 +153,27 @@ class Calibration(object):
         else:
             _idx_cal = value
 
+        if self._observations is None:
+            raise ValueError('No observations data. Please allocate')
+
         if np.max(_idx_cal) >= self._observations.nval:
             raise ValueError('Wrong values in idx_cal')
 
         self._idx_cal = _idx_cal
 
 
-    def checkmodel(self):
+    def check(self):
+        # Check idx_cal is allocated
+        if self._idx_cal is None:
+            raise ValueError('No idx_cal data. Please allocate')
+
+        # Check observations are allocated
+        if self._observations is None:
+            raise ValueError('No observations data. Please allocate')
 
         # Check inputs are allocated
         if self._model.inputs is None:
-            raise ValueError(('No inputs data set for model {0}.' + \
+            raise ValueError(('No inputs data for model {0}.' + \
                 ' Please allocate').format(self._model.name))
 
         # Check inputs are initialised
@@ -175,7 +183,7 @@ class Calibration(object):
 
         # Check outputs are allocated
         if self._model.outputs is None:
-            raise ValueError(('No outputs data set for model {0}.' + \
+            raise ValueError(('No outputs data for model {0}.' + \
                 ' Please allocate').format(self._model.name))
 
         # Check inputs and observations have the right dimension
@@ -198,6 +206,13 @@ class Calibration(object):
 
     def cal2err(self, calparams):
         return None
+
+    def setup(self, observations, inputs):
+
+       self._observations = Matrix.fromdata('observations', observations)
+
+       self._model.allocate(self._observations.nval, self._observations.nvar)
+       self._model.inputs.data = inputs
 
 
     def sample(self, nsamples, seed=333):
@@ -233,7 +248,7 @@ class Calibration(object):
             iprint=0, \
             seed=333):
 
-        self.checkmodel()
+        self.check()
         self._iprint = iprint
 
         if nsamples is None:
@@ -270,12 +285,14 @@ class Calibration(object):
                 ofun_min = ofun
                 calparams_best = calparams
 
+        self._calparams.data = calparams_best
+
         return calparams_best, calparams_explore, ofun_explore
 
 
     def fit(self, calparams_ini, iprint=0, *args, **kwargs):
 
-        self.checkmodel()
+        self.check()
         self._iprint = iprint
 
         if self._iprint>0:
@@ -296,6 +313,8 @@ class Calibration(object):
             self._calparams.data = calparams_final
             print('\nFit final: {0:3.3e} {1} ~ {2:.2f} ms\n'.format( \
                     ofun_final, self._calparams, self._runtime))
+
+        self._calparams.data = calparams_final
 
         return calparams_final, outputs_final, ofun_final
 

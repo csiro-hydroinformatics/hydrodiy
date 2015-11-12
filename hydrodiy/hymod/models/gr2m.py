@@ -57,21 +57,17 @@ class GR2M(Model):
 
 class CalibrationGR2M(Calibration):
 
-    def __init__(self, observations, inputs, timeit=False):
+    def __init__(self, timeit=False):
 
         gr = GR2M()
 
         Calibration.__init__(self, 
             model = gr, \
             ncalparams = 2, \
-            observations = observations, \
             timeit = timeit)
 
         self.calparams_means.data =  [5.8, -0.2]
         self.calparams_stdevs.data = [1., 0., 0., 0.1]
-
-        self._model.allocate(self._observations.nval, 1)
-        self._model.inputs.data = inputs
 
 
     def cal2true(self, calparams):
