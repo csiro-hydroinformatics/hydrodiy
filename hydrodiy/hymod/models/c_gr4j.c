@@ -1,16 +1,6 @@
 #include "c_gr4j.h"
 #include "c_uh.h"
 
-int c_gr4j_getnstates(void)
-{
-    return GR4J_NSTATES;
-}
-
-
-int c_gr4j_getnoutputs(void)
-{
-    return GR4J_NOUTPUTS;
-}
 
 int gr4j_minmaxparams(int nparams, double * params)
 {
@@ -35,7 +25,7 @@ int gr4j_production(double P, double E,
 
     /* production store */
     SR = S/Scapacity;
-	SR = SR > 1. ? 1. : SR;
+    SR = SR > 1. ? 1. : SR;
 
     if(P>E)
     {
@@ -229,7 +219,10 @@ int c_gr4j_run(int nval, int nparams,
     if(noutputs > GR4J_NOUTPUTS)
         return ESIZE_OUTPUTS;
 
-    if(nuh1 > NUHMAXLENGTH || nuh2 > NUHMAXLENGTH)
+    if(nstates > GR4J_NSTATES)
+        return ESIZE_STATES;
+
+    if(nuh1+nuh2 > NUHMAXLENGTH)
         return ESIZE_STATESUH;
 
     if(nuh1 <= 0 || nuh2 <= 0)

@@ -35,9 +35,6 @@ class GR2MTestCases(unittest.TestCase):
 
 
     def test_gr2m_dumb(self):
-        params = [400, 0.9]
-
-        # Run
         gr = GR2M()
         nval = 100
         gr.allocate(nval, 9)

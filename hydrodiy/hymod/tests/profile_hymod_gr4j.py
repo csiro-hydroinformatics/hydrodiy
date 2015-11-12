@@ -11,9 +11,8 @@ import pandas as pd
 
 from hyio import csv
 
-from hymod.model import ModelError
-from hymod.models.gr4j import GR4J
-from hymod import errfun
+from hymod.models.gr4j import GR4J, CalibrationGR4J
+from hymod import calibration
 
 
 import c_hymod_models_utils
@@ -65,19 +64,22 @@ class GR4JTestCases(unittest.TestCase):
 
         # Calibrate
         nval = inputs.shape[0]
-        gr.create_outputs(nval, 1)
+        gr.allocate(nval, 1)
         
         # Run gr first
-        gr.set_trueparams(params['parvalue'])
+        gr.params.data = params['parvalue'].values
         gr.initialise()
-        gr.run(inputs)
-        obs = gr.outputs[:,0].copy()
+        gr.inputs.data = inputs
+        gr.run()
+        obs = gr.outputs.data[:,0].copy()
 
         # Calibrate on this output
-        gr.calibrate(inputs, obs, idx_cal, \
-                errfun=errfun.ssqe_bias, \
-                iprint=0, \
-                timeit=False)
+        calib = CalibrationGR4J(obs, inputs, timeit=True)
+        calib.idx_cal = idx_cal
+        calib.errfun = calibration.ssqe_bias
+
+        start, _, _ = calib.explore()
+        end, _, _ = calib.fit(start, iprint=1000)
 
 
 if __name__ == "__main__":

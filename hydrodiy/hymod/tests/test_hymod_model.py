@@ -41,6 +41,10 @@ class Dummy(Model):
 
         self.states.data = self.outputs.data[-1, :2]
 
+    def set_uh(self):
+        nuh = self.uh.nval
+        self.uh.data = [1.] * nuh
+
 
 class VectorTestCases(unittest.TestCase):
 
@@ -128,7 +132,7 @@ class MatrixTestCases(unittest.TestCase):
             m1.names = ['a', 'b']
         except ValueError as e:
             pass
-        self.assertTrue(e.message.startswith('Matrix test: tried setting _names'))
+        self.assertTrue(e.message.startswith('test matrix: tried setting _names'))
 
 
     def test_matrix2(self):
@@ -144,7 +148,7 @@ class MatrixTestCases(unittest.TestCase):
             m1.data = np.random.uniform(0, 1, (10, 5))
         except ValueError as e:
             pass
-        self.assertTrue(e.message.startswith('Matrix test: tried setting _data'))
+        self.assertTrue(e.message.startswith('test matrix: tried setting _data'))
 
 
     def test_matrix4(self):
@@ -238,6 +242,17 @@ class ModelTestCases(unittest.TestCase):
 
         d2[0, 0] += 1
         self.assertTrue(np.allclose(d1[0, 0]+1, d2[0, 0]))
+
+    def test_model7(self):
+        dum = Dummy()
+        dum.allocate(10, 2)
+
+        self.assertTrue(np.all(np.isnan(dum.uh.data)))
+
+        dum.params.data = [1., 2.]
+ 
+        self.assertTrue(np.allclose(dum.uh.data, 1.))
+
 
 if __name__ == "__main__":
     unittest.main()

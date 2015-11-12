@@ -4,11 +4,6 @@ cimport numpy as np
 np.import_array()
 
 # -- HEADERS --
-cdef extern from 'c_gr4j.h':
-    int c_gr4j_getnstates()
-
-cdef extern from 'c_gr4j.h':
-    int c_gr4j_getnoutputs()
 
 cdef extern from 'c_gr4j.h':
     int c_gr4j_run(int nval, int nparams, 
@@ -25,13 +20,6 @@ cdef extern from 'c_gr4j.h':
 
 def __cinit__(self):
     pass
-
-
-def gr4j_getnstates():
-    return c_gr4j_getnstates()
-
-def gr4j_getnoutputs():
-    return c_gr4j_getnoutputs()
 
 def gr4j_run(int nuh1, 
         int nuh2,

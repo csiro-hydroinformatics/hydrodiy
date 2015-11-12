@@ -18,9 +18,8 @@ try:
 except ImportError:
     pass
 
-from hymod.model import ModelError, Calibration
-from hymod.models.gr4j import GR4J
-from hymod import errfun
+from hymod import calibration
+from hymod.models.gr4j import GR4J, CalibrationGR4J
 
 
 import c_hymod_models_utils
@@ -54,92 +53,75 @@ class GR4JTestCases(unittest.TestCase):
 
 
     def test_error1(self):
-
-        ierr_id = ''
         gr = GR4J()
-        gr.create_outputs(20, 30)
-        gr.initialise()
-        inputs = np.random.uniform(size=(20, 2))
-
         try:
-            gr.run(inputs)
-        except ModelError as  e:
-            ierr_id = e.ierr_id
-
-        self.assertTrue(ierr_id == 'ESIZE_OUTPUTS')
+            gr.allocate(20, 30)
+        except ValueError as  e:
+            pass
+        self.assertTrue(e.message.startswith('Too many outputs'))
 
 
     def test_error2(self):
-
-        ierr_id = ''
         gr = GR4J()
-        gr.create_outputs(20, 5)
+        gr.allocate(20, 5)
         gr.initialise()
-        inputs = np.random.uniform(size=(20, 3))
-
         try:
-            gr.run(inputs)
-        except ModelError as  e:
-            ierr_id = e.ierr_id
+            gr.inputs.data = np.random.uniform(size=(20, 3))
+        except ValueError as  e:
+            pass
+        self.assertTrue(e.message.startswith('inputs matrix'))
 
-        self.assertTrue(ierr_id == 'ESIZE_INPUTS')
 
-
-    def test_get_calparams_sample(self):
-
+    def test_sample(self):
         nsamples = 100
-        gr = GR4J()
-        samples = gr.get_calparams_samples(nsamples)
+        obs = np.zeros(10)
+        inputs = np.zeros((10, 2))
+        calib = CalibrationGR4J(obs, inputs)
+        samples = calib.sample(nsamples)
         self.assertTrue(samples.shape == (nsamples, 4))
 
 
     def test_uh(self):
-
         gr = GR4J()
-
         for x4 in np.linspace(0, 50, 100):
-            gr.set_trueparams([400, -1, 50, x4])
+            gr.params.data = [400, -1, 50, x4]
 
-            ck = abs(np.sum(gr.uh)-2) < UHEPS * 2
+            ck = abs(np.sum(gr.uh.data)-2) < UHEPS * 2
             self.assertTrue(ck)
 
 
     def test_run1(self):
-
+        gr = GR4J()
         nval = 1000
+        gr.allocate(nval, 9)
+
         p = np.exp(np.random.normal(0, 2, size=nval))
         pe = np.ones(nval) * 5.
-        inputs = np.concatenate([p[:,None], pe[:, None]], axis=1)
+        gr.inputs.data = np.concatenate([p[:,None], pe[:, None]], axis=1)
 
-        params = [400, -1, 50, 5]
-
-        # Run
-        gr = GR4J()
-        gr.create_outputs(len(inputs), 9)
-        gr.set_trueparams(params)
         gr.initialise()
-        gr.run(inputs)
+        gr.run()
 
-        out = gr.get_outputs()
+        out = gr.outputs.data
+        cs = gr.outputs.names
 
         cols = ['Q[mm/d]', 'Ech[mm/d]',
            'E[mm/d]', 'Pr[mm/d]',
            'Qd[mm/d]', 'Qr[mm/d]',
            'Perc[mm/d]', 'S[mm]', 'R[mm]']
 
-        ck = np.all(out.columns.values.astype(str) == np.array(cols))
+        ck = np.all(list(cs) == cols)
         self.assertTrue(ck)
 
 
     def test_run2(self):
-
         count = 0
         warmup = 365 * 5
 
         gr = GR4J()
 
-        gr.trueparams_mins = [10, -5, 1, 0.5]
-        gr.trueparams_maxs = [1500, 10, 500, 10]
+        gr.params.min = [10, -5, 1, 0.5]
+        gr.params.max = [1500, 10, 500, 10]
 
         if not has_gr4j_wafari:
             gr2 = None
@@ -150,8 +132,8 @@ class GR4JTestCases(unittest.TestCase):
         samples = np.zeros((nsamples, 4))
         for i in range(nsamples):
             for k in range(4):
-                u = np.random.uniform(gr.trueparams_mins[k], \
-                        gr.trueparams_maxs[k])
+                u = np.random.uniform(gr.params.min[k], \
+                        gr.params.max[k])
                 samples[i, k] = u
 
         tam = 0
@@ -177,7 +159,8 @@ class GR4JTestCases(unittest.TestCase):
             ny = nval/365
 
             # Set outputs matrix
-            gr.create_outputs(len(inputs), 1)
+            gr.allocate(len(inputs), 1)
+            gr.inputs.data = inputs
 
             ee1 = 0.
             ee2 = 0.
@@ -193,10 +176,10 @@ class GR4JTestCases(unittest.TestCase):
                 # Run
                 t0 = time.time()
 
-                gr.set_trueparams(params)
+                gr.params.data = params
                 gr.initialise()
-                gr.run(inputs)
-                qsim = gr.outputs[:,0]
+                gr.run()
+                qsim = gr.outputs.data[:,0]
 
                 t1 = time.time()
                 dta += 1000 * (t1-t0)
@@ -264,7 +247,6 @@ class GR4JTestCases(unittest.TestCase):
 
 
     def test_run3(self):
-
         warmup = 365 * 5
         gr = GR4J()
 
@@ -280,25 +262,25 @@ class GR4JTestCases(unittest.TestCase):
             inputs = np.ascontiguousarray(inputs, np.float64)
 
             # Run gr4j
-            gr.create_outputs(len(inputs), 1)
+            gr.allocate(len(inputs), 1)
+            gr.inputs.data = inputs
             t0 = time.time()
 
-            gr.set_trueparams(params['parvalue'])
+            gr.params.data = params['parvalue']
             gr.initialise()
-            gr.run(inputs)
-            qsim = gr.outputs[:,0]
+            gr.run()
+            qsim = gr.outputs.data[:,0]
 
             t1 = time.time()
             dta = 1000 * (t1-t0)
             dta /= len(qsim)/365.25
 
-            qsim = gr.get_outputs().squeeze()
-
+            qsim = gr.outputs.data[:, 0]
 
             # Compare
             idx = np.arange(len(inputs)) > warmup
             expected = d['gr4j'].values[idx]
-            err = np.abs(qsim.values[idx] - expected)
+            err = np.abs(qsim[idx] - expected)
             err_thresh = 7e-3
             ck = np.max(err) < err_thresh
 
@@ -314,7 +296,6 @@ class GR4JTestCases(unittest.TestCase):
 
 
     def test_calibrate(self):
-
         gr = GR4J()
         warmup = 365*5
 
@@ -335,25 +316,25 @@ class GR4JTestCases(unittest.TestCase):
             idx_cal = np.arange(len(inputs))>=warmup
             idx_cal = np.where(idx_cal)[0]
 
-            # Calibrate
             nval = inputs.shape[0]
-            gr.create_outputs(nval, 1)
+            gr.allocate(nval, 9)
             
             # Run gr first
-            gr.set_trueparams(params['parvalue'])
+            gr.params.data = params['parvalue']
             gr.initialise()
-            gr.run(inputs)
-            obs = gr.outputs[:,0].copy()
+            gr.inputs.data = inputs
+            gr.run()
+            obs = gr.outputs.data[:,0]
 
             # Calibrate
-            calib = Calibration(gr, inputs, obs)
-            calib.set_errfun(errfun.ssqe_bias)
-            calib.set_idx_cal(idx_cal)
+            calib = CalibrationGR4J(obs, inputs)
+            calib.errfun = calibration.ssqe_bias
+            calib.idx_cal = idx_cal
                         
-            calparams_ini, _, _ = calib.explore()
+            calparams_ini, explo, explo_ofun = calib.explore()
             calparams_final, _, _ = calib.fit(calparams_ini)
 
-            err = np.abs(gr.trueparams - params['parvalue'])
+            err = np.abs(calib.model.params.data - params['parvalue'])
             ck = np.max(err[[0, 2]]) < 1
             ck = ck & (err[1] < 1e-1)
             ck = ck & (err[3] < 1e-2)

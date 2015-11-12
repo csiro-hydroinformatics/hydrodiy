@@ -28,6 +28,7 @@ class GR2M(Model):
                 'R1[mm/m]', 'R2[mm/m]', 'S[mm]', 'R[mm]'])
 
         self.config.names = 'catcharea'
+        self.config.units = 'km2'
         
         self.states.names = ['Sr', 'Rr']
         self.states.units = ['mm', 'mm']
@@ -37,6 +38,8 @@ class GR2M(Model):
         self.params.min = [10., 0.1]
         self.params.max = [10000., 3.]
         self.params.default = [400., 0.8]
+
+        self.params.reset()
 
 
     def run(self):
@@ -49,9 +52,6 @@ class GR2M(Model):
         if ierr > 0:
             raise ValueError(('Model gr2m, c_hymod_models_gr2m.gr2m_run' + \
                     'returns {0}').format(ierr))
-
-    def cal2true(self, calparams):
-        return np.exp(calparams)
 
 
 

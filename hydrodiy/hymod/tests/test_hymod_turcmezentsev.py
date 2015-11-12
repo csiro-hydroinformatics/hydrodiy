@@ -11,7 +11,7 @@ import pandas as pd
 from hyio import csv
 
 from hywafari import wdata
-from hymod.models.turcmezentsev import TurcMezentsev
+from hymod.models.turcmezentsev import TurcMezentsev, CalibrationTurcMezentsev
 
 class TurcMezentsevTestCases(unittest.TestCase):
 
@@ -31,10 +31,11 @@ class TurcMezentsevTestCases(unittest.TestCase):
         inputs = np.concatenate([P[:,None], PE[:, None]], axis=1)
 
         tm = TurcMezentsev()
-        n = 2.3
-        tm.set_trueparams(n)
-        tm.run(inputs)
-        Q1 = tm.outputs
+        tm.allocate(len(inputs), 2)
+        tm.inputs.data = inputs
+        tm.run()
+        Q1 = tm.outputs.data[:, 0]
+        n = tm.params['n']
         Q2 = P*(1-1/(1+(P/PE)**n)**(1/n))
         self.assertTrue(np.allclose(Q1, Q2))
 
@@ -111,13 +112,16 @@ class TurcMezentsevTestCases(unittest.TestCase):
 
         inputs = np.array([P, E]).T
         obs = np.array(Q)
-        tm = TurcMezentsev()
+        calib = CalibrationTurcMezentsev(obs, inputs)
 
-        tm.calibrate(inputs, obs, iprint=0)
+        start, _, _ = calib.explore()
+        end, _, _ = calib.fit(start)
 
-        ck = np.allclose(tm.trueparams[0], 1.868597, atol=1e-3)
+        tm = calib.model
+
+        ck = np.allclose(tm.params['n'], 1.753469, atol=1e-3)
         if not ck:
-            print('tm.trueparams = {0}'.format(tm.trueparams))
+            print('tm.trueparams = {0}'.format(tm.params['n']))
 
         self.assertTrue(ck)
 

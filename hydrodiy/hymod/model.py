@@ -3,6 +3,7 @@ import numpy as np
 
 import c_hymod_models_utils
 
+NUHMAXLENGTH = c_hymod_models_utils.uh_getnuhmaxlength()
 
 class Vector(object):
 
@@ -16,6 +17,7 @@ class Vector(object):
         self._max = np.inf * np.ones(nval).astype(np.float64)
         self._default = np.nan * np.ones(nval).astype(np.float64)
         self._hitbounds = np.zeros(nval).astype(np.float64)
+        self._model2vector = None
 
 
     def __str__(self):
@@ -61,7 +63,7 @@ class Vector(object):
 
 
     def reset(self):
-        self._data = self._default
+        self.data = self._default.copy()
 
 
     @property
@@ -79,12 +81,12 @@ class Vector(object):
         self._data = np.clip(self._data, self._min, self._max)
 
         idx = np.abs(self._data-self._min) < 1e-10
+        idx = idx | (np.abs(self._data-self._max) < 1e-10)
         self._hitbounds[idx] = 1
         self._hitbounds[~idx] = 0
 
-        idx = np.abs(self._data-self._max) < 1e-10
-        self._hitbounds[idx] = 1
-        self._hitbounds[idx] = 0
+        if not self._model2vector is None:
+            self._model2vector.post_setter()
 
 
     @property
@@ -132,11 +134,10 @@ class Vector(object):
     def units(self, value):
         self.__set_data('_units', value)
 
+
     @property
     def hitbounds(self):
         return self._hitbounds
-
-
 
 
 class Matrix(object):
@@ -159,10 +160,10 @@ class Matrix(object):
             self._nvar = _data.shape[1]
 
         else:
-            raise ValueError(('Matrix {0}, ' + \
+            raise ValueError(('{0} matrix, ' + \
                     'Wrong arguments to Matrix.__init__').format(self._id))
 
-        self._names = ['X{0}'.format(i) for i in range(self._nvar)]
+        self._names = ['V{0}'.format(i) for i in range(self._nvar)]
 
 
     @classmethod
@@ -176,10 +177,10 @@ class Matrix(object):
 
 
     def __str__(self):
-        str = '{0} : nval={1} nvar={2} ['.format( \
+        str = '{0} : nval={1} nvar={2} {{'.format( \
             self._id, self._nval, self._nvar)
-        str += ' '.join(self._names)
-        str += ']'
+        str += ', '.join(self._names)
+        str += '}'
 
         return str
 
@@ -203,7 +204,7 @@ class Matrix(object):
         self._names = np.atleast_1d(value)
 
         if len(self._names) != self._nvar:
-            raise ValueError(('Matrix {0}: tried setting _names, ' + \
+            raise ValueError(('{0} matrix: tried setting _names, ' + \
                 'got wrong size ({1} instead of {2})').format(\
                 self._id, len(self._names), self._nvar))
 
@@ -220,19 +221,29 @@ class Matrix(object):
             _value = _value.T
 
         if _value.shape[0] != self._nval:
-            raise ValueError(('Matrix {0}: tried setting _data,' + \
+            raise ValueError(('{0} matrix: tried setting _data,' + \
                     ' got wrong number of values ' + \
                     '({1} instead of {2})').format( \
                     self._id, _value.shape[0], self._nval))
 
         if _value.shape[1] != self._nvar:
-            raise ValueError(('Matrix {0}: tried setting _data,' + \
+            raise ValueError(('{0} matrix: tried setting _data,' + \
                     ' got wrong number of variables ' + \
                     '({1} instead of {2})').format( \
                     self._id, _value.shape[1], self._nvar))
 
         self._data = _value
 
+
+
+class Model2Vector(object):
+    
+    def __init__(self, model, vector):
+        self.model = model
+        self.vector = vector
+
+    def post_setter(self):
+        self.model.set_uh()
 
 
 class Model(object):
@@ -256,8 +267,11 @@ class Model(object):
         self._params = Vector('params', nparams)
         self._params_default = Vector('params_default', nparams)
 
-        nuhmaxlength = c_hymod_models_utils.uh_getnuhmaxlength()
-        self._statesuh = Vector('statesuh', nuhmaxlength)
+        model2vector = Model2Vector(self, self._params)
+        self._params._model2vector = model2vector
+
+        self._statesuh = Vector('statesuh', NUHMAXLENGTH)
+        self._uh = Vector('uh', NUHMAXLENGTH)
 
         self._inputs = None
         self._outputs = None
@@ -320,6 +334,16 @@ class Model(object):
 
 
     @property
+    def uh(self):
+        return self._uh
+
+
+    @property
+    def statesuh(self):
+        return self._statesuh
+
+
+    @property
     def states(self):
         return self._states
 
@@ -340,8 +364,12 @@ class Model(object):
 
 
     def allocate(self, nval, noutputs=1):
+        if noutputs <= 0:
+            raise ValueError('Number of outputs defined for model {0} should be >0')
+
         if noutputs > self._noutputs_max:
-            raise ValueError('Model {0}: noutputs({1}) > noutputs_max({2})'.format( \
+            raise ValueError(('Too many outputs defined for model {0}:' + \
+                ' noutputs({1}) > noutputs_max({2})').format( \
                 self._name, noutputs, self._noutputs_max))
 
         self._inputs = Matrix.fromdims('inputs', nval, self._ninputs)
@@ -351,7 +379,7 @@ class Model(object):
         self._outputs.names = self._outputs_names[:noutputs]
 
 
-    def set_uhparams(self):
+    def set_uh(self):
         pass
 
 

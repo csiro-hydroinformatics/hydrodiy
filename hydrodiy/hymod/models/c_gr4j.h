@@ -26,10 +26,6 @@
 /* Number of outputs returned by GR4J run */
 #define GR4J_NOUTPUTS 20
 
-int c_gr4j_getnstates(void);
-
-int c_gr4j_getnoutputs(void);
-
 int gr4j_production(double P, double E, 
         double S, 
         double state0, 
