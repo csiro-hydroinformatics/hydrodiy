@@ -129,11 +129,13 @@ class CalibrationGR4J(Calibration):
             ncalparams = 4, \
             timeit = timeit)
 
-        self.calparams_means.data =  [5.8, -0.88, 4.4, -1.]
+        self.calparams_means.data =  [5.8, -0.78, 3.39, 0.86]
 
-        stdevs = 3*np.eye(4)
-        stdevs[3, 3] = 1.
-        self.calparams_stdevs.data = stdevs.flat[:]
+        stdevs = [1.16, 0.2, -0.15, -0.07, \
+                0.2, 1.79, -0.24, -0.149, \
+                -0.15, -0.24, 1.68, -0.16, \
+                -0.07, -0.149, -0.16, 0.167]
+        self.calparams_stdevs.data = stdevs
 
 
     def cal2true(self, calparams):

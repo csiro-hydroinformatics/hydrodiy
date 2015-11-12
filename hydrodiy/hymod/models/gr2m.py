@@ -66,8 +66,8 @@ class CalibrationGR2M(Calibration):
             ncalparams = 2, \
             timeit = timeit)
 
-        self.calparams_means.data =  [5.8, -0.2]
-        self.calparams_stdevs.data = [1., 0., 0., 0.1]
+        self.calparams_means.data =  [5.9, -0.28]
+        self.calparams_stdevs.data = [0.52, 0.015, 0.015, 0.067]
 
 
     def cal2true(self, calparams):
