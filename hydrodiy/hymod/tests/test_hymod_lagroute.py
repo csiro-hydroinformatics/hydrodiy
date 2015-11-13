@@ -76,13 +76,6 @@ class LagRouteTestCases(unittest.TestCase):
 
     def test_uh1(self):
         lr = LagRoute()
- 
-        dt = 86400 # daily model
-        L = 86400 # 86.4 km reach
-        qstar = 1 # qstar = 1 m3/s
-        theta2 = 1 # linear model
-        lr.config.data = [dt, L, qstar, theta2]
-
         for u, a in itertools.product(np.linspace(0, 10, 20), \
                 np.linspace(0, 1, 20)):
             lr.params.data = [u, a]
@@ -129,7 +122,7 @@ class LagRouteTestCases(unittest.TestCase):
         qstar = 50 # qstar = 50 m3/s
 
         # Set outputs
-        lr.allocate(len(inputs), 2)
+        lr.allocate(len(inputs), 4)
         lr.inputs.data = inputs
 
         for theta2 in [1, 2]:
@@ -154,13 +147,16 @@ class LagRouteTestCases(unittest.TestCase):
                 dta += 1000 * (t1-t0) / nval * 365.25
 
                 v0 = 0
-                vr = lr.outputs[-1, 2]
-                v1 = lr.outputs[-1, 3]
+                vr = lr.outputs.data[-1, 2]
+                v1 = lr.outputs.data[-1, 3]
                 si = np.sum(inputs) * dt
                 so = np.sum(lr.outputs.data[:,0]) * dt
 
                 B = si - so - v1 - vr + v0
                 ck = abs(B/so) < 1e-10
+
+                if not ck:
+                    import pdb; pdb.set_trace()
 
                 self.assertTrue(ck)
 

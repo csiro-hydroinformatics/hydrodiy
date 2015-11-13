@@ -7,6 +7,7 @@ from hystat import sutils
 from hymod.model import Model
 from hymod.calibration import Calibration
 
+
 def standardize(X, cst=None):
 
     U = X
@@ -22,6 +23,7 @@ def standardize(X, cst=None):
     Un = (U-mu)/su
 
     return Un, mu, su
+
 
 def destandardize(Un, mu, su, cst=None):
     U = mu + Un * su
