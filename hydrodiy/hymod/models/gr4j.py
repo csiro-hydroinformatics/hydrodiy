@@ -61,7 +61,7 @@ class GR4J(Model):
 
         if ierr > 0:
             raise ModelError(self.name, ierr, \
-                    message='c_hymod_models_utils.uh_getuh')
+                    message='Model GR4J: c_hymod_models_utils.uh_getuh')
 
         self.uh.data[:self._nuh1] = uh1[:self._nuh1]
 
@@ -74,7 +74,7 @@ class GR4J(Model):
         self._nuh2 = nuh2[0]
 
         if ierr > 0:
-            raise ValueError('c_hymod_models_utils.uh_getuh returns {0}'.format(\
+            raise ValueError('Model GR4J: c_hymod_models_utils.uh_getuh returns {0}'.format(\
                 ierr))
 
         nend = self._uh.nval-self._nuh1
@@ -99,7 +99,7 @@ class GR4J(Model):
     def run(self):
 
         if self.inputs.nvar != self.ninputs:
-            raise ValueError(('self.inputs.nvar({0}) != ' + \
+            raise ValueError(('Model GR4J, self.inputs.nvar({0}) != ' + \
                     'self.ninputs({1})').format( \
                     self._inputs.nvar, self._ninputs))
         

@@ -8,17 +8,6 @@
 #include "c_utils.h"
 
 
-int c_lagroute_getnstates(void)
-{
-    return LAGROUTE_NSTATES;
-}
-
-int c_lagroute_getnoutputs(void)
-{
-    return LAGROUTE_NOUTPUTS;
-}
-
-
 int lagroute_minmaxparams(int nparams, double * params)
 {
         double p1, p2;

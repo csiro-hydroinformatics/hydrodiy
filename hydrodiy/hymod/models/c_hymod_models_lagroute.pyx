@@ -5,12 +5,6 @@ np.import_array()
 
 # -- HEADERS --
 cdef extern from 'c_lagroute.h':
-    int c_lagroute_getnstates()
-
-cdef extern from 'c_lagroute.h':
-    int c_lagroute_getnoutputs()
-
-cdef extern from 'c_lagroute.h':
     int c_lagroute_run(int nval, 
             int nparams, 
             int nuh,
@@ -29,13 +23,6 @@ cdef extern from 'c_lagroute.h':
 def __cinit__(self):
     pass
 
-
-def lagroute_getnstates():
-    return c_lagroute_getnstates()
-
-def lagroute_getnoutputs():
-    return c_lagroute_getnoutputs()
-
 def lagroute_run(int nuh, 
         np.ndarray[double, ndim=1, mode='c'] config not None,
         np.ndarray[double, ndim=1, mode='c'] params not None,
@@ -51,8 +38,8 @@ def lagroute_run(int nuh,
     if params.shape[0] != 2:
         raise ValueError('params.shape[0] != 2')
     
-    if states.shape[0] < 2:
-        raise ValueError('states.shape[0] < 2')
+    if states.shape[0] < 1:
+        raise ValueError('states.shape[0] < 1')
 
     if inputs.shape[0] != outputs.shape[0]:
         raise ValueError('inputs.shape[0] != outputs.shape[0]')

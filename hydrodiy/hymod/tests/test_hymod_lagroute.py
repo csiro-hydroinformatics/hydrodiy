@@ -10,9 +10,8 @@ import pandas as pd
 
 import matplotlib.pyplot as plt
 
-from hymod.model import ModelError
-from hymod.models.lagroute import LagRoute
-from hymod import errfun
+from hymod.models.lagroute import LagRoute, CalibrationLagRoute
+from hymod import calibration
 
 
 import c_hymod_models_utils
@@ -37,91 +36,82 @@ class LagRouteTestCases(unittest.TestCase):
 
         ierr_id = ''
         lr = LagRoute()
-        lr.create_outputs(20, 5)
+        lr.allocate(20, 2)
         lr.initialise()
         inputs = np.zeros((20, 1))
         inputs[1,0] = 100
-        lr.run(inputs)
+        lr.inputs.data = inputs
+        lr.run()
 
 
     def test_error1(self):
-
-        ierr_id = ''
         lr = LagRoute()
-        lr.create_outputs(20, 30)
-        lr.initialise()
-        inputs = np.random.uniform(size=(20, 1))
-
         try:
-            lr.run(inputs)
-        except ModelError as  e:
-            ierr_id = e.ierr_id
+            lr.allocate(20, 30)
+        except ValueError as  e:
+            pass
 
-        self.assertTrue(ierr_id == 'ESIZE_OUTPUTS')
+        self.assertTrue(e.message.startswith('Too many outputs defined'))
 
 
     def test_error2(self):
-
-        ierr_id = ''
         lr = LagRoute()
-        lr.create_outputs(20, 2)
+        lr.allocate(20, 2)
         lr.initialise()
-        inputs = np.random.uniform(size=(20, 3))
 
         try:
-            lr.run(inputs)
-        except ModelError as  e:
-            ierr_id = e.ierr_id
+            lr.inputs.data = np.random.uniform(size=(20, 3))
+        except ValueError as  e:
+            pass
 
-        self.assertTrue(ierr_id == 'ESIZE_INPUTS')
+        self.assertTrue(e.message.startswith('inputs matrix: tried setting _data'))
 
 
-    def test_get_calparams_sample(self):
-
+    def test_sample(self):
+        calib = CalibrationLagRoute()
         nsamples = 100
-        lr = LagRoute()
-        samples = lr.get_calparams_samples(nsamples)
+        samples = calib.sample(nsamples)
         self.assertTrue(samples.shape == (nsamples, 2))
 
 
     def test_uh1(self):
-
         lr = LagRoute()
-
-        for u, a in itertools.product(np.linspace(0, 10, 20), \
-                np.linspace(0, 1, 20)):
-            lr.set_trueparams([u, a])
-
-            ck = abs(np.sum(lr.uh)-1) < UHEPS
-            self.assertTrue(ck)
-
-
-    def test_uh2(self):
-
-        lr = LagRoute()
-
-        # Set configuration
+ 
         dt = 86400 # daily model
         L = 86400 # 86.4 km reach
         qstar = 1 # qstar = 1 m3/s
         theta2 = 1 # linear model
-        lr.set_config([dt, L, qstar, theta2])
+        lr.config.data = [dt, L, qstar, theta2]
+
+        for u, a in itertools.product(np.linspace(0, 10, 20), \
+                np.linspace(0, 1, 20)):
+            lr.params.data = [u, a]
+            ck = abs(np.sum(lr.uh.data)-1) < UHEPS
+            self.assertTrue(ck)
+
+
+    def test_uh2(self):
+        lr = LagRoute()
+
+        dt = 86400 # daily model
+        L = 86400 # 86.4 km reach
+        qstar = 1 # qstar = 1 m3/s
+        theta2 = 1 # linear model
+        lr.config.data = [dt, L, qstar, theta2]
 
         # Set uh
         alpha = 1.
         for U in np.linspace(0.1, 20, 100):
 
-            lr.set_trueparams([U, alpha])
+            lr.params.data = [U, alpha]
 
-            ck = abs(np.sum(lr.uh)-1) < 1e-5
+            ck = abs(np.sum(lr.uh.data)-1) < 1e-5
             self.assertTrue(ck)
 
             tau = alpha * L * U
             k = int(tau/dt)
             w = tau/dt - k
- 
-            ck = abs(lr.uh[k]-1+w) < 1e-5
-                
+            ck = abs(lr.uh.data[k]-1+w) < 1e-5
             self.assertTrue(ck)
  
 
@@ -139,11 +129,12 @@ class LagRouteTestCases(unittest.TestCase):
         qstar = 50 # qstar = 50 m3/s
 
         # Set outputs
-        lr.create_outputs(len(inputs), 4)
+        lr.allocate(len(inputs), 2)
+        lr.inputs.data = inputs
 
         for theta2 in [1, 2]:
 
-            lr.set_config([dt, L, qstar, theta2])
+            lr.config.data = [dt, L, qstar, theta2]
 
             # Run
             UU = np.linspace(0.1, 20, 20)
@@ -155,9 +146,9 @@ class LagRouteTestCases(unittest.TestCase):
 
                 t0 = time.time()
 
-                lr.set_trueparams([U, alpha])
+                lr.params.dat = [U, alpha]
                 lr.initialise()
-                lr.run(inputs)
+                lr.run()
 
                 t1 = time.time()
                 dta += 1000 * (t1-t0) / nval * 365.25
@@ -166,7 +157,7 @@ class LagRouteTestCases(unittest.TestCase):
                 vr = lr.outputs[-1, 2]
                 v1 = lr.outputs[-1, 3]
                 si = np.sum(inputs) * dt
-                so = np.sum(lr.outputs[:,0]) * dt
+                so = np.sum(lr.outputs.data[:,0]) * dt
 
                 B = si - so - v1 - vr + v0
                 ck = abs(B/so) < 1e-10
@@ -191,18 +182,19 @@ class LagRouteTestCases(unittest.TestCase):
         qstar = 50 # qstar = 50 m3/s
         theta2 = 1
 
-        lr.set_config([dt, L, qstar, theta2])
+        lr.config.data = [dt, L, qstar, theta2]
 
         # Set outputs
-        lr.create_outputs(len(inputs))
+        lr.allocate(len(inputs))
+        lr.inputs.data = inputs
 
         # Run
         for U in range(1, 11):
-            lr.set_trueparams([U, 1.])
+            lr.params.data = [U, 1.]
             lr.initialise()
-            lr.run(inputs)
+            lr.run()
 
-            err = np.abs(lr.outputs[U:,0] - inputs[:-U, 0])
+            err = np.abs(lr.outputs.data[U:,0] - inputs[:-U, 0])
 
             ck = np.max(err) < 1e-10
             self.assertTrue(ck)
