@@ -7,6 +7,29 @@ from hystat import sutils
 from hymod.model import Model
 from hymod.calibration import Calibration
 
+def standardize(X, cst=None):
+
+    U = X
+    if not cst is None:
+        U = np.log(X+cst)
+
+    U = np.atleast_2d(U)
+    if U.shape[0] == 1:
+        U = U.T
+
+    mu = np.nanmean(U, 0)
+    su = np.nanstd(U, 0)
+    Un = (U-mu)/su
+
+    return Un, mu, su
+
+def destandardize(Un, mu, su, cst=None):
+    U = mu + Un * su
+    if not cst is None:
+        X = np.exp(U) - cst
+
+    return X
+
 
 class ANN(Model):
 
@@ -15,24 +38,25 @@ class ANN(Model):
         self.nneurons = nneurons
 
         nparams = (ninputs + 2) * nneurons + 1
-        nconfig = ninputs * 2
+
+        noutputs_max = nneurons + 1
 
         Model.__init__(self, 'ann',
-            nconfig=nconfig, \
+            nconfig=1, \
             ninputs=ninputs, \
             nparams=nparams, \
-            nstates=nneurons, \
-            noutputs_max = 1,
+            nstates=1, \
+            noutputs_max = noutputs_max,
             inputs_names = ['I{0}'.format(i) for i in range(ninputs)], \
-            outputs_names = ['O'])
+            outputs_names = ['L2N1'] + \
+                ['L1N{0}'.format(i) for i in range(1, nneurons+1)])
 
-        self.config.names = ['C{0}'.format(i) for i in range(nconfig)]
-        self.config.units = ['-'] * nconfig
+        self.config.names = ['dummy']
+        self.config.units = ['-']
 
-        self.states.names = ['S{0}'.format(i) for i in range(nneurons)]
-        self.states.units = ['-'] * nneurons
+        self.states.names = ['dummy']
+        self.states.units = ['-']
 
-        self.params.names = ['P{0}'.format(i) for i in range(nparams)]
         self.params.units = ['-'] * nparams
         self.params.min = [-10.] * nparams
         self.params.max = [10.] * nparams
@@ -41,18 +65,36 @@ class ANN(Model):
         self.params.reset()
 
 
-    def run(self):
-
+    def params2matrix(self):
+        nneurons = self._noutputs_max - 1
         ninputs = self.ninputs
-        nneurons = self.nneurons
 
-        inputs = np.append(self.inputs.data, \
-                np.ones((self.inputs.nval, 1)), 1)
+        params = self.params.data
+
+        n1 = ninputs*nneurons
+
+        # Parameter for first layer
+        L1M = params[:n1].reshape(ninputs, nneurons)
+        L1C = params[n1:n1+nneurons].reshape(1, nneurons)
+
+        # Parameter for second layer
+        L2M = params[n1+nneurons:n1+2*nneurons].reshape(nneurons, 1)
+        L2C = params[n1+2*nneurons:n1+2*nneurons+1].reshape(1, 1)
+
+        return L1M, L1C, L2M, L2C
+
+
+    def run(self):
+        L1M, L1C, L2M, L2C = self.params2matrix()
 
         # First layer
-        n1 = ninputs * nneurons + 1
-        M = self.params.data[:n1].reshape((ninputs+1, nneurons))
-        S = np.tanh(np.dot(inputs, M)
+        S = np.tanh(np.dot(self.inputs.data, L1M) + L1C)
+
+        # Second layer
+        O = np.dot(S, L2M) + L2C
+
+        n3 = self.outputs.nvar
+        self.outputs.data =  np.concatenate([O, S], axis=1)[:, :n3]
 
 
 
@@ -70,7 +112,7 @@ class CalibrationANN(Calibration):
 
         self.calparams_means.data =  [0.] * nparams
 
-        stdevs = [0.] * nparams * nparams
+        stdevs = np.eye(nparams).flat[:]
         self.calparams_stdevs.data = stdevs
 
 

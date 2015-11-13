@@ -94,6 +94,11 @@ class Calibration(object):
 
 
     @property
+    def observations(self):
+        return self._observations
+
+
+    @property
     def errfun(self):
         return self._errfun
 
@@ -290,6 +295,10 @@ class Calibration(object):
             if ofun < ofun_min:
                 ofun_min = ofun
                 calparams_best = calparams
+
+        if calparams_best is None:
+            raise ValueError('Could not identify a suitable' + \
+                '  parameter by exploration')
 
         self._calparams.data = calparams_best
 
