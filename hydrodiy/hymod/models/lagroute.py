@@ -32,6 +32,11 @@ class LagRoute(Model):
                 'flowref', 'storage_expon']
         self.config.units = ['s', 'm', 'm3/s', '-']
 
+        self.config['timestep'] = 86400
+        self.config['length'] = 86400
+        self.config['flowref'] = 1
+        self.config['storage_expon'] = 1
+
         self.states.names = ['V']
         self.states.units = ['m3']
 

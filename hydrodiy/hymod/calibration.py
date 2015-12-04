@@ -15,6 +15,13 @@ def sse(obs, sim, errparams):
     return np.sum(err*err)
 
 
+def sseabs_bias(obs, sim, errparams):
+    err = np.abs(obs-sim)
+    E = np.sum(err*err)
+    B = np.mean(obs-sim)
+    return E*(1+abs(B))
+
+
 def ssqe_bias(obs, sim, errparams):
     err = np.sqrt(obs)-np.sqrt(sim)
     E = np.sum(err*err)
@@ -266,15 +273,17 @@ class Calibration(object):
             ncalparams = self._calparams_means.nval
             nsamples = int(200 * math.sqrt(ncalparams))
 
-        ofun_explore = np.zeros(nsamples) * np.nan
-        ofun_min = np.inf
-
         if calparams_explore is None:
             calparams_explore = self.sample(nsamples, seed)
         else:
             calparams_explore = np.atleast_2d(calparams_explore)
             if calparams_explore.shape[0] == 1:
                 calparams_explore = calparams_explore.T
+
+            nsamples = calparams_explore.shape[0]
+
+        ofun_explore = np.zeros(nsamples) * np.nan
+        ofun_min = np.inf
 
         # Systematic exploration
         calparams_best = None
@@ -288,7 +297,8 @@ class Calibration(object):
             if self._iprint>0:
                 if self._ieval % self._iprint == 0:
                     self._calparams.data = calparams
-                    print('Exploration {0}/{1} : {2:3.3e} {3} ~ {4:.2f} ms'.format( \
+                    print(('Exploration {0}/{1} : ' + \
+                        '{2:3.3e} {3} ~ {4:.2f} ms').format( \
                         self._ieval, nsamples, ofun, self._calparams, \
                         self._runtime))
 

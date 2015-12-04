@@ -84,7 +84,7 @@ class ANNTestCases(unittest.TestCase):
             ann.run()
 
             Q1 = ann.outputs.data[:, 0]
-            
+
             L1M, L1C, L2M, L2C = ann.params2matrix()
             S2 = np.tanh(np.dot(inputs, L1M) + L1C)
             Q2 = (np.dot(S2, L2M) + L2C)[:,0]
@@ -95,9 +95,9 @@ class ANNTestCases(unittest.TestCase):
     def test_calibrate(self):
 
         ninputs = 2
-        nneurons = 3
+        nneurons = 1
         calib = CalibrationANN(ninputs, nneurons)
-        calib.errfun = calibration.ssqe_bias
+        calib.errfun = calibration.sse
 
         for count in range(1, 11):
             fd = '%s/rrtest_%2.2d_timeseries.csv' % (FRR, count)
@@ -120,19 +120,22 @@ class ANNTestCases(unittest.TestCase):
             calib.idx_cal = pd.notnull(obs_s)
 
             ann = calib.model
-            params = np.random.uniform(-1, 1, ann.params.nval)
+            params = np.random.uniform(1, 2, ann.params.nval)
             ann.params.data = params
             ann.run()
-            calib.observations.data = ann.outputs.data[:,0].copy()
+
+            obs = ann.outputs.data[:,0].copy()
+            calib.observations.data = obs
 
             # Calibrate
-            ini, explo, explo_ofun = calib.explore()
-            final, _, _ = calib.fit(ini)
+            ini, _, _ = calib.explore()
+            final, _, final_ofun = calib.fit(ini)
 
-            err = np.abs(calib.model.params.data - params)
-            ck = np.max(err[[0, 2]]) < 1
-            ck = ck & (err[1] < 1e-1)
-            ck = ck & (err[3] < 1e-2)
+            sim = ann.outputs.data[:, 0]
+            erro = np.abs(obs - sim)
+
+            err = np.abs(ann.params.data - params)/params * 100
+            ck = np.max(err) < 1e-4
 
             print('\t\tTEST CALIB %2d : max abs err = %0.5f' % ( \
                     count, np.max(err)))
