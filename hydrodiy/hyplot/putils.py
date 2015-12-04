@@ -3,6 +3,7 @@ import re
 from datetime import datetime
 import datetime
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from matplotlib import cm
@@ -31,15 +32,15 @@ def get_colors(ncols=10, palette='Paired'):
 # Fucntion to generate html code
 def img2html(title, image_data, root_http=None, filename=None):
     '''
-        Generate html code gathering various image in a big table 
-        
+        Generate html code gathering various image in a big table
+
         :param str title : page title
         :param pandas.DataFrame image_data : Data used to access image files
             image_data.columns = Column header
             image_data.index = Row header
             image_data['rowlabel'] = Text at the beginning of each row
         :param str root_http : HTTP adress of root directory containing images
-        :param string filename: Output file name to write 
+        :param string filename: Output file name to write
 
     '''
 
@@ -55,7 +56,7 @@ def img2html(title, image_data, root_http=None, filename=None):
     html.append('<tr><td></td></tr>\n')
 
     # urls data
-    colurl = [cn for cn in image_data.columns 
+    colurl = [cn for cn in image_data.columns
             if cn!='rowlabel']
 
     # column headers
@@ -63,7 +64,7 @@ def img2html(title, image_data, root_http=None, filename=None):
     html.append('<td align=\'center\'>index</td>\n')
     if has_rowlabel:
         html.append('<td align=\'center\'>Label</td>\n')
-    for cn in colurl:    
+    for cn in colurl:
         html.append('<td align=\'center\'>%s</td>\n'%cn)
     html.append('</tr>')
     html.append('<tr><td></td></tr>\n')
@@ -77,7 +78,7 @@ def img2html(title, image_data, root_http=None, filename=None):
 
         for cn in colurl:
             if not root_http is None:
-                html.append('<td><img src="%s/%s"/></td>\n'%(root_http, 
+                html.append('<td><img src="%s/%s"/></td>\n'%(root_http,
                                                                 row[cn]))
             else:
                 html.append('<td><img src="%s"/></td>\n'%row[cn])
@@ -99,7 +100,7 @@ def footer(fig, author=None, copyright=False, version=None):
     now = datetime.datetime.now()
 
     if not author is None:
-        label = '%s - Generated: %s' % (author, 
+        label = '%s - Generated: %s' % (author,
                 now.strftime('%H:%M %d/%m/%Y'))
     else:
         label = 'Generated: %s' % now.strftime('%H:%M %d/%m/%Y')
@@ -112,14 +113,14 @@ def footer(fig, author=None, copyright=False, version=None):
 
     # Add copyright
     if copyright:
-        copyright = u'\u00A9' 
+        copyright = u'\u00A9'
         copyright += 'Commonwealth of Australia %s'%now.strftime('%Y')
         copyright += ' Australian Bureau of Meteorology'
-        fig.text(0.95, 0.010, copyright, color='#595959', 
+        fig.text(0.95, 0.010, copyright, color='#595959',
                                 ha='right', fontsize=9)
 
 def col2cmap(colors):
-    ''' Define a linear color map from a set of colors 
+    ''' Define a linear color map from a set of colors
 
     Parameters
     -----------
@@ -137,7 +138,7 @@ def col2cmap(colors):
     -----------
     >>> import matplotlib.pyplot as plt
     >>> import numpy as np
-    >>> from hyplot import putils 
+    >>> from hyplot import putils
     >>> colors = {0.:'#3399FF', 0.1:'#33FFFF', 1.0:'#33FF99'}
     >>> cmap = putils.col2cmap(colors)
     >>> nval = 500
@@ -181,7 +182,7 @@ def line(ax, a, b, *args, **kwargs):
     a : float
         Intercept
     b : float
-        Slope 
+        Slope
 
     Returns
     -----------
@@ -191,7 +192,7 @@ def line(ax, a, b, *args, **kwargs):
     Example
     -----------
     >>> import matplotlib.pyplot as plt
-    >>> from hyplot import putils 
+    >>> from hyplot import putils
     >>> fig, ax = plt.subplots()
     >>> ax.plot([0, 10], [0, 10], 'o')
     >>> putils.line(0, 1, ax, '--')
@@ -215,6 +216,87 @@ def line(ax, a, b, *args, **kwargs):
 
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
-   
+
     return line
+
+
+def equation(tex, filename, \
+    textcolor='white', \
+    transparent=True, \
+    dpi = 200, \
+    width = 1000, \
+    height = 300):
+    ''' Print latex equation into file
+
+    Parameters
+    -----------
+    tex : str
+        Latex equation code
+    filename : str
+        Filename to print in
+    textcolor : str
+        Text color
+    transparent : bool
+        Use transparent background or not
+    dpi : int
+        Figure resolution
+    width : int
+        Figure width in pixels
+    height : int
+        Figure height in pixels
+    fontsize : int
+        Font size in points
+    Example
+    -----------
+    >>> from hyplot import putils
+    >>> tex = r'\begin{equation} s = \sum_{i=0}^{\infty} \frac{1}{i^2}
+    >>> fp = '~/equation.png'
+    >>> putils.equation(tex, fp)
+
+    '''
+    usetex = mpl.rcParams['text.usetex']
+    mpl.rc('text', usetex=True)
+
+    plt.close('all')
+
+    fig, ax = plt.subplots()
+
+    ax.text(0, 0.5, tex, color=textcolor, \
+        fontsize=32, va='center')
+    ax.set_ylim([0, 1.5])
+
+    ax.axis('off')
+
+    fig.set_size_inches(float(width)/dpi, \
+                    float(height)/dpi)
+
+    fig.tight_layout()
+
+    fig.savefig(filename, dpi=dpi, \
+        transparent=transparent)
+
+    mpl.rc('text', usetex=usetex)
+
+
+def set_spines(ax, spines, color='black', style='-', visible=True):
+
+    styles = {':':'dotted', '-':'solid', '-.':'dash_dot', '--':'dashed'}
+
+    for spine in spines:
+        ax.spines[spine].set_visible(visible)
+        ax.spines[spine].set_color(color)
+
+        s = style
+        if style in [':', '-', '-.', '--']:
+            s = styles[style]
+        ax.spines[spine].set_linestyle(s)
+
+
+
+def set_legend(leg, textcolor='black', alpha=1):
+    leg.get_frame().set_alpha(alpha)
+
+    for text in leg.get_texts():
+        text.set_color(textcolor)
+
 
