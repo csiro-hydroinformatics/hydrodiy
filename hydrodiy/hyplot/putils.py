@@ -279,8 +279,15 @@ def equation(tex, filename, \
 
 
 def set_spines(ax, spines, color='black', style='-', visible=True):
+    if spines == 'all':
+        spines = ['top', 'bottom', 'left', 'right']
 
-    styles = {':':'dotted', '-':'solid', '-.':'dash_dot', '--':'dashed'}
+    styles = { \
+            ':':'dotted', \
+            '-':'solid', \
+            '-.':'dash_dot', \
+            '--':'dashed'\
+    }
 
     for spine in spines:
         ax.spines[spine].set_visible(visible)
