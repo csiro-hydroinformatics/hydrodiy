@@ -3,9 +3,9 @@
 
 
 
-import datetime
-time_now = datetime.datetime.now
-print(' ## Script run started at %s ##' % time_now())
+from datetime import datetime
+time_now = datetime.now
+print('\n\n## Script run started at {0} ##\n\n'.format(time_now()))
 
 import sys, os, re, json, math
 
@@ -40,14 +40,14 @@ source_file = os.path.abspath(__file__)
 
 FROOT = os.path.dirname(source_file)
 
-FDATA = '%s/data' % FROOT
+FDATA = os.path.join(FROOT, 'data')
 if not os.path.exists(FDATA): os.mkdir(FDATA)
 
 #------------------------------------------------------------
 # Get data
 #------------------------------------------------------------
 
-#fd = '%s/data.csv' % FDATA
+#fd = os.path.join(FDATA, 'data.csv')
 #data, comment = csv.read_csv(fd)
 
 sites = pd.DataFrame(np.random.uniform(size=(30, 5)))
@@ -60,8 +60,8 @@ ns = sites.shape[0]
 count = 0
 
 for idx, row in sites.iterrows():
-    
-    count += 1
-    print('.. dealing with site %3d / %3d ..' % (count, ns))
 
-print(' ## Script run completed at %s ##' % time_now())
+    count += 1
+    print('.. dealing with site {0:3d} / {1:3d} ..'.format(count, ns))
+
+print('\n\n## Script run completed at {0} ##\n\n'.format(time_now()))
