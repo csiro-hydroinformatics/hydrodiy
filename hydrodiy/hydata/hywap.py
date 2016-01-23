@@ -38,8 +38,8 @@ class HyWap():
 
         self.variables = {
             'rainfall':[{'type':'totals', 'unit':'mm/d'}],
-            'temperature':[{'type':'maxave','unit':'celsius'}, 
-                           {'type':'minave','unit':'celsius'}], 
+            'temperature':[{'type':'maxave','unit':'celsius'},
+                           {'type':'minave','unit':'celsius'}],
             'vprp':[{'type':'vprph09', 'unit':'Pa'}],
             'solar':[{'type':'solarave','unit':'MJ/m2'}]
            }
@@ -49,7 +49,7 @@ class HyWap():
         self.current_url = None
 
     def set_awapdir(self, awap_dir):
-        ''' Set AWAP output directory ''' 
+        ''' Set AWAP output directory '''
 
         self.awap_dir = awap_dir
 
@@ -74,12 +74,12 @@ class HyWap():
         if not (varname in self.variables):
             raise ValueError('varname(%s) not recognised (should be %s)' % (varname,
                 ', '.join(self.variables.keys())))
-           
+
         vt = [v['type'] for v in self.variables[varname]]
         if not (vartype in vt):
             raise ValueError('vartype(%s) not recognised (should be %s)' % (vartype,
                 ', '.join(vt)))
-           
+
         if not (timestep in self.timesteps):
             raise ValueError('timestep(%s) not recognised (should be %s)' % (varname,
                 ', '.join(self.timesteps)))
@@ -97,11 +97,11 @@ class HyWap():
 
         # Download data
         self.current_url = ('%s/%s/%s/%s/grid/0.05/history/nat/'
-                '%4d%2.2d%2.2d%4d%2.2d%2.2d.grid.Z') % (self.awap_url, 
-                    varname, vartype, timestep, 
+                '%4d%2.2d%2.2d%4d%2.2d%2.2d.grid.Z') % (self.awap_url,
+                    varname, vartype, timestep,
                     dt1.year, dt1.month, dt1.day,
                     dt2.year, dt2.month, dt2.day)
-        
+
         try:
             resp = urllib2.urlopen(self.current_url)
 
@@ -137,7 +137,7 @@ class HyWap():
         icomment = np.argmin(tmp[::-1])
 
         # Process grid
-        header = {k:float(v) 
+        header = {k:float(v)
             for k,v in [re.split(' +', s.strip()) for s in txt[:iheader]]}
 
         header['varname'] = varname
@@ -159,7 +159,7 @@ class HyWap():
             import pdb; pdb.set_trace()
 
             raise IOError(('Dataset dimensions (%d,%d)'
-                ' do not match header (%d,%d)' % (data.shape[0], 
+                ' do not match header (%d,%d)' % (data.shape[0],
                 data.shape[1], nr, nc)))
 
         # Build comments
@@ -188,8 +188,8 @@ class HyWap():
                             llats.flat[:])]).reshape(llongs.shape)
 
         return cellids, llongs, llats
-        
-    
+
+
     def savegriddata(self, varname, vartype, timestep, dt):
         ''' Download gridded data and save it to disk '''
 
@@ -202,15 +202,15 @@ class HyWap():
         if F is None:
             raise ValueError('Cannot write data, awap dir is not setup')
 
-        fout = os.path.join(F, varname, timestep, '%s_%s_%s_%s.csv' % (varname, 
+        fout = os.path.join(F, varname, timestep, '%s_%s_%s_%s.csv' % (varname,
                                 timestep, vartype, dt))
 
         co = comment + [''] + ['%s:%s' % (k, header[k]) for k in header] + ['']
 
         source_file = os.path.abspath(__file__)
 
-        csv.write_csv(data, fout, 
-            comment = co, 
+        csv.write_csv(data, fout,
+            comment = co,
             source_file = source_file)
 
         return '%s.gz' % fout
@@ -219,12 +219,15 @@ class HyWap():
         ''' Generate default plotting configuration '''
 
         if cfg is None:
-            cfg = {'cmap':None, 'clevs':None, 
-                'norm':None}
+            cfg = {'cmap':None,
+                'clevs':None,
+                'norm':None,
+                'linewidth':1.,
+                'linecolor':'#%02x%02x%02x' % (60, 60, 60)}
 
         if varname == 'rainfall':
             if cfg['clevs'] is None:
-                cfg['clevs'] = [0, 1, 5, 10, 15, 25, 50, 
+                cfg['clevs'] = [0, 1, 5, 10, 15, 25, 50,
                                         100, 150, 200, 300, 400]
 
             if cfg['cmap'] is None:
@@ -253,10 +256,10 @@ class HyWap():
 
         if cfg['norm'] is None:
             cfg['norm'] = plt.cm.colors.Normalize(
-                    vmin=np.min(cfg['clevs']), 
+                    vmin=np.min(cfg['clevs']),
                     vmax=np.max(cfg['clevs']))
 
-        return cfg 
+        return cfg
 
     def plot(self, data, header, om, config = None):
         ''' Plot gridded data '''
@@ -286,9 +289,15 @@ class HyWap():
             clevs = clevs[:iw+1]
 
         # draw contour
-        cs = m.contourf(x, y, z, cfg['clevs'], 
+        cs = m.contourf(x, y, z, cfg['clevs'],
                     cmap=cfg['cmap'],
                     norm=cfg['norm'])
+
+        if cfg['linewidth'] > 0.:
+            m.contour(x, y, z, cfg['clevs'],
+                    linewidths=cfg['linewidth'],
+                    colors=cfg['linecolor'])
+
 
         return cs
 
