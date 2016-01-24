@@ -20,7 +20,10 @@ has_basemap = True
 try:
     from mpl_toolkits.basemap import cm as cm
     import matplotlib.pyplot as plt
+    import matplotlib as mpl
     from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+    mpl.rcParams['contour.negative_linestyle'] = 'solid'
 
 except ImportError:
     has_basemap = False
@@ -277,8 +280,11 @@ class HyWap():
 
         # Filter data
         clevs = cfg['clevs']
-        z[z<clevs[0]] = np.nan
-        z[z>clevs[-1]] = np.nan
+        ix, iy = np.where(z < clevs[0])
+        z[ix, iy] = np.nan
+
+        ix, iy = np.where(z > clevs[-1])
+        z[ix, iy] = np.nan
 
         if 'sigma' in cfg:
             z = gaussian_filter(z, sigma=cfg['sigma'], mode='nearest')
