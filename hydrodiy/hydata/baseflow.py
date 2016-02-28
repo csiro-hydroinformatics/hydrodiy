@@ -47,6 +47,6 @@ def baseflow(inputs, params, method=1):
     ierr = c_hydata.baseflow(method, params, inputs, outputs)
 
     if ierr!=0:
-        raise ValueError('lindetect returns %d'%ierr)
+        raise ValueError('c_hydata.baseflow returns %d'%ierr)
 
     return outputs
