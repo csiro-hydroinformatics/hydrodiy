@@ -77,7 +77,7 @@ class Linreg:
         self.y = y
         self.varnames = varnames
 
-        self.nboot_print = 50
+        self.nboot_print = 0
 
         # Build inputs
         self._buildinput()
@@ -440,8 +440,10 @@ class Linreg:
         self.diagnostic_boot = []
 
         for i in range(nsample):
-            if i%self.nboot_print==0:
-                print('\t\t.. Boot sample %4d / %4d ..' % (i+1, nsample))
+
+            if self.nboot_print > 0:
+                if i%self.nboot_print==0:
+                    print('\t\t.. Boot sample %4d / %4d ..' % (i+1, nsample))
 
             # Resample residuals
             residuals_boot = residuals.copy().flatten()
