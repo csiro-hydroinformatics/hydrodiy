@@ -10,6 +10,7 @@ from matplotlib import cm
 
 from matplotlib.path import Path
 
+from matplotlib import colors
 from matplotlib.colors import hex2color
 from matplotlib.colors import LinearSegmentedColormap
 
@@ -23,11 +24,24 @@ wafari_tercile_colors = ['#FF9933', '#64A0C8', '#005BBB']
 
 bureau_background_color = '#002745'
 
+tableau_colors = [colors.rgb2hex([float(coo)/255 for coo in co]) for co in [ \
+            (31, 119, 180), (255, 127, 14), (44, 160, 44), \
+            (214, 39, 40), (148, 103, 189), (140, 86, 75), \
+            (227, 119, 194), (127, 127, 127), (188, 189, 34), \
+            (23, 190, 207)
+        ] ]
+
+def set_color_cycle(ax, cycle_colors=None):
+    if cycle_colors is None:
+        cycle_colors = tableau_colors
+    ax.set_color_cycle(cycle_colors)
+
 
 def get_colors(ncols=10, palette='Paired'):
     ''' generates a set of colors '''
     cmap = cm.get_cmap(palette, ncols)
     return [cmap(i) for i in range(cmap.N)]
+
 
 # Fucntion to generate html code
 def img2html(title, image_data, root_http=None, filename=None):
@@ -94,6 +108,7 @@ def img2html(title, image_data, root_http=None, filename=None):
             fout.writelines(html)
 
     return html
+
 
 def footer(fig, author=None, copyright=False, version=None):
     ''' Add footer to a figure (code from wafari) '''

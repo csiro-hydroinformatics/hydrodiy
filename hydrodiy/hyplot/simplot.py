@@ -14,12 +14,9 @@ from matplotlib import colors
 from hydata import dutils
 from hyplot import putils
 
-COLS = [colors.rgb2hex([float(coo)/255 for coo in co]) for co in [ \
-            (31, 119, 180), (255, 127, 14), (44, 160, 44), \
-            (214, 39, 40), (148, 103, 189), (140, 86, 75), \
-            (227, 119, 194), (127, 127, 127), (188, 189, 34), \
-            (23, 190, 207)
-        ] ]
+# Select color scheme
+sim_colors = putils.tableau_colors
+
 
 class Simplot(object):
 
@@ -60,10 +57,10 @@ class Simplot(object):
         self.fig = fig
 
         # Grid spec
-        fig_nCOLS = 1 + nfloods/2
+        fig_ncols = 1 + nfloods/2
         fig_nrows = 3
-        self.gs = gridspec.GridSpec(fig_nrows, fig_nCOLS,
-                width_ratios=[1] * fig_nCOLS,
+        self.gs = gridspec.GridSpec(fig_nrows, fig_ncols,
+                width_ratios=[1] * fig_ncols,
                 height_ratios=[0.5] * 1 + [1] * (fig_nrows-1))
 
 
@@ -136,7 +133,7 @@ class Simplot(object):
         icol = 0
         for cn in data.columns:
             value = np.sort(data.loc[idx, cn].values)[::-1]
-            ax.plot(ff, value, '-', label=cn, color=COLS[icol], lw=2)
+            ax.plot(ff, value, '-', label=cn, color=sim_colors[icol], lw=2)
             icol += 1
 
         ax.set_xlabel('Frequency')
@@ -150,7 +147,7 @@ class Simplot(object):
 
         data = self.data
         idx = self.flood_idx[iflood]['index']
-        data.loc[idx, :].plot(ax=ax, color=COLS, lw=2, \
+        data.loc[idx, :].plot(ax=ax, color=sim_colors, lw=2, \
                 marker='o', legend=iflood==0)
 
         if iflood == 0:
@@ -178,7 +175,7 @@ class Simplot(object):
         datay = datay.shift(-1)
 
         # plot
-        datay.iloc[:-1, :].plot(ax=ax, color=COLS, marker='o', lw=3)
+        datay.iloc[:-1, :].plot(ax=ax, color=sim_colors, marker='o', lw=3)
 
         lines, labels = ax.get_legend_handles_labels()
         ax.legend(lines, labels, loc=2, frameon=False)
@@ -203,7 +200,7 @@ class Simplot(object):
         datab = datab * fact
 
         # plot
-        datab.plot(ax=ax, kind='bar', color=COLS, edgecolor='none')
+        datab.plot(ax=ax, kind='bar', color=sim_colors, edgecolor='none')
 
         ax.set_ylabel('Average flow')
         ax.set_title('({0}) Water Balance'.format(ax_letter))

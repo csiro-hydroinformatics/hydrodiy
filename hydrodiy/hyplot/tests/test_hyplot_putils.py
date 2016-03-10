@@ -116,6 +116,22 @@ class UtilsTestCase(unittest.TestCase):
         fig.savefig(fp)
 
 
+    def test_set_color_cycle(self):
+
+        fig, ax = plt.subplots()
+
+        putils.set_color_cycle(ax)
+
+        nval = 100
+
+        for i in range(10):
+            x = np.random.normal(size=nval)
+            ax.plot(x)
+
+        fp = '%s/cycle.png' % self.FOUT
+        fig.savefig(fp)
+
+
 
 
 if __name__ == "__main__":
