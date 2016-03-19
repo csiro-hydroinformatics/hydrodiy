@@ -101,19 +101,20 @@ class LogTrans(Transform):
         return math.exp(self.params[0])
 
     def forward(self, x):
-        b = self.trueparams()
-        y = 1/b * np.log(1.+b*x)
+        c = self.trueparams()
+        y = np.log(c+x)
         return y
 
     def inverse(self, y):
-        b = self.trueparams()
-        x =  (np.exp(b*y)-1.)/b  
+        c = self.trueparams()
+        x =  np.exp(y)-c
         return x
 
     def jac(self, x):
-        b = self.trueparams()
-        j =  1./(1.+b*x) 
+        c = self.trueparams()
+        j =  1./(c+x)
         return j
+
 
 class PowerTrans(Transform):
 
@@ -130,13 +131,13 @@ class PowerTrans(Transform):
 
     def inverse(self, y):
         b = self.trueparams()
-        x =  (b*y+1.)**(1/b)-1.  
+        x =  (b*y+1.)**(1/b)-1.
         # Highly unreliable for b<0 and if y -> -1/b
         return x
 
     def jac(self, x):
         b = self.trueparams()
-        j = (1.+x)**(b-1) 
+        j = (1.+x)**(b-1)
         return j
 
 
@@ -148,12 +149,12 @@ class YeoJohnsonTrans(Transform):
     def trueparams(self):
         return self.params[0], \
                 math.exp(self.params[1]), \
-                bounded(self.params[2], -5, 5) 
+                bounded(self.params[2], -5, 5)
 
     def forward(self, x):
 
         loc, scale, expon = self.trueparams()
-        
+
         y = x*np.nan
         w = loc+x*scale
 
@@ -161,7 +162,7 @@ class YeoJohnsonTrans(Transform):
 
         if not np.isclose(expon, 0.0):
             y[ipos] = ((w[ipos]+1)**expon-1)/expon
-        
+
         if np.isclose(expon, 0.0):
             y[ipos] = np.log(w[ipos]+1)
 
@@ -175,11 +176,11 @@ class YeoJohnsonTrans(Transform):
 
 
     def inverse(self, y):
-        
+
         loc, scale, expon = self.trueparams()
 
         x = y*np.nan
-        
+
         ipos = x >=0
 
         if not np.isclose(expon, 0.0):
@@ -202,11 +203,11 @@ class YeoJohnsonTrans(Transform):
         loc, scale, expon = self.trueparams()
 
         j = x*np.nan
-        
+
         w = loc+x*scale
-        
+
         ipos = w >=0
-    
+
         if not np.isclose(expon, 0.0):
             j[ipos] = (w[ipos]+1)**(expon-1)
 
@@ -218,7 +219,7 @@ class YeoJohnsonTrans(Transform):
 
         if np.isclose(expon, 2.0):
             j[~ipos] = 1/(-w[~ipos]+1)
-    
+
         return j*scale
 
 
@@ -239,14 +240,8 @@ class LogSinhTrans(Transform):
         w = a + b*x
         y = y*np.nan
 
-        idx = w<10.
+        y = (w+np.log((1.-np.exp(-2.*w))/2.))/b
 
-        if np.sum(idx)>0:
-            y[idx] = np.log(np.sinh(w[idx]))/b
-
-        if np.sum(~idx)>0:
-            y[~idx] = (w[~idx]+np.log((1.-np.exp(-2.*w[~idx]))/2.))/b 
-                    
         return y
 
 
@@ -256,15 +251,8 @@ class LogSinhTrans(Transform):
 
         w = b*y
         output = y*np.nan
-        
-        idx = w<10.
 
-        if np.sum(idx)>0:
-            x[idx] = (np.arcsinh(np.exp(w[idx])) - a)/b
-
-        if np.sum(~idx)>0:
-            x[~idx] = y[~idx]
-            x[~idx] += (np.log(1.+np.sqrt(1.+np.exp(-2.*w[~idx])))-a)/b 
+        x = y + (np.log(1.+np.sqrt(1.+np.exp(-2.*w)))-a)/b
 
         return x
 

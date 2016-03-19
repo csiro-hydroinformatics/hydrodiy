@@ -22,7 +22,7 @@ from scipy import stats
 import matplotlib as mpl
 
 # Desable X11 running
-if mpl.get_backend().lower() != 'agg':
+if mpl.get_backend() != 'Agg':
     mpl.use('Agg')
 
 import matplotlib.pyplot as plt
@@ -83,13 +83,13 @@ plt.close('all')
 
 fig = plt.figure()
 
-gs = gridspec.GridSpec(fig_nrows, fig_ncols, 
+gs = gridspec.GridSpec(fig_nrows, fig_ncols,
         width_ratios=[1] * fig_ncols,
         height_ratios=[1] * fig_nrows)
 
 nval = 100
 
-for i, j in itertools.product(range(fig_nrows), 
+for i, j in itertools.product(range(fig_nrows),
                             range(fig_ncols)):
 
     ax = fig.add_subplot(gs[i, j])
@@ -107,7 +107,7 @@ for i, j in itertools.product(range(fig_nrows),
         label='points')
 
     # Decoration
-    ax.legend(frameon=True, 
+    ax.legend(frameon=True,
         shadow=True,
         fancybox=True,
         framealpha=0.7,
@@ -119,7 +119,7 @@ for i, j in itertools.product(range(fig_nrows),
 
 fig.suptitle('Overall title')
 
-fig.set_size_inches(float(fig_ncols * ax_width)/fig_dpi, 
+fig.set_size_inches(float(fig_ncols * ax_width)/fig_dpi,
                 float(fig_nrows * ax_height)/fig_dpi)
 
 gs.tight_layout(fig)

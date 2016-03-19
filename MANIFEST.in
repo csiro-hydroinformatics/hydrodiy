@@ -8,3 +8,5 @@ recursive-include hydrodiy *tar.gz
 recursive-include hydrodiy *py.gz
 recursive-include hydrodiy *json
 recursive-include hydrodiy *test*.py
+include versioneer.py
+include hydrodiy/_version.py

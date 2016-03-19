@@ -10,7 +10,6 @@ print('\n\n## Script run started at {0} ##\n\n'.format(time_now()))
 import sys, os, re, json, math
 
 import itertools
-#import requests
 
 import numpy as np
 import pandas as pd

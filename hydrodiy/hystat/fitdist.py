@@ -28,11 +28,11 @@ def normalloglikehood(trans, xx, censor, P0, params, mu, sigma):
 
 
 class FitDist:
-    ''' Fitting censored normal distribution on transformed data 
+    ''' Fitting censored normal distribution on transformed data
         with maximum likelihood approach '''
 
     def __init__(self, transformation, censor=0.):
-        ''' Normalise station id by removing trailing letters, 
+        ''' Normalise station id by removing trailing letters,
         underscores and leading zeros
 
         Parameters
@@ -52,7 +52,7 @@ class FitDist:
         self.sigma = np.nan
         self.P0 = np.nan
         self.x_fit_notcensored = [np.nan]
-        
+
         self.fitfun = normalloglikehood
 
     def __str__(self):
@@ -61,7 +61,7 @@ class FitDist:
                 'P0 = %0.2f\n '
                 'mu = %0.2f\n '
                 'sigma = %0.2f') % (
-                self.trans.__str__(), self.censor, self.P0, 
+                self.trans.__str__(), self.censor, self.P0,
                 self.mu, self.sigma)
         return s
 
@@ -107,8 +107,8 @@ class FitDist:
             mu = pp[nparams]
             sigma = transform.bounded(pp[nparams+1], 0, 20)
 
-            ee = self.fitfun(self.trans, 
-                    self.x_fit_notcensored, 
+            ee = self.fitfun(self.trans,
+                    self.x_fit_notcensored,
                     self.censor, self.P0, params, mu, sigma)
 
             return ee
@@ -123,7 +123,7 @@ class FitDist:
             self.trans.params = params
             xx = self.x_fit_notcensored
             yy = self.trans.forward(xx)
-            
+
             # Compute moments
             mu = np.mean(yy)
             sigma_trans = transform.inversebounded(math.sqrt(np.var(yy)), 0, 20)
@@ -148,7 +148,7 @@ class FitDist:
         if np.isnan(self.mu):
             import pdb; pdb.set_trace()
 
-        return {'errfun': ee, 
+        return {'errfun': ee,
                 'params': self.trans.params,
                 'mu':self.mu,
                 'sigma':self.sigma}
@@ -163,12 +163,12 @@ class FitDist:
         # non censored values
         idx = u>=self.P0
         nv = np.sum(idx)
-        
+
         F0 = norm.cdf(0, self.mu, self.sigma)
         v = np.random.uniform(F0, 1, size=nv)
         y = norm.ppf(v, self.mu, self.sigma)
         x = self.trans.inverse(y) + self.censor
-        
+
         sample[idx] = x
 
         return sample

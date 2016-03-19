@@ -110,7 +110,7 @@ def img2html(title, image_data, root_http=None, filename=None):
     return html
 
 
-def footer(fig, author=None, copyright=False, version=None):
+def footer(fig, author=None, version=None):
     ''' Add footer to a figure (code from wafari) '''
     now = datetime.datetime.now()
 
@@ -126,13 +126,6 @@ def footer(fig, author=None, copyright=False, version=None):
     # Add label
     fig.text(0.05, 0.010, label, color='#595959', ha='left', fontsize=9)
 
-    # Add copyright
-    if copyright:
-        copyright = u'\u00A9'
-        copyright += 'Commonwealth of Australia %s'%now.strftime('%Y')
-        copyright += ' Australian Bureau of Meteorology'
-        fig.text(0.95, 0.010, copyright, color='#595959',
-                                ha='right', fontsize=9)
 
 def col2cmap(colors):
     ''' Define a linear color map from a set of colors
@@ -185,6 +178,7 @@ def col2cmap(colors):
         cdict['blue'].append((k, col[2], col[2]))
 
     return LinearSegmentedColormap('mycmap', cdict, 256)
+
 
 def line(ax, a, b, *args, **kwargs):
     ''' Plot a line y = a + bx
