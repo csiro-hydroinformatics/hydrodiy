@@ -12,10 +12,9 @@ build
 *.so
 *.binh
 *.pytest
-hydrodiy/hygis/tests/*
-hydrodiy/hymod/c_hymod.c
-hydrodiy/hydata/c_hydata.c
-hydrodiy/hystat/c_hystat.c
+hydrodiy/gis/tests/*
+hydrodiy/data/c_hydrodiy_data.c
+hydrodiy/stat/c_hydrodiy_stat.c
 hydrodiy.egg-info
-
+nosetests.xml
 

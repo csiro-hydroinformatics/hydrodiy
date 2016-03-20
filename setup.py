@@ -20,26 +20,19 @@ def read(fname):
 ext_modules = [
 
     Extension(
-        name='c_hymod',
+        name='c_hydrodiy_stat',
         sources=[
-            'hydrodiy/hymod/c_hymod.pyx',
-            'hydrodiy/hymod/c_crps.c'
+            'hydrodiy/stat/c_hydrodiy_stat.pyx',
+            'hydrodiy/stat/c_crps.c',
+            'hydrodiy/stat/c_ar1.c'
         ],
         include_dirs=[numpy.get_include()]),
 
     Extension(
-        name='c_hystat',
+        name='c_hydrodiy_data',
         sources=[
-            'hydrodiy/hystat/c_hystat.pyx',
-            'hydrodiy/hystat/c_ar1.c'
-        ],
-        include_dirs=[numpy.get_include()]),
-
-    Extension(
-        name='c_hydata',
-        sources=[
-            'hydrodiy/hydata/c_hydata.pyx',
-            'hydrodiy/hydata/c_baseflow.c'
+            'hydrodiy/data/c_hydrodiy_data.pyx',
+            'hydrodiy/data/c_baseflow.c'
         ],
         include_dirs=[numpy.get_include()])
 ]
@@ -55,26 +48,8 @@ setup(
     author = 'Julien Lerat',
     author_email = 'julien.lerat@gmail.com',
     url = 'https://bitbucket.org/jlerat/hydrodiy',
-    packages = [
-        "hymod",
-        "hygis",
-        "hyplot",
-        "hydata",
-        "hyio",
-        "hystat"
-    ],
-    package_dir = {
-        "hymod":"hydrodiy/hymod",
-        "hygis":"hydrodiy/hygis",
-        "hydata":"hydrodiy/hydata",
-        "hyio":"hydrodiy/hyio",
-        "hyplot":"hydrodiy/hyplot",
-        "hystat":"hydrodiy/hystat"
-    },
     package_data = {
-        "hygis": ["data/*.gz"],
-        "hyio": ["*.py.gz"],
-        "hyplot": ["*.json"]
+        "hydrodiy": ["gis/data/*.gz"],
     },
     requires= [
         "pandas (>=0.14.0)",
