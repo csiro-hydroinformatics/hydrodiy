@@ -7,8 +7,8 @@ import geopandas as gpd
 from shapely.geometry import Polygon
 
 from matplotlib import pyplot as plt
-from hygis.oz import Oz
-from hyplot import putils
+from hydrodiy.gis.oz import Oz
+from hydrodiy.plot import putils
 
 class OzTestCase(unittest.TestCase):
     def setUp(self):
@@ -23,7 +23,7 @@ class OzTestCase(unittest.TestCase):
         om = Oz()
         om.drawcoastoz()
         om.drawstates()
-      
+
         fp = '%s/oz_plot0.png'%self.FOUT
         plt.savefig(fp)
 
@@ -40,8 +40,8 @@ class OzTestCase(unittest.TestCase):
         x = np.random.normal(loc=133, scale=20, size=npt)
         y = np.random.normal(loc=-25, scale=20, size=npt)
         om.plot(x, y, 'ro')
-       
-        putils.footer(fig) 
+
+        putils.footer(fig)
         fp = '%s/oz_plot1.png'%self.FOUT
         fig.savefig(fp)
 
@@ -53,7 +53,7 @@ class OzTestCase(unittest.TestCase):
         om.drawrelief()
         om.drawcoastoz(color='blue')
         om.drawstates(color='red', linestyle='--')
-      
+
         fp = '%s/oz_plot2.png'%self.FOUT
         plt.savefig(fp)
 
@@ -66,7 +66,7 @@ class OzTestCase(unittest.TestCase):
         om.drawstates()
 
         om.set_lim([135, 157],[-24, -39])
-      
+
         fp = '%s/oz_plot3.png'%self.FOUT
         plt.savefig(fp)
 
@@ -80,8 +80,8 @@ class OzTestCase(unittest.TestCase):
         dy = np.ones_like(x) * 1
 
         df = gpd.GeoDataFrame({'geometry':
-                [Polygon([(xx,yy), (xx+dxx, yy), 
-                    (xx+dxx, yy+dyy), (xx, yy+dyy)]) 
+                [Polygon([(xx,yy), (xx+dxx, yy),
+                    (xx+dxx, yy+dyy), (xx, yy+dyy)])
                     for xx, dxx, yy, dyy in zip(x,dx,y,dy)]})
 
         fshp = '%s/test' % self.FOUT
@@ -95,7 +95,7 @@ class OzTestCase(unittest.TestCase):
 
         om.drawpolygons(fshp, edgecolor='red', facecolor='none')
 
-      
+
         fp = '%s/oz_plot4.png'%self.FOUT
         plt.savefig(fp)
 
