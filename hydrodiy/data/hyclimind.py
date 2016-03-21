@@ -66,7 +66,7 @@ class HyClimInd():
         else:
             # Convert to dataframe (tried read_csv but failed)
             iotxt = StringIO(unicode(txt))
-            data = pd.read_csv(iotxt, skiprows=11, sep='   ')
+            data = pd.read_csv(iotxt, skiprows=11, sep='   ', engine='python')
 
             # Build time series
             cn = data.columns[0]

@@ -11,8 +11,8 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib import colors
 
-from hydata import dutils
-from hyplot import putils
+from hydrodiy.data import dutils
+from hydrodiy.plot import putils
 
 # Select color scheme
 sim_colors = putils.tableau_colors

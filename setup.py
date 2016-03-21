@@ -27,14 +27,6 @@ ext_modules = [
             'hydrodiy/stat/c_ar1.c'
         ],
         include_dirs=[numpy.get_include()]),
-
-    Extension(
-        name='c_hydrodiy_data',
-        sources=[
-            'hydrodiy/data/c_hydrodiy_data.pyx',
-            'hydrodiy/data/c_baseflow.c'
-        ],
-        include_dirs=[numpy.get_include()])
 ]
 
 cmdclass = versioneer.get_cmdclass()

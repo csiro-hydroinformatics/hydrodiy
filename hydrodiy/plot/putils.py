@@ -1,5 +1,6 @@
 import os
 import re
+from cycler import cycler
 from datetime import datetime
 import datetime
 
@@ -32,7 +33,7 @@ tableau_colors = [colors.rgb2hex([float(coo)/255 for coo in co]) for co in [ \
 def set_color_cycle(ax, cycle_colors=None):
     if cycle_colors is None:
         cycle_colors = tableau_colors
-    ax.set_color_cycle(cycle_colors)
+    ax.set_prop_cycle(cycler('color', cycle_colors))
 
 
 def get_colors(ncols=10, palette='Paired'):

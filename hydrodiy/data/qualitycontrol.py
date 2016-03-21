@@ -38,6 +38,9 @@ def islinear(data, npoints=1, eps=1e-5):
     dist = np.abs(interp - d1)
 
     status = np.array([False] * len(data))
+
+    # Set status to True for points were linear interpolation
+    # is valid and either one of endpoints is non zero
     st = (dist < eps) & ((np.abs(d0)>0)|(np.abs(d2)>0))
     status[npoints:-npoints] = st
 

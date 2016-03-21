@@ -17,6 +17,7 @@ def inversebounded(ab, amin, amax, eps=1e-10):
         b = math.log(1./(1-b)-1)
     return b
 
+
 def getinstance(name):
     ''' Returns an instance of a particular transform '''
 
@@ -36,6 +37,8 @@ def getinstance(name):
         raise ValueError('Cannot find transform name %s' % name)
 
     return trans
+
+
 
 class Transform:
     ''' Simple interface to common transform functions '''
@@ -74,6 +77,8 @@ class Transform:
         ''' Returns the transformation jacobian dforward(x)/dx '''
         return np.nan
 
+
+
 class IdentityTrans(Transform):
 
     def __init__(self):
@@ -90,6 +95,7 @@ class IdentityTrans(Transform):
 
     def jac(self, x):
         return np.one_like(x)
+
 
 
 class LogTrans(Transform):
@@ -112,8 +118,11 @@ class LogTrans(Transform):
 
     def jac(self, x):
         c = self.trueparams()
-        j =  1./(c+x)
+        j = np.nan * x
+        idx = c+x > 0.
+        j[idx] =  1./(c+x[idx])
         return j
+
 
 
 class PowerTrans(Transform):
@@ -139,6 +148,7 @@ class PowerTrans(Transform):
         b = self.trueparams()
         j = (1.+x)**(b-1)
         return j
+
 
 
 class YeoJohnsonTrans(Transform):
@@ -185,14 +195,12 @@ class YeoJohnsonTrans(Transform):
 
         if not np.isclose(expon, 0.0):
             x[ipos] = (expon*y[ipos]+1)**(1/expon)-1
-
-        if np.isclose(expon, 0.0):
+        else:
             x[ipos] = np.exp(y[ipos])-1
 
         if not np.isclose(expon, 2.0):
             x[~ipos] = -(-(2-expon)*y[~ipos]+1)**(1/(2-expon))+1
-
-        if np.isclose(expon, 2.0):
+        else:
             x[~ipos] = -np.exp(-y[~ipos])+1
 
         return (x-loc)/scale
@@ -236,10 +244,8 @@ class LogSinhTrans(Transform):
     def forward(self, x):
 
         a, b = self.trueparams()
-
         w = a + b*x
-        y = y*np.nan
-
+        y = x*np.nan
         y = (w+np.log((1.-np.exp(-2.*w))/2.))/b
 
         return y
@@ -248,19 +254,15 @@ class LogSinhTrans(Transform):
     def inverse(self, y):
 
         a, b = self.trueparams()
-
         w = b*y
         output = y*np.nan
-
         x = y + (np.log(1.+np.sqrt(1.+np.exp(-2.*w)))-a)/b
 
         return x
 
 
     def jac(self, x):
-
         a, b = self.trueparams()
-
         w = a + b*x
 
         return 1./np.tanh(w)

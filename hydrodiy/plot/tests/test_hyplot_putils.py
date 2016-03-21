@@ -5,8 +5,8 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-from hyplot import putils
-from hygis import oz
+from hydrodiy.plot import putils
+from hydrodiy.gis import oz
 
 class UtilsTestCase(unittest.TestCase):
 

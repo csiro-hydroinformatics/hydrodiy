@@ -5,8 +5,8 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-from hyplot.simplot import Simplot
-from hygis import oz
+from hydrodiy.plot.simplot import Simplot
+from hydrodiy.gis import oz
 
 class SimplotTestCase(unittest.TestCase):
 
