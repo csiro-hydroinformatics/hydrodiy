@@ -47,7 +47,8 @@ setup(
         "pandas (>=0.14.0)",
         "scipy (>=0.14.0)",
         "Cython (>=0.20.1)",
-        "numpy (>=1.8)"
+        "numpy (>=1.8)",
+        "cycler (>=0.10)"
     ],
     cmdclass = cmdclass,
     ext_modules = ext_modules,
