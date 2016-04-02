@@ -4,14 +4,16 @@ import datetime
 import numpy as np
 import pandas as pd
 
+from hydrodiy.data.qualitycontrol import islinear
+
 #
 # This code is largely pasted from the kiwis_py package
 # developed by Andrew McDonald, Bureau of Meteorology, EHP
-# 
+#
 
 def testjson(req):
     ''' Test validity of json conversion '''
-    
+
     try:
         out = req.json()
         return out
@@ -27,7 +29,7 @@ url_internal ='http://ccfvp-wadiapp04:8080/KiWIS/KiWIS'
 class HyKiwis():
 
     def __init__(self, bom_internal = True):
-        
+
         if bom_internal:
 
             # Test internal is ok
@@ -59,7 +61,7 @@ class HyKiwis():
                 'returnfields':'station_no,station_id,'
                     'station_latitude,station_longitude'
             })
-        
+
         req = requests.get(self.kiwis_url, params=params)
 
         self.current_url = req.url
@@ -70,7 +72,7 @@ class HyKiwis():
 
         sites = pd.DataFrame(sites[1:], columns = sites[0])
 
-        return sites 
+        return sites
 
     def get_tsattrs(self, id, ts_name = 'PR01QaQc.Merged.DailyMean.09HR'):
         ''' Retrieve time series id from station id '''
@@ -83,7 +85,7 @@ class HyKiwis():
                 'returnfields':'ts_id,ts_unitname,ts_unitsymbol,'
                     'station_no,station_name,coverage'
             })
-        
+
         req = requests.get(self.kiwis_url, params=params)
 
         self.current_url = req.url
@@ -96,10 +98,10 @@ class HyKiwis():
 
         tsattrs['ts_name'] = ts_name
 
-        tsattrs['to'] = datetime.datetime.strptime(tsattrs['to'][:10], 
+        tsattrs['to'] = datetime.datetime.strptime(tsattrs['to'][:10],
                             "%Y-%m-%d")
 
-        tsattrs['from'] = datetime.datetime.strptime(tsattrs['from'][:10], 
+        tsattrs['from'] = datetime.datetime.strptime(tsattrs['from'][:10],
                             "%Y-%m-%d")
 
         return tsattrs
@@ -119,10 +121,10 @@ class HyKiwis():
             count += 1
 
             id = row['station_no']
-            
+
             try:
                 a = self.get_tsattrs(id, ts_name)
-            
+
             except ValueError:
                 a = {}
 
@@ -133,7 +135,8 @@ class HyKiwis():
         return tsattrs
 
 
-    def get_data(self, tsattrs, from_dt='1900-01-01', to_dt='2100-12-31'):
+    def get_data(self, tsattrs, from_dt='1900-01-01', to_dt='2100-12-31',
+                        exclude_linear=True):
 
         params = {'request':'getTimeseriesValues',
             'ts_id':tsattrs['ts_id'],
@@ -154,10 +157,14 @@ class HyKiwis():
 
         else:
             d = np.array(js[0]['data'])
-            ts = pd.Series(d[:,1], 
+            ts = pd.Series(d[:,1],
                     index=pd.to_datetime(d[:,0]), dtype='f')
 
             ts.name = '%s[%s]' % (tsattrs['ts_id'], tsattrs['ts_unitsymbol'])
 
+            if exclude_linear:
+                status = islinear(ts)
+                ts[status] = np.nan
+
         return ts
-    
+

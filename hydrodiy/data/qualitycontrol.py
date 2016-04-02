@@ -29,6 +29,11 @@ def islinear(data, npoints=1, eps=1e-5):
 
     '''
 
+    data = np.atleast_1d(data)
+    nval = data.shape[0]
+    if nval < 2*npoints:
+        raise ValueError('data has less than {0} points'.format(npoints))
+
     d0 = data[npoints+1:]
     d1 = data[npoints:-npoints]
     d2 = data[:-(npoints+1)]
