@@ -62,25 +62,25 @@ class LogNormCensoredTestCase(unittest.TestCase):
         res = lognormscensored0.ppf(0., mu, sig, shift)
         self.assertTrue(np.allclose(res, 0.))
 
-        P0 = 0.5*(1+erf((np.log(shift)-mu)/math.sqrt(2)/sig))
         q = 1e-2
         res = lognormscensored0.ppf(q, mu, sig, shift)
-        expected = np.exp(norm.ppf(q*(1-P0)+P0)*sig+mu)-shift
+        expected = 0.
         self.assertTrue(np.allclose(res, expected))
 
         q = 0.5
         res = lognormscensored0.ppf(q, mu, sig, shift)
-        expected = np.exp(norm.ppf(q*(1-P0)+P0)*sig+mu)-shift
+        expected = np.exp(norm.ppf(q)*sig+mu)-shift
         self.assertTrue(np.allclose(res, expected))
 
         q = 1-1e-2
         res = lognormscensored0.ppf(q, mu, sig, shift)
-        expected = np.exp(norm.ppf(q*(1-P0)+P0)*sig+mu)-shift
+        expected = np.exp(norm.ppf(q)*sig+mu)-shift
         self.assertTrue(np.allclose(res, expected))
 
         q = np.linspace(1e-1, 1, 1e-1)
         res = lognormscensored0.ppf(q, mu, sig, shift)
-        expected = np.exp(norm.ppf(q*(1-P0)+P0)*sig+mu)-shift
+        expected = np.exp(norm.ppf(q)*sig+mu)-shift
+        expected[expected < 0.] = 0.
         self.assertTrue(np.allclose(res, expected))
 
 

@@ -50,13 +50,12 @@ class LogNormShiftedCensored(rv_continuous):
 
     def _ppf(self, q, mu, sig, shift):
         censor = self.a
-        if shift <= -censor:
-            raise ValueError('shift({0}) <= -censor ({1})'.format(shift,
-            -censor))
+        if np.any(shift <= -censor):
+            raise ValueError('shift <= -censor ({1})'.format(-censor))
 
         P0 = norm.cdf((np.log(shift)-mu)/sig)
-        qq = q*(1-P0)+P0
-        x = np.exp(sig*norm.ppf(qq)+mu)-shift
+        x = np.exp(sig*norm.ppf(q)+mu)-shift
+        x[x<censor] = censor
         return x
 
 
