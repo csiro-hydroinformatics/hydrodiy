@@ -37,7 +37,6 @@ class LogNormShiftedCensored(rv_continuous):
 
         pp = norm.pdf((np.log(x+shift)-mu)/sig)/(x+shift)
         pp[np.isclose(x, censor)] = np.inf
-        pp[x<censor] = 0.
         return pp
 
 
@@ -48,9 +47,8 @@ class LogNormShiftedCensored(rv_continuous):
             -censor))
 
         cp = norm.cdf((np.log(x+shift)-mu)/sig)
-        import pdb;pdb.set_trace()
-        cp[x<censor] = 0.
         return cp
+
 
     def _ppf(self, q, mu, sig, shift):
         censor = self.a
@@ -58,9 +56,11 @@ class LogNormShiftedCensored(rv_continuous):
             raise ValueError('shift({0}) <= -censor ({1})'.format(shift,
             -censor))
 
-        x = np.exp(sig*norm.ppf(q)+mu)-a
-        x[x<censor] = censor
+        P0 = norm.cdf((np.log(shift)-mu)/sig)
+        qq = q*(1-P0)+P0
+        x = np.exp(sig*norm.ppf(qq)+mu)-shift
         return x
+
 
     def _fitstart(self, data):
         data = np.asarray(data)
@@ -68,6 +68,7 @@ class LogNormShiftedCensored(rv_continuous):
         mu = np.nanmean(lm)
         sig = math.sqrt(np.mean((lm-mu)**2))
         return mu, sig, np.nan
+
 
     @inherit_docstring_from(rv_continuous)
     def fit(self, data, *args, **kwargs):

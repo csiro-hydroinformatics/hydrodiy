@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 from hydrodiy.stat.distributions import lognormscensored0
 
-from scipy.stats import _distn_infrastructure as infr
+from scipy.stats import norm
 from scipy.special import erf
 
 class LogNormCensoredTestCase(unittest.TestCase):
@@ -45,12 +45,38 @@ class LogNormCensoredTestCase(unittest.TestCase):
         expected = 0.5*(1+erf((math.log(x+shift)-mu)/math.sqrt(2)/sig))
         self.assertTrue(np.allclose(res, expected))
 
-        res = lognormscensored0.cdf(0, mu, sig, shift)
+        res = lognormscensored0.cdf(1e-10, mu, sig, shift)
         expected = 0.5*(1+erf((math.log(shift)-mu)/math.sqrt(2)/sig))
         self.assertTrue(np.allclose(res, expected))
 
         res = lognormscensored0.cdf(-1, mu, sig, shift)
         self.assertTrue(np.allclose(res, 0.))
+
+
+    def test_ppf(self):
+        mu = 0.
+        sig = 1.
+        shift = 0.5
+        x = 2.
+
+        res = lognormscensored0.ppf(0., mu, sig, shift)
+        self.assertTrue(np.allclose(res, 0.))
+
+        P0 = 0.5*(1+erf((math.log(shift)-mu)/math.sqrt(2)/sig))
+        q = 1e-2
+        res = lognormscensored0.ppf(q, mu, sig, shift)
+        expected = math.exp(norm.ppf(q*(1-P0)+P0)*sig+mu)-shift
+        self.assertTrue(np.allclose(res, expected))
+
+        q = 0.5
+        res = lognormscensored0.ppf(q, mu, sig, shift)
+        expected = math.exp(norm.ppf(q*(1-P0)+P0)*sig+mu)-shift
+        self.assertTrue(np.allclose(res, expected))
+
+        q = 1-1e-2
+        res = lognormscensored0.ppf(q, mu, sig, shift)
+        expected = math.exp(norm.ppf(q*(1-P0)+P0)*sig+mu)-shift
+        self.assertTrue(np.allclose(res, expected))
 
 
     def test_fit(self):
