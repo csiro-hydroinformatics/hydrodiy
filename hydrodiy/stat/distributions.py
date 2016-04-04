@@ -31,9 +31,8 @@ class LogNormShiftedCensored(rv_continuous):
 
     def _pdf(self, x, mu, sig, shift):
         censor = self.a
-        if shift <= -censor:
-            raise ValueError('shift({0}) <= -censor ({1})'.format(shift,
-            -censor))
+        if np.any(shift <= -censor):
+            raise ValueError('shift <= -censor ({1})'.format(-censor))
 
         pp = norm.pdf((np.log(x+shift)-mu)/sig)/(x+shift)
         pp[np.isclose(x, censor)] = np.inf
@@ -42,9 +41,8 @@ class LogNormShiftedCensored(rv_continuous):
 
     def _cdf(self, x, mu, sig, shift):
         censor = self.a
-        if shift <= -censor:
-            raise ValueError('shift({0}) <= -censor ({1})'.format(shift,
-            -censor))
+        if np.any(shift <= -censor):
+            raise ValueError('shift <= -censor ({1})'.format(-censor))
 
         cp = norm.cdf((np.log(x+shift)-mu)/sig)
         return cp
