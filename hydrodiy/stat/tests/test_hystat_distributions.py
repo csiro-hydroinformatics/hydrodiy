@@ -7,6 +7,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from hydrodiy.stat.distributions import lognormscensored0
+from hydrodiy.stat import sutils
 
 from scipy.stats import norm
 from scipy.special import erf
@@ -16,7 +17,7 @@ class LogNormCensoredTestCase(unittest.TestCase):
     def setUp(self):
         print('\n\t=> LogNormShiftedCensoredTestCase (hystat)')
         FTEST = os.path.dirname(os.path.abspath(__file__))
-        self.FOUT = FTEST
+        self.FTEST = FTEST
 
     def test_pdf(self):
         mu = 0.
@@ -85,14 +86,49 @@ class LogNormCensoredTestCase(unittest.TestCase):
 
 
     def test_fit(self):
-        nval = 5000
+        nval = 10000
         mu = -1.
-        sig = 2.
-        shift = 0.1
-        x = np.exp(np.random.normal(mu, sig, size=nval))-shift
-        x[x<0.] = 0.
+        sig = 0.5
+        shift = 0.3
+        q = sutils.empfreq(nval)
+        x = lognormscensored0.ppf(q, mu, sig, shift)
 
+        # perform fit
         params = lognormscensored0.fit(x)
-        ck = np.allclose(params[:3], (mu, sig, shift), rtol=0.1)
+
+        ck = np.allclose(params[:3], (mu, sig, shift), rtol=5e-2)
         self.assertTrue(ck)
+
+        # Check pvalue of diagnostics
+        fd = lognormscensored0.fit_diagnostic
+        self.assertTrue(fd['ks_pvalue']>0.9)
+        self.assertTrue(fd['mw_pvalue']>0.9)
+
+
+    def test_fit_data(self):
+        fd = os.path.join(self.FTEST, 'lognormdata.csv')
+        data = pd.read_csv(fd)
+        obs = data.iloc[:, 1]
+        params = lognormscensored0.fit(obs)
+        paramstxt = ' '.join(['{0:3.3e}'.format(pp) for pp in params[:3]])
+
+        q = sutils.empfreq(len(obs))
+        sim = lognormscensored0.ppf(q, *params[:3])
+
+        mu = params[0]
+        sig = params[1]*1.1
+        shift = params[2]
+        simb = lognormscensored0.ppf(q, mu, sig, shift)
+
+        plt.close('all')
+        fig, ax = plt.subplots()
+        ax.plot(obs, q, label='obs')
+        ax.plot(sim, q, label='sim {0}'.format(paramstxt))
+        ax.plot(simb, q, label='simb')
+        #ax.set_xscale('log')
+        ax.legend(loc=4, fontsize='x-small')
+        fig.savefig(os.path.join(self.FTEST, 'fit.png'))
+
+        #ck = np.allclose(params[:3], (mu, sig, shift), rtol=0.1)
+        #self.assertTrue(ck)
 
