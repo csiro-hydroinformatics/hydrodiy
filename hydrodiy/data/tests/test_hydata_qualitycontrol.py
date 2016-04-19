@@ -36,13 +36,24 @@ class DataCheckTestCase(unittest.TestCase):
 
     def test_islinear3(self):
 
-        data = np.array([1., 2., 3., 3., 4.])
+        data = np.array([1., 2., 3., 3., 4., 3.])
 
         status = qualitycontrol.islinear(data)
         expected = np.array([False] * data.shape[0])
         expected[1] = True
 
         self.assertTrue(np.allclose(status, expected))
+
+
+    def test_islinear4(self):
+
+        data = np.array([1., 2., 3., 3., 4., 3.])
+
+        status = qualitycontrol.islinear(data, 2)
+        expected = np.array([False] * data.shape[0])
+
+        self.assertTrue(np.allclose(status, expected))
+
 
 
 if __name__ == "__main__":
