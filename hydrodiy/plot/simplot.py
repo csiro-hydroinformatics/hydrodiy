@@ -1,3 +1,4 @@
+import warnings
 
 from datetime import datetime
 from dateutil.relativedelta import relativedelta as delta
@@ -12,6 +13,7 @@ import matplotlib.gridspec as gridspec
 from matplotlib import colors
 
 from hydrodiy.data import dutils
+from hydrodiy.stat import sutils
 from hydrodiy.plot import putils
 
 # Select color scheme
@@ -33,17 +35,16 @@ class Simplot(object):
         self.wateryear_start = wateryear_start
 
         # data
-        self.idx = pd.notnull(obs) & (obs >= 0)
-
-        if obs.name is None:
-            obs = pd.Series(obs, name='obs')
+        self.idx_obs = pd.notnull(obs) & (obs >= 0)
+        obs = pd.Series(obs.values, name='obs', index=obs.index)
         self.data = pd.DataFrame(obs)
 
         self.nsim = 1
-        if sim.name is None:
-            sim = pd.Series(sim, name='sim {0}'.format(self.nsim))
-
+        sim = pd.Series(sim.values, name='sim_{0:02d}'.format(self.nsim),
+                    index=sim.index)
         self.data = self.data.join(sim)
+
+        self._compute_idx_all()
 
         # Number of flood events
         self.nfloods = nfloods
@@ -63,20 +64,30 @@ class Simplot(object):
                 width_ratios=[1] * fig_ncols,
                 height_ratios=[0.5] * 1 + [1] * (fig_nrows-1))
 
+    def _compute_idx_all(self):
+
+        self.idx_all = self.data.apply(lambda x:
+                                        np.all(pd.notnull(x)), axis=1)
+
 
     def _get_flood_indexes(self):
 
         obs_tmp = self.data['obs'].copy()
+        sim = self.data['sim_01']
         dates = self.data.index.astype(datetime).values
         nval = len(obs_tmp)
         self.flood_idx = []
+        iflood = 0
 
-        for iflood in range(self.nfloods):
+        while iflood < self.nfloods:
             imax = np.where(obs_tmp == obs_tmp.max())[0]
             date_max = pd.to_datetime(dates[imax][0])
             idx = dates >= date_max - delta(days=self.nbeforepeak)
             idx = idx & (dates <= date_max + delta(days=self.nafterpeak))
-            self.flood_idx.append({'index':idx, 'date_max':date_max})
+
+            if np.any(pd.notnull(sim[idx])):
+                self.flood_idx.append({'index':idx, 'date_max':date_max})
+                iflood += 1
 
             obs_tmp.loc[idx] = np.nan
 
@@ -85,9 +96,12 @@ class Simplot(object):
 
         self.nsim += 1
         if sim.name is None:
-            sim = pd.Series(sim, name='sim {0}'.format(self.nsim))
+            sim = pd.Series(sim.values, name='sim_{0:02d}'.format(self.nsim),
+                        index=sim.index)
 
         self.data = self.data.join(sim)
+
+        self._compute_idx_all()
 
 
     def draw(self):
@@ -125,20 +139,26 @@ class Simplot(object):
             ax.set_yscale('log', nonposx='clip')
 
         # Freqency
-        idx = self.idx
-        nval = np.sum(idx)
-        ff = (np.arange(1, nval+1)-0.3)/(nval+0.4)
         data = self.data
+        idx = self.idx_all
+        nval = np.sum(idx)
+        ff = sutils.empfreq(nval)
 
         icol = 0
         for cn in data.columns:
             value = np.sort(data.loc[idx, cn].values)[::-1]
-            ax.plot(ff, value, '-', label=cn, color=sim_colors[icol], lw=2)
+            ax.plot(ff, value, '-', label=cn, color=sim_colors[icol], lw=3)
             icol += 1
 
         ax.set_xlabel('Frequency')
         ax.set_ylabel('Flow')
-        ax.set_title('({0}) Flow duration curve'.format(ax_letter))
+
+        title = '({0}) Flow duration curve'.format(ax_letter)
+        if ylog:
+            title += '- Low flow'
+        if xlog:
+            title += '- High flow'
+        ax.set_title(title)
         ax.legend(loc=1, frameon=False)
         ax.grid()
 
@@ -190,13 +210,15 @@ class Simplot(object):
 
     def draw_balance(self, ax, ax_letter='a'):
         data = self.data
-        datab = data.loc[self.idx, :].mean()
+        datab = data.loc[self.idx_all, :].mean()
 
         freq = data.index.freqstr
         freqfact = {'H':24*365.25, 'D':365.25, 'MS':12, 'ME':12}
         if freq not in freqfact:
-            raise ValueError('Frequency {0} not recognised'.format(freq))
-        fact = freqfact[freq]
+            warnings.warn('Frequency [{0}] not recognised, assuming daily'.format(freq))
+            fact = freqfact['D']
+        else:
+            fact = freqfact[freq]
         datab = datab * fact
 
         # plot
