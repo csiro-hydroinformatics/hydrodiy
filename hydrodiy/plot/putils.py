@@ -44,19 +44,30 @@ def get_colors(ncols=10, palette='Paired'):
 
 # Fucntion to generate html code
 def img2html(title, image_data, root_http=None, filename=None):
+    '''  Generate html code gathering various image in a big table
+
+    Parameters
+    -----------
+    title : str
+        Page title
+    image_data : pandas.DataFrame
+        Data used to access image files. Dataframe is structured as follows:
+            - image_data.columns = Column header
+            - image_data.index = Row header
+            - image_data['rowlabel'] = Text at the beginning of each row
+    root_http : str
+        url of root directory containing images
+    filename : str
+        Path to the file
+
+    Example
+    -----------
+    >>> import matplotlib.pyplot as plt
+    >>> fig, ax = plt.subplots()
+    >>> ax.plot([0, 1], [0, 1])
+    >>> putils.footer(fig, 'this is a test')
+
     '''
-        Generate html code gathering various image in a big table
-
-        :param str title : page title
-        :param pandas.DataFrame image_data : Data used to access image files
-            image_data.columns = Column header
-            image_data.index = Row header
-            image_data['rowlabel'] = Text at the beginning of each row
-        :param str root_http : HTTP adress of root directory containing images
-        :param string filename: Output file name to write
-
-    '''
-
     has_rowlabel = 'rowlabel' in image_data.columns
 
     now = datetime.datetime.now().date().isoformat()
@@ -109,12 +120,30 @@ def img2html(title, image_data, root_http=None, filename=None):
     return html
 
 
-def footer(fig, author=None, version=None):
-    ''' Add footer to a figure (code from wafari) '''
+def footer(fig, label=None, version=None):
+    ''' Adds a footer to matplotlib
+
+    Parameters
+    -----------
+    fig : matplotlib.Figure
+        Figure to decorate
+    label : str
+        Label to add in the footer
+    version : str
+        Version of the figure
+
+    Example
+    -----------
+    >>> import matplotlib.pyplot as plt
+    >>> fig, ax = plt.subplots()
+    >>> ax.plot([0, 1], [0, 1])
+    >>> putils.footer(fig, 'this is a test')
+
+    '''
     now = datetime.datetime.now()
 
-    if not author is None:
-        label = '%s - Generated: %s' % (author,
+    if not label is None:
+        label = '%s - Generated: %s' % (label,
                 now.strftime('%H:%M %d/%m/%Y'))
     else:
         label = 'Generated: %s' % now.strftime('%H:%M %d/%m/%Y')
@@ -145,7 +174,6 @@ def col2cmap(colors):
     -----------
     >>> import matplotlib.pyplot as plt
     >>> import numpy as np
-    >>> from hyplot import putils
     >>> colors = {0.:'#3399FF', 0.1:'#33FFFF', 1.0:'#33FF99'}
     >>> cmap = putils.col2cmap(colors)
     >>> nval = 500
