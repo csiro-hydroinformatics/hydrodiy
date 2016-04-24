@@ -1,3 +1,5 @@
+''' Objects used to download data from  AWAP '''
+
 import re
 import os
 import datetime
@@ -16,7 +18,8 @@ import numpy as np
 import pandas as pd
 from scipy.ndimage.filters import gaussian_filter
 
-has_basemap = True
+HAS_BASEMAP = True
+
 try:
     from mpl_toolkits.basemap import cm as cm
     import matplotlib.pyplot as plt
@@ -26,14 +29,14 @@ try:
     mpl.rcParams['contour.negative_linestyle'] = 'solid'
 
 except ImportError:
-    has_basemap = False
+    HAS_BASEMAP = False
 
 from hydrodiy.io import csv
 
-class HyWap():
+class HyWap(object):
     ''' Class to download daily awap grids '''
 
-    def __init__(self, awap_url ='http://www.bom.gov.au/web03/ncc/www/awap'):
+    def __init__(self, awap_url='http://www.bom.gov.au/web03/ncc/www/awap'):
 
         self.awap_url = awap_url
 
@@ -41,11 +44,11 @@ class HyWap():
 
         self.variables = {
             'rainfall':[{'type':'totals', 'unit':'mm/d'}],
-            'temperature':[{'type':'maxave','unit':'celsius'},
-                           {'type':'minave','unit':'celsius'}],
+            'temperature':[{'type':'maxave', 'unit':'celsius'},
+                           {'type':'minave', 'unit':'celsius'}],
             'vprp':[{'type':'vprph09', 'unit':'Pa'}],
-            'solar':[{'type':'solarave','unit':'MJ/m2'}]
-           }
+            'solar':[{'type':'solarave', 'unit':'MJ/m2'}]
+        }
 
         self.timesteps = ['daily', 'month']
 
@@ -59,39 +62,41 @@ class HyWap():
         for varname in self.variables.keys():
 
             # Create output directories
-            F = os.path.join(awap_dir, varname)
-
-            if not os.path.exists(F):
-                os.mkdir(F)
+            fout = os.path.join(awap_dir, varname)
+            if not os.path.exists(fout):
+                os.mkdir(fout)
 
             # Create output directories for each timestep
             for timestep in ['daily', 'month']:
-                F = os.path.join(awap_dir, varname, timestep)
-                if not os.path.exists(F):
-                    os.mkdir(F)
+                ftmp = os.path.join(awap_dir, varname, timestep)
+                if not os.path.exists(ftmp):
+                    os.mkdir(ftmp)
 
     def getgriddata(self, varname, vartype, timestep, date):
         ''' Download gridded awap daily data '''
 
         # Check variable
-        if not (varname in self.variables):
-            raise ValueError('varname(%s) not recognised (should be %s)' % (varname,
-                ', '.join(self.variables.keys())))
+        if not varname in self.variables:
+            raise ValueError(('varname(%s) not'+ \
+                ' recognised (should be %s)') % (varname, \
+                    ', '.join(self.variables.keys())))
 
-        vt = [v['type'] for v in self.variables[varname]]
-        if not (vartype in vt):
-            raise ValueError('vartype(%s) not recognised (should be %s)' % (vartype,
-                ', '.join(vt)))
+        vartypes = [v['type'] for v in self.variables[varname]]
+        if not vartype in vartypes:
+            raise ValueError(('vartype(%s) not'+ \
+                ' recognised (should be %s)') % (vartype, \
+                    ', '.join(vartypes)))
 
-        if not (timestep in self.timesteps):
-            raise ValueError('timestep(%s) not recognised (should be %s)' % (varname,
-                ', '.join(self.timesteps)))
+        if not timestep in self.timesteps:
+            raise ValueError(('timestep(%s) not'+ \
+                ' recognised (should be %s)') % (varname, \
+                    ', '.join(self.timesteps)))
 
         # Define start and end date of period
         dt1 = datetime.datetime.strptime(date, '%Y-%m-%d')
 
         if (timestep == 'month') & (dt1.day != 1):
-            raise ValueError(('Invalide date(%s). '
+            raise ValueError(('Invalide date(%s). '+ \
                 'Should be on day 1 of the month') % dt1.date())
 
         dt2 = dt1
@@ -99,35 +104,36 @@ class HyWap():
             dt2 = dt1 + delta(months=1) - delta(days=1)
 
         # Download data
-        self.current_url = ('%s/%s/%s/%s/grid/0.05/history/nat/'
-                '%4d%2.2d%2.2d%4d%2.2d%2.2d.grid.Z') % (self.awap_url,
-                    varname, vartype, timestep,
-                    dt1.year, dt1.month, dt1.day,
+        self.current_url = ('%s/%s/%s/%s/grid/0.05/history/nat/'+ \
+                '%4d%2.2d%2.2d%4d%2.2d%2.2d.grid.Z') % (self.awap_url, \
+                    varname, vartype, timestep, \
+                    dt1.year, dt1.month, dt1.day, \
                     dt2.year, dt2.month, dt2.day)
 
         try:
             resp = urllib2.urlopen(self.current_url)
 
-        except urllib2.HTTPError, e:
-            print('Cannot download %s: HTTP Error = %s' % (self.current_url, e))
-            raise e
+        except urllib2.HTTPError, ehttp:
+            print('Cannot download %s: HTTP Error = %s' % (self.current_url, \
+                            ehttp))
+            raise ehttp
 
         # Read data from pipe and write it to disk
         zdata = resp.read()
 
-        F = self.awap_dir
-        if F is None:
-            F = tempfile.gettempdir()
+        adir = self.awap_dir
+        if adir is None:
+            adir = tempfile.gettempdir()
 
-        ftmp = os.path.join(F, 'tmp.Z')
+        ftmp = os.path.join(adir, 'tmp.Z')
         with open(ftmp, 'wb') as fobj:
             fobj.write(zdata)
 
         # Extract data from compressed file
         # (Unix compress format produced with the 'compress' unix command
-        f = Popen(['zcat', ftmp], stdout=PIPE).stdout
-        txt = f.readlines()
-        f.close()
+        compressedfile = Popen(['zcat', ftmp], stdout=PIPE).stdout
+        txt = compressedfile.readlines()
+        compressedfile.close()
         try:
             os.remove(ftmp)
             os.remove(re.sub('\\.Z$', '', ftmp))
@@ -140,8 +146,8 @@ class HyWap():
         icomment = np.argmin(tmp[::-1])
 
         # Process grid
-        header = {k:float(v)
-            for k,v in [re.split(' +', s.strip()) for s in txt[:iheader]]}
+        header = {k:float(v) \
+            for k, v in [re.split(' +', s.strip()) for s in txt[:iheader]]}
 
         header['varname'] = varname
         header['vartype'] = vartype
@@ -150,20 +156,19 @@ class HyWap():
 
         meta = [s.strip() for s in txt[-icomment:]]
 
-        data = [np.array(re.split(' +', s.strip())) for s in txt[iheader:-icomment]]
+        data = [np.array(re.split(' +', s.strip())) \
+                    for s in txt[iheader:-icomment]]
         data = np.array(data).astype(np.float)
         data[data == header['nodata_value']] = np.nan
 
         # Check dimensions of dataset
-        nc = int(header['ncols'])
-        nr = int(header['nrows'])
+        ncols = int(header['ncols'])
+        nrows = int(header['nrows'])
 
-        if data.shape != (nr, nc):
-            import pdb; pdb.set_trace()
-
-            raise IOError(('Dataset dimensions (%d,%d)'
-                ' do not match header (%d,%d)' % (data.shape[0],
-                data.shape[1], nr, nc)))
+        if data.shape != (nrows, ncols):
+            raise IOError(('Dataset dimensions (%d,%d)'+ \
+                ' do not match header (%d,%d)') % (data.shape[0], \
+                    data.shape[1], nrows, ncols))
 
         # Build comments
         comment = ['AWAP Data set downloaded from %s' % self.awap_url, '', '',]
@@ -179,15 +184,16 @@ class HyWap():
         ncols = int(header['ncols'])
         xll = float(header['xllcenter'])
         yll = float(header['yllcenter'])
-        sz = float(header['cellsize'])
+        csz = float(header['cellsize'])
 
-        longs = xll + sz * np.arange(0, ncols)
-        lats = yll + sz * np.arange(0, nrows)
+        longs = xll + csz * np.arange(0, ncols)
+        lats = yll + csz * np.arange(0, nrows)
 
         # We have to flip the lats
         llongs, llats = np.meshgrid(longs, lats[::-1])
 
-        cellids = np.array(['%0.2f_%0.2f' % (x,y) for x,y in zip(llongs.flat[:],
+        cellids = np.array(['%0.2f_%0.2f' % (x, y) \
+                        for x, y in zip(llongs.flat[:], \
                             llats.flat[:])]).reshape(llongs.shape)
 
         return cellids, llongs, llats
@@ -205,16 +211,16 @@ class HyWap():
         if F is None:
             raise ValueError('Cannot write data, awap dir is not setup')
 
-        fout = os.path.join(F, varname, timestep, '%s_%s_%s_%s.csv' % (varname,
+        fout = os.path.join(F, varname, timestep, '%s_%s_%s_%s.csv'%(varname, \
                                 timestep, vartype, dt))
 
         co = comment + [''] + ['%s:%s' % (k, header[k]) for k in header] + ['']
 
         source_file = os.path.abspath(__file__)
 
-        csv.write_csv(data, fout,
-            comment = co,
-            source_file = source_file)
+        csv.write_csv(data, fout, \
+            comment=co, \
+            source_file=source_file)
 
         return '%s.gz' % fout
 
@@ -222,15 +228,15 @@ class HyWap():
         ''' Generate default plotting configuration '''
 
         if cfg is None:
-            cfg = {'cmap':None,
-                'clevs':None,
-                'norm':None,
-                'linewidth':1.,
+            cfg = {'cmap':None, \
+                'clevs':None, \
+                'norm':None, \
+                'linewidth':1., \
                 'linecolor':'#%02x%02x%02x' % (60, 60, 60)}
 
         if varname == 'rainfall':
             if cfg['clevs'] is None:
-                cfg['clevs'] = [0, 1, 5, 10, 15, 25, 50,
+                cfg['clevs'] = [0, 1, 5, 10, 15, 25, 50, \
                                         100, 150, 200, 300, 400]
 
             if cfg['cmap'] is None:
@@ -258,16 +264,16 @@ class HyWap():
                 cfg['cmap'] = plt.get_cmap('jet_r')
 
         if cfg['norm'] is None:
-            cfg['norm'] = plt.cm.colors.Normalize(
-                    vmin=np.min(cfg['clevs']),
+            cfg['norm'] = plt.cm.colors.Normalize( \
+                    vmin=np.min(cfg['clevs']), \
                     vmax=np.max(cfg['clevs']))
 
         return cfg
 
-    def plot(self, data, header, om, config = None):
+    def plot(self, data, header, om, config=None):
         ''' Plot gridded data '''
 
-        if not has_basemap:
+        if not HAS_BASEMAP:
             raise ImportError('basemap is not available')
 
         cfg = self.default_plotconfig(config, header['varname'])
@@ -290,18 +296,18 @@ class HyWap():
             z = gaussian_filter(z, sigma=cfg['sigma'], mode='nearest')
 
         # Refine levels
-        if np.nanmax(z)<np.max(clevs):
+        if np.nanmax(z) < np.max(clevs):
             iw = np.min(np.where(np.nanmax(z) < np.sort(clevs))[0])
             clevs = clevs[:iw+1]
 
         # draw contour
-        cs = m.contourf(x, y, z, cfg['clevs'],
-                    cmap=cfg['cmap'],
+        cs = m.contourf(x, y, z, cfg['clevs'], \
+                    cmap=cfg['cmap'], \
                     norm=cfg['norm'])
 
         if cfg['linewidth'] > 0.:
-            m.contour(x, y, z, cfg['clevs'],
-                    linewidths=cfg['linewidth'],
+            m.contour(x, y, z, cfg['clevs'], \
+                    linewidths=cfg['linewidth'], \
                     colors=cfg['linecolor'])
 
 
