@@ -146,7 +146,7 @@ class Simplot(object):
 
     def draw_monthlyres(self, ax, ax_letter='d'):
 
-        datam = self.data.resample('MS', how='sum')
+        datam = self.data.loc[self.idx_all, :].resample('MS', how='sum')
         datam = datam.groupby(datam.index.month).mean()
         datam.columns = [self._getname(cn) for cn in  datam.columns]
 
@@ -156,6 +156,7 @@ class Simplot(object):
         ax.legend(lines, labels, loc=2, frameon=False)
 
         ax.set_xlim((0, 13))
+        ax.set_xticks(range(1, 13))
         ax.grid()
         ax.set_xlabel('Month')
         ax.set_ylabel('Flow')
@@ -181,7 +182,9 @@ class Simplot(object):
         for cn in data.columns:
             value = np.sort(data.loc[idx, cn].values)[::-1]
             name = self._getname(cn)
-            ax.plot(ff, value, '-', label=name, color=sim_colors[icol], lw=3)
+            ax.plot(ff, value, '+-', label=name,
+                markersize=6,
+                color=sim_colors[icol], lw=1)
             icol += 1
 
         ax.set_xlabel('Frequency')
