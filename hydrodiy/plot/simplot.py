@@ -1,5 +1,6 @@
 import warnings
 
+import re
 from datetime import datetime
 from dateutil.relativedelta import relativedelta as delta
 
@@ -25,9 +26,10 @@ class Simplot(object):
     def __init__(self, \
         obs, \
         sim, \
+        sim_name = None,
         fig = None, \
+        nfloods = 3, \
         wateryear_start =7, \
-        nfloods=4, \
         nbeforepeak = 30, \
         nafterpeak = 60):
 
@@ -38,11 +40,9 @@ class Simplot(object):
         self.idx_obs = pd.notnull(obs) & (obs >= 0)
         obs = pd.Series(obs.values, name='obs', index=obs.index)
         self.data = pd.DataFrame(obs)
-
-        self.nsim = 1
-        sim = pd.Series(sim.values, name='sim_{0:02d}'.format(self.nsim),
-                    index=sim.index)
-        self.data = self.data.join(sim)
+        self.nsim = 0
+        self.sim_names=[]
+        self.add_sim(sim, sim_name=sim_name)
 
         self._compute_idx_all()
 
@@ -58,8 +58,8 @@ class Simplot(object):
         self.fig = fig
 
         # Grid spec
-        fig_ncols = 1 + nfloods/2
-        fig_nrows = 3
+        fig_ncols = 3
+        fig_nrows = 2 + nfloods/3
         self.gs = gridspec.GridSpec(fig_nrows, fig_ncols,
                 width_ratios=[1] * fig_ncols,
                 height_ratios=[0.5] * 1 + [1] * (fig_nrows-1))
@@ -91,13 +91,23 @@ class Simplot(object):
 
             obs_tmp.loc[idx] = np.nan
 
+    def _getname(self, cn):
+        if cn.startswith('sim'):
+            k = int(re.sub('sim_', '', cn))-1
+            return self.sim_names[k]
+        else:
+            return cn
 
-    def add_sim(self, sim):
+    def add_sim(self, sim, sim_name=None):
 
         self.nsim += 1
-        if sim.name is None:
-            sim = pd.Series(sim.values, name='sim_{0:02d}'.format(self.nsim),
-                        index=sim.index)
+        sim = pd.Series(sim.values,
+                name = 'sim_{0:02d}'.format(self.nsim),
+                index=sim.index)
+
+        if sim_name is None:
+            sim_name = sim.name
+        self.sim_names.append(sim_name)
 
         self.data = self.data.join(sim)
 
@@ -118,16 +128,39 @@ class Simplot(object):
         ax = plt.subplot(self.gs[1, 0])
         self.draw_fdc(ax)
 
-        ax = plt.subplot(self.gs[2, 0])
+        ax = plt.subplot(self.gs[1, 1])
         self.draw_fdc(ax, 'd', xlog=True, ylog=False)
+
+        # Draw seasonal residuals
+        ax = plt.subplot(self.gs[1, 2])
+        self.draw_monthlyres(ax, 'e')
+
 
         # Draw flood events
         for iflood in range(self.nfloods):
-            ix = 1 + iflood/2 % self.nfloods
-            iy = 1 + iflood % (self.nfloods/2)
+            ix = 2 + iflood/3
+            iy = iflood%3
             ax = plt.subplot(self.gs[ix, iy])
-            self.draw_floods(ax, iflood, letters[4+iflood])
+            self.draw_floods(ax, iflood, letters[5+iflood])
 
+
+    def draw_monthlyres(self, ax, ax_letter='d'):
+
+        datam = self.data.resample('MS', how='sum')
+        datam = datam.groupby(datam.index.month).mean()
+        datam.columns = [self._getname(cn) for cn in  datam.columns]
+
+        datam.plot(ax=ax, color=sim_colors, marker='o', lw=3)
+
+        lines, labels = ax.get_legend_handles_labels()
+        ax.legend(lines, labels, loc=2, frameon=False)
+
+        ax.set_xlim((0, 13))
+        ax.grid()
+        ax.set_xlabel('Month')
+        ax.set_ylabel('Flow')
+        title = '({0}) Mean monthly simulations'.format(ax_letter)
+        ax.set_title(title)
 
 
     def draw_fdc(self, ax, ax_letter='c', xlog=False, ylog=True):
@@ -147,7 +180,8 @@ class Simplot(object):
         icol = 0
         for cn in data.columns:
             value = np.sort(data.loc[idx, cn].values)[::-1]
-            ax.plot(ff, value, '-', label=cn, color=sim_colors[icol], lw=3)
+            name = self._getname(cn)
+            ax.plot(ff, value, '-', label=name, color=sim_colors[icol], lw=3)
             icol += 1
 
         ax.set_xlabel('Frequency')
@@ -167,7 +201,11 @@ class Simplot(object):
 
         data = self.data
         idx = self.flood_idx[iflood]['index']
-        data.loc[idx, :].plot(ax=ax, color=sim_colors, lw=2, \
+
+        dataf = data.loc[idx, :]
+        dataf.columns = [self._getname(cn) for cn in  data.columns]
+
+        dataf.plot(ax=ax, color=sim_colors, lw=2, \
                 marker='o', legend=iflood==0)
 
         if iflood == 0:
@@ -193,6 +231,7 @@ class Simplot(object):
             im = 12
         datay = datay.loc[datay.index.month == im,:]
         datay = datay.shift(-1)
+        datay.columns = [self._getname(cn) for cn in  datay.columns]
 
         # plot
         datay.iloc[:-1, :].plot(ax=ax, color=sim_colors, marker='o', lw=3)
@@ -210,7 +249,9 @@ class Simplot(object):
 
     def draw_balance(self, ax, ax_letter='a'):
         data = self.data
-        datab = data.loc[self.idx_all, :].mean()
+        cc = [self._getname(cn) for cn in  data.columns]
+        datab = pd.Series(data.loc[self.idx_all, :].mean().values,
+                    index=cc)
 
         freq = data.index.freqstr
         freqfact = {'H':24*365.25, 'D':365.25, 'MS':12, 'ME':12}
@@ -219,6 +260,7 @@ class Simplot(object):
             fact = freqfact['D']
         else:
             fact = freqfact[freq]
+
         datab = datab * fact
 
         # plot
@@ -229,7 +271,10 @@ class Simplot(object):
         ax.grid()
 
 
-    def savefig(self, filename, size=(15, 15)):
+    def savefig(self, filename, size=None):
+        if size is None:
+            size = (12+6*(self.nfloods/3), 15)
+
         self.fig.set_size_inches(size)
         self.gs.tight_layout(self.fig)
         self.fig.savefig(filename)

@@ -25,9 +25,9 @@ class SimplotTestCase(unittest.TestCase):
         sim2 = pd.Series(np.exp(np.random.normal(size=nval)), index=dt)
 
         plt.close('all')
-        sm = Simplot(obs, sim)
+        sm = Simplot(obs, sim, sim_name='bidule')
 
-        sm.add_sim(sim2)
+        sm.add_sim(sim2, sim_name='truc')
         sm.draw()
 
         fp = '%s/simplot_daily.png' % self.FOUT
