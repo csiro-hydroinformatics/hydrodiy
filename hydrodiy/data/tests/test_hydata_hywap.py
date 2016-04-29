@@ -12,7 +12,7 @@ from mpl_toolkits.axes_grid import axes_size
 
 from hydrodiy.data import hywap
 
-if hywap.has_basemap:
+if hywap.HAS_BASEMAP:
     from hydrodiy.gis import oz
 
 class HyWapTestCase(unittest.TestCase):
@@ -98,7 +98,7 @@ class HyWapTestCase(unittest.TestCase):
         vn = hya.variables
         ts = hya.timesteps
 
-        if hywap.has_basemap:
+        if hywap.HAS_BASEMAP:
 
             for varname, timestep in itertools.product(vn.keys(), ts):
 
