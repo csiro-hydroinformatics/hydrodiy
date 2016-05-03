@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 
 # Some useful colors
-wafari_tercile_colors = ['#FF9933', '#64A0C8', '#005BBB']
+tercile_colors = ['#FF9933', '#64A0C8', '#005BBB']
 
 bureau_background_color = '#002745'
 
@@ -29,6 +29,8 @@ tableau_colors = [colors.rgb2hex([float(coo)/255 for coo in co]) for co in [ \
             (227, 119, 194), (127, 127, 127), (188, 189, 34), \
             (23, 190, 207)
         ] ]
+
+
 
 def set_color_cycle(ax, cycle_colors=None):
     if cycle_colors is None:
