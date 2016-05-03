@@ -16,8 +16,9 @@ except ImportError:
 
 
 # Decompress australia shoreline shapefile
-FDATA = '%s/data' % os.path.dirname(os.path.abspath(__file__))
-fshp_coastoz = '%s/australia_coastline_simplified.shp' % FDATA
+FDATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+fshp_coastoz = os.path.join(FDATA, 'australia_coastline_simplified.shp')
+fshp_drainageoz = os.path.join(FDATA, 'drainage_divisions_lines_simplified.shp')
 
 if not os.path.exists(fshp_coastoz):
     tar = tarfile.open(re.sub('shp', 'tar.gz', fshp_coastoz))
@@ -105,23 +106,43 @@ class Oz:
         self.ax.set_xlim((self.llon, self.rlon))
         self.ax.set_ylim((self.ulat, self.llat))
 
+
     def drawcoastoz(self, *args, **kwargs):
         ''' plot coast line for Australia only'''
 
         self.drawpolygons(re.sub('.shp', '', fshp_coastoz), *args, **kwargs)
 
+
+    def drawdrainageoz(self, *args, **kwargs):
+        ''' plot drainage divisions for Australia only'''
+
+        # Read shape
+        nm = 'drainage'
+        self.map.readshapefile(re.sub('\\.shp$', '', fshp_drainageoz),
+                        nm, drawbounds=False)
+
+        # Loop through shapes
+        shapes = getattr(self.map, nm)
+        for shape in shapes:
+            x, y = zip(*shape)
+            self.map.plot(x, y, marker=None, *args, **kwargs)
+
+
     def drawcoast(self, *args, **kwargs):
         ''' plot coast line '''
         self.map.drawcoastlines(*args, **kwargs)
+
 
     def drawrelief(self, *args, **kwargs):
         ''' plot shaded relief map '''
 
         self.map.shadedrelief(*args, **kwargs)
 
+
     def drawstates(self, *args, **kwargs):
         ''' plot states boundaries '''
         self.map.drawstates(*args, **kwargs)
+
 
     def drawpolygons(self, fshp, *args, **kwargs):
         ''' Draw polygon shapefile. Arguments sent to PatchCollection constructor  '''
@@ -133,6 +154,7 @@ class Oz:
             patches.append(Polygon(np.array(shape), True))
 
         self.ax.add_collection(PatchCollection(patches, *args, **kwargs))
+
 
     def plot(self, long, lat, *args, **kwargs):
         ''' Plot points in map '''
