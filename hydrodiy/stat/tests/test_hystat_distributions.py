@@ -7,6 +7,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from hydrodiy.stat.distributions import lognormscensored0
+from hydrodiy.stat.distributions import powernormcensored0
+from hydrodiy.stat.distributions import power, powerdiff, powerinv
 from hydrodiy.stat import sutils
 
 from scipy.stats import norm
@@ -131,4 +133,38 @@ class LogNormCensoredTestCase(unittest.TestCase):
 
         #ck = np.allclose(params[:3], (mu, sig, shift), rtol=0.1)
         #self.assertTrue(ck)
+
+
+class PowerNormCensoredTestCase(unittest.TestCase):
+
+    def setUp(self):
+        print('\n\t=> PowerNormCensoredTestCase (hystat)')
+        FTEST = os.path.dirname(os.path.abspath(__file__))
+        self.FTEST = FTEST
+
+    def test_power(self):
+        x = np.linspace(-100, 100, 3000)
+        for lam in np.linspace(0., 3., 100):
+            for cst in np.linspace(1e-4, 2, 5):
+                y = power(x, lam, cst)
+                xx = powerinv(y, lam, cst)
+                ck = np.allclose(xx, x)
+                self.assertTrue(ck)
+
+    def test_powerdiff(self):
+        x = np.linspace(-100, 100, 3000)
+        i1 = np.where(x<0)[0][-1]
+        i2 = np.where(x>0)[0][0]
+        dx = 1e-6
+        for lam in np.linspace(1e-4, 3., 100):
+            for cst in np.linspace(1e-4, 2, 5):
+                y1 = power(x, lam, cst)
+                y2 = power(x+dx, lam, cst)
+                dy = powerdiff(x, lam, cst)
+                ddy = (y2-y1)/dx
+                kk = np.arange(len(x))
+                idx = (kk < i1) | (kk > i2)
+                # Avoids derivative around 0
+                ck = np.allclose(dy[idx], ddy[idx], atol=1e-5)
+                self.assertTrue(ck)
 

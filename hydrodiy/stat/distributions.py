@@ -159,72 +159,64 @@ class LogNormShiftedCensored(rv_continuous):
 lognormscensored0 = LogNormShiftedCensored(censor=0.)
 
 
-
-def power(x, lam, tol=1e-10, cst=1.):
+def power(x, lam, cst, tol=1e-10):
+    ''' Power function |x|/x * (|x|^lam-cst^lam)/lam'''
     xa = cst+np.abs(x)
     xs = np.sign(x)
 
-    if abs(lam-0.5)<tol:
-        px = xs * (np.sqrt(xa)-cst)*2
-        dpx = 2./np.sqrt(xa)
+    if lam<0:
+        raise ValueError('lam<0')
 
-    elif abs(lam-1.)<tol:
-        px = x
-        dpx = np.ones_like(x)
+    if cst<=tol:
+        raise ValueError('cst<=0')
 
-    elif abs(lam-1.5)<tol:
-        px = xs*(np.sqrt(xa)*xa-cst)/1.5
-
-    elif abs(lam-2.)<tol:
-        px = xs*(xa*xa-cst)/2.
-
-    elif abs(lam-2.5)<tol:
-        px = xs*(xa*xa*np.sqrt(xa)-cst)/2.5
-
-    elif abs(lam-3.)<tol:
-        px = xs*(xa*xa*xa-cst)/3.
-
+    if abs(lam)>tol:
+        y = xs * (xa**lam-cst**lam)/lam
     else:
-        px = xs * (xa**lam-cst)/lam
-
-    return px, dpx
-
-def invpower(y, lam, tol=1e-10, cst=1.):
-    ys = np.sign(y)
-    ya = np.abs(y)
-
-    if abs(lam-0.5)<tol:
-        x = ys * (ya/2+cst)*(ya/2+cst)
-
-    elif abs(lam-1.)<tol:
-        x = y
-
-    elif abs(lam-1.5)<tol:
-        y = 0
-        #px = xs*(np.sqrt(xa)*xa-cst)/1.5
-
-    elif abs(lam-2.)<tol:
-        x =
-        #px = xs*(xa*xa-cst)/2.
-
-    elif abs(lam-2.5)<tol:
-        y = 0
-        #px = xs*(xa*xa*np.sqrt(xa)-cst)/2.5
-
-    elif abs(lam-3.)<tol:
-        y = 0
-        #px = xs*(xa*xa*xa-cst)/3.
-
-    else:
-        y = 0
-        #px = xs * (xa**lam-cst)/lam
+        y = xs * np.log(xa/cst)
 
     return y
 
-class PowerNorm(rv_continuous):
+def powerdiff(x, lam, cst, tol=1e-10):
+    ''' Derivative of power function '''
+    xa = cst+np.abs(x)
+    xs = np.sign(x)
+
+    if lam<0:
+        raise ValueError('lam<0')
+
+    if cst<=tol:
+        raise ValueError('cst<=0')
+
+    if abs(lam)>tol:
+        dy = xa**(lam-1)
+    else:
+        dy = cst/xa
+
+    return dy
+
+def powerinv(y, lam, cst, tol=1e-10):
+    ''' Inverse power function '''
+    ya = np.abs(y)
+    ys = np.sign(y)
+
+    if lam<0:
+        raise ValueError('lam<0')
+
+    if cst<=tol:
+        raise ValueError('cst<=0')
+
+    if abs(lam)>tol:
+        x = ys*((lam*ya+cst**lam)**(1./lam)-cst)
+    else:
+        x = ys*(np.exp(ya)*cst-cst)
+
+    return x
+
+class PowerNormCensored(rv_continuous):
     ''' Power transform Normal distribution with left censoring '''
 
-    def __init__(self, censor=0., maxexponential=2e1):
+    def __init__(self, censor=0., cst=1e-3, maxexponential=2e1):
 
         if not np.isfinite(censor):
             raise ValueError('Censor ({0}) should be finite'.format(censor))
@@ -232,8 +224,13 @@ class PowerNorm(rv_continuous):
         rv_continuous.__init__(self,
             name='powernormcensored',
             longname='Left censored power transform normal distribution',
-            shapes='mu,sig,lam,cst',
+            shapes='mu,sig,lam',
             a=censor)
+
+
+        if cst <= 0:
+            raise ValueError('cst({0}) not >0'.format(cst))
+        self.cst = cst
 
         self.fit_diagnostic = {}
         self.maxexponential = maxexponential
@@ -246,16 +243,16 @@ class PowerNorm(rv_continuous):
         return cond
 
 
-    def _pdf(self, x, mu, sig, lam, cst):
+    def _pdf(self, x, mu, sig, lam):
         censor = self.a
-        if np.any(lam <= 0 or lam >=3):
-            raise ValueError('lam({0}) not in ]0, 3['.format(lam))
+        cst = self.cst
+        if np.any(lam < 0 or lam >=3):
+            raise ValueError('lam({0}) not in [0, 3['.format(lam))
 
-        if np.any(cst <= 0):
-            raise ValueError('cst({0}) not >0'.format(cst))
 
-        px, dpx = power(x, lam, cst)
-        pp = norm.pdf((px-mu)/sig)*px
+        y = power(x, lam, cst)
+        dy = powerdiff(x, lam, cst)
+        pp = norm.pdf((y-mu)/sig)*dy
         pp[x<censor] = 0.
         pp[np.isclose(x, censor)] = np.inf
         return pp
@@ -263,32 +260,29 @@ class PowerNorm(rv_continuous):
 
     def _cdf(self, x, mu, sig, lam, cst):
         censor = self.a
-        if np.any(lam <= 0 or lam >=3):
-            raise ValueError('lam({0}) not in ]0, 3['.format(lam))
+        cst = self.cst
+        if np.any(lam < 0 or lam >=3):
+            raise ValueError('lam({0}) not in [0, 3['.format(lam))
 
-        if np.any(cst <= 0):
-            raise ValueError('cst({0}) not >0'.format(cst))
-
-        px, _ = power(x, lam, self.cst)
-        cp = norm.cdf((px-mu)/sig)
+        y = power(x, lam, cst)
+        cp = norm.cdf((y-mu)/sig)
         cp[x<censor] = 0.
         return cp
 
 
     def _ppf(self, q, mu, sig, lam, cst):
         censor = self.a
-        if np.any(lam <= 0 or lam >=3):
-            raise ValueError('lam({0}) not in ]0, 3['.format(lam))
+        cst = self.cst
+        if np.any(lam < 0 or lam >=3):
+            raise ValueError('lam({0}) not in [0, 3['.format(lam))
 
-        if np.any(cst <= 0):
-            raise ValueError('cst({0}) not >0'.format(cst))
-
-        x = invpower(sig*norm.ppf(q)+mu), lam, cst)
+        x = powerinv(sig*norm.ppf(q)+mu, lam, cst)
         x[x<censor] = censor
         return x
 
 
     def _fitstart(self, data):
+        pass
         #data = np.asarray(data)
         #lm = np.log(data[data>0.])
         #mu = np.nanmean(lm)
@@ -301,8 +295,9 @@ class PowerNorm(rv_continuous):
         data = np.asarray(data, dtype=float)
         data = np.sort(data)
 
-        # Get censor
+        # Get censor and constant
         censor = self.a
+        cst = self.cst
 
         # Determines frequency of values below censor
         nval = len(data)
@@ -311,29 +306,32 @@ class PowerNorm(rv_continuous):
         ## Log posterior
         mexp = self.maxexponential
 
-        #def loglikelihood(params):
+        def loglikelihood(params):
 
-        #    if not (abs(params[1])<mexp and abs(params[2])<mexp):
-        #        return np.inf
+            if not (abs(params[1])<mexp and abs(params[2])<mexp):
+                return np.inf
 
-        #    # get parameters
-        #    mu = params[0]
-        #    logsig = params[1]
-        #    sig = math.exp(logsig)
+            # get parameters
+            mu = params[0]
+            logsig = params[1]
+            sig = math.exp(logsig)
 
-        #    shift = -censor + math.exp(params[2])
-        #    lx = np.log(shift+data[n0:])
-        #    err = (lx-mu)/sig
-        #    ll = (nval-n0)*logsig + np.sum(lx+err*err/2)
+            e = math.exp(params[2])
+            lam = 3*e/(1+e)
 
-        #    P0 = norm.cdf((math.log(shift+censor)-mu)/sig)
-        #    if P0 > 0:
-        #        ll -= n0*math.log(P0)
+            y = power(data[n0:], lam, cst)
+            err = (y-mu)/sig
+            # TODO !
+            #ll = (nval-n0)*logsig + np.sum(lx+err*err/2)
 
-        #    if np.isnan(ll):
-        #        raise ValueError('Nan value returned by likelihood')
+            P0 = norm.cdf((power(censor, lam, cst)-mu)/sig)
+            if P0 > 0:
+                ll -= n0*math.log(P0)
 
-        #    return ll
+            if np.isnan(ll):
+                raise ValueError('Nan value returned by likelihood')
+
+            return ll
 
         ## Start parameters
         #mu, sig, _ = self._fitstart(data)
@@ -377,5 +375,5 @@ class PowerNorm(rv_continuous):
 
         #return (mu, sig, shift, 0., 1.)
 
-powernorm0 = PowerNorm(censor=0.)
+powernormcensored0 = PowerNormCensored(censor=0.)
 
