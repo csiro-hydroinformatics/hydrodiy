@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def islinear(data, npoints=1, eps=1e-5):
+def islinear(data, npoints=1, eps=1e-5, minthreshold=0.):
     '''
     Detect linearly interpolated data
 
@@ -13,6 +13,8 @@ def islinear(data, npoints=1, eps=1e-5):
         Number of points before and after current to test linearity
     eps : float
         Maximum distance between current point and linear interpolation to validate interpolation
+    minthreshold : float
+        Minimum threshold below which value is considered to be zero
 
     Returns
     -----------
@@ -51,7 +53,9 @@ def islinear(data, npoints=1, eps=1e-5):
 
     # Set status to True for points were linear interpolation
     # is valid and either one of endpoints is non zero
-    st = (dist < eps) & ((np.abs(lag0[:, 0])>0)|(np.abs(lag1[:, -1])>0))
+    st = (dist < eps) & \
+        ((np.abs(lag0[:, 0])>minthreshold)|(np.abs(lag1[:, -1])>minthreshold))
+
     status[npoints:-npoints] = st
 
     return status
