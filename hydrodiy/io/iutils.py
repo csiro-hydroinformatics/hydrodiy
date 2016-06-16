@@ -130,7 +130,10 @@ def find_var(source):
     '''
 
     out = {}
-    for vn in re.split('_', source):
+
+    se = re.findall('[^_]+\\[[^\\[]+\\]', source)
+
+    for vn in se:
         # Get name
         name = re.sub('\[.*', '', vn)
 

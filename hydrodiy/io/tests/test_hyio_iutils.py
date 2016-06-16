@@ -62,7 +62,19 @@ class UtilsTestCase(unittest.TestCase):
         data = {'name':'bob', 'phone':2010}
         source = iutils.write_var(data)
         data2 = iutils.find_var(source)
+        ck = data == data2
+        self.assertTrue(ck)
 
+        data = {'name':'bob_marley', 'phone':2010}
+        source = iutils.write_var(data)
+        data2 = iutils.find_var(source)
+        ck = data == data2
+        self.assertTrue(ck)
+
+
+        data = {'name':'bob_marley%$^_12234123', 'phone':2010}
+        source = iutils.write_var(data)
+        data2 = iutils.find_var(source)
         ck = data == data2
         self.assertTrue(ck)
 
