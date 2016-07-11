@@ -18,6 +18,13 @@ def read(fname):
 
 # Cython C extensions
 ext_modules = [
+    Extension(
+        name='c_hydrodiy_data',
+        sources=[
+            'hydrodiy/data/c_hydrodiy_data.pyx',
+            'hydrodiy/data/c_dateutils.c'
+        ],
+        include_dirs=[numpy.get_include()]),
 
     Extension(
         name='c_hydrodiy_stat',
