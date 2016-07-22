@@ -9,8 +9,9 @@ print(' ## Script run started at %s ##' % time_now())
 
 import sys, os, re, json, math
 
-import itertools
+from itertools import product as prod
 
+from dateutil.relativedelta import relativedelta as delta
 from string import ascii_lowercase as letters
 from calendar import month_abbr as months
 
@@ -67,6 +68,27 @@ FDATA = '%s/data' % FROOT
 if not os.path.exists(FDATA): os.mkdir(FDATA)
 
 #------------------------------------------------------------
+# Logging
+#------------------------------------------------------------
+logger = logging.getLogger(os.path.basename(source_file))
+logger.setLevel(logging.INFO)
+
+# log format
+ft = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+# log to console
+sh = logging.StreamHandler()
+sh.setFormatter(ft)
+logger.addHandler(sh)
+
+# log to file
+flog = re.sub('py.*', 'log', source_file)
+if os.path.exists(flog): os.remove(flog)
+fh = logging.FileHandler(flog)
+fh.setFormatter(ft)
+logger.addHandler(fh)
+
+#------------------------------------------------------------
 # Get data
 #------------------------------------------------------------
 
@@ -89,8 +111,7 @@ gs = gridspec.GridSpec(fig_nrows, fig_ncols,
 
 nval = 100
 
-for i, j in itertools.product(range(fig_nrows),
-                            range(fig_ncols)):
+for i, j in prod(range(fig_nrows), range(fig_ncols)):
 
     ax = fig.add_subplot(gs[i, j])
 
