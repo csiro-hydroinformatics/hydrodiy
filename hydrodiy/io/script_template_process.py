@@ -7,7 +7,7 @@ from datetime import datetime
 time_now = datetime.now
 print('\n\n## Script run started at {0} ##\n\n'.format(time_now()))
 
-import sys, os, re, json, math, logging
+import sys, os, re, json, math
 
 from dateutil.relativedelta import relativedelta as delta
 
@@ -16,7 +16,7 @@ from itertools import product as prod
 import numpy as np
 import pandas as pd
 
-from hydrodiy.io import csv
+from hydrodiy.io import csv, iutils
 
 #------------------------------------------------------------
 # Options
@@ -47,24 +47,10 @@ if not os.path.exists(FDATA): os.mkdir(FDATA)
 #------------------------------------------------------------
 # Logging
 #------------------------------------------------------------
-logger = logging.getLogger(os.path.basename(source_file))
-logger.setLevel(logging.INFO)
-
-# log format
-ft = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-# log to console
-sh = logging.StreamHandler()
-sh.setFormatter(ft)
-logger.addHandler(sh)
-
-# log to file
-flog = re.sub('py.*', 'log', source_file)
+flog = source_file + '.log'
 if os.path.exists(flog): os.remove(flog)
-fh = logging.FileHandler(flog)
-fh.setFormatter(ft)
-logger.addHandler(fh)
-
+logger = iutils.get_logger(os.path.basename(source_file),
+    level='INFO', console=True, flog=flog)
 
 #------------------------------------------------------------
 # Get data

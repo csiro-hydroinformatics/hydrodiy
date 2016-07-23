@@ -28,8 +28,9 @@ if mpl.get_backend() != 'Agg':
 
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+from matplotlib.backends.backend_pdf import PdfPages
 
-from hydrodiy.io import csv
+from hydrodiy.io import csv, iutils
 
 #------------------------------------------------------------
 # Options
@@ -70,23 +71,10 @@ if not os.path.exists(FDATA): os.mkdir(FDATA)
 #------------------------------------------------------------
 # Logging
 #------------------------------------------------------------
-logger = logging.getLogger(os.path.basename(source_file))
-logger.setLevel(logging.INFO)
-
-# log format
-ft = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-# log to console
-sh = logging.StreamHandler()
-sh.setFormatter(ft)
-logger.addHandler(sh)
-
-# log to file
-flog = re.sub('py.*', 'log', source_file)
+flog = source_file + '.log'
 if os.path.exists(flog): os.remove(flog)
-fh = logging.FileHandler(flog)
-fh.setFormatter(ft)
-logger.addHandler(fh)
+logger = iutils.get_logger(os.path.basename(source_file),
+    level='INFO', console=True, flog=flog)
 
 #------------------------------------------------------------
 # Get data
@@ -100,6 +88,12 @@ sites = pd.DataFrame(np.random.uniform(size=(30, 5)))
 #------------------------------------------------------------
 # Plot
 #------------------------------------------------------------
+
+# To use multipage pdf
+#fpdf = os.path.join(FOUT, 'evap_sensitivity.pdf')
+#pdf = PdfPages(fpdf)
+#pdf.savefig(fig)
+#pdf.close()
 
 plt.close('all')
 

@@ -3,6 +3,7 @@ import os
 import re
 import gzip
 import datetime
+import logging
 
 import numpy as np
 
@@ -189,4 +190,43 @@ def script_template(filename,
 
     with open(filename, 'w') as fs:
         fs.writelines(txt)
+
+
+def get_logger(name, level, console=False, flog=None):
+    ''' Get a logger
+
+    Parameters
+    -----------
+    name : str
+        Logger name
+    level : str
+        Logging level.
+    console : bool
+        Log to console
+    flog : str
+        Path to log file. If none, no log file is used.
+    '''
+
+    logger = logging.getLogger(name)
+
+    if not level in ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']:
+        raise ValueError('{0} not a valid level'.format(level))
+    logger.setLevel(getattr(logging, level))
+
+    # log format
+    ft = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    # log to console
+    if console:
+        sh = logging.StreamHandler()
+        sh.setFormatter(ft)
+        logger.addHandler(sh)
+
+    # log to file
+    if not flog is None:
+        fh = logging.FileHandler(flog)
+        fh.setFormatter(ft)
+        logger.addHandler(fh)
+
+    return logger
 
