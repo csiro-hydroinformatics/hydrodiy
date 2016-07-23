@@ -192,7 +192,8 @@ def script_template(filename,
         fs.writelines(txt)
 
 
-def get_logger(name, level, console=False, flog=None):
+def get_logger(name, level, console=False, flog=None,
+        check_duplicate=True):
     ''' Get a logger
 
     Parameters
@@ -205,6 +206,8 @@ def get_logger(name, level, console=False, flog=None):
         Log to console
     flog : str
         Path to log file. If none, no log file is used.
+    check_duplicate : bool
+        Check if console or flog are already attached to logger
     '''
 
     logger = logging.getLogger(name)
@@ -216,14 +219,25 @@ def get_logger(name, level, console=False, flog=None):
     # log format
     ft = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
+    # Check handlers
+    has_console = False
+    has_flog = False
+    for hd in logger.handlers:
+        if isinstance(hd, logging.StreamHandler):
+            has_console = True
+
+        if isinstance(hd, logging.FileHandler):
+            if hd.baseFilename == flog:
+                has_flog = True
+
     # log to console
-    if console:
+    if console and not has_console:
         sh = logging.StreamHandler()
         sh.setFormatter(ft)
         logger.addHandler(sh)
 
     # log to file
-    if not flog is None:
+    if not flog is None and not has_flog:
         fh = logging.FileHandler(flog)
         fh.setFormatter(ft)
         logger.addHandler(fh)
