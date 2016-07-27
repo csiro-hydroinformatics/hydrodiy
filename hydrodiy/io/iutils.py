@@ -254,7 +254,11 @@ def get_ibatch(nsites, nbatch, ibatch):
 
     Example
     -----------
-    >>>  idx = iutils.get_ibatch(20, 2, 0)
+    >>>  idx = iutils.get_ibatch(20, 5, 1)
+    [4, 5, 6, 7]
+    >>>  idx = iutils.get_ibatch(20, 5, 2)
+    [8, 9, 10, 11]
+
     '''
 
     nsites_batch = nsites/nbatch
