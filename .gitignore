@@ -12,7 +12,8 @@ build
 *.so
 *.binh
 *.pytest
-hydrodiy/gis/tests/*
+hydrodiy/gis/tests/*.png
+hydrodiy/gis/tests/*.kml
 hydrodiy/data/c_hydrodiy_data.c
 hydrodiy/stat/c_hydrodiy_stat.c
 hydrodiy.egg-info

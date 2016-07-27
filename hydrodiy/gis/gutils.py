@@ -58,71 +58,70 @@ def points_inside_polygon(points, poly, rtol=1e-8, atol=1e-8):
 
     return inside
 
-def plot_geoimage(ax, imgfile):
-    ''' Plot a georeferenced image (i.e. with pngw or tifw file next to it) '''
+def xy2kml(x, y, fkml, z=None, siteid=None, label=None):
+    ''' Convert a series of x/y points to KML format
 
-    # Get png properties
-    with open('%sw'%imgfile, 'r') as fimgw:
-        # resolution
-        dx = float(fimgw.readline())
-        tmp = float(fimgw.readline())
-        tmp = float(fimgw.readline())
-        dy = float(fimgw.readline())
-        # upper left corner coordiantes
-        ulx = float(fimgw.readline())
-        uly = float(fimgw.readline())
+    Parameters
+    -----------
+    x : numpy.ndarray
+        X coordinates
+    y : numpy.ndarray
+        Y coordinates
+    fkml : str
+        File path to kml file
+    z : numpy.ndarray
+        Z coordinates
+    siteid : numpy.ndarray
+        Id of sites
+    label : numpy.ndarray
+        Label displayed for each site
 
-    img = mpimg.imread(imgfile)
-    extent = [ulx, ulx+dx*img.shape[1], uly+dy*img.shape[0], uly]
+    Returns
+    -----------
+    pwd : str
+        Password
 
-    ax.imshow(img, extent=extent)
-
-
-def alphashape(points, alphathresh = 10):
-    ''' Alpha shape concave hull algorithm inspired by
-        - http://sgillies.net/blog/1155/the-fading-shape-of-alpha/
-        - http://blog.thehumangeo.com/2014/05/12/drawing-boundaries-in-python/
-
-        CODE DOES NOT WORK!
-
-        :param numpy.array points : A list of points given as a 2d numpy array
-        :param float alphathresh: Threshold on alpha values expresed as percentile from radius distribution
+    Example
+    -----------
+    >>> x = np.linspace(0, 1, 10)
+    >>> y = np.linspace(0, 1, 10)
+    >>> kml = iutils.xy2kml(x, y, siteid, label)
     '''
 
-    tri = Delaunay(points)
-    edges = set()
-    edge_points = []
-    nv = len(tri.vertices)
+    nval = len(x)
+    for v in [y, siteid, label]:
+        if not v is None:
+            if not len(v) == nval:
+                raise ValueError('Wrong size of inputs')
 
-    # Alpha-shape algorithm
-    circum_r = np.zeros(nv)
-    for i in range(len(tri.vertices)):
-        v = tri.vertices[i]
-        pa = points[v[0]]
-        pb = points[v[1]]
-        pc = points[v[2]]
+    with open(fkml, 'w') as f:
+        # Preamble
+        f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+        f.write('<kml xmlns="http://earth.google.com/kml/2.2">\n')
+        f.write("<Document>\n")
 
-        # Lengths of sides of triangle
-        a = math.sqrt((pa[0]-pb[0])**2 + (pa[1]-pb[1])**2)
-        b = math.sqrt((pb[0]-pc[0])**2 + (pb[1]-pc[1])**2)
-        c = math.sqrt((pc[0]-pa[0])**2 + (pc[1]-pa[1])**2)
+        # Data
+        for i in range(nval):
+            f.write("\t<Placemark>\n")
 
-        # Semiperimeter of triangle
-        s = (a + b + c)/2.0
+            if not siteid is None:
+                f.write("\t\t<name>{0}</name>\n".format(siteid[i]))
 
-        # Area of triangle by Heron's formula
-        area = math.sqrt(s*(s-a)*(s-b)*(s-c))
+            if not label is None:
+                f.write("\t\t<description>{0}</description>\n".format(label[i]))
 
-        circum_r[i] = a*b*c/(4.0*area)
+            zz = 0.
+            if not z is None:
+                zz = z[i]
+            f.write("\t\t<Point>\n")
+            f.write("\t\t\t<coordinates>{0},{1},{2}</coordinates>\n".format(
+                    x[i], y[i], zz))
+            f.write("\t\t</Point>\n")
 
-    # Define the alpha threshold as
-    alpha = sutils.percentiles(circum_r, pthresh).squeeze()
+            f.write("\t</Placemark>\n")
 
-    # Here's the radius filter.
-    idx = np.where(circum_r < alpha)[0]
-    v = tri.vertices[idx]
+        f.write("</Document>\n")
+        f.write("</kml>\n")
 
-    edge_points = np.array(edge_points)
 
-    return edge_points
 
