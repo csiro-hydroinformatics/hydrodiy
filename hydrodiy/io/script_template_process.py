@@ -5,7 +5,6 @@
 
 from datetime import datetime
 time_now = datetime.now
-print('\n\n## Script run started at {0} ##\n\n'.format(time_now()))
 
 import sys, os, re, json, math
 
@@ -26,12 +25,8 @@ from hydrodiy.io import csv, iutils
 #if nargs > 0:
 #    arg1 = sys.argv[1]
 
-#------------------------------------------------------------
-# Functions
-#------------------------------------------------------------
-
-def fun(x):
-    return x
+ibatch = 0
+nbatch = 5
 
 #------------------------------------------------------------
 # Folders
@@ -52,6 +47,8 @@ if os.path.exists(flog): os.remove(flog)
 logger = iutils.get_logger(os.path.basename(source_file),
     level='INFO', console=True, flog=flog)
 
+info = '#### Script run started at {0} ####'.format(time_now())
+
 #------------------------------------------------------------
 # Get data
 #------------------------------------------------------------
@@ -60,6 +57,10 @@ logger = iutils.get_logger(os.path.basename(source_file),
 #data, comment = csv.read_csv(fd)
 
 sites = pd.DataFrame(np.random.uniform(size=(30, 5)))
+
+# Extract batch of sites
+idx = iutils.get_ibatch(len(sites), nbatch, ibatch)
+sites = sites.iloc[idx]
 
 #------------------------------------------------------------
 # Process
@@ -70,8 +71,9 @@ count = 0
 
 for idx, row in sites.iterrows():
 
+    siteid = idx
     count += 1
-    info = '.. dealing with site {0:3d} / {1:3d} ..'.format(count, ns)
+    info = '.. dealing with site {0} ({1:3d}/{2:3d}) ..'.format(siteid, count, ns)
     logger.info(info)
 
-print('\n\n## Script run completed at {0} ##\n\n'.format(time_now()))
+info = '#### Script run completed at {0} ####'.format(time_now())
