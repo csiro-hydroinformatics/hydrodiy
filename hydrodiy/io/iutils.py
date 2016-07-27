@@ -2,12 +2,12 @@ import sys
 import os
 import re
 import gzip
-import datetime
+from datetime import datetime
 import logging
 
 import numpy as np
 
-def password(length=10, chr_start=35, chr_end=128):
+def random_password(length=10, chr_start=35, chr_end=128):
     ''' Generate random password
 
     Parameters
@@ -26,7 +26,7 @@ def password(length=10, chr_start=35, chr_end=128):
 
     Example
     -----------
-    >>> pwd = iutils.password()
+    >>> pwd = iutils.random_password()
     '''
 
     pwd = ''.join([chr(i)
@@ -76,33 +76,23 @@ def find_files(folder, pattern, recursive=True):
 
     return found
 
-def extracpat(string, regexp):
-    '''
-        Returns the first hit of a compiled regexp
-        regexp should be compiled with re.compile first
-    '''
 
-    out = 'NA'
-    se = regexp.search(string)
-    if se:
-        try:
-            out = se.group(0)
-        except IndexError:
-            pass
-    return out
-
-
-def write_var(data):
-    ''' Write a simple dict in the format v1[value1]_v2[value2]
+def vardict2str(data):
+    ''' Convert a dict to a string with the format v1[value1]_v2[value2]
 
     Parameters
     -----------
     data : dict
         Non nested dictionary containing data
 
+    Returns
+    -----------
+    vars : str
+        String containing variables
+
     Example
     -----------
-    >>> iutils.write_var({'name':'bob', 'phone':2010})
+    >>> iutils.vardict2string({'name':'bob', 'phone':2010})
 
     '''
     out = []
@@ -112,7 +102,7 @@ def write_var(data):
     return '_'.join(out)
 
 
-def find_var(source):
+def str2vardict(source):
     ''' Find match in the form v1[value1]_v2[value2] in the
     source string and returns a dict with the value found
 
@@ -126,7 +116,7 @@ def find_var(source):
     Example
     -----------
     >>> source = 'name[bob]_phone[2010]'
-    >>> iutils.find_match(source)
+    >>> iutils.str2vardict(source)
 
     '''
 
@@ -183,7 +173,7 @@ def script_template(filename,
     meta += ['# Author : %s\n' % author]
     meta += ['# Versions :\n']
     meta += [('#    V00 - Script written from template '
-                    'on %s\n') % datetime.datetime.now()]
+                    'on %s\n') % datetime.now()]
     meta += ['#\n', '# ------------------------------\n']
 
     txt = txt[:2] + meta + txt[3:]
@@ -244,3 +234,36 @@ def get_logger(name, level, console=False, flog=None,
 
     return logger
 
+
+def get_ibatch(nsites, nbatch, ibatch):
+    ''' Returns the indices of sites within a batch
+
+    Parameters
+    -----------
+    nsites : int
+        Number of sites
+    nbatch : int
+        Number of batches
+    ibatch : int
+        Batch index (from 0 to nbatch-1)
+
+    Returns
+    -----------
+    idx : list
+        List of integer containing sites indexes (0 = first site)
+
+    Example
+    -----------
+    >>>  idx = iutils.get_ibatch(20, 2, 0)
+    '''
+
+    nsites_batch = nsites/nbatch
+    if nsites_batch == 0:
+        raise ValueError('Number of sites per batch is 0 (nsites={0}, nbatch={1})'.format(
+            nsites, nbatch))
+
+    start = nsites_batch * ibatch
+    idx = np.arange(start, start+nsites_batch)
+    idx = list(idx[idx<nsites])
+
+    return idx

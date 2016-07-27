@@ -13,9 +13,9 @@ class UtilsTestCase(unittest.TestCase):
         FTEST, testfile = os.path.split(__file__)
         self.FOUT = FTEST
 
-    def test_password(self):
+    def test_random_password(self):
         length = 20
-        pwd = iutils.password(length)
+        pwd = iutils.random_password(length)
         self.assertTrue(len(pwd)==length)
 
     def test_find_files(self):
@@ -36,13 +36,6 @@ class UtilsTestCase(unittest.TestCase):
         self.assertTrue(len(found)==3)
 
 
-    def test_extracpat(self):
-        regexp = re.compile(r'19[0-9]{2}-[0-9]{2}')
-        s = 'I was born on the 1978-023'
-        h = iutils.extracpat(s, regexp)
-        self.assertTrue(h == '1978-02')
-
-
     def test_script_template(self):
         fs = '%s/script_test1.pytest' % self.FOUT
         iutils.script_template(fs)
@@ -53,22 +46,22 @@ class UtilsTestCase(unittest.TestCase):
         execfile(fs)
 
 
-    def test_find_var(self):
+    def test_str2vardict(self):
         data = {'name':'bob', 'phone':2010}
-        source = iutils.write_var(data)
-        data2 = iutils.find_var(source)
+        source = iutils.vardict2str(data)
+        data2 = iutils.str2vardict(source)
         ck = data == data2
         self.assertTrue(ck)
 
         data = {'name':'bob_marley', 'phone':2010}
-        source = iutils.write_var(data)
-        data2 = iutils.find_var(source)
+        source = iutils.vardict2str(data)
+        data2 = iutils.str2vardict(source)
         ck = data == data2
         self.assertTrue(ck)
 
         data = {'name':'bob_marley%$^_12234123', 'phone':2010}
-        source = iutils.write_var(data)
-        data2 = iutils.find_var(source)
+        source = iutils.vardict2str(data)
+        data2 = iutils.str2vardict(source)
         ck = data == data2
         self.assertTrue(ck)
 
@@ -93,6 +86,18 @@ class UtilsTestCase(unittest.TestCase):
             logger.info('log '+ str(i))
 
         self.assertTrue(os.path.exists(flog))
+
+
+
+    def test_get_ibatch(self):
+        idx = iutils.get_ibatch(20, 2, 1)
+        self.assertEqual(idx, range(10, 20))
+
+        try:
+            idx = iutils.get_ibatch(20, 40, 1)
+        except ValueError as err:
+            pass
+        self.assertTrue(str(err).startswith('Number of sites per batch is 0'))
 
 
 if __name__ == "__main__":
