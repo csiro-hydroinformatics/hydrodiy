@@ -115,6 +115,7 @@ class Simplot(object):
 
 
     def draw(self):
+        ''' Draw all plots '''
 
         # Draw water balance
         ax = plt.subplot(self.gs[0, 0])
@@ -145,6 +146,7 @@ class Simplot(object):
 
 
     def draw_monthlyres(self, ax, ax_letter='d'):
+        ''' Draw the plot of monthly residuals '''
 
         datam = self.data.loc[self.idx_all, :].resample('MS', how='sum')
         datam = datam.groupby(datam.index.month).mean()
@@ -165,6 +167,7 @@ class Simplot(object):
 
 
     def draw_fdc(self, ax, ax_letter='c', xlog=False, ylog=True):
+        ''' Draw the flow duration curve '''
 
         if xlog:
             ax.set_xscale('log', nonposx='clip')
