@@ -73,7 +73,7 @@ if not os.path.exists(FDATA): os.mkdir(FDATA)
 #------------------------------------------------------------
 flog = source_file + '.log'
 if os.path.exists(flog): os.remove(flog)
-logger = iutils.get_logger(os.path.basename(source_file),
+logger = iutils.get_logger(re.sub('\\..*', '', os.path.basename(source_file)),
     level='INFO', console=True, flog=flog)
 
 #------------------------------------------------------------

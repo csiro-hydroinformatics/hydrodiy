@@ -44,10 +44,11 @@ if not os.path.exists(FDATA): os.mkdir(FDATA)
 #------------------------------------------------------------
 flog = source_file + '.log'
 if os.path.exists(flog): os.remove(flog)
-logger = iutils.get_logger(os.path.basename(source_file),
+logger = iutils.get_logger(re.sub('\\..*', '', os.path.basename(source_file)),
     level='INFO', console=True, flog=flog)
 
 info = '#### Script run started at {0} ####'.format(time_now())
+logger.info(info)
 
 #------------------------------------------------------------
 # Get data
@@ -77,3 +78,4 @@ for idx, row in sites.iterrows():
     logger.info(info)
 
 info = '#### Script run completed at {0} ####'.format(time_now())
+logger.info(info)
