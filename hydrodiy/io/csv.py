@@ -52,33 +52,33 @@ def _csvhead(nrow, ncol, comment, source_file, author=None):
     elif isinstance(comment, list):
         comments = {}
         for i in range(len(comment)):
-            comments['comment%2.2d' % i] = comment[i] 
+            comments['comment%2.2d' % i] = comment[i]
 
     elif isinstance(comment, dict):
         comments = {}
         for k in comment:
-            comments[re.sub('\:', '', k).lower()] = comment[k] 
+            comments[re.sub('\:', '', k).lower()] = comment[k]
 
     else:
         comment = list(comment)
 
         comments = {}
         for i in range(len(comment)):
-            comments['comment%2.2d' % i] = comment[i] 
+            comments['comment%2.2d' % i] = comment[i]
 
 
     # Generate file header
     h = []
     h.append("# --------------------------------------------------")
-    
+
     h.append("# nrow : %d" % nrow)
     h.append("# ncol : %d" % ncol)
 
-    for k in comments: 
+    for k in comments:
         h.append("# %s : %s" %(k, comments[k]))
 
     h.append("# time_generated : %s" % time.strftime("%Y-%m-%d %H:%M"))
-    
+
     # seek author
     if author is None:
         try:
@@ -101,34 +101,34 @@ def _csvhead(nrow, ncol, comment, source_file, author=None):
     if has_distutils:
         h.append("# python_inc : %s" % get_python_inc())
         h.append("# python_lib : %s" % get_python_lib())
-    
+
     h.append("# --------------------------------------------------")
 
     return h
 
 
-def write_csv(data, filename, comment, 
+def write_csv(data, filename, comment,
         source_file,
         author = None,
         write_index = False,
         compress=True, **kwargs):
     """ write a pandas dataframe to csv with comments """
-    
-    head = _csvhead(data.shape[0], data.shape[1], 
-                comment, 
-                source_file = source_file, 
+
+    head = _csvhead(data.shape[0], data.shape[1],
+                comment,
+                source_file = source_file,
                 author=author)
-   
+
     # Check source_file exists
     if not os.path.exists(source_file):
         raise ValueError('%s file does not exists' % source_file)
-    
+
     # defines file name
     filename_full = filename
 
     if compress and ~filename.endswith('.gz'):
         filename_full += '.gz'
-    
+
     if compress:
         fcsv = gzip.open(filename_full, 'wb')
     else:
@@ -170,7 +170,7 @@ def read_csv(filename, has_colnames=True, **kwargs):
 
         # Extract comment info from header
         comment = _header2comment(header)
-        
+
         # deals with multi-index columns
         # reformat columns like (idx1-idx2-...)
         se = re.findall('\"\([^\(]*\)\"', line)
@@ -182,13 +182,13 @@ def read_csv(filename, has_colnames=True, **kwargs):
                 cn2 = re.sub(', *','-',cn2)
                 linecols = re.sub(re.escape(cn), cn2, linecols)
 
-        cns = string.strip(linecols).split(',') 
+        cns = string.strip(linecols).split(',')
 
-        # Reads data with proper column names    
+        # Reads data with proper column names
         data = pd.read_csv(fcsv, names=cns, **kwargs)
 
-        data.columns = [re.sub('\\.','_',cn) 
-                        for cn in data.columns] 
+        data.columns = [re.sub('\\.','_',cn)
+                        for cn in data.columns]
 
     else:
         data = pd.read_csv(fcsv, header=None, **kwargs)

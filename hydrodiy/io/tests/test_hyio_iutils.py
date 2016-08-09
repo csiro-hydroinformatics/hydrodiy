@@ -67,26 +67,45 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_get_logger(self):
-        flog = os.path.abspath(__file__) + '.log'
+        flog1 = os.path.abspath(__file__) + '1.log'
+        flog2 = os.path.abspath(__file__) + '2.log'
 
         # Test error on level
         try:
-            logger = iutils.get_logger('bidule', level='INF',
-                        flog=flog, console=True)
+            logger = iutils.get_logger('bidule', level='INF')
         except ValueError as err:
             pass
         self.assertTrue(str(err).startswith('INF not a valid level'))
 
         # Test logging
-        if os.path.exists(flog): os.remove(flog)
-        logger = iutils.get_logger('bidule', level='INFO',
-                        flog=flog, console=True)
+        logger1 = iutils.get_logger('bidule1', flog=flog1)
 
-        for i in range(10):
-            logger.info('log '+ str(i))
+        mess = ['flog1 A', 'flog1 B']
+        logger1.info(mess[0])
+        logger1.info(mess[1])
 
-        self.assertTrue(os.path.exists(flog))
+        self.assertTrue(os.path.exists(flog1))
 
+        with open(flog1, 'r') as fl:
+            txt = fl.readlines()
+        ck = txt[0].strip().endswith('bidule1 - INFO - '+mess[0])
+        ck = ck & txt[1].strip().endswith('bidule1 - INFO - '+mess[1])
+        self.assertTrue(ck)
+
+        # Test logging with different format
+        logger2 = iutils.get_logger('bidule2',
+                        fmt='%(message)s',
+                        flog=flog2)
+
+        mess = ['flog2 A', 'flog2 B']
+        logger2.warn(mess[0])
+        logger2.critical(mess[1])
+
+        self.assertTrue(os.path.exists(flog2))
+
+        with open(flog2, 'r') as fl:
+            txt = fl.readlines()
+        self.assertEqual(mess, [t.strip() for t in txt])
 
 
     def test_get_ibatch(self):

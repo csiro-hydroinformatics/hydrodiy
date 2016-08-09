@@ -72,9 +72,12 @@ if not os.path.exists(FDATA): os.mkdir(FDATA)
 # Logging
 #------------------------------------------------------------
 flog = source_file + '.log'
-if os.path.exists(flog): os.remove(flog)
-logger = iutils.get_logger(re.sub('\\..*', '', os.path.basename(source_file)),
-    level='INFO', console=True, flog=flog)
+log_name = re.sub('\\..*', '', os.path.basename(source_file))
+LOGGER = iutils.get_logger(log_name, level='INFO',
+    fmt = '%(asctime)s - %(message)s',
+    console=True, flog=flog)
+
+LOGGER.critical('Script {0} started'.format(source_file))
 
 #------------------------------------------------------------
 # Get data
@@ -84,6 +87,9 @@ logger = iutils.get_logger(re.sub('\\..*', '', os.path.basename(source_file)),
 #data, comment = csv.read_csv(fd)
 
 sites = pd.DataFrame(np.random.uniform(size=(30, 5)))
+
+mess = '{0} sites found'.format(sites.shape[0])
+LOGGER.critical(mess)
 
 #------------------------------------------------------------
 # Plot
@@ -143,4 +149,4 @@ fp = '%s/image.png' % FIMG
 fig.savefig(fp, dpi=fig_dpi)
 
 
-print(' ## Script run completed at %s ##' % time_now())
+LOGGER.critical('Script {0} completed'.format(source_file))

@@ -43,12 +43,12 @@ if not os.path.exists(FDATA): os.mkdir(FDATA)
 # Logging
 #------------------------------------------------------------
 flog = source_file + '.log'
-if os.path.exists(flog): os.remove(flog)
-logger = iutils.get_logger(re.sub('\\..*', '', os.path.basename(source_file)),
-    level='INFO', console=True, flog=flog)
+log_name = re.sub('\\..*', '', os.path.basename(source_file))
+LOGGER = iutils.get_logger(log_name, level='INFO',
+    fmt = '%(asctime)s - %(message)s',
+    console=True, flog=flog)
 
-info = '#### Script run started at {0} ####'.format(time_now())
-logger.info(info)
+LOGGER.critical('Script {0} started'.format(source_file))
 
 #------------------------------------------------------------
 # Get data
@@ -63,6 +63,9 @@ sites = pd.DataFrame(np.random.uniform(size=(30, 5)))
 idx = iutils.get_ibatch(len(sites), nbatch, ibatch)
 sites = sites.iloc[idx]
 
+mess = '{0} sites found'.format(sites.shape[0])
+LOGGER.critical(mess)
+
 #------------------------------------------------------------
 # Process
 #------------------------------------------------------------
@@ -74,8 +77,9 @@ for idx, row in sites.iterrows():
 
     siteid = idx
     count += 1
-    info = '.. dealing with site {0} ({1:3d}/{2:3d}) ..'.format(siteid, count, ns)
-    logger.info(info)
 
-info = '#### Script run completed at {0} ####'.format(time_now())
-logger.info(info)
+    mess = 'Dealing with site {0} ({1:3d}/{2:3d})'.format(siteid, count, ns)
+    LOGGER.critical(mess)
+
+
+LOGGER.critical('Script {0} completed'.format(source_file))

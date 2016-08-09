@@ -182,9 +182,12 @@ def script_template(filename,
         fs.writelines(txt)
 
 
-def get_logger(name, level, console=False, flog=None,
-        check_duplicate=True):
-    ''' Get a logger
+def get_logger(name, level='INFO', \
+        console=False, flog=None, \
+        fmt='%(asctime)s - %(name)s - %(levelname)s - %(message)s', \
+        remove_flog=True,
+        no_duplicate_handler=True):
+    ''' Get a logger object
 
     Parameters
     -----------
@@ -196,29 +199,41 @@ def get_logger(name, level, console=False, flog=None,
         Log to console
     flog : str
         Path to log file. If none, no log file is used.
-    check_duplicate : bool
-        Check if console or flog are already attached to logger
+    fmt : str
+        Log format
+    remove_flog : bool
+        If true, removes the flog files if exists
+    no_duplicate_handler : bool
+        Avoid duplicating console or flog log handlers
+
+    Returns
+    -----------
+    logger : logging.Logger
+        Logger instance
     '''
 
     logger = logging.getLogger(name)
 
+    # Set logging level
     if not level in ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']:
         raise ValueError('{0} not a valid level'.format(level))
+
     logger.setLevel(getattr(logging, level))
 
-    # log format
-    ft = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    # Set logging format
+    ft = logging.Formatter(fmt)
 
     # Check handlers
     has_console = False
     has_flog = False
-    for hd in logger.handlers:
-        if isinstance(hd, logging.StreamHandler):
-            has_console = True
+    if no_duplicate_handler:
+        for hd in logger.handlers:
+            if isinstance(hd, logging.StreamHandler):
+                has_console = True
 
-        if isinstance(hd, logging.FileHandler):
-            if hd.baseFilename == flog:
-                has_flog = True
+            if isinstance(hd, logging.FileHandler):
+                if hd.baseFilename == flog:
+                    has_flog = True
 
     # log to console
     if console and not has_console:
@@ -228,6 +243,9 @@ def get_logger(name, level, console=False, flog=None,
 
     # log to file
     if not flog is None and not has_flog:
+        if remove_flog:
+            if os.path.exists(flog): os.remove(flog)
+
         fh = logging.FileHandler(flog)
         fh.setFormatter(ft)
         logger.addHandler(fh)
