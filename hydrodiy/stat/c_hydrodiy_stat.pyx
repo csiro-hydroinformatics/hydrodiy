@@ -20,23 +20,48 @@ cdef extern from 'c_crps.h':
         double* reliability_table,
         double* crps_decompos)
 
+cdef extern from 'c_olspredfact.h':
+    int c_olspredfact(int nval, int npreds, double * predictors,
+        double * tXXinv, double* predfacts)
+
+
+def olspredfact(np.ndarray[double, ndim=2, mode='c'] predictors not None,
+        np.ndarray[double, ndim=2, mode='c'] tXXinv not None,
+        np.ndarray[double, ndim=1, mode='c'] prediction_factors not None):
+
+    cdef int ierr
+
+    # check dimensions
+    assert predictors.shape[0] == prediction_factors.shape[0]
+    assert predictors.shape[1] == tXXinv.shape[0]
+    assert tXXinv.shape[1] == tXXinv.shape[0]
+
+    ierr = c_olspredfact(predictors.shape[0],
+            predictors.shape[1],
+            <double*> np.PyArray_DATA(predictors),
+            <double*> np.PyArray_DATA(tXXinv),
+            <double*> np.PyArray_DATA(prediction_factors))
+
+    return ierr
+
 
 def ar1innov(np.ndarray[double, ndim=1, mode='c'] params not None,
-        np.ndarray[double, ndim=1, mode='c'] innov not None,
+        np.ndarray[double, ndim=1, mode='c'] input not None,
         np.ndarray[double, ndim=1, mode='c'] output not None):
 
     cdef int ierr
 
     # check dimensions
     assert params.shape[0] == 2
-    assert output.shape[0] == innov.shape[0]
+    assert input.shape[0] == output.shape[0]
 
-    ierr = c_ar1innov(output.shape[0],
+    ierr = c_ar1innov(input.shape[0],
             <double*> np.PyArray_DATA(params),
-            <double*> np.PyArray_DATA(innov),
+            <double*> np.PyArray_DATA(input),
             <double*> np.PyArray_DATA(output))
 
     return ierr
+
 
 
 def ar1inverse(np.ndarray[double, ndim=1, mode='c'] params not None,

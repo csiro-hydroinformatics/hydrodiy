@@ -1,7 +1,8 @@
 import math
-
+import logging
 import numpy as np
 import pandas as pd
+
 from scipy.stats import t as student
 from scipy.stats import shapiro
 
@@ -10,54 +11,64 @@ from scipy.optimize import fmin
 import matplotlib.pyplot as plt
 
 from hydrodiy.stat import sutils
+import c_hydrodiy_stat
 
-def ar1_loglikelihood(theta, X, Y, eps=1e-10):
+
+# Setup login
+LOGGER = logging.getLogger(__name__)
+
+
+def ar1_loglikelihood(theta, xmat, yvect, eps=1e-10):
     ''' Returns the components of the GLS ar1 log-likelihood '''
 
     sigma = theta[0]
     phi = theta[1]
-    p = np.array(theta[2:]).reshape((len(theta)-2,1))
-    Yhat = np.dot(X,p)
+    params = np.array(theta[2:]).reshape((len(theta)-2, 1))
+    yvect_hat = np.dot(xmat, params)
 
-    n = Yhat.shape[0]
-    e = np.array(Y-Yhat).reshape((n,))
-    innov = sutils.ar1inverse([phi, 0.], e)
+    nval = yvect_hat.shape[0]
+    resid = np.array(yvect-yvect_hat).reshape((nval, ))
+    innov = sutils.ar1inverse([phi, 0.], resid)
     sse = np.sum(innov[1:]**2)
     sse += innov[0]**2 * (1-phi**2)
 
     #ll1 = -n/2*math.log(2*math.pi)
     if sigma>eps:
-        ll2 = -n*math.log(sigma)
+        loglike2 = -nval*math.log(sigma)
     else:
-        ll2 = -n*math.log(eps) - (sigma-eps)**2*1e100
+        loglike2 = -nval*math.log(eps) - (sigma-eps)**2*1e100
 
     if phi**2<1-eps:
-        ll3 = math.log(1-phi**2)/2
+        loglike3 = math.log(1-phi**2)/2
     else:
-        ll3 = math.log(1-eps**2)/2 - (phi**2-1+eps)**2*1e100
+        loglike3 = math.log(1-eps**2)/2 - (phi**2-1+eps)**2*1e100
 
-    ll4 = -sse/(2*sigma**2)
+    loglike4 = -sse/(2*sigma**2)
 
-    ll = {'sigma':ll2, 'phi':ll3, 'sse':ll4}
+    loglike = {'sigma':loglike2, 'phi':loglike3, 'sse':loglike4}
 
-    return ll
+    return loglike
 
-def ar1_loglikelihood_objfun(theta, X, Y):
+
+
+def ar1_loglikelihood_objfun(theta, xmat, yvect):
     ''' Returns the GLS ar1 log-likelihood objective function '''
 
-    ll = ar1_loglikelihood(theta, X, Y)
-    lls = -(ll['sigma']+ll['phi']+ll['sse'])
+    loglike = ar1_loglikelihood(theta, xmat, yvect)
+    objfun = -(loglike['sigma']+loglike['phi']+loglike['sse'])
 
-    return lls
+    return objfun
+
+
 
 class Linreg:
-    ''' Class to handle linear regression '''
+    ''' Linear regression modelling '''
 
     def __init__(self, x, y,
-            has_intercept = True,
-            polyorder = 1,
-            type = 'ols',
-            varnames = None):
+            has_intercept=True,
+            polyorder=1,
+            type='ols',
+            varnames=None):
         ''' Initialise regression model
 
             :param np.array x: Predictor variable
@@ -76,11 +87,11 @@ class Linreg:
         self.x = x
         self.y = y
         self.varnames = varnames
-
         self.nboot_print = 0
 
         # Build inputs
         self._buildinput()
+
 
     def __str__(self):
         str = '\n\t** Linear model **\n'
@@ -95,8 +106,8 @@ class Linreg:
 
             if self.type == 'ols':
                 str += '\t  %s = %5.2f [%5.2f, %5.2f] P(>|t|)=%0.3f\n'%(idx,
-                    row['estimate'], row['confint_025'],
-                    row['confint_975'], row['Pr(>|t|)'])
+                    row['estimate'], row['2.5%'],
+                    row['97.5%'], row['Pr(>|t|)'])
 
             if self.type == 'gls_ar1':
                 str += '\t  %s = %5.2f\n' % (idx, row['estimate'])
@@ -128,24 +139,27 @@ class Linreg:
 
         return str
 
-    def _buildXmatrix(self, xx0=None):
+
+    def _buildXmatrix(self, xmat0=None):
         ''' Build regression input matrix, i.e. the matrix [1,xx] for standard regressions
             or [xx] if the intercept is not included in the regression equation.'''
 
         # Prediction data
-        if xx0 is None:
-            xx = np.array(self.x)
+        if xmat0 is None:
+            use_internal = True
+            xmat0 = np.array(self.x)
         else:
-            xx = np.array(xx0)
+            use_internal = False
+            xmat0 = np.array(xmat0)
 
         # Dimensions
-        XX = np.atleast_2d(xx)
-        if len(xx.shape) == 1:
-            XX = XX.T
-        nsamp = xx.shape[0]
-        npred = XX.shape[1]
+        xmat0 = np.atleast_2d(xmat0).astype(np.float64)
+        if xmat0.shape[0] == 1:
+            xmat0 = xmat0.T
+        nsamp = xmat0.shape[0]
+        npred = xmat0.shape[1]
 
-        if xx0 is None:
+        if use_internal:
             self.npredictors = npred
         else:
             if npred != self.npredictors:
@@ -153,19 +167,18 @@ class Linreg:
                     ' different from regression(%d)') %(npred, self.npredictors))
 
         # Produce X matrix
-        X = np.empty((XX.shape[0], XX.shape[1] * self.polyorder), float)
+        xmat = np.empty((xmat0.shape[0], xmat0.shape[1] * self.polyorder),
+                                np.float64)
 
-        for j in range(XX.shape[1]):
-
+        for j in range(xmat0.shape[1]):
             for k in range(self.polyorder):
-
-                # populate X matrix
-                X[:, j*self.polyorder+k] = XX[:, j]**(k+1)
+                xmat[:, j*self.polyorder+k] = xmat0[:, j]**(k+1)
 
         if self.has_intercept:
-            X = np.insert(X, 0, 1., axis=1)
+            xmat = np.insert(xmat, 0, 1., axis=1)
 
-        return X, nsamp, npred
+        return xmat, nsamp, npred
+
 
     def _get_param_names(self):
         ''' Extract regression parameter names '''
@@ -209,34 +222,49 @@ class Linreg:
         '''
 
         # Build X matrix
-        X, nsamp, npredictors = self._buildXmatrix()
-        self.X = X
+        xmat, nsamp, npredictors = self._buildXmatrix()
+        self.xmat = xmat
         self.npredictors = npredictors
         self.nsample = nsamp
 
         # Get parameter names
         self.params_names = self._get_param_names()
 
-        # build input and output matrix
-        self.tXXinv = np.linalg.inv(np.dot(X.T,X))
+        # build input matrix
+        self.tXXinv = np.linalg.inv(np.dot(xmat.T,xmat))
 
-        self.Y = np.atleast_2d(np.array(self.y)).reshape((nsamp, 1))
-        self.npredictands = self.Y.shape[1]
+        # build output matrix
+        yvect = np.atleast_2d(np.array(self.y))
+        if yvect.shape[0] == 1:
+            yvect = yvect.T
+
+        if yvect.shape[1] > 1:
+            raise ValueError('More than one column in y data')
+
+        if yvect.shape[0] != nsamp:
+            import pdb; pdb.set_trace()
+            raise ValueError(('Not the same number of samples in x({0})' + \
+                ' and y({1})').format(nsamp, yvect.shape[0]))
+
+        self.yvect = yvect.astype(np.float64)
+
+        self.npredictands = self.yvect.shape[1]
 
 
     def _fit_ols(self):
         ''' Estimate parameter with ordinary least squares '''
 
         # OLS parameter estimate
-        pars = np.dot(self.tXXinv, np.dot(self.X.T, self.Y))
-        Yhat = np.dot(self.X, pars)
-        residuals = self.Y-Yhat
+        pars = np.dot(self.tXXinv, np.dot(self.xmat.T, self.yvect))
+        ymat_hat = np.dot(self.xmat, pars)
+        residuals = self.yvect-ymat_hat
 
-        # Degrees of freedom
-        df = self.Y.shape[0]-len(pars)
+        # Degrees of freedom (max 200 to avoid memory problems)
+        degfree = self.yvect.shape[0]-len(pars)
+        degfree = min(200, degfree)
 
         # Sigma of residuals and parameters
-        sigma = math.sqrt(np.dot(residuals.T, residuals)/df)
+        sigma = math.sqrt(np.dot(residuals.T, residuals)/degfree)
         sigma_pars = sigma * np.sqrt(np.diag(self.tXXinv))
 
         # Parameter data frame
@@ -245,24 +273,26 @@ class Linreg:
         params = params.set_index('parameter')
 
         params['tvalue'] = params['estimate']/params['stderr']
-        params['confint_025'] = params['estimate']+\
-                            params['stderr']*student.ppf(2.5e-2, df)
-        params['confint_975'] = params['estimate']+\
-                            params['stderr']*student.ppf(97.5e-2, df)
-        params['Pr(>|t|)'] = (1-student.cdf(np.abs(params['tvalue']), df))*2
-        params = params[['estimate', 'stderr', 'confint_025',
-                            'confint_975', 'tvalue', 'Pr(>|t|)']]
+        params['2.5%'] = params['estimate']+\
+                            params['stderr']*student.ppf(2.5e-2, degfree)
+        params['97.5%'] = params['estimate']+\
+                            params['stderr']*student.ppf(97.5e-2, degfree)
+        params['Pr(>|t|)'] = (1-student.cdf(np.abs(params['tvalue']), degfree))*2
+        params = params[['estimate', 'stderr', '2.5%',
+                            '97.5%', 'tvalue', 'Pr(>|t|)']]
 
-        return params, sigma, df
+        return params, sigma, degfree
+
 
     def _gls_transform_matrix(self, nsamp, phi):
         ''' Compute transformation matrix required for GLS iterative solution'''
 
-        P = np.eye(nsamp)
-        P[0,0] = math.sqrt(1-phi**2)
-        P -= np.diag([1]*(nsamp-1), -1)*phi
+        transmat = np.eye(nsamp)
+        transmat[0,0] = math.sqrt(1-phi**2)
+        transmat -= np.diag([1]*(nsamp-1), -1)*phi
 
-        return P
+        return transmat
+
 
     def _fit_gls_ar1(self):
         ''' Estimate parameter with generalized least squares
@@ -270,18 +300,21 @@ class Linreg:
         '''
 
         # OLS regression to define starting point for optimisation
-        params, sigma, df = self._fit_ols()
+        params, sigma, _ = self._fit_ols()
 
         # Estimate auto-correlation of residuals
         pp = np.array(params['estimate']).reshape((params.shape[0],1))
-        residuals = self.Y-np.dot(self.X, pp)
-        lm_residuals = Linreg(residuals[:-1], residuals[1:], type='ols', has_intercept=False)
+        residuals = self.yvect-np.dot(self.xmat, pp)
+
+        lm_residuals = Linreg(residuals[:-1], residuals[1:],
+                            type='ols', has_intercept=False)
         lm_residuals.fit()
         phi = lm_residuals.params['estimate'].values[0]
 
         # Maximisation of log-likelihood
         theta0 = [sigma, phi] + list(params['estimate'])
-        res = fmin(ar1_loglikelihood_objfun, theta0, args=(self.X, self.Y,), disp=0)
+        res = fmin(ar1_loglikelihood_objfun, theta0,
+                    args=(self.xmat, self.yvect,), disp=0)
 
         # Build parameter dataframe
         params = pd.DataFrame({'estimate':res[2:]})
@@ -296,15 +329,17 @@ class Linreg:
             raise ValueError('Phi(%0.5f) is not within [-1, 1], Error in optimisation of log-likelihood' % phi)
 
         if sigma<0:
-            import pdb; pdb.set_trace()
-            raise ValueError('Sigma(%0.5f) is not within [0, +inf], Error in optimisation of log-likelihood' % sigma)
+            raise ValueError(('Sigma({0}) is not positive, ' + \
+                'Error in optimisation of log-likelihood').format(sigma))
 
         return params, phi, sigma
 
-    def getresiduals(self, Y, Yhat):
+
+    def get_residuals(self, yvect, yvect_hat):
+        ''' Generate model residuals '''
 
         # Compute residuals
-        residuals = Y-Yhat
+        residuals = yvect-yvect_hat
 
         # Extract innovation from AR1 if GLS AR1
         if self.type == 'gls_ar1':
@@ -313,62 +348,71 @@ class Linreg:
 
         return residuals
 
-    def compute_diagnostic(self, Y, Yhat):
+
+    def compute_diagnostic(self, yvect, yvect_hat):
         ''' perform tests on regression assumptions '''
 
-        residuals = self.getresiduals(Y, Yhat)
+        residuals = self.get_residuals(yvect, yvect_hat)
 
         # Shapiro Wilks on residuals
-        s = shapiro(residuals)
+        # resample if the number of residuals is greater than 5000
+        nres = len(residuals)
+        if nres < 5000:
+            shap = shapiro(residuals)
+        else:
+            kk = np.random.choice(range(nres), 5000, replace=False)
+            shap = shapiro(residuals[kk])
 
         # Durbin watson test
         residuals = residuals.reshape((len(residuals), ))
-        de = np.diff(residuals, 1)
-        dw = np.dot(de, de)/np.dot(residuals, residuals)
+        differr = np.diff(residuals, 1)
+        durbwat = np.dot(differr, differr)/np.dot(residuals, residuals)
 
         # correlation
-        u = Y-np.mean(Y)
-        v = Yhat-np.mean(Yhat)
-        R2 = np.sum(u*v)**2/np.sum(u**2)/np.sum(v**2)
+        u = yvect-np.mean(yvect_hat)
+        v = yvect_hat-np.mean(yvect_hat)
+        rsquared = np.sum(u*v)**2/np.sum(u**2)/np.sum(v**2)
 
         # Bias
-        mY = np.mean(Y)
-        me = np.mean(Y-Yhat)
-        b = me/mY
+        myvect = np.mean(yvect)
+        merr = np.mean(yvect-yvect_hat)
+        bias = merr/myvect
 
         # Coeff of determination
-        d = 1-np.sum((Y-Yhat)**2)/np.sum((Y-mY)**2)
+        coefdet = 1-np.sum((yvect-yvect_hat)**2)/np.sum((yvect-myvect)**2)
 
         # Ratio of variances
-        rv = np.var(Yhat)/np.var(Y)
+        ratio_std = np.std(yvect_hat)/np.std(yvect)
 
         # Store data
-        diag = {'bias':b,
-            'mean_error':me,
-            'coef_determination':d,
-            'ratio_variance':rv,
-            'shapiro_residuals_stat': s[0],
-            'shapiro_residuals_pvalue':s[1],
-            'durbinwatson_residuals_stat': dw,
-            'R2': R2}
+        diag = {
+            'bias':bias,
+            'mean_error':merr,
+            'coef_determination':coefdet,
+            'ratio_variance':ratio_std,
+            'shapiro_residuals_stat': shap[0],
+            'shapiro_residuals_pvalue':shap[1],
+            'durbinwatson_residuals_stat': durbwat,
+            'R2': rsquared
+        }
 
         return diag
 
 
-    def fit(self):
+    def fit(self, log_entry=True):
         ''' Run parameter estimation and compute diagnostics '''
 
         # Fit
         if self.type == 'ols':
-            params, sigma, df = self._fit_ols()
+            params, sigma, degfree = self._fit_ols()
             phi = None
 
         elif self.type =='gls_ar1':
             params, phi, sigma = self._fit_gls_ar1()
-            df = None
+            degfree = None
 
             pp = [sigma, phi] + list(params['estimate'])
-            self.loglikelihood = ar1_loglikelihood(pp, self.X, self.Y)
+            self.loglikelihood = ar1_loglikelihood(pp, self.xmat, self.yvect)
 
         else:
             raise ValueError('Regression type %s not recognised' % self.type)
@@ -376,64 +420,84 @@ class Linreg:
         # Store data
         self.params = params
         self.sigma = sigma
-        self.df = df
+        self.degfree = degfree
         self.phi = phi
 
         # compute fit
-        Yhat = np.dot(self.X, self.params['estimate'])
-        self.Yhat = Yhat.reshape((self.nsample, 1))
+        yvect_hat = np.dot(self.xmat, self.params['estimate'])
+        self.yvect_hat = yvect_hat.reshape((self.nsample, 1))
 
         # Run diagnostic
-        diag = self.compute_diagnostic(self.Y, self.Yhat)
+        diag = self.compute_diagnostic(self.yvect, self.yvect_hat)
         self.diagnostic = diag
 
-    def predict(self, x0=None, coverage=[95, 80]):
-        ''' Pediction with intervals
+        if log_entry:
+            LOGGER.critical('Completed fit')
+            LOGGER.critical(str(self))
 
-            :param numpy.array x0: regression input
-            :param list quantiles: Coverage of prediction intervals
+
+    def predict(self, xmat=None, coverage=[95, 80]):
+        ''' Pediction with confidence intervals
+
+        Parameters
+        -----------
+        xmat : numpy.ndarray
+            Regression inputs
+        coverage : list
+            Coverage probabilities
+
+        Returns
+        -----------
+        yy0 : numpy.ndarray
+            Regression outputs
+        predint : pandas.DataFrame
+            Prediction intervals
         '''
 
-        # Generate regression inputs
-        X0, nsamp, npred = self._buildXmatrix(x0)
+        # Generate regression inputs and output
+        xmat, nsamp, npred = self._buildXmatrix(xmat)
 
-        Y0 = np.dot(X0, self.params['estimate'])
-        nq = len(coverage)*2
+        # Check dimensions
+        params = self.params['estimate']
+        if xmat.shape[1] != len(params):
+            raise ValueError(('incorrect number of variables in x matrix ' + \
+                '({0}), should be {1}').format(xmat.shape[1], len(params)))
+
+        yvect_hat = np.dot(xmat, params)
 
         # Prediction intervals (only for OLS)
-        PI = None
+        predint = None
 
         if self.type == 'ols':
-            PI = pd.DataFrame(np.zeros((nsamp ,nq)))
-            cols = []
-            for c in coverage:
-                cols += ['predint_%3.3d'%(5*(100.-c)),
-                            'predint_%3.3d'%(1000-5*(100.-c))]
-            PI.columns = cols
 
             # prediction factor
-            v = np.dot(X0, self.tXXinv)
-            pf = self.sigma * np.sqrt(1.+np.dot(v, X0.T))
+            # See Johnston, Econometric Methods, Equation 3.48
+            predfact = np.zeros((nsamp,)).astype(np.float64)
+            predfact = c_hydrodiy_stat.olspredfact(xmat, self.tXXinv,predfact)
 
             # Compute prediction intervals
-            for c in coverage:
-                q = (100.-c)*5
-                st = pf*student.ppf(q*1e-3, self.df)
+            predint = {}
+            for cov in coverage:
+                proba = (100-cov)*5e-3
+                stbounds = predfact*student.ppf(proba, self.degfree)
 
-                c1 = 'predint_%3.3d'%q
-                PI[c1] = Y0+np.diag(st)
+                c1 = '{0:0.1f}%'.format(100-100*proba)
+                predint[c1] = yvect_hat-stbounds
 
-                c2 = 'predint_%3.3d'%(1000-q)
-                PI[c2] = Y0-np.diag(st)
+                c2 = '{0:0.1f}%'.format(100*proba)
+                predint[c2] = yvect_hat+stbounds
 
-        return Y0, PI
+            predint = pd.DataFrame(predint)
+
+        return yvect_hat, predint
+
 
     def boot(self, nsample=500):
         ''' Confidence intervals based on bootstrap '''
 
         # Performs first fit
         self.fit()
-        residuals = self.getresiduals(self.Y, self.Yhat)
+        residuals = self.get_residuals(self.yvect, self.yvect_hat)
 
         # Initialise boot data
         self.params_boot = []
@@ -443,7 +507,8 @@ class Linreg:
 
             if self.nboot_print > 0:
                 if i%self.nboot_print==0:
-                    print('\t\t.. Boot sample %4d / %4d ..' % (i+1, nsample))
+                    mess = 'Boot sample {0:4d}/{1:4d}'.format(i+1, nsample)
+                    LOGGER.critical(mess)
 
             # Resample residuals
             residuals_boot = residuals.copy().flatten()
@@ -455,7 +520,7 @@ class Linreg:
                 residuals_boot = sutils.ar1innov([self.phi, 0.], residuals_boot)
 
             # Create a new set of observations
-            y_boot = self.Yhat.flatten() + residuals_boot
+            y_boot = self.yvect_hat.flatten() + residuals_boot
 
             # Fit regression
             lmboot = Linreg(self.x, y_boot,
@@ -464,19 +529,29 @@ class Linreg:
                 polyorder=self.polyorder,
                 varnames=self.varnames)
 
-            lmboot.fit()
+            lmboot.fit(log_entry=False)
 
             # Store results
-            self.params_boot.append(lmboot.params['estimate'])
+            self.params_boot.append(lmboot.params['estimate'].values)
             self.diagnostic_boot.append(lmboot.diagnostic)
 
         # Compute quantiles on bootstrap results
-        self.params_boot = pd.DataFrame(self.params_boot)
-        fp = lambda x: sutils.percentiles(x, [2.5, 5, 10, 50, 90, 95, 97.5])
-        self.params_boot_percentiles = self.params_boot.apply(fp).T
+        self.params_boot = pd.DataFrame(self.params_boot,
+            columns=lmboot.params.index,
+            index=np.arange(nsample))
 
-        self.diagnostic_boot = pd.DataFrame(self.diagnostic_boot)
-        self.diagnostic_boot_percentiles = self.diagnostic_boot.apply(fp).T
+        perct = lambda x:  \
+            sutils.percentiles(x, [2.5, 5, 10, 50, 90, 95, 97.5])
+
+        self.params_boot_percentiles = self.params_boot.apply(perct).T
+
+        self.diagnostic_boot = pd.DataFrame(self.diagnostic_boot,
+            index=np.arange(nsample))
+
+        self.diagnostic_boot_percentiles = self.diagnostic_boot.apply(perct).T
+
+        LOGGER.critical('Completed bootstrap')
+
 
     def scatterplot(self, ax=None, log=False):
         ''' plot Yhat vs Y '''
@@ -485,9 +560,9 @@ class Linreg:
             ax = plt.gca()
 
         if log:
-            ax.loglog(self.Yhat, self.Y, 'o')
+            ax.loglog(self.yvect_hat, self.yvect, 'o')
         else:
-            ax.plot(self.Yhat, self.Y, 'o')
+            ax.plot(self.yvect_hat, self.yvect, 'o')
 
         # Set axes boundaries to get a square plot
         xlim = ax.get_xlim()
@@ -505,5 +580,6 @@ class Linreg:
 
         # R2
         ax.annotate(r'$R^2$ = %0.2f' % self.diagnostic['R2'],
-                xy=(0.05, 0.93), xycoords='axes fraction')
+                va='top', ha='left',
+                xy=(0.05, 0.95), xycoords='axes fraction')
 
