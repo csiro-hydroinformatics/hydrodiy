@@ -18,20 +18,23 @@ int c_olspredfact(int nval, int npreds, double * predictors,
         double * tXXinv, double* prediction_factors)
 {
 	int i, j, k;
-    double a, b;
+    double a, b, pf;
 
     /* loop through data */
     for(i=0; i<nval; i++){
 
-        prediction_factors[i] = 0;
+        pf = 0;
 
-        for(j=0; j<npreds; j++)
-            for(k=0; k<npreds; k++)
-                {
-                    a = tXXinv[npreds*k + j];
-                    b = predictors[nval*j+i]*predictors[nval*k+i]*a;
-                    prediction_factors[i] += a*b;
-                }
+        for(j=0; j<npreds; j++){
+
+            for(k=0; k<npreds; k++){
+
+                a = tXXinv[npreds*k + j];
+                b = predictors[nval*j+i]*predictors[nval*k+i];
+                pf += a*b;
+            }
+            prediction_factors[i] = sqrt(1+pf);
+        }
     }
 
     return 0;

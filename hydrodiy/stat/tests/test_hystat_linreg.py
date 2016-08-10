@@ -133,15 +133,15 @@ class LinregTestCase(unittest.TestCase):
 
         # Fit model
         lm = linreg.Linreg(data['x1'], data['y'], polyorder=3)
-        lm.fit(False)
+        lm.fit(log_entry=False)
 
         # Plot
         fig, ax = plt.subplots()
-        lm.scatterplot(ax)
+        lm.scatterplot(ax=ax)
         fp = '%s/data/olslinreg2_scatter_normal.png'%self.FOUT
         fig.savefig(fp)
 
-        lm.scatterplot(ax, log=True)
+        lm.scatterplot(ax, logscale=True)
         fp = '%s/data/olslinreg2_scatter_log.png'%self.FOUT
         fig.savefig(fp)
 
@@ -164,7 +164,7 @@ class LinregTestCase(unittest.TestCase):
 
             # Fit model
             lm = linreg.Linreg(data[['x1', 'x2']], data['y'],
-                    type='gls_ar1')
+                    regtype='gls_ar1')
             lm.fit(False)
 
             # Test estimates
@@ -198,17 +198,19 @@ class LinregTestCase(unittest.TestCase):
         lm.boot(nsample=500)
 
         p1 = lm.params['estimate']
-        p2 = lm.params_boot_percentiles['50.0%']
+        p2 = lm.params_boot.median()
         ck1 = np.allclose(p1, p2, atol=2e-1)
         self.assertTrue(ck1)
 
         p1 = lm.params['2.5%']
-        p2 = lm.params_boot_percentiles['2.5%']
+        p2 = lm.params_boot.apply(lambda x:
+                    sutils.percentiles(x, 2.5))
         ck2= np.allclose(p1, p2, atol=2e-1)
         self.assertTrue(ck2)
 
         p1 = lm.params['97.5%']
-        p2 = lm.params_boot_percentiles['97.5%']
+        p2 = lm.params_boot.apply(lambda x:
+                    sutils.percentiles(x, 97.5))
         ck3 = np.allclose(p1, p2, atol=2e-1)
         self.assertTrue(ck3)
 
@@ -222,13 +224,13 @@ class LinregTestCase(unittest.TestCase):
 
         # Fit model
         cc = [cn for cn in data.columns if cn != 'y']
-        lm = linreg.Linreg(data[cc], data['y'], type='gls_ar1')
+        lm = linreg.Linreg(data[cc], data['y'], regtype='gls_ar1')
         lm.boot(nsample=200)
 
 
     def test_big(self):
         ''' Test a regression on a large dataset '''
-        nval = 1000000
+        nval = 100000
         npred = 50
         x = np.random.normal(0, 2, size=(nval, npred))
         theta = np.random.uniform(-1, 1, npred+1)
