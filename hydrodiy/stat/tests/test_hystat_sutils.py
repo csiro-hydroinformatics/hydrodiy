@@ -30,8 +30,15 @@ class UtilsTestCase(unittest.TestCase):
         nval = 10
         x = np.linspace(0, 1, nval)
         qq = np.linspace(0,100, 5)
-        xq = sutils.percentiles(x, qq, 1.)
+
+        xq = sutils.percentiles(x, qq, 1., 0)
         self.assertTrue(np.allclose(xq*100, qq))
+        self.assertEqual(list(xq.index), [str(int(q))+'%' for q in qq])
+
+        qq = np.linspace(0,100, 20)
+        xq = sutils.percentiles(x, qq, digits=2)
+        self.assertEqual(list(xq.index), ['{0:0.2f}%'.format(q) for q in qq])
+
 
     def test_acf1(self):
         fdata = '%s/data/acf1_data.csv'%self.FOUT
