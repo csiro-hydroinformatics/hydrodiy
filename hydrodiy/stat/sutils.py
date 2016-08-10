@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import c_hydrodiy_stat
 
-def percentiles(x, perc=np.linspace(0, 100, 5), prob_cst=0.3):
+def percentiles(x, perc=np.linspace(0, 100, 5), prob_cst=0.3, precision=1):
     ''' Compute percentiles
 
     Parameters
@@ -16,10 +16,12 @@ def percentiles(x, perc=np.linspace(0, 100, 5), prob_cst=0.3):
     prob_cst : float
         Probability constant to be used for empirical frequency
         computation
+    precision : int
+        Precision in formatting percentile labels
 
     Returns
     -----------
-    pp : pandas.Series
+    perc_series : pandas.Series
         Percentile values
 
     Example
@@ -31,25 +33,22 @@ def percentiles(x, perc=np.linspace(0, 100, 5), prob_cst=0.3):
     >>> pp = sutils.percentiles(x)
 
     '''
+    perc = np.atleast_1d(np.array(perc)).astype(float)
 
-    perc = np.atleast_1d(np.array(perc))
+    xx = x.astype(float)
+    idx = ~np.isnan(xx)
 
-    try:
-        xx = x.astype(float)
-        idx = ~np.isnan(xx)
-        xs = np.sort(xx[idx]).astype(np.float)
-        ff = empfreq(len(xx[idx]), prob_cst)
-        qq = np.interp((perc+0.)/100, ff, xs,
-                left=np.nan, right=np.nan)
+    xs = np.sort(xx[idx])
+    ff = empfreq(len(xx[idx]), prob_cst)
 
-    except TypeError:
-        qq = np.nan * np.zeros(len(perc))
+    perc_interp = np.interp(perc/100, ff, xs, \
+            left=np.nan, right=np.nan)
 
-    idx = ['P%3.3d.%1d'%(int(p), int(10*(p-int(p)))) for p in perc]
+    idx = ['{0:0.{precision}f}%'.format(prc*100, precision=precision) \
+            for prc in perc_interp]
+    perc_series = pd.Series(perc_interp, index=idx)
 
-    pp = pd.Series(qq, index=idx)
-
-    return pp
+    return perc_series
 
 
 
