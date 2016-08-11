@@ -138,14 +138,15 @@ class LinregTestCase(unittest.TestCase):
         # Plot
         fig, ax = plt.subplots()
         lm.scatterplot(ax=ax)
-        fp = '%s/data/olslinreg2_scatter.png'%self.FOUT
+        fp = os.path.join(self.FOUT, 'olslinreg2_scatter.png')
         fig.savefig(fp)
 
         # Plot
         lm.boot()
         fig, ax = plt.subplots()
         lm.scatterplot(ax=ax, boot=True)
-        fp = '%s/data/olslinreg2_scatter_boot.png'%self.FOUT
+        fp = os.path.join(self.FOUT, 'olslinreg2_scatter_boot.png')
+        fig.savefig(fp)
 
 
     def test_gls_rcran(self):
@@ -197,7 +198,7 @@ class LinregTestCase(unittest.TestCase):
 
         # Fit model
         lm = linreg.Linreg(data[['x1', 'x2']], data['y'])
-        lm.boot(nsample=500)
+        lm.boot(nsample=1000)
 
         p1 = lm.params['estimate']
         p2 = lm.params_boot.median()
@@ -246,13 +247,15 @@ class LinregTestCase(unittest.TestCase):
         y = [3, 1, 8, 3, 5]
 
         lm = linreg.Linreg(x, y)
-        lev = lm.leverages()
+        lm.fit()
+        lev, cook = lm.leverages()
 
-        xx = np.array(xx)
-        tXXinv = np.linalg.inv(np.dot(x.T, x))
-        lev_expected = np.diag(np.dot(x, np.dot(tXXinv, x.T)))
+        xx = np.insert(np.array(x), 0, 1., axis=1)
+        tXXinv = np.linalg.inv(np.dot(xx.T, xx))
+        lev_expected = np.diag(np.dot(xx, np.dot(tXXinv, xx.T)))
 
-        self.assertTrue(np.allclose(lev, lev_expected))
+        ck = np.allclose(lev, lev_expected)
+        self.assertTrue(ck)
 
 
     def test_predict_boot_ols(self):
@@ -272,7 +275,7 @@ class LinregTestCase(unittest.TestCase):
 
     def test_big(self):
         ''' Test a regression on a large dataset '''
-        nval = 1000000
+        nval = 100000
         npred = 50
         x = np.random.normal(0, 2, size=(nval, npred))
         theta = np.random.uniform(-1, 1, npred+1)

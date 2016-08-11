@@ -238,17 +238,17 @@ class Linreg:
 
                 if not hasattr(self, 'params_boot'):
                     if self.regtype == 'ols':
-                        str += '\t  %9s = %5.2f [%5.2f, %5.2f] P(>|t|)=%0.3f\n'%(idx,
+                        str += '\t  %9s = %5.3e [%5.3e, %5.3e] P(>|t|)=%0.3f\n'%(idx,
                             row['estimate'], row['2.5%'],
                             row['97.5%'], row['Pr(>|t|)'])
 
                     if self.regtype == 'gls_ar1':
-                        str += '\t  %9s = %5.2f\n' % (idx, row['estimate'])
+                        str += '\t  %9s = %5.3e\n' % (idx, row['estimate'])
 
                 else:
                     perct25 = boot_ci.loc['2.5%', idx]
                     perct975 = boot_ci.loc['97.5%', idx]
-                    str += '\t  %9s = %5.2f [%5.2f, %5.2f] (boot)\n'%(idx,
+                    str += '\t  %9s = %5.3e [%5.3e, %5.3e] (boot)\n'%(idx,
                             row['estimate'], perct25, perct975)
 
             if self.regtype == 'gls_ar1':
@@ -445,20 +445,35 @@ class Linreg:
 
 
     def leverages(self):
-        ''' Compute OLS regression leverages
+        ''' Compute OLS regression leverages and cook distance
             See
 
+        Returns
+        -----------
+        leverages : numpy.ndarray
+            Leverage values for each regression point
+        cook : numpy.ndarray
+            Cook's distance for each regression point
         '''
 
-        if self.regtype == 'ols':
-            nsamp = self.xmat.shape[0]
-            leverages = np.zeros((nsamp,)).astype(np.float64)
-            c_hydrodiy_stat.olsleverage(self.xmat, self.tXXinv, leverages)
-
-        else:
+        if self.regtype != 'ols':
             raise ValueError('Can only compute leverage for ols regression')
 
-        return leverages
+        nsamp = self.xmat.shape[0]
+        leverages = np.zeros((nsamp,)).astype(np.float64)
+        c_hydrodiy_stat.olsleverage(self.xmat, self.tXXinv, leverages)
+
+        yvect_hat, _ = self.predict(coverage=None)
+        residuals = get_residuals(self.yvect, yvect_hat,
+                self.regtype, self.phi)
+
+        sse = np.sum(residuals**2)
+        nparams = self.params.shape[0]
+        nval = len(residuals)
+        fact = float(nval-nparams)/nval
+        cook = residuals/sse*leverages/(1-leverages**2)*fact
+
+        return leverages, cook
 
 
     def predict(self, x=None, coverage=[95, 80], boot=False):
@@ -634,8 +649,7 @@ class Linreg:
         y=None, x=None,
         boot=False,
         coverage=95,
-        set_square_bounds=False,
-        show_leverage=False):
+        set_square_bounds=False):
         '''
         Scattre plot of predicted versus observed dta with
         confidence prediction intervals
@@ -652,14 +666,17 @@ class Linreg:
             Use bootstrap  condifence intervals
         coverage : float
             Prediction intervals coverage (>0 and <100)
+            Do not show intervals if coverage is None
         set_square_bounds : bool
             Set same bounds for x and y axis
-        show_leverage : bool
-            Show leverage score
         '''
 
         if not hasattr(self, 'params'):
             raise ValueError('No params, please run fit')
+
+        if (x is None and not y is None) or \
+            (not x is None and y is None):
+            raise ValueError('Both x and y should be None or not None')
 
         # Build input data
         if y is None:
@@ -692,7 +709,8 @@ class Linreg:
         # Draw scatter
         color = '#1f77b4'
         ax.plot(yvect_hat[kk], yvect[kk], 'o', \
-            mfc=color, mec=color, alpha=0.9)
+            mfc=color, mec=color, alpha=0.9,
+            label='fit')
 
         # Set axes boundaries to get a square plot
         xlim = ax.get_xlim()
@@ -701,6 +719,7 @@ class Linreg:
 
         # Draw predicton intervals
         if not predint is None:
+            color = '#1f77b4'
             label = '{0}% confidence intervals'.format(coverage)
             ax.plot(yvect_hat[kk], predint.iloc[kk, 0], '-', \
                 color=color,label=label)
@@ -710,6 +729,16 @@ class Linreg:
 
         # Show the 1:1 line
         ax.plot(lim, lim, '-', color='grey')
+
+        # Show high leverage points
+        if self.regtype == 'ols' and y is None:
+            leverages, cook = self.leverages()
+            idx =  np.abs(cook[kk])>1
+            ncook = np.sum(idx)
+            color = '#d62728'
+            ax.plot(yvect_hat[kk][idx], yvect[kk][idx], 'o', \
+                mfc=color, mec=color, alpha=0.9,
+                label='Cook D>1 ({0} points)'.format(ncook))
 
         # Set axe bounds
         if set_square_bounds:
@@ -724,7 +753,9 @@ class Linreg:
         ax.set_ylabel(r'$Y$')
 
         # legend
-        ax.legend(loc=4, frameon=False)
+        leg = ax.legend(loc=4, numpoints=1,
+            fancybox=True, fontsize='small')
+        leg.get_frame().set_alpha(0.7)
 
         # R2
         if hasattr(self, 'diagnostic'):
