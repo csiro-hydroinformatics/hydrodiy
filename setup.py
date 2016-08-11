@@ -31,7 +31,7 @@ ext_modules = [
         sources=[
             'hydrodiy/stat/c_hydrodiy_stat.pyx',
             'hydrodiy/stat/c_crps.c',
-            'hydrodiy/stat/c_olspredfact.c',
+            'hydrodiy/stat/c_olsleverage.c',
             'hydrodiy/stat/c_ar1.c'
         ],
         include_dirs=[numpy.get_include()]),

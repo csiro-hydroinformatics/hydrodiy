@@ -227,16 +227,29 @@ class Linreg:
         str += '\t  Polynomial order: %d\n\n' % self.polyorder
 
         if hasattr(self, 'params'):
+
+            # compute boostrap confidence intervals
+            if hasattr(self, 'params_boot'):
+                boot_ci = self.params_boot.apply(lambda x:
+                    sutils.percentiles(x, [2.5, 97.5]))
+
             str += '\tParameters:\n'
             for idx, row in self.params.iterrows():
 
-                if self.regtype == 'ols':
-                    str += '\t  %9s = %5.2f [%5.2f, %5.2f] P(>|t|)=%0.3f\n'%(idx,
-                        row['estimate'], row['2.5%'],
-                        row['97.5%'], row['Pr(>|t|)'])
+                if not hasattr(self, 'params_boot'):
+                    if self.regtype == 'ols':
+                        str += '\t  %9s = %5.2f [%5.2f, %5.2f] P(>|t|)=%0.3f\n'%(idx,
+                            row['estimate'], row['2.5%'],
+                            row['97.5%'], row['Pr(>|t|)'])
 
-                if self.regtype == 'gls_ar1':
-                    str += '\t  %9s = %5.2f\n' % (idx, row['estimate'])
+                    if self.regtype == 'gls_ar1':
+                        str += '\t  %9s = %5.2f\n' % (idx, row['estimate'])
+
+                else:
+                    perct25 = boot_ci.loc['2.5%', idx]
+                    perct975 = boot_ci.loc['97.5%', idx]
+                    str += '\t  %9s = %5.2f [%5.2f, %5.2f] (boot)\n'%(idx,
+                            row['estimate'], perct25, perct975)
 
             if self.regtype == 'gls_ar1':
                 str += '\n\tAR1 coefficient (AR1 GLS only):\n'
@@ -245,6 +258,7 @@ class Linreg:
                 str += '\n\tLikelihood component (AR1 GLS only):\n'
                 for k in self.loglikelihood:
                     str += '\t  ll[%5s] = %6.3f\n' % (k, self.loglikelihood[k])
+
 
         if hasattr(self, 'diagnostic'):
             str += '\n\tPerformance:\n'
@@ -430,6 +444,23 @@ class Linreg:
             LOGGER.critical(str(self))
 
 
+    def leverages(self):
+        ''' Compute OLS regression leverages
+            See
+
+        '''
+
+        if self.regtype == 'ols':
+            nsamp = self.xmat.shape[0]
+            leverages = np.zeros((nsamp,)).astype(np.float64)
+            c_hydrodiy_stat.olsleverage(self.xmat, self.tXXinv, leverages)
+
+        else:
+            raise ValueError('Can only compute leverage for ols regression')
+
+        return leverages
+
+
     def predict(self, x=None, coverage=[95, 80], boot=False):
         ''' Pediction with confidence intervals
 
@@ -482,15 +513,9 @@ class Linreg:
                 # prediction factor
                 # See Johnston, Econometric Methods, Equation 3.48
                 nsamp = xmat.shape[0]
-                predfact = np.zeros((nsamp,)).astype(np.float64)
-                c_hydrodiy_stat.olspredfact(xmat, self.tXXinv, predfact)
-                predfact = predfact * self.sigma
-
-                if nsamp < 100:
-                    pf = np.diag(np.dot(xmat, np.dot(self.tXXinv, xmat.T)))
-                    pf = self.sigma * np.sqrt(1+pf)
-                    if not np.allclose(pf, predfact):
-                        import pdb; pdb.set_trace()
+                leverages = np.zeros((nsamp,)).astype(np.float64)
+                c_hydrodiy_stat.olsleverage(xmat, self.tXXinv, leverages)
+                predfact = np.sqrt(1+leverages) * self.sigma
 
                 # Compute prediction intervals
                 predint = {}
@@ -504,13 +529,11 @@ class Linreg:
                     c2 = '{0:0.1f}%'.format(100*proba)
                     predint[c2] = yvect_hat+stbounds
 
-                predint = pd.DataFrame(predint)
-
         else:
             if not hasattr(self, 'params_boot'):
                 raise ValueError('No bootstrap results, please run boot')
 
-            # Prediction intervals using bootstrap results
+            # Computed predicted values with all bootstrap parameters
             pboot = self.params_boot
             yvect_boot = []
             for i in range(len(pboot)):
@@ -519,33 +542,42 @@ class Linreg:
 
             yvect_boot = pd.DataFrame(np.array(yvect_boot).T)
 
-            # Compute prediction intervals
+            # Compute prediction intervals from bootstrap results
             predint = {}
-            def perct(x, qq):
-                return sutils.percentiles(x, qq)
 
             for cov in coverage:
                 proba = (100.-cov)/2
 
                 c1 = '{0:0.1f}%'.format(proba)
                 predint[c1] = yvect_boot.apply(sutils.percentiles,
-                    args=([proba], ), axis=1)
+                    args=([proba], ), axis=1).squeeze()
 
                 c2 = '{0:0.1f}%'.format(100-proba)
                 predint[c2] = yvect_boot.apply(sutils.percentiles,
-                    args=([proba], ), axis=1)
+                    args=([100.-proba], ), axis=1).squeeze()
+
+        # Reformat predint to dataframe
+        if not predint is None:
+            predint = pd.DataFrame(predint)
+
+            # Reorder columns
+            cc = [float(cn[:-1]) for cn in predint.columns]
+            kk = np.argsort(cc)
+            predint = predint.iloc[:, kk]
+
 
         return yvect_hat, predint
 
 
     def boot(self, nsample=500, run_diagnostic=False):
-        ''' Confidence intervals based on bootstrap '''
+        ''' Bootstrap the regression fitting process '''
 
         # Performs first fit
         self.fit()
         yvect_hat, _ = self.predict(coverage=None)
         residuals = get_residuals(self.yvect, yvect_hat,
                     self.regtype, self.phi)
+        nresiduals = len(residuals)
 
         # Initialise boot data
         self.params_boot = []
@@ -561,7 +593,7 @@ class Linreg:
             # Resample residuals
             residuals_boot = residuals.copy()
             residuals_boot[1:] = np.random.choice(residuals[1:],
-                                size=residuals.shape[0]-1)
+                                size=nresiduals-1)
 
             # Reconstruct autocorrelated signal in case of GLS_AR1
             # Resample only the 2, 3, ..., n values. The first value remains the same
@@ -602,7 +634,6 @@ class Linreg:
         y=None, x=None,
         boot=False,
         coverage=95,
-        logscale=False,
         set_square_bounds=False,
         show_leverage=False):
         '''
@@ -621,8 +652,6 @@ class Linreg:
             Use bootstrap  condifence intervals
         coverage : float
             Prediction intervals coverage (>0 and <100)
-        logscale : bool
-           Plot in log/log space
         set_square_bounds : bool
             Set same bounds for x and y axis
         show_leverage : bool
@@ -693,11 +722,6 @@ class Linreg:
         # Axis labels
         ax.set_xlabel(r'$\hat{Y}$')
         ax.set_ylabel(r'$Y$')
-
-        # Set log scale
-        if logscale:
-            ax.set_xscale('log', nonposx='clip')
-            ax.set_yscale('log', nonposy='clip')
 
         # legend
         ax.legend(loc=4, frameon=False)

@@ -20,27 +20,27 @@ cdef extern from 'c_crps.h':
         double* reliability_table,
         double* crps_decompos)
 
-cdef extern from 'c_olspredfact.h':
-    int c_olspredfact(int nval, int npreds, double * predictors,
-        double * tXXinv, double* predfacts)
+cdef extern from 'c_olsleverage.h':
+    int c_olsleverage(int nval, int npreds, double * predictors,
+        double * tXXinv, double* leverages)
 
 
-def olspredfact(np.ndarray[double, ndim=2, mode='c'] predictors not None,
+def olsleverage(np.ndarray[double, ndim=2, mode='c'] predictors not None,
         np.ndarray[double, ndim=2, mode='c'] tXXinv not None,
-        np.ndarray[double, ndim=1, mode='c'] prediction_factors not None):
+        np.ndarray[double, ndim=1, mode='c'] leverages not None):
 
     cdef int ierr
 
     # check dimensions
-    assert predictors.shape[0] == prediction_factors.shape[0]
+    assert predictors.shape[0] == leverages.shape[0]
     assert predictors.shape[1] == tXXinv.shape[0]
     assert tXXinv.shape[1] == tXXinv.shape[0]
 
-    ierr = c_olspredfact(predictors.shape[0],
+    ierr = c_olsleverage(predictors.shape[0],
             predictors.shape[1],
             <double*> np.PyArray_DATA(predictors),
             <double*> np.PyArray_DATA(tXXinv),
-            <double*> np.PyArray_DATA(prediction_factors))
+            <double*> np.PyArray_DATA(leverages))
 
     return ierr
 
