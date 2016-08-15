@@ -77,7 +77,7 @@ LOGGER = iutils.get_logger(log_name, level='INFO',
     fmt = '%(asctime)s - %(message)s',
     console=True, flog=flog)
 
-LOGGER.critical('Script {0} started'.format(source_file))
+LOGGER.info('Script {0} started'.format(source_file))
 
 #------------------------------------------------------------
 # Get data
@@ -89,7 +89,7 @@ LOGGER.critical('Script {0} started'.format(source_file))
 sites = pd.DataFrame(np.random.uniform(size=(30, 5)))
 
 mess = '{0} sites found'.format(sites.shape[0])
-LOGGER.critical(mess)
+LOGGER.info(mess)
 
 #------------------------------------------------------------
 # Plot
@@ -149,4 +149,4 @@ fp = '%s/image.png' % FIMG
 fig.savefig(fp, dpi=fig_dpi)
 
 
-LOGGER.critical('Script {0} completed'.format(source_file))
+LOGGER.info('Script {0} completed'.format(source_file))
