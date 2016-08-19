@@ -248,7 +248,7 @@ class LinregTestCase(unittest.TestCase):
 
         lm = linreg.Linreg(x, y)
         lm.fit()
-        lev, cook = lm.leverages()
+        lev, cook, std_res = lm.leverages()
 
         xx = np.insert(np.array(x), 0, 1., axis=1)
         tXXinv = np.linalg.inv(np.dot(xx.T, xx))

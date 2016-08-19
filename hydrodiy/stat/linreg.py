@@ -20,19 +20,30 @@ LOGGER = logging.getLogger(__name__)
 
 # ------ Utility functions used in the Linreg class ----------
 
-def squeeze(vect):
+def data2vect(data):
     ''' Squeeze vectors to 1d  '''
-    vects = np.squeeze(vect)
 
-    if vects.ndim == 0:
-        vects = vects.reshape((1, ))
+    vect = np.atleast_1d(data)
 
-    return vects
+    if vect.ndim == 2:
+        vect = np.squeeze(vect)
+
+    if vect.ndim == 0:
+        vect = vect.reshape((1, ))
+
+    if vect.ndim != 1:
+        raise ValueError('Cannot convert to vector')
+
+    return vect
+
 
 def data2matrix(data):
     ''' convert data to 2D matrix '''
 
     mat = np.atleast_2d(data).astype(np.float64)
+
+    if mat.ndim != 2:
+        raise ValueError('Cannot convert to matrix')
 
     # Transpose 1d vector
     transpose_1d = True
@@ -82,7 +93,7 @@ def get_names(data, polyorder, has_intercept, npredictors):
         names_full = []
         for n in names:
             for k in range(polyorder):
-                names_full.append('%s**%d' % (n, k+1))
+                names_full.append('%s^%d' % (n, k+1))
 
         names = names_full
 
@@ -97,8 +108,8 @@ def get_residuals(yvect, yvect_hat, regtype, phi):
     ''' Generate model residuals '''
 
     # Compute residuals for OLS
-    yvect = squeeze(data2matrix(yvect))
-    yvect_hat = squeeze(data2matrix(yvect_hat))
+    yvect = data2vect(yvect)
+    yvect_hat = data2vect(yvect_hat)
     residuals = yvect-yvect_hat
 
     if regtype == 'gls_ar1':
@@ -120,7 +131,7 @@ def ar1_loglikelihood(theta, xmat, yvect, eps=1e-10):
     sigma = theta[0]
     phi = theta[1]
     params = np.array(theta[2:]).reshape((len(theta)-2, 1))
-    yvect_hat = np.dot(xmat, params)
+    yvect_hat = np.dot(xmat, params).flat[:]
 
     nval = yvect_hat.shape[0]
     resid = np.array(yvect-yvect_hat).reshape((nval, ))
@@ -201,8 +212,8 @@ class Linreg:
         self.xmat, npredictors = get_xmat(x, polyorder, has_intercept)
         self.names = get_names(x, polyorder, has_intercept,
                         npredictors)
-        self.y = y
-        self.yvect = data2matrix(y)
+
+        self.yvect = data2vect(y)
 
         # Check dimensions
         xdim = self.xmat.shape
@@ -211,9 +222,10 @@ class Linreg:
             raise ValueError('xdim[0]({0}) != ydim[0]({1})'.format(
                 xdim[0], ydim[0]))
 
-        if ydim[1] != 1:
-            raise ValueError('ydim[0]({1}) != 1'.format(
-                ydim[1]))
+        if xdim[0] < xdim[1]:
+            raise ValueError('Not enough data points ({0}) '+ \
+                'for the number of parameters ({1})'.format(xdim[0],
+                    xdim[1]))
 
         # Inference matrix
         self.tXXinv = np.linalg.inv(np.dot(self.xmat.T,self.xmat))
@@ -285,36 +297,35 @@ class Linreg:
         ''' Estimate parameter with ordinary least squares '''
 
         # OLS parameter estimate
-        pars = np.dot(self.tXXinv, np.dot(self.xmat.T, self.yvect))
+        ymat = data2matrix(self.yvect)
+        pars = np.dot(self.tXXinv, np.dot(self.xmat.T, ymat))
         ymat_hat = np.dot(self.xmat, pars)
-        residuals = self.yvect-ymat_hat
+        residuals = ymat-ymat_hat
 
-        # Degrees of freedom (max 200 to avoid memory problems)
+        pars = data2vect(pars)
+
+        # Degrees of freedom (max 500 to avoid memory problems)
         degfree = self.yvect.shape[0]-len(pars)
-        degfree_stud= min(200, degfree)
+        degfree_stud = degfree #min(500, degfree)
 
         # Sigma of residuals and parameters
         sigma = math.sqrt(np.dot(residuals.T, residuals)/degfree)
         sigma_pars = sigma * np.sqrt(np.diag(self.tXXinv))
 
         # Parameter data frame
-        params = pd.DataFrame({'estimate':pars[:,0], 'stderr':sigma_pars})
-        params['parameter'] = self.names
+        tvalue = pars/sigma_pars
+        stud_25 = student.ppf(2.5e-2, degfree_stud)
+        stud_975 = student.ppf(97.5e-2, degfree_stud)
+        stud_cdf = (1-student.cdf(np.abs(tvalue), degfree_stud))*2
 
-        params = params.set_index('parameter')
-
-        params['tvalue'] = params['estimate']/params['stderr']
-
-        params['2.5%'] = params['estimate']+\
-                            params['stderr']*student.ppf(2.5e-2, degfree_stud)
-
-        params['97.5%'] = params['estimate']+\
-                            params['stderr']*student.ppf(97.5e-2, degfree_stud)
-
-        params['Pr(>|t|)'] = (1-student.cdf(np.abs(params['tvalue']),
-                                        degfree_stud))*2
-        params = params[['estimate', 'stderr', '2.5%',
-                            '97.5%', 'tvalue', 'Pr(>|t|)']]
+        params = pd.DataFrame({ \
+                'estimate':pars, \
+                'stderr':sigma_pars, \
+                'tvalue':tvalue, \
+                '2.5%':pars+sigma_pars*stud_25, \
+                '97.5%':pars+sigma_pars*stud_975, \
+                'Pr(>|t|)':stud_cdf \
+            }, index=self.names)
 
         return params, sigma, degfree
 
@@ -329,7 +340,7 @@ class Linreg:
 
         # Estimate auto-correlation of residuals
         pp = np.array(params['estimate']).reshape((params.shape[0],1))
-        residuals = self.yvect-np.dot(self.xmat, pp)
+        residuals = self.yvect-np.dot(self.xmat, pp).flat[:]
 
         lm_residuals = Linreg(residuals[:-1], residuals[1:],
                             regtype='ols', has_intercept=False)
@@ -369,7 +380,6 @@ class Linreg:
 
         # Shapiro Wilks on residuals
         # resample if the number of residuals is greater than 5000
-        residuals = squeeze(residuals)
         nres = len(residuals)
         if nres < 5000:
             shap = shapiro(residuals)
@@ -437,7 +447,7 @@ class Linreg:
         # Run diagnostic
         if run_diagnostic:
             self.diagnostic = self.compute_diagnostic( \
-                squeeze(self.yvect), yvect_hat)
+                self.yvect, yvect_hat)
 
         if log_entry:
             LOGGER.critical('Completed fit')
@@ -447,11 +457,16 @@ class Linreg:
     def leverages(self):
         ''' Compute OLS regression leverages and cook distance
             See
+            https://en.wikipedia.org/wiki/Leverage_(statistics)
+            https://en.wikipedia.org/wiki/Studentized_residual
+            https://en.wikipedia.org/wiki/Cook%27s_distance
 
         Returns
         -----------
         leverages : numpy.ndarray
             Leverage values for each regression point
+        studentized_residuals : numpy.ndarray
+            Studentized residuals
         cook : numpy.ndarray
             Cook's distance for each regression point
         '''
@@ -467,13 +482,15 @@ class Linreg:
         residuals = get_residuals(self.yvect, yvect_hat,
                 self.regtype, self.phi)
 
-        sse = np.sum(residuals**2)
-        nparams = self.params.shape[0]
         nval = len(residuals)
-        fact = float(nval-nparams)/nval
-        cook = residuals/sse*leverages/(1-leverages**2)*fact
+        nparams = self.params.shape[0]
+        sse = np.sum(residuals**2)
+        sigma_hat = sse/(nval-nparams)
 
-        return leverages, cook
+        studentized_residuals = residuals/sigma_hat/np.sqrt(1-leverages)
+        cook = residuals/sigma_hat*leverages/(1-leverages**2)
+
+        return leverages, studentized_residuals, cook
 
 
     def predict(self, x=None, coverage=[95, 80], boot=False):
@@ -513,8 +530,7 @@ class Linreg:
 
         # Compute prediction
         params = data2matrix(self.params['estimate'])
-
-        yvect_hat = squeeze(np.dot(xmat, params))
+        yvect_hat = data2vect(np.dot(xmat, params))
 
         # Compute prediction intervals
         predint = None
@@ -523,6 +539,8 @@ class Linreg:
             return yvect_hat, predint
 
         if not boot:
+
+            # Regular confidence intervales based on probability assumptions
 
             if self.regtype == 'ols':
                 # prediction factor
@@ -564,12 +582,14 @@ class Linreg:
                 proba = (100.-cov)/2
 
                 c1 = '{0:0.1f}%'.format(proba)
-                predint[c1] = yvect_boot.apply(sutils.percentiles,
-                    args=([proba], ), axis=1).squeeze()
+                tmp = yvect_boot.apply(sutils.percentiles,
+                    args=([proba], ), axis=1)
+                predint[c1] = data2vect(tmp)
 
                 c2 = '{0:0.1f}%'.format(100-proba)
-                predint[c2] = yvect_boot.apply(sutils.percentiles,
-                    args=([100.-proba], ), axis=1).squeeze()
+                tmp = yvect_boot.apply(sutils.percentiles,
+                    args=([100.-proba], ), axis=1)
+                predint[c2] = data2vect(tmp)
 
         # Reformat predint to dataframe
         if not predint is None:
@@ -597,6 +617,7 @@ class Linreg:
         # Initialise boot data
         self.params_boot = []
         diagnostic_boot = []
+        yvect_original = self.yvect.copy()
 
         for i in range(nsample):
 
@@ -631,7 +652,7 @@ class Linreg:
                 diagnostic_boot.append(self.diagnostic)
 
         # Restore observed data
-        self.yvect = data2matrix(self.y)
+        self.yvect = yvect_original
 
         # Compute quantiles on bootstrap results
         self.params_boot = pd.DataFrame(self.params_boot, \
@@ -680,11 +701,10 @@ class Linreg:
 
         # Build input data
         if y is None:
-            yvect = self.yvect
+            yvect = data2vect(self.yvect)
         else:
-            yvect = data2matrix(y)
+            yvect = data2vect(yvect)
 
-        yvect = squeeze(yvect)
 
         if x is None:
             x = self.x
@@ -732,7 +752,7 @@ class Linreg:
 
         # Show high leverage points
         if self.regtype == 'ols' and y is None:
-            leverages, cook = self.leverages()
+            leverages, cook, stud_res = self.leverages()
             idx =  np.abs(cook[kk])>1
             ncook = np.sum(idx)
             color = '#d62728'
