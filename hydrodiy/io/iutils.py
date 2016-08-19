@@ -7,35 +7,6 @@ import logging
 
 import numpy as np
 
-def random_password(length=10, chr_start=35, chr_end=128):
-    ''' Generate random password
-
-    Parameters
-    -----------
-    length : int
-        Number of characters
-    chr_start : int
-        Ascii code defining the start of allowed characters
-    chr_end : int
-        Ascii code defining the end of allowed characters
-
-    Returns
-    -----------
-    pwd : str
-        Password
-
-    Example
-    -----------
-    >>> pwd = iutils.random_password()
-    '''
-
-    pwd = ''.join([chr(i)
-        for i in np.random.randint(chr_start, chr_end, size=length)])
-
-    return pwd
-
-
-
 def find_files(folder, pattern, recursive=True):
     ''' Find files recursively based on regexp pattern search
 

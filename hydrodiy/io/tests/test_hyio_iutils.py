@@ -1,6 +1,7 @@
 import os
 import re
 import unittest
+import subprocess
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -12,11 +13,6 @@ class UtilsTestCase(unittest.TestCase):
         print('\t=> UtilsTestCase (hyio)')
         FTEST, testfile = os.path.split(__file__)
         self.FOUT = FTEST
-
-    def test_random_password(self):
-        length = 20
-        pwd = iutils.random_password(length)
-        self.assertTrue(len(pwd)==length)
 
     def test_find_files(self):
         # Recursive
@@ -39,11 +35,11 @@ class UtilsTestCase(unittest.TestCase):
     def test_script_template(self):
         fs = '%s/script_test1.pytest' % self.FOUT
         iutils.script_template(fs)
-        execfile(fs)
+        subprocess.check_call('python ' + fs, shell=True)
 
         fs = '%s/script_test2.pytest' % self.FOUT
         iutils.script_template(fs, type='plot')
-        execfile(fs)
+        subprocess.check_call('python ' + fs, shell=True)
 
 
     def test_str2vardict(self):

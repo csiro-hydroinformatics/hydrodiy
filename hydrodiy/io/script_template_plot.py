@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 
-
-
+# -- Script Meta Data --
+# Author : J. Lerat, EHP, Bureau of Meteorogoloy
+# Versions :
+#    V00 - Script written from template on 2016-03-29 10:52:53.464102
+#
+# ------------------------------
 
 import datetime
 time_now = datetime.datetime.now
