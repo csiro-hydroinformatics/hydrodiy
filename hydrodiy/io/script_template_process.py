@@ -7,7 +7,6 @@
 #
 # ------------------------------
 
-
 import sys, os, re, json, math
 import subprocess
 
@@ -22,56 +21,53 @@ import pandas as pd
 from hydrodiy.io import csv, iutils
 
 #----------------------------------------------------------------------
-def get_config():
-    ''' Get script configuration '''
+def set_config():
+    ''' Set script configuration '''
 
-    config = {}
-
+    # Script args
     #nargs = len(sys.argv)
     #if nargs > 0:
     #    arg1 = sys.argv[1]
 
-    config['ibatch'] = 0
-    config['nbatch'] = 5
-
-    return config
-
-
-#----------------------------------------------------------------------
-def set_folders(config):
-    ''' Set script folders '''
-
+    # Script path
     source_file = os.path.abspath(__file__)
-
     froot = os.path.dirname(source_file)
 
     fdata = os.path.join(froot, 'data')
-    if not os.path.exists(fdata):
-        os.mkdir(fdata)
+    #if not os.path.exists(fdata):
+    #    os.mkdir(fdata)
+    fout = froot
 
-    config['source_file'] = froot
-    config['froot'] = froot
-    config['fdata'] = fdata
+    config = {
+        'ibatch': 0,
+        'nbatch': 5,
+        'source_file': source_file,
+        'start': '{0}'.format(datetime.now()),
+        'froot': froot,
+        'fout': fout,
+        'fdata': fdata
+    }
 
+    # Set instance of logger
+    select = ['ibatch', 'nbatch']
+    vartxt = iutils.vardict2str({key:config[key] for key in select})
+    flog = os.path.join(fout, re.sub('\\.py.*', '', source_file)+ \
+                                        '_'+vartxt+'.log')
 
-#----------------------------------------------------------------------
-def get_logger(config):
-    ''' Set instance of logger '''
-    source_file = config['source_file']
-    flog = source_file + '.log'
     log_name = re.sub('\\..*', '', os.path.basename(source_file))
+
     LOGGER = iutils.get_logger(log_name, level='INFO', \
         fmt='%(asctime)s - %(message)s', \
         console=True, flog=flog)
 
-    return LOGGER
+    return config, LOGGER
 
 
 #----------------------------------------------------------------------
-def get_data(config, LOGGER):
-    ''' Retrive data '''
+def process(config, LOGGER):
+    ''' Process script '''
 
-    data = {}
+    # I -- GET DATA ---------------
     #fd = os.path.join(FDATA, 'data.csv')
     #data, comment = csv.read_csv(fd)
 
@@ -86,16 +82,8 @@ def get_data(config, LOGGER):
 
     mess = '{0} sites found'.format(sites.shape[0])
     LOGGER.info(mess)
-    data = {'sites': sites}
 
-    return data
-
-
-#----------------------------------------------------------------------
-def process(config, LOGGER, data):
-    ''' Process data '''
-
-    sites = data['sites']
+    # II -- PROCESS ---------------
     nsites = sites.shape[0]
     count = 0
 
@@ -113,44 +101,25 @@ def process(config, LOGGER, data):
                     count, nsites)
         LOGGER.info(mess)
 
+    # III -- STORE DATA ---------------
+
 
 #----------------------------------------------------------------------
-def store(config, LOGGER, data):
-    ''' Write results to disk '''
-
-    pass
-
-#----------------------------------------------------------------------
-def entrypoint():
+def entry_point():
     ''' Main function of the script. No need to edit that section. '''
 
     # Define config options
-    config = get_config()
-
-    # Set path to folders
-    set_folders(config)
-    source_file = config['source_file']
-
-    # Get logger object
-    LOGGER = get_logger(config)
-    LOGGER.info('Script {0} started'.format(source_file))
-
-    # Get data
-    data = get_data(config, LOGGER)
-    LOGGER.info('Data extracted')
+    config, LOGGER = set_config()
 
     # Process data
-    process(config, LOGGER, data)
+    process(config, LOGGER)
     LOGGER.info('Process completed')
 
-    # Store data
-    store(config, LOGGER, data)
-    LOGGER.info('Storage completed')
-
-    LOGGER.info('Script {0} completed'.format(source_file))
+    LOGGER.info('Script {0} completed'.format( \
+        config['source_file']))
 
 
 #----------------------------------------------------------------------
 if __name__ == "__main__":
-    entrypoint()
+    entry_point()
 
