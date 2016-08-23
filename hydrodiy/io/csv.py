@@ -111,7 +111,9 @@ def write_csv(data, filename, comment,
         source_file,
         author = None,
         write_index = False,
-        compress=True, **kwargs):
+        compress=True,
+        float_format='%0.3f',
+        **kwargs):
     """ write a pandas dataframe to csv with comments """
 
     head = _csvhead(data.shape[0], data.shape[1],
