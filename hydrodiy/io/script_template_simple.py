@@ -13,9 +13,8 @@ source_file = os.path.abspath(__file__)
 froot = os.path.dirname(source_file)
 
 # Define config options
-log_name = re.sub('\\..*', '', os.path.basename(source_file))
-LOGGER = iutils.get_logger(log_name, level='INFO', \
-    fmt='%(asctime)s - %(message)s', console=True)
+basename = re.sub('\\.py.*', '', os.path.basename(source_file))
+LOGGER = iutils.get_logger(basename)
 
 #----------------------------------------------------------------------
 # Process
