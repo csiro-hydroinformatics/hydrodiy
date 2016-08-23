@@ -1,17 +1,9 @@
 #!/usr/bin/env python
 
-# -- Script Meta Data --
-# Author : J. Lerat, EHP, Bureau of Meteorogoloy
-# Versions :
-#    V00 - Script written from template on 2016-03-29 10:52:53.464102
-#
-# ------------------------------
-
-import datetime
-time_now = datetime.datetime.now
-print(' ## Script run started at %s ##' % time_now())
 
 import sys, os, re, json, math
+
+from datetime import datetime
 
 from itertools import product as prod
 
@@ -21,8 +13,6 @@ from calendar import month_abbr as months
 
 import numpy as np
 import pandas as pd
-
-from scipy import stats
 
 import matplotlib as mpl
 
@@ -36,121 +26,149 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 from hydrodiy.io import csv, iutils
 
-#------------------------------------------------------------
-# Options
-#------------------------------------------------------------
+#----------------------------------------------------------------------
+def set_config():
+    ''' Set script configuration '''
 
-#nargs = len(sys.argv)
-#if nargs > 0:
-#    arg1 = sys.argv[1]
+    # Script args
+    #nargs = len(sys.argv)
+    #if nargs > 0:
+    #    arg1 = sys.argv[1]
 
-# Plotting options
-fig_dpi = 100
-fig_nrows = 2
-fig_ncols = 3
-ax_width = 1000
-ax_height = 1000
+    # Script path
+    source_file = os.path.abspath(__file__)
+    froot = os.path.dirname(source_file)
 
-#------------------------------------------------------------
-# Functions
-#------------------------------------------------------------
+    fdata = os.path.join(froot, 'data')
+    fimg = os.path.join(froot, 'images')
+    for folder in [fdata, fimg]:
+        if not os.path.exists(folder):
+            pass
+            #os.mkdir(folder)
 
-def fun(x):
-    return x
+    config = {
+        'ibatch': 0,
+        'nbatch': 5,
+        'source_file': source_file,
+        'start': '{0}'.format(datetime.now()),
+        'froot': froot,
+        'fdata': fdata,
+        'fimg': fimg,
+        'fig_nrows':2,
+        'fig_ncols':2,
+        'fig_dpi':100,
+        'ax_width':1000,
+        'ax_height':1000
+    }
 
-#------------------------------------------------------------
-# Folders
-#------------------------------------------------------------
+    # Set instance of logger
+    select = ['ibatch', 'nbatch']
+    vartxt = iutils.vardict2str({key:config[key] for key in select})
+    flog = os.path.join(fimg, re.sub('\\.py.*', '', source_file)+ \
+                                        '_'+vartxt+'.log')
+    log_name = re.sub('\\..*', '', os.path.basename(source_file))
+    LOGGER = iutils.get_logger(log_name, level='INFO', \
+        fmt='%(asctime)s - %(message)s', \
+        console=True, flog=flog)
 
-source_file = os.path.abspath(__file__)
-
-FROOT = os.path.dirname(source_file)
-
-FIMG = '%s/images' % FROOT
-if not os.path.exists(FIMG): os.mkdir(FIMG)
-
-FDATA = '%s/data' % FROOT
-if not os.path.exists(FDATA): os.mkdir(FDATA)
-
-#------------------------------------------------------------
-# Logging
-#------------------------------------------------------------
-flog = source_file + '.log'
-log_name = re.sub('\\..*', '', os.path.basename(source_file))
-LOGGER = iutils.get_logger(log_name, level='INFO',
-    fmt = '%(asctime)s - %(message)s',
-    console=True, flog=flog)
-
-LOGGER.info('Script {0} started'.format(source_file))
-
-#------------------------------------------------------------
-# Get data
-#------------------------------------------------------------
-
-#fd = '%s/data.csv' % FDATA
-#data, comment = csv.read_csv(fd)
-
-sites = pd.DataFrame(np.random.uniform(size=(30, 5)))
-
-mess = '{0} sites found'.format(sites.shape[0])
-LOGGER.info(mess)
-
-#------------------------------------------------------------
-# Plot
-#------------------------------------------------------------
-
-# To use multipage pdf
-#fpdf = os.path.join(FOUT, 'evap_sensitivity.pdf')
-#pdf = PdfPages(fpdf)
-#pdf.savefig(fig)
-#pdf.close()
-
-plt.close('all')
-
-fig = plt.figure()
-
-gs = gridspec.GridSpec(fig_nrows, fig_ncols,
-        width_ratios=[1] * fig_ncols,
-        height_ratios=[1] * fig_nrows)
-
-nval = 100
-
-for i, j in prod(range(fig_nrows), range(fig_ncols)):
-
-    ax = fig.add_subplot(gs[i, j])
-
-    xx = np.random.uniform(size=(nval, 2))
-    x = xx[:,0]
-    y = xx[:,1]
-
-    # Scatter plot
-    ax.plot(x, y, 'o',
-        markersize=10,
-        mec='black',
-        mfc='pink',
-        alpha=0.5,
-        label='points')
-
-    # Decoration
-    ax.legend(frameon=True,
-        shadow=True,
-        fancybox=True,
-        framealpha=0.7,
-        numpoints=1)
-
-    ax.set_title('Title')
-    ax.set_xlabel('X label')
-    ax.set_xlabel('Y label')
-
-fig.suptitle('Overall title')
-
-fig.set_size_inches(float(fig_ncols * ax_width)/fig_dpi,
-                float(fig_nrows * ax_height)/fig_dpi)
-
-gs.tight_layout(fig)
-
-fp = '%s/image.png' % FIMG
-fig.savefig(fp, dpi=fig_dpi)
+    return config, LOGGER
 
 
-LOGGER.info('Script {0} completed'.format(source_file))
+#-------------------------------------------------------------------
+def process(config, LOGGER):
+    ''' Function producing the plots '''
+
+    #------------------------------------------------------------
+    # Get data
+    #------------------------------------------------------------
+    #fd = '%s/data.csv' % FDATA
+    #data, comment = csv.read_csv(fd)
+
+    sites = pd.DataFrame(np.random.uniform(size=(30, 5)))
+
+    mess = '{0} sites found'.format(sites.shape[0])
+    LOGGER.info(mess)
+
+    #------------------------------------------------------------
+    # Plot
+    #------------------------------------------------------------
+    fig_nrows = config['fig_nrows']
+    fig_ncols = config['fig_ncols']
+
+    # To use multipage pdf
+    #fpdf = os.path.join(FOUT, 'evap_sensitivity.pdf')
+    #pdf = PdfPages(fpdf)
+    #pdf.savefig(fig)
+    #pdf.close()
+
+    plt.close('all')
+
+    fig = plt.figure()
+
+    gs = gridspec.GridSpec(fig_nrows, fig_ncols,
+            width_ratios=[1] * fig_ncols,
+            height_ratios=[1] * fig_nrows)
+
+    nval = 100
+
+    for i, j in prod(range(fig_nrows), range(fig_ncols)):
+
+        ax = fig.add_subplot(gs[i, j])
+
+        xx = np.random.uniform(size=(nval, 2))
+        x = xx[:,0]
+        y = xx[:,1]
+
+        # Scatter plot
+        ax.plot(x, y, 'o',
+            markersize=10,
+            mec='black',
+            mfc='pink',
+            alpha=0.5,
+            label='points')
+
+        # Decoration
+        ax.legend(frameon=True,
+            shadow=True,
+            fancybox=True,
+            framealpha=0.7,
+            numpoints=1)
+
+        ax.set_title('Title')
+        ax.set_xlabel('X label')
+        ax.set_xlabel('Y label')
+
+    fig.suptitle('Overall title')
+
+    ax_width = config['ax_width']
+    ax_height = config['ax_height']
+    fig_dpi = config['fig_dpi']
+    fig.set_size_inches(float(fig_ncols * ax_width)/fig_dpi,
+                    float(fig_nrows * ax_height)/fig_dpi)
+
+    gs.tight_layout(fig)
+
+    fimg = config['fimg']
+    fp = os.path.join(fimg, 'image.png')
+    fig.savefig(fp, dpi=fig_dpi)
+
+
+
+#----------------------------------------------------------------------
+def entry_point():
+    ''' Main function of the script. No need to edit that section. '''
+
+    # Define config options
+    config, LOGGER = set_config()
+
+    # Process data
+    process(config, LOGGER)
+    LOGGER.info('Process completed')
+
+    LOGGER.info('Script {0} completed'.format( \
+        config['source_file']))
+
+#----------------------------------------------------------------------
+if __name__ == "__main__":
+    entry_point()
+

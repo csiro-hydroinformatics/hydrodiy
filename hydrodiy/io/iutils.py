@@ -114,25 +114,28 @@ def str2vardict(source):
     return out
 
 
-def script_template(filename,
+def script_template(filename, comment,
         type='process',
-        author='J. Lerat, EHP, Bureau of Meteorogoloy'):
+        author=None):
     ''' Write a script template
 
     Parameters
     -----------
     filename : str
         Filename to write the script to
+    comment : str
+        Comment on purpose of the script
     type : str
         Type of script:
-        'process' is a data processing script
-        'plot' is plotting script
+        * simple: script with minimal functionalities
+        * process: data processing script
+        * plot: plotting script
     author : str
         Script author
 
     Example
     -----------
-    >>> iutils.script_template('a_cool_script.py', 'plot', 'Bob Marley')
+    >>> iutils.script_template('a_cool_script.py', 'Testing', 'plot', 'Bob Marley')
 
     '''
     FMOD, modfile = os.path.split(__file__)
@@ -140,14 +143,19 @@ def script_template(filename,
     with open(f, 'r') as ft:
         txt = ft.readlines()
 
-    meta = ['# -- Script Meta Data --\n']
-    meta += ['# Author : %s\n' % author]
-    meta += ['# Versions :\n']
-    meta += [('#    V00 - Script written from template '
-                    'on %s\n') % datetime.now()]
-    meta += ['#\n', '# ------------------------------\n']
+    if author is None:
+        try:
+            author = os.getlogin()
+        except:
+            author = 'unknown'
 
-    txt = txt[:2] + meta + txt[3:]
+    meta = ['## -- Script Meta Data --\n']
+    meta += ['## Author  : {0}\n'.format(author)]
+    meta += ['## Created : {0}\n'.format(datetime.now())]
+    meta += ['## Comment : {0}\n'.format(comment)]
+    meta += ['##\n', '## ------------------------------\n']
+
+    txt = txt[:2] + meta + txt[2:]
 
     with open(filename, 'w') as fs:
         fs.writelines(txt)

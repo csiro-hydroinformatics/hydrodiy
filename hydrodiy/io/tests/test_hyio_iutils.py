@@ -34,11 +34,15 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_script_template(self):
         fs = '%s/script_test1.pytest' % self.FOUT
-        iutils.script_template(fs)
+        iutils.script_template(fs, 'test')
         subprocess.check_call('python ' + fs, shell=True)
 
         fs = '%s/script_test2.pytest' % self.FOUT
-        iutils.script_template(fs, type='plot')
+        iutils.script_template(fs, 'test', type='plot')
+        subprocess.check_call('python ' + fs, shell=True)
+
+        fs = '%s/script_test3.pytest' % self.FOUT
+        iutils.script_template(fs, 'test', type='simple')
         subprocess.check_call('python ' + fs, shell=True)
 
 

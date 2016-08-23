@@ -1,12 +1,5 @@
 #!/usr/bin/env python
 
-# -- Script Meta Data --
-# Author : J. Lerat, EHP, Bureau of Meteorogoloy
-# Versions :
-#    V00 - Script written from template on 2016-03-29 10:52:53.464102
-#
-# ------------------------------
-
 import sys, os, re, json, math
 import subprocess
 
@@ -53,9 +46,7 @@ def set_config():
     vartxt = iutils.vardict2str({key:config[key] for key in select})
     flog = os.path.join(fout, re.sub('\\.py.*', '', source_file)+ \
                                         '_'+vartxt+'.log')
-
     log_name = re.sub('\\..*', '', os.path.basename(source_file))
-
     LOGGER = iutils.get_logger(log_name, level='INFO', \
         fmt='%(asctime)s - %(message)s', \
         console=True, flog=flog)
@@ -67,7 +58,9 @@ def set_config():
 def process(config, LOGGER):
     ''' Process script '''
 
-    # I -- GET DATA ---------------
+    #------------------------------------------------------------
+    # Get data
+    #------------------------------------------------------------
     #fd = os.path.join(FDATA, 'data.csv')
     #data, comment = csv.read_csv(fd)
 
@@ -83,7 +76,9 @@ def process(config, LOGGER):
     mess = '{0} sites found'.format(sites.shape[0])
     LOGGER.info(mess)
 
-    # II -- PROCESS ---------------
+    #-----------------------------------------------
+    # Process
+    #-----------------------------------------------
     nsites = sites.shape[0]
     count = 0
 
@@ -101,7 +96,10 @@ def process(config, LOGGER):
                     count, nsites)
         LOGGER.info(mess)
 
-    # III -- STORE DATA ---------------
+    #-----------------------------------------------
+    # Write to disk
+    #-----------------------------------------------
+    pass
 
 
 #----------------------------------------------------------------------
@@ -117,7 +115,6 @@ def entry_point():
 
     LOGGER.info('Script {0} completed'.format( \
         config['source_file']))
-
 
 #----------------------------------------------------------------------
 if __name__ == "__main__":
