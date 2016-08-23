@@ -147,14 +147,18 @@ def read_csv(filename, has_colnames=True, **kwargs):
     """ Reads data with comments on top to a pandas data frame"""
 
     # Add gz if file does not exists
-    if not os.path.exists(filename):
-        filename = '%s.gz' % filename
+    try:
+        if not os.path.exists(filename):
+            filename = '%s.gz' % filename
 
-    # Open proper file type
-    if filename.endswith('gz'):
-        fcsv = gzip.open(filename, 'rb')
-    else:
-        fcsv = open(filename, 'r')
+        # Open proper file type
+        if filename.endswith('gz'):
+            fcsv = gzip.open(filename, 'rb')
+        else:
+            fcsv = open(filename, 'r')
+    except TypeError:
+        # Assume filename is stream
+        fcsv = filename
 
     # Reads content
     header = []
