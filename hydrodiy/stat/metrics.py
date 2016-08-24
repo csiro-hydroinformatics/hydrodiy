@@ -214,7 +214,10 @@ def alpha(yobs, ysim, pp_cst = 0.3):
     distances = np.sort(pit)-uniform_dens
     max_dist = np.max(np.abs(distances))
 
-    return kolmogorov(np.sqrt(nval)*max_dist)
+    kstat = np.sqrt(nval)*max_dist
+    pvalue = kolmogorov(np.sqrt(nval)*max_dist)
+
+    return 100*pvalue, kstat
 
 
 def iqr_scores(obs, ens, ref, coverage=50.):
@@ -432,7 +435,7 @@ def ens_metrics(yobs,ysim, yref=None, pp_cst=0.3, min_val=0.):
     idx = np.isfinite(yobs)
 
     # alpha score
-    al = alpha(yobs[idx], ysim[idx,:])
+    al, kstat = alpha(yobs[idx], ysim[idx,:])
 
     # crps
     cr, rt = crps(yobs[idx],ysim[idx,:])
