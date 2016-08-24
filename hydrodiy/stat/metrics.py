@@ -241,16 +241,11 @@ def iqr_scores(obs, ens, ref, coverage=50.):
         rel[i] = int( (obs[i]>=iqr[i,0]) & (obs[i]<=iqr[i,1]) )
         rel_clim[i] = int( (obs[i]>=iqr_clim[i,0]) & (obs[i]<=iqr_clim[i,1]) )
 
-    pre_sc = np.mean(iqr[:,2]/iqr_clim[:, 2])
-    rel_sc = np.mean(rel)
-    rel_clim_sc = np.mean(rel_clim)
+    precis_skill = 100*np.mean((iqr_clim[:, 2]-iqr[:,2])/(iqr_clim[:, 2]+iqr[:, 2]))
+    precis_score = np.mean(iqr[:, 2])
+    precis_clim = np.mean(iqr_clim[:, 2])
 
-    out = {'precision_skill': (1-pre_sc)*100,
-             'reliability_skill': (1-abs(rel_clim_sc-rel_sc)/rel_clim_sc)*100,
-             'precision_score': pre_sc,
-             'reliability_score': rel_sc}
-
-    return out, iqr, iqr_clim, rel, rel_clim
+    return precis_skill, precis_score, precis_clim
 
 
 def median_contingency(obs, ens, ref):
@@ -470,10 +465,8 @@ def ens_metrics(yobs,ysim, yref=None, pp_cst=0.3, min_val=0.):
             'nval':nval,
             'nval_ok':np.sum(idx),
             'alpha': al,
-            'iqr_precision_skill': iqr[0]['precision_skill'],
-            'iqr_reliability_skill': iqr[0]['reliability_skill'],
-            'iqr_precision_score': iqr[0]['precision_score'],
-            'iqr_reliability_score': iqr[0]['reliability_score'],
+            'iqr_precision_skill': iqr[0],
+            'iqr_precision_score': iqr[1],
             'median_hitrates':hit_med,
             'median_missrateslow':miss_medlow,
             'tercile_hitrates':hit_terc,

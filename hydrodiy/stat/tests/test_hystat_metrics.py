@@ -76,11 +76,9 @@ class MetricsTestCase(unittest.TestCase):
         obs = np.arange(0, 200)
         sim = np.dot(np.arange(0, 100).reshape((100,1)), np.ones((1, 200))).T
         ref = np.array([obs]*200)
-        out, iqr, iqr_clim, rel, rel_clim = metrics.iqr_scores(obs, sim, ref)
-        returned = np.array([out['reliability_score'] , out['precision_score'],
-                            out['reliability_skill']/100 , out['precision_skill']/100])
-        expected = np.array([0.25, 0.5, 0.5, 0.5])
-        self.assertTrue(np.allclose(returned, expected, atol=1e-2))
+        iqr = metrics.iqr_scores(obs, sim, ref)
+        expected = np.array([33.2446808, 50.2, 100.2])
+        self.assertTrue(np.allclose(iqr, expected, atol=1e-2))
 
     def test_median_contingency(self):
         nens = 50
