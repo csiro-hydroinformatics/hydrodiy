@@ -140,7 +140,8 @@ def write_csv(data, filename, comment,
     for line in head:
         fcsv.write('%s\n'%line)
 
-    data.to_csv(fcsv, index=write_index, **kwargs)
+    data.to_csv(fcsv, index=write_index,
+        float_format=float_format, **kwargs)
 
     fcsv.close()
 

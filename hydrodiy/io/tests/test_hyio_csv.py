@@ -70,27 +70,37 @@ class CsvTestCase(unittest.TestCase):
 
     def test_write_csv1(self):
 
-        fcsv = '%s/testwrite.csv'%self.FOUT
+        fcsv1 = '%s/testwrite1.csv'%self.FOUT
+        fcsv2 = '%s/testwrite2.csv'%self.FOUT
 
         nval = 100
         nc = 5
         idx = pd.date_range('1990-01-01', periods=nval, freq='D')
         df1 = pd.DataFrame(np.random.normal(size=(nval, nc)), index=idx)
 
-        csv.write_csv(df1, fcsv, 'Random data',
+        csv.write_csv(df1, fcsv1, 'Random data',
                 os.path.abspath(__file__),
                 write_index=True)
 
-        df2, comment = csv.read_csv(fcsv,
+        csv.write_csv(df1, fcsv2, 'Random data',
+                os.path.abspath(__file__),
+                float_format=None,
+                write_index=True)
+
+        df1exp, comment = csv.read_csv(fcsv1,
+                parse_dates=[''], index_col=0)
+
+        df2exp, comment = csv.read_csv(fcsv2,
                 parse_dates=[''], index_col=0)
 
         self.assertTrue(int(comment['nrow']) == nval)
         self.assertTrue(int(comment['ncol']) == nc)
 
-        d = df2.index[0]
+        d = df1exp.index[0]
         self.assertTrue(isinstance(d, pd.tslib.Timestamp))
 
-        self.assertTrue(np.allclose(df1, df2))
+        self.assertTrue(np.allclose(df1.round(3), df1exp))
+        self.assertTrue(np.allclose(df1, df2exp))
 
 
     def test_write_csv2(self):
