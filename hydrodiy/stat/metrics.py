@@ -31,7 +31,7 @@ def __checkdims(obs, ens, ref):
     return nforc
 
 
-def hypit(yobs,ysim,has_ties=True,pp_cst=0.3):
+def hypit(yobs, ysim, has_ties=True, pp_cst=0.3):
     """
 
     Compute PIT values in the case of ties
@@ -52,11 +52,14 @@ def hypit(yobs,ysim,has_ties=True,pp_cst=0.3):
                         np.random.random(len(ys_sort)))
 
     prob_obs = 0.0
-    if yobs>= ys_sort[-1]: prob_obs = 1.0
+
+    if yobs>= ys_sort[-1]:
+        prob_obs = 1.0
+
     elif yobs>= ys_sort[0]:
         delta = 1/(len(ys_sort)+1-2*pp_cst)
         unif_dist = (np.arange(1, len(ys_sort)+1)-pp_cst)*delta
-        prob_obs = np.interp(yobs,ys_sort,unif_dist)
+        prob_obs = np.interp(yobs, ys_sort, unif_dist)
 
     assert 0.0 <= prob_obs <= 1.0
 
@@ -202,12 +205,12 @@ def crps(yobs, ysim):
 
     return crps_decompos, reliab_table
 
-def alpha(yobs, ysim, pp_cst = 0.3):
+def alpha(yobs, ysim, pp_cst=0.3):
     ''' Score computing the Pvalue of the Kolmogorov-Smirnov test '''
 
     __checkdims(yobs, ysim, yobs)
 
-    pit = [hypit(o,s,pp_cst)
+    pit = [hypit(o, s, has_ties=True, pp_cst=pp_cst)
                     for o,s in zip(yobs,ysim)]
     nval = len(pit)
     uniform_dens = (np.arange(nval)+1-pp_cst)/(nval+1-2*pp_cst)
