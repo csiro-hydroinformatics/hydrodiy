@@ -209,18 +209,25 @@ def col2cmap(colors):
     return LinearSegmentedColormap('mycmap', cdict, 256)
 
 
-def line(ax, a, b, *args, **kwargs):
-    ''' Plot a line y = a + bx
-        If b=np.inf, draw a vertical line x=a
+def line(ax, vx=1., vy=0., x0=0., y0=0., *args, **kwargs):
+    ''' Plot a line following a vector (vx, vy) and
+    going through the point (x0, y0). Example
+    * Vertical line through (0, 0): vx=0, vy=1, x0=0, y0=0
+    * Horizontal line through (0, 0): vx=1, vy=0, x0=0, y0=0
+    * Line y=a+bx: vx=1, vy=a, x0=0, y0=b
 
     Parameters
     -----------
     ax : matplotlib.axes
         Axe to draw the line on
-    a : float
-        Intercept
-    b : float
-        Slope
+    vx : float
+        X coordinate of vector directioon
+    vy : float
+        Y coordinate of vector directioon
+    x0 : float
+        X coordinate of point
+    y0 : float
+        Y coordinate of point
 
     Returns
     -----------
@@ -234,23 +241,37 @@ def line(ax, a, b, *args, **kwargs):
     >>> fig, ax = plt.subplots()
     >>> ax.plot([0, 10], [0, 10], 'o')
     >>> putils.line(0, 1, ax, '--')
-    >>> putils.line(0, np.inf, ax, '-', color='red')
+    >>> putils.line(1, 0, ax, '-', color='red')
+    >>> putils.line(1, 0.5, y0=2., ax, '-', color='red')
 
     '''
 
     xlim = ax.get_xlim()
     ylim = ax.get_ylim()
 
-    a = float(a)
-    b = float(b)
+    vx = float(vx)
+    vy = float(vy)
+    if abs(vx)+abs(vy) < 1e-8:
+        raise ValueError(('Both vx({0}) and vy({1}) are ' + \
+            ' close to zero').format(vx, vy))
 
-    xx = np.array([min(xlim[0], ylim[0]), max(xlim[1], ylim[1])])
+    x0 = float(x0)
+    y0 = float(y0)
 
-    if np.isinf(b):
-        line = ax.plot(np.array([a]*2), xx, *args, **kwargs)
+    if abs(vx)>0:
+        a1 = (xlim[0]-x0)/vx
+        a2 = (xlim[1]-x0)/vx
     else:
-        yy = a + b * xx
-        line = ax.plot(xx, yy, *args, **kwargs)
+        a1 = (ylim[0]-y0)/vy
+        a2 = (ylim[1]-y0)/vy
+
+    xy0 = np.array([x0, y0])
+    vxy = np.array([vx, vy])
+    pt1 = xy0 + a1*vxy
+    pt2 = xy0 + a2*vxy
+
+    line = ax.plot([pt1[0], pt2[0]],
+                [pt1[1], pt2[1]], *args, **kwargs)
 
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)

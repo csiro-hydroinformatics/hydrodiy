@@ -56,10 +56,10 @@ class UtilsTestCase(unittest.TestCase):
 
         ax.plot(x, y)
 
-        putils.line(ax, 1, 1, '-')
-        putils.line(ax, 1, 0, '--')
-        putils.line(ax, 1, np.inf, ':')
-        putils.line(ax, 2, np.inf, '-.')
+        putils.line(ax, 0, 1, 0, 0, '-')
+        putils.line(ax, 1, 0, 0, 0, '--')
+        putils.line(ax, 1, 0.4, 0, 0, ':')
+        putils.line(ax, 1, 0.2, 1., 2, '-.')
 
         fp = '%s/line.png' % self.FOUT
         fig.savefig(fp)
