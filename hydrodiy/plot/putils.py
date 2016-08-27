@@ -1,6 +1,5 @@
 import os
 import re
-from cycler import cycler
 from datetime import datetime
 import datetime
 
@@ -30,12 +29,6 @@ tableau_colors = [colors.rgb2hex([float(coo)/255 for coo in co]) for co in [ \
             (23, 190, 207)
         ] ]
 
-
-
-def set_color_cycle(ax, cycle_colors=None):
-    if cycle_colors is None:
-        cycle_colors = tableau_colors
-    ax.set_prop_cycle(cycler('color', cycle_colors))
 
 
 def get_colors(ncols=10, palette='Paired'):
@@ -337,7 +330,9 @@ def equation(tex, filename, \
     mpl.rc('text', usetex=usetex)
 
 
-def set_spines(ax, spines, color='black', style='-', visible=True):
+def set_spines(ax, spines='all', color='black', style='-', visible=True):
+    ''' Set spines color and style '''
+
     if spines == 'all':
         spines = ['top', 'bottom', 'left', 'right']
 
@@ -359,8 +354,10 @@ def set_spines(ax, spines, color='black', style='-', visible=True):
 
 
 
-def set_legend(leg, textcolor='black', alpha=1):
-    leg.get_frame().set_alpha(alpha)
+def set_legend(leg, textcolor='black', framealpha=1):
+    ''' Set legend text and transparency '''
+
+    leg.get_frame().set_alpha(framealpha)
 
     for text in leg.get_texts():
         text.set_color(textcolor)
