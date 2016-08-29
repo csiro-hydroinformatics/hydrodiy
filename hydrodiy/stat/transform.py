@@ -3,35 +3,40 @@ import numpy as np
 
 
 def bounded(a, amin, amax):
-    ab = 1-1./(1+math.exp(a))
-    ab = ab*(amax-amin) + amin
-    return ab
+    ''' Convert bounded variable to non-bounded via logit '''
+    bnd = 1-1./(1+math.exp(a))
+    bnd = bnd*(amax-amin) + amin
+    return bnd
 
-def inversebounded(ab, amin, amax, eps=1e-10):
-    b = (ab-amin)/(amax-amin)
-    if b < eps:
+def inverse_bounded(bnd, amin, amax, eps=1e-10):
+    ''' Convert non-bounded variable to bounded via logit '''
+    value = (bnd-amin)/(amax-amin)
+    if value < eps:
         return amin
-    elif b > 1.-eps:
+    elif value > 1.-eps:
         return amax
     else:
-        b = math.log(1./(1-b)-1)
-    return b
+        value = math.log(1./(1-value)-1)
+    return value
 
 
 def getinstance(name):
     ''' Returns an instance of a particular transform '''
 
-    if name == LogTrans().name:
-        return LogTrans()
+    if name == IdentityTransform().name:
+        return IdentityTransform()
 
-    elif name == PowerTrans().name:
-        return PowerTrans()
+    if name == LogTransform().name:
+        return LogTransform()
 
-    elif name == YeoJohnsonTrans().name:
-        return YeoJohnsonTrans()
+    elif name == BoxCoxTransform().name:
+        return BoxCoxTransform()
 
-    elif name == LogSinhTrans().name:
-        return LogSinhTrans()
+    elif name == YeoJTransform().name:
+        return YeoJTransform()
+
+    elif name == LogSinhTransform().name:
+        return LogSinhTransform()
 
     else:
         raise ValueError('Cannot find transform name %s' % name)
@@ -40,53 +45,118 @@ def getinstance(name):
 
 
 
-class Transform:
+class Transform(object):
     ''' Simple interface to common transform functions '''
 
-    def __init__(self, nparams, name):
+    def __init__(self, ntparams, name, nrparams=None):
+        ''' Initialise transform object with number of transformed
+        parameters (ntparams) and name. Number of raw parameters
+        is optional, will be set to ntparams by default.
+        '''
         self.name = name
-        self.nparams = nparams
-        self.params = np.array([np.nan] * nparams)
+
+        # Initialise trans params
+        self._ntparams = ntparams
+        if ntparams > 0:
+            self._tparams = np.nan * np.ones(ntparams)
+        else:
+            self._tparams = None
+
+        # Initialise raw params
+        if nrparams is None:
+            nrparams = ntparams
+
+        self._nrparams = nrparams
+        if nrparams > 0:
+            self._rparams = np.nan * np.ones(nrparams)
+        else:
+            self._rparams = None
+
 
     def __str__(self):
-        s = '\n%s transform. Params = [' % self.name
-
-        tp = self.trueparams()
-        if not isinstance(tp, list):
-            tp = [tp]
-
-        for i in range(self.nparams):
-            s += '%0.2f, ' % tp[i]
-        s = s[:-2] + ']'
-
+        s = '\n{0} transform\n'.format(self.name)
+        if self._nrparams > 0:
+            s += '  Raw params = [' + ', '.join(['{0:3.3e}'.format(rp) \
+                for rp in  self._rparams]) + ']'
+        if self._ntparams > 0:
+            s += '  Trans params = [' + ', '.join(['{0:3.3e}'.format(rt) \
+                for rt in  self._tparams]) + ']'
+        s += '\n'
         return s
 
-    def trueparams(self):
-        ''' Returns true parameter values '''
-        return [np.nan] * self.nparams
+
+    @property
+    def ntparams(self):
+        return self._ntparams
+
+
+    @property
+    def nrparams(self):
+        return self._nrparams
+
+
+    @property
+    def rparams(self):
+        return self._rparams
+
+    @rparams.setter
+    def rparams(self, value):
+        value = np.atleast_1d(value).astype(np.float64)
+        if len(value) != self._nrparams:
+            raise ValueError('Wrong number of raw parameters' + \
+                ' ({0}), should be {1}'.format(len(value),
+                    self._nrparams))
+        self._rparams = value
+        self._raw2trans()
+
+
+    @property
+    def tparams(self):
+        return self._tparams
+
+    @tparams.setter
+    def tparams(self, value):
+        value = np.atleast_1d(value).astype(np.float64)
+        if len(value) != self._ntparams:
+            raise ValueError('Wrong number of trans parameters' + \
+                ' ({0}), should be {1}'.format(len(value),
+                    self._ntparams))
+        self._tparams = value
+        self._trans2raw()
+
+
+    def _trans2raw(self):
+        ''' Converts transformed parameters into raw parameters
+            Does nothing by default.
+        '''
+        self._rparams = self._tparams.copy()
+
+    def _raw2trans(self):
+        ''' Converts raw parameters into transformed parameters
+            Does nothing by default.
+        '''
+        self._tparams = self._rparams.copy()
+
 
     def forward(self, x):
         ''' Returns the forward transform of x '''
-        return np.nan
+        raise NotImplementedError('Method forward not implemented')
 
     def inverse(self, y):
         ''' Returns the inverse transform of x '''
-        return np.nan
+        raise NotImplementedError('Method inverse not implemented')
 
     def jac(self, x):
-        ''' Returns the transformation jacobian dforward(x)/dx '''
-        return np.nan
+        ''' Returns the transformation jacobian d[forward(x)]/dx '''
+        raise NotImplementedError('Method jac not implemented')
 
 
 
-class IdentityTrans(Transform):
+class IdentityTransform(Transform):
 
     def __init__(self):
         Transform.__init__(self, 0, 'Identity')
 
-    def trueparams(self):
-        return np.nan
-
     def forward(self, x):
         return x
 
@@ -94,90 +164,98 @@ class IdentityTrans(Transform):
         return y
 
     def jac(self, x):
-        return np.one_like(x)
+        return np.ones_like(x)
 
 
 
-class LogTrans(Transform):
+class LogTransform(Transform):
 
     def __init__(self):
         Transform.__init__(self, 1, 'Log')
 
-    def trueparams(self):
-        return math.exp(self.params[0])
+    def _trans2raw(self):
+        self._rparams[0] = math.exp(self._tparams[0])
+
+    def _raw2trans(self):
+        self._tparams[0] = math.log(self._rparams[0])
 
     def forward(self, x):
-        c = self.trueparams()
-        y = np.log(c+x)
+        cst = self._rparams[0]
+        y = np.log(cst+x)
         return y
 
     def inverse(self, y):
-        c = self.trueparams()
-        x =  np.exp(y)-c
+        cst = self._rparams[0]
+        x =  np.exp(y)-cst
         return x
 
     def jac(self, x):
-        c = self.trueparams()
+        cst = self._rparams[0]
         j = np.nan * x
-        idx = c+x > 0.
-        j[idx] =  1./(c+x[idx])
+        idx = cst+x > 0.
+        j[idx] =  1./(cst+x[idx])
         return j
 
 
 
-class PowerTrans(Transform):
+class BoxCoxTransform(Transform):
 
     def __init__(self):
-        Transform.__init__(self, 1, 'Power')
+        Transform.__init__(self, 1, 'BoxCox')
 
-    def trueparams(self):
-        return bounded(self.params[0], 0, 4)
+    def _trans2raw(self):
+        self._rparams[0] = bounded(self._tparams[0], 0, 4)
+
+    def _raw2trans(self):
+        self._tparams[0] = inverse_bounded(self._rparams[0], 0, 4)
 
     def forward(self, x):
-        b = self.trueparams()
-        y = ((1.+x)**b-1.)/b
+        lam = self._rparams[0]
+        y = (np.power(1.+x,lam)-1.)/lam
         return y
 
     def inverse(self, y):
-        b = self.trueparams()
-        x =  (b*y+1.)**(1/b)-1.
+        lam = self._rparams[0]
+        x =  np.power(lam*y+1., 1/lam)-1.
         # Highly unreliable for b<0 and if y -> -1/b
         return x
 
     def jac(self, x):
-        b = self.trueparams()
-        j = (1.+x)**(b-1)
+        lam = self._rparams[0]
+        j = np.power(1.+x, lam-1)
         return j
 
 
 
-class YeoJohnsonTrans(Transform):
+class YeoJTransform(Transform):
 
     def __init__(self):
         Transform.__init__(self, 3, 'YeoJohnson')
 
-    def trueparams(self):
-        return self.params[0], \
-                math.exp(self.params[1]), \
-                bounded(self.params[2], -5, 5)
+    def _trans2raw(self):
+        self._rparams[0] =  self._tparams[0]
+        self._rparams[1] =  math.exp(self._tparams[1])
+        self._rparams[2] =  bounded(self._tparams[2], -1, 3)
+
+    def _raw2trans(self):
+        self._tparams[0] =  self._rparams[0]
+        self._tparams[1] =  math.log(self._rparams[1])
+        self._tparams[2] =  inverse_bounded(self._rparams[2], -1, 3)
 
     def forward(self, x):
-
-        loc, scale, expon = self.trueparams()
-
+        loc, scale, expon = self._rparams
         y = x*np.nan
         w = loc+x*scale
-
         ipos = w >= 0
 
         if not np.isclose(expon, 0.0):
-            y[ipos] = ((w[ipos]+1)**expon-1)/expon
+            y[ipos] = (np.power(w[ipos]+1, expon)-1)/expon
 
         if np.isclose(expon, 0.0):
             y[ipos] = np.log(w[ipos]+1)
 
         if not np.isclose(expon, 2.0):
-            y[~ipos] = -((-w[~ipos]+1)**(2-expon)-1)/(2-expon)
+            y[~ipos] = -(np.power(-w[~ipos]+1, 2-expon)-1)/(2-expon)
 
         if np.isclose(expon, 2.0):
             y[~ipos] = -np.log(-w[~ipos]+1)
@@ -186,20 +264,17 @@ class YeoJohnsonTrans(Transform):
 
 
     def inverse(self, y):
-
-        loc, scale, expon = self.trueparams()
-
+        loc, scale, expon = self._rparams
         x = y*np.nan
-
-        ipos = x >=0
+        ipos = y >= 0
 
         if not np.isclose(expon, 0.0):
-            x[ipos] = (expon*y[ipos]+1)**(1/expon)-1
+            x[ipos] = np.power(expon*y[ipos]+1, 1./expon)-1
         else:
             x[ipos] = np.exp(y[ipos])-1
 
         if not np.isclose(expon, 2.0):
-            x[~ipos] = -(-(2-expon)*y[~ipos]+1)**(1/(2-expon))+1
+            x[~ipos] = -np.power(-(2-expon)*y[~ipos]+1, 1./(2-expon))+1
         else:
             x[~ipos] = -np.exp(-y[~ipos])+1
 
@@ -207,13 +282,9 @@ class YeoJohnsonTrans(Transform):
 
 
     def jac(self, x):
-
-        loc, scale, expon = self.trueparams()
-
+        loc, scale, expon = self._rparams
         j = x*np.nan
-
         w = loc+x*scale
-
         ipos = w >=0
 
         if not np.isclose(expon, 0.0):
@@ -232,18 +303,19 @@ class YeoJohnsonTrans(Transform):
 
 
 
-class LogSinhTrans(Transform):
+class LogSinhTransform(Transform):
 
     def __init__(self):
         Transform.__init__(self, 2, 'LogSinh')
 
-    def trueparams(self):
-        return math.exp(self.params[0]), \
-                math.exp(self.params[1])
+    def _trans2raw(self):
+        self._rparams = np.exp(self._tparams)
+
+    def _raw2trans(self):
+        self._rparams = np.log(self._rparams)
 
     def forward(self, x):
-
-        a, b = self.trueparams()
+        a, b = self._rparams
         w = a + b*x
         y = x*np.nan
         y = (w+np.log((1.-np.exp(-2.*w))/2.))/b
@@ -252,8 +324,7 @@ class LogSinhTrans(Transform):
 
 
     def inverse(self, y):
-
-        a, b = self.trueparams()
+        a, b = self._rparams
         w = b*y
         output = y*np.nan
         x = y + (np.log(1.+np.sqrt(1.+np.exp(-2.*w)))-a)/b
@@ -262,7 +333,7 @@ class LogSinhTrans(Transform):
 
 
     def jac(self, x):
-        a, b = self.trueparams()
+        a, b = self._rparams
         w = a + b*x
 
         return 1./np.tanh(w)
