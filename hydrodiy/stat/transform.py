@@ -216,7 +216,7 @@ class BoxCoxTransform(Transform):
 
     def backward(self, y):
         lam = self._rparams[0]
-        x =  np.power(lam*y+1., 1/lam)-1.
+        x =  np.power(lam*y+1., 1./lam)-1.
         # Highly unreliable for b<0 and if y -> -1/b
         return x
 
