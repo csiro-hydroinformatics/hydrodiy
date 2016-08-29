@@ -20,26 +20,26 @@ def backward_bounded(bnd, amin, amax, eps=1e-10):
     return value
 
 
-def getinstance(name):
+def getinstance(_name):
     ''' Returns an instance of a particular transform '''
 
-    if name == IdentityTransform().name:
+    if _name == IdentityTransform()._name:
         return IdentityTransform()
 
-    if name == LogTransform().name:
+    if _name == LogTransform()._name:
         return LogTransform()
 
-    elif name == BoxCoxTransform().name:
+    elif _name == BoxCoxTransform()._name:
         return BoxCoxTransform()
 
-    elif name == YeoJTransform().name:
+    elif _name == YeoJTransform()._name:
         return YeoJTransform()
 
-    elif name == LogSinhTransform().name:
+    elif _name == LogSinhTransform()._name:
         return LogSinhTransform()
 
     else:
-        raise ValueError('Cannot find transform name %s' % name)
+        raise ValueError('Cannot find transform _name %s' % _name)
 
     return trans
 
@@ -50,10 +50,13 @@ class Transform(object):
 
     def __init__(self, ntparams, name, nrparams=None):
         ''' Initialise transform object with number of transformed
-        parameters (ntparams) and name. Number of raw parameters
+        parameters (ntparams) and _name. Number of raw parameters
         is optional, will be set to ntparams by default.
         '''
-        self.name = name
+        self._name = name
+
+        # Value added to avoid nan around 0.
+        self._eps = 1e-10
 
         # Initialise trans params
         self._ntparams = ntparams
@@ -74,7 +77,7 @@ class Transform(object):
 
 
     def __str__(self):
-        s = '\n{0} transform\n'.format(self.name)
+        s = '\n{0} transform\n'.format(self._name)
         if self._nrparams > 0:
             s += '  Raw params = [' + ', '.join(['{0:3.3e}'.format(rp) \
                 for rp in  self._rparams]) + ']'
@@ -83,6 +86,11 @@ class Transform(object):
                 for rt in  self._tparams]) + ']'
         s += '\n'
         return s
+
+
+    @property
+    def name(self):
+        return self._name
 
 
     @property
@@ -181,6 +189,7 @@ class LogTransform(Transform):
 
     def forward(self, x):
         cst = self._rparams[0]
+        x = np.clip(x, -cst+self._eps, np.inf)
         y = np.log(cst+x)
         return y
 
@@ -191,6 +200,7 @@ class LogTransform(Transform):
 
     def jacobian_det(self, x):
         cst = self._rparams[0]
+        x = np.clip(x, -cst+self._eps, np.inf)
         j = np.nan * x
         idx = cst+x > 0.
         j[idx] =  1./(cst+x[idx])
@@ -211,18 +221,18 @@ class BoxCoxTransform(Transform):
 
     def forward(self, x):
         lam = self._rparams[0]
-        y = (np.power(1.+x,lam)-1.)/lam
+        y = np.sign(x)*(np.power(1.+np.abs(x),lam)-1.)/lam
         return y
 
     def backward(self, y):
         lam = self._rparams[0]
-        x =  np.power(lam*y+1., 1./lam)-1.
+        x =  np.sign(y)*np.power(lam*np.abs(y)+1., 1./lam)-1.
         # Highly unreliable for b<0 and if y -> -1/b
         return x
 
     def jacobian_det(self, x):
         lam = self._rparams[0]
-        j = np.power(1.+x, lam-1)
+        j = np.sign(x)*np.power(1.+np.abs(x), lam-1)
         return j
 
 
@@ -316,6 +326,7 @@ class LogSinhTransform(Transform):
 
     def forward(self, x):
         a, b = self._rparams
+        x = np.clip(x, -a/b+self._eps, np.inf)
         w = a + b*x
         y = x*np.nan
         y = (w+np.log((1.-np.exp(-2.*w))/2.))/b
@@ -334,6 +345,7 @@ class LogSinhTransform(Transform):
 
     def jacobian_det(self, x):
         a, b = self._rparams
+        x = np.clip(x, -a/b+self._eps, np.inf)
         w = a + b*x
 
         return 1./np.tanh(w)

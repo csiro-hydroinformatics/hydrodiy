@@ -4,6 +4,8 @@ import unittest
 import numpy as np
 from hydrodiy.stat import transform
 
+import matplotlib.pyplot as plt
+
 import warnings
 #warnings.filterwarnings('error')
 
@@ -73,8 +75,7 @@ class TransformTestCase(unittest.TestCase):
 
             for sample in range(100):
 
-                x = np.random.normal(size=1000, loc=3, scale=5)
-                x = np.exp(x)
+                x = np.random.normal(size=1000, loc=5, scale=20)
 
                 ntparams = trans.ntparams
                 trans.tparams = np.random.uniform(-5, 5, size=ntparams)
@@ -130,6 +131,29 @@ class TransformTestCase(unittest.TestCase):
             if not ack3:
                 print('Transform {0} failing the numerical Jacobian test'.format(trans.name))
             #self.assertTrue(ack3)
+
+
+    def test_all_transform_plot(self):
+
+        FOUT = self.FOUT
+
+        for nm in ['Log', 'BoxCox', \
+                'YeoJohnson', 'LogSinh']:
+
+            trans = transform.getinstance(nm)
+
+            x = np.linspace(-5, 10)
+
+            ntparams = trans.ntparams
+            trans.tparams = np.random.uniform(-1, 1, size=ntparams)
+            y = trans.forward(x)
+
+            plt.close('all')
+            fig, ax = plt.subplots()
+            ax.plot(x, y)
+            ax.set_title(nm + ': rparams = {0}'.format(trans.rparams))
+            fig.savefig(os.path.join(FOUT, 'transform_'+nm+'.png'))
+
 
 
 if __name__ == "__main__":
