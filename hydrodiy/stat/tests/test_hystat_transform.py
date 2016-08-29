@@ -46,16 +46,16 @@ class TransformTestCase(unittest.TestCase):
         self.assertTrue(str(err).startswith('Method forward'))
 
         try:
-            trans.inverse(x)
+            trans.backward(x)
         except NotImplementedError as err:
             pass
-        self.assertTrue(str(err).startswith('Method inverse'))
+        self.assertTrue(str(err).startswith('Method backward'))
 
         try:
-            trans.jac(x)
+            trans.jacobian_det(x)
         except NotImplementedError as err:
             pass
-        self.assertTrue(str(err).startswith('Method jac'))
+        self.assertTrue(str(err).startswith('Method jacobian_det'))
 
 
     def test_all_transform(self):
@@ -91,21 +91,21 @@ class TransformTestCase(unittest.TestCase):
                 trans.tparams = tp
                 self.assertTrue(np.allclose(rp, trans.rparams))
 
-                # Check x -> forward(x) -> inverse(y) is stable
+                # Check x -> forward(x) -> backward(y) is stable
                 y = trans.forward(x)
                 yp = trans.forward(x+delta)
-                xx = trans.inverse(y)
+                xx = trans.backward(y)
 
                 # Check raw and transform/backtransform are equal
                 idx = ~np.isnan(xx)
                 ckk1 = np.allclose(x[idx], xx[idx])
 
-                # Check jacobian is positive
-                j = trans.jac(x)
+                # Check jacobian_detobian is positive
+                j = trans.jacobian_det(x)
                 idx = ~np.isnan(j)
                 ckk2 = np.all(j[idx]>0)
 
-                # Check value of jacobian
+                # Check value of jacobian_detobian
                 idx = ~np.isnan(j)
                 err = 1-np.abs(j-(yp-y)/delta)/j
                 errmin = np.nanmin(err)

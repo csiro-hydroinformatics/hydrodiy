@@ -8,7 +8,7 @@ def bounded(a, amin, amax):
     bnd = bnd*(amax-amin) + amin
     return bnd
 
-def inverse_bounded(bnd, amin, amax, eps=1e-10):
+def backward_bounded(bnd, amin, amax, eps=1e-10):
     ''' Convert non-bounded variable to bounded via logit '''
     value = (bnd-amin)/(amax-amin)
     if value < eps:
@@ -142,13 +142,13 @@ class Transform(object):
         ''' Returns the forward transform of x '''
         raise NotImplementedError('Method forward not implemented')
 
-    def inverse(self, y):
-        ''' Returns the inverse transform of x '''
-        raise NotImplementedError('Method inverse not implemented')
+    def backward(self, y):
+        ''' Returns the backward transform of x '''
+        raise NotImplementedError('Method backward not implemented')
 
-    def jac(self, x):
-        ''' Returns the transformation jacobian d[forward(x)]/dx '''
-        raise NotImplementedError('Method jac not implemented')
+    def jacobian_det(self, x):
+        ''' Returns the transformation jacobian_detobian d[forward(x)]/dx '''
+        raise NotImplementedError('Method jacobian_det not implemented')
 
 
 
@@ -160,10 +160,10 @@ class IdentityTransform(Transform):
     def forward(self, x):
         return x
 
-    def inverse(self, y):
+    def backward(self, y):
         return y
 
-    def jac(self, x):
+    def jacobian_det(self, x):
         return np.ones_like(x)
 
 
@@ -184,12 +184,12 @@ class LogTransform(Transform):
         y = np.log(cst+x)
         return y
 
-    def inverse(self, y):
+    def backward(self, y):
         cst = self._rparams[0]
         x =  np.exp(y)-cst
         return x
 
-    def jac(self, x):
+    def jacobian_det(self, x):
         cst = self._rparams[0]
         j = np.nan * x
         idx = cst+x > 0.
@@ -207,20 +207,20 @@ class BoxCoxTransform(Transform):
         self._rparams[0] = bounded(self._tparams[0], 0, 4)
 
     def _raw2trans(self):
-        self._tparams[0] = inverse_bounded(self._rparams[0], 0, 4)
+        self._tparams[0] = backward_bounded(self._rparams[0], 0, 4)
 
     def forward(self, x):
         lam = self._rparams[0]
         y = (np.power(1.+x,lam)-1.)/lam
         return y
 
-    def inverse(self, y):
+    def backward(self, y):
         lam = self._rparams[0]
         x =  np.power(lam*y+1., 1/lam)-1.
         # Highly unreliable for b<0 and if y -> -1/b
         return x
 
-    def jac(self, x):
+    def jacobian_det(self, x):
         lam = self._rparams[0]
         j = np.power(1.+x, lam-1)
         return j
@@ -240,7 +240,7 @@ class YeoJTransform(Transform):
     def _raw2trans(self):
         self._tparams[0] =  self._rparams[0]
         self._tparams[1] =  math.log(self._rparams[1])
-        self._tparams[2] =  inverse_bounded(self._rparams[2], -1, 3)
+        self._tparams[2] =  backward_bounded(self._rparams[2], -1, 3)
 
     def forward(self, x):
         loc, scale, expon = self._rparams
@@ -263,7 +263,7 @@ class YeoJTransform(Transform):
         return y
 
 
-    def inverse(self, y):
+    def backward(self, y):
         loc, scale, expon = self._rparams
         x = y*np.nan
         ipos = y >= 0
@@ -281,7 +281,7 @@ class YeoJTransform(Transform):
         return (x-loc)/scale
 
 
-    def jac(self, x):
+    def jacobian_det(self, x):
         loc, scale, expon = self._rparams
         j = x*np.nan
         w = loc+x*scale
@@ -323,7 +323,7 @@ class LogSinhTransform(Transform):
         return y
 
 
-    def inverse(self, y):
+    def backward(self, y):
         a, b = self._rparams
         w = b*y
         output = y*np.nan
@@ -332,7 +332,7 @@ class LogSinhTransform(Transform):
         return x
 
 
-    def jac(self, x):
+    def jacobian_det(self, x):
         a, b = self._rparams
         w = a + b*x
 
