@@ -20,7 +20,7 @@ class TransformTestCase(unittest.TestCase):
     def test_transform_class(self):
         ''' Test the class transform '''
 
-        trans = transform.Transform(1, 'test')
+        trans = transform.Transform('test', 1)
 
         self.assertEqual(trans.name, 'test')
 
@@ -190,11 +190,7 @@ class TransformTestCase(unittest.TestCase):
 
             trans = transform.getinstance(nm)
 
-            xmin = -5
-            if nm in ['Log', 'LogSinh']:
-                xmin = 1e-1
-
-            x = np.linspace(xmin, 10, 200)
+            x = np.linspace(-3, 10, 200)
 
             ntparams = trans.ntparams
 

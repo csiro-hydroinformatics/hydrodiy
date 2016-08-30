@@ -48,10 +48,10 @@ def getinstance(_name):
 class Transform(object):
     ''' Simple interface to common transform functions '''
 
-    def __init__(self, ntparams, name,
+    def __init__(self, name, ntparams,
             nrparams=None,  \
-            rparams_mins = None, \
-            rparams_maxs = None, \
+            rparams_mins=None, \
+            rparams_maxs=None, \
             nconstants=0):
         ''' Initialise transform object with number of transformed
         parameters (ntparams) and _name. Number of raw parameters
@@ -216,7 +216,7 @@ class Transform(object):
 class IdentityTransform(Transform):
 
     def __init__(self):
-        Transform.__init__(self, 0, 'Identity')
+        Transform.__init__(self, 'Identity', 0)
 
     def forward(self, x):
         return x
@@ -232,25 +232,23 @@ class IdentityTransform(Transform):
 class LogTransform(Transform):
 
     def __init__(self):
-        Transform.__init__(self, 0, 'Log', nconstants=1)
+        Transform.__init__(self, 'Log', 0,
+            nconstants=1)
         self.constants = 0.
 
     def forward(self, x):
         cst = self._constants[0]
-        y = np.log(cst+x)
-        y[x<0] = np.nan
+        y = np.where(x>0, np.log(x+cst), np.nan)
         return y
 
     def backward(self, y):
         cst = self._constants[0]
-        x =  np.exp(y)-cst
-        x[x<0] = np.nan
+        x =  np.where(y>math.log(cst), np.exp(y)-cst, np.nan)
         return x
 
     def jacobian_det(self, x):
         cst = self._constants[0]
-        j =  1./(cst+x)
-        j[x<0] = np.nan
+        j = np.where(x>0, 1./(x+cst), np.nan)
         return j
 
 
@@ -258,13 +256,15 @@ class LogTransform(Transform):
 class BoxCoxTransform(Transform):
 
     def __init__(self):
-        Transform.__init__(self, 1, 'BoxCox')
+        Transform.__init__(self, 'BoxCox', 1,
+            rparams_mins=1e-2,
+            rparams_maxs=3.)
 
     def _trans2raw(self):
-        self._rparams[0] = forward_bounded(self._tparams[0], 1e-2, 3)
+        self._rparams[0] = forward_bounded(self._tparams[0], 1e-2, 3.)
 
     def _raw2trans(self):
-        self._tparams[0] = backward_bounded(self._rparams[0], 1e-2, 3)
+        self._tparams[0] = backward_bounded(self._rparams[0], 1e-2, 3.)
 
     def forward(self, x):
         lam = self._rparams[0]
@@ -287,17 +287,19 @@ class BoxCoxTransform(Transform):
 class YeoJTransform(Transform):
 
     def __init__(self):
-        Transform.__init__(self, 3, 'YeoJohnson')
+        Transform.__init__(self, 'YeoJohnson', 3,
+            rparams_mins=[-np.inf, 0., -1.],
+            rparams_maxs=[np.inf, np.inf, 3.])
 
     def _trans2raw(self):
         self._rparams[0] = self._tparams[0]
         self._rparams[1] = math.exp(self._tparams[1])
-        self._rparams[2] = forward_bounded(self._tparams[2], -1, 3)
+        self._rparams[2] = forward_bounded(self._tparams[2], -1., 3.)
 
     def _raw2trans(self):
         self._tparams[0] = self._rparams[0]
         self._tparams[1] = math.log(self._rparams[1])
-        self._tparams[2] = backward_bounded(self._rparams[2], -1, 3)
+        self._tparams[2] = backward_bounded(self._rparams[2], -1., 3.)
 
     def forward(self, x):
         loc, scale, expon = self._rparams
@@ -373,8 +375,9 @@ def logsinh_ab(eps):
 class LogSinhTransform(Transform):
 
     def __init__(self):
-        Transform.__init__(self, 1, 'LogSinh', nconstants=1)
-
+        Transform.__init__(self, 'LogSinh', 1, nconstants=1,
+            rparams_mins=0.3,
+            rparams_maxs=0.93)
 
     def _trans2raw(self):
         self._rparams[0] = forward_bounded(self._tparams[0], 0.3, 0.93)
@@ -383,17 +386,13 @@ class LogSinhTransform(Transform):
     def _raw2trans(self):
         self._tparams[0] = backward_bounded(self._rparams[0], 0.3, 0.93)
 
-
     def forward(self, x):
         a, b = logsinh_ab(self._rparams[0])
         xmax = self._constants[0]
         w = a + b*x/xmax
-        y = x*np.nan
-        y = (w+np.log((1.-np.exp(-2.*w))/2.))/b
-        y[x<0] = np.nan
+        y = np.where(x>0, (w+np.log((1.-np.exp(-2.*w))/2.))/b, np.nan)
 
         return y
-
 
     def backward(self, y):
         a, b = logsinh_ab(self._rparams[0])
@@ -402,7 +401,6 @@ class LogSinhTransform(Transform):
         output = y*np.nan
         x = y + (np.log(1.+np.sqrt(1.+np.exp(-2.*w)))-a)/b
         x *= xmax
-        x[x<0] = np.nan
 
         return x
 
@@ -411,9 +409,8 @@ class LogSinhTransform(Transform):
         a, b = logsinh_ab(self._rparams[0])
         xmax = self._constants[0]
         w = a + b*x/xmax
-
         jac = 1./xmax/np.tanh(w)
-        jac[x<0] = np.nan
+        jac = np.where(x>0, 1./xmax/np.tanh(w), np.nan)
 
         return jac
 
