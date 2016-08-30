@@ -268,18 +268,17 @@ class BoxCoxTransform(Transform):
 
     def forward(self, x):
         lam = self._rparams[0]
-        y = np.sign(x)*(np.power(1.+np.abs(x),lam)-1.)/lam
+        y = np.where(x>0, (np.power(x,lam)-1.)/lam, np.nan)
         return y
 
     def backward(self, y):
         lam = self._rparams[0]
-        x =  np.sign(y)*(np.power(lam*np.abs(y)+1., 1./lam)-1.)
-        # Highly unreliable for b<0 and if y -> -1/b
+        x =  np.where(y>-1./lam, np.power(lam*y+1., 1./lam), np.nan)
         return x
 
     def jacobian_det(self, x):
         lam = self._rparams[0]
-        j = np.power(1.+np.abs(x), lam-1)
+        j = np.where(x>0, np.power(x,lam-1.), np.nan)
         return j
 
 

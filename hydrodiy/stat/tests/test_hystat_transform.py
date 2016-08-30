@@ -100,7 +100,10 @@ class TransformTestCase(unittest.TestCase):
                 self.assertTrue(ck)
 
                 trans.tparams = tp
-                self.assertTrue(np.allclose(rp, trans.rparams))
+                ck = np.allclose(rp, trans.rparams)
+                if not ck:
+                    print('Transform {0} failing the parameter'.format(trans.name))
+                self.assertTrue(ck)
 
 
     def test_forward_backward(self):
@@ -130,10 +133,8 @@ class TransformTestCase(unittest.TestCase):
                 # Check raw and transform/backtransform are equal
                 idx = ~np.isnan(xx)
                 ck = np.allclose(x[idx], xx[idx])
-                #if not ck:
-                #    idx_pb = idx & (~np.allclose(x, xx))
-                #    import pdb; pdb.set_trace()
-                #    print('Transform {0} failing the forward/backward test'.format(trans.name))
+                if not ck:
+                    print('Transform {0} failing the forward/backward test'.format(trans.name))
                 self.assertTrue(ck)
 
 
