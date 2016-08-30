@@ -60,77 +60,125 @@ class TransformTestCase(unittest.TestCase):
         self.assertTrue(str(err).startswith('Method jacobian_det'))
 
 
-    def test_all_transform(self):
-        ''' Test all transforms '''
+    def test_print(self):
+        ''' Test printing for all transforms '''
 
         for nm in ['Log', 'BoxCox', \
                 'YeoJohnson', 'LogSinh', 'Identity']:
 
             trans = transform.getinstance(nm)
+            if trans.nconstants > 0:
+                trans.constants = 5.
 
-            ck1 = []
-            ck2 = []
-            ck3 = []
-            delta = 1e-5
+            ntparams = trans.ntparams
+            trans.tparams = np.random.uniform(-5, 5, size=ntparams)
+            str(trans)
 
-            for sample in range(100):
 
-                x = np.random.normal(size=1000, loc=5, scale=20)
+    def test_set_params(self):
+        ''' Test setting parameters for all transforms '''
 
-                ntparams = trans.ntparams
+        for nm in ['Log', 'BoxCox', \
+                'YeoJohnson', 'LogSinh', 'Identity']:
+
+            trans = transform.getinstance(nm)
+            if trans.nconstants > 0:
+                trans.constants = 5.
+
+            ntparams = trans.ntparams
+            if ntparams == 0:
+                continue
+
+            for isample in range(100):
                 trans.tparams = np.random.uniform(-5, 5, size=ntparams)
-
-                # Check print
-                str(trans)
 
                 # Check tparams -> rparams -> tparams works
                 tp = trans.tparams.copy()
                 rp = trans.rparams.copy()
                 trans.rparams = rp
-                self.assertTrue(np.allclose(tp, trans.tparams))
+                ck = np.allclose(tp, trans.tparams)
+                self.assertTrue(ck)
 
                 trans.tparams = tp
                 self.assertTrue(np.allclose(rp, trans.rparams))
 
+
+    def test_forward_backward(self):
+        ''' Test all transforms backward/forward '''
+
+        for nm in ['Log', 'BoxCox', \
+                'YeoJohnson', 'LogSinh', 'Identity']:
+
+            trans = transform.getinstance(nm)
+            if trans.nconstants > 0:
+                trans.constants = 5.
+
+            for sample in range(100):
+
+                x = np.random.normal(size=1000, loc=5, scale=20)
+
+                if nm == 'Log':
+                    x = np.clip(x, -5, np.inf)
+
+                ntparams = trans.ntparams
+                trans.tparams = np.random.uniform(-5, 5, size=ntparams)
+
                 # Check x -> forward(x) -> backward(y) is stable
                 y = trans.forward(x)
-                yp = trans.forward(x+delta)
                 xx = trans.backward(y)
 
                 # Check raw and transform/backtransform are equal
                 idx = ~np.isnan(xx)
-                ckk1 = np.allclose(x[idx], xx[idx])
+                ck = np.allclose(x[idx], xx[idx])
+                #if not ck:
+                #    idx_pb = idx & (~np.allclose(x, xx))
+                #    import pdb; pdb.set_trace()
+                #    print('Transform {0} failing the forward/backward test'.format(trans.name))
+                self.assertTrue(ck)
 
-                # Check jacobian_detobian is positive
-                j = trans.jacobian_det(x)
-                idx = ~np.isnan(j)
-                ckk2 = np.all(j[idx]>0)
 
-                # Check value of jacobian_detobian
-                idx = ~np.isnan(j)
-                err = 1-np.abs(j-(yp-y)/delta)/j
-                errmin = np.nanmin(err)
-                ierrmin = np.where(err == errmin)
-                ckk3 = errmin > -10.
+    def test_jacobian(self):
+        ''' Test all transforms jacobians '''
 
-                ck1.append(ckk1)
-                ck2.append(ckk2)
-                ck3.append(ckk3)
+        delta = 1e-5
 
-            ack1 = np.prod(ck1) == 1
-            if not ack1:
-                print('Transform {0} failing the transform/backtransform test'.format(trans.name))
-            #self.assertTrue(ack1)
+        for nm in ['Log', 'BoxCox', \
+                'YeoJohnson', 'LogSinh', 'Identity']:
 
-            ack2 = np.prod(ck2) == 1
-            if not ack2:
-                print('Transform {0} failing the positive Jacobian test'.format(trans.name))
-            #self.assertTrue(ack2)
+            trans = transform.getinstance(nm)
+            if trans.nconstants > 0:
+                trans.constants = 5.
 
-            ack3 = np.prod(ck3) == 1
-            if not ack3:
-                print('Transform {0} failing the numerical Jacobian test'.format(trans.name))
-            #self.assertTrue(ack3)
+            for sample in range(100):
+
+                x = np.random.normal(size=1000, loc=5, scale=20)
+
+                if nm == 'Log':
+                    x = np.clip(x, -5, np.inf)
+
+                ntparams = trans.ntparams
+                trans.tparams = np.random.uniform(-5, 5, size=ntparams)
+
+                # Check x -> forward(x) -> backward(y) is stable
+                y = trans.forward(x)
+                yp = trans.forward(x+delta)
+                jacn =  (yp-y)/delta
+                jac = trans.jacobian_det(x)
+
+                # Check jacobian are positive
+                idx = ~np.isnan(jac)
+                ck = np.all(jac[idx]>0.)
+                if not ck:
+                    print('Transform {0} failing the positive Jacobian test'.format(trans.name))
+                self.assertTrue(ck)
+
+                # Check jacobian are equal
+                idx = idx & (jac>0.)
+                crit = np.abs(jac-jacn)/(jac+jacn)
+                ck = np.all(crit[idx]<1e-2)
+                if not ck:
+                    print('Transform {0} failing the numerical Jacobian test'.format(trans.name))
+                self.assertTrue(ck)
 
 
     def test_all_transform_plot(self):
@@ -142,16 +190,26 @@ class TransformTestCase(unittest.TestCase):
 
             trans = transform.getinstance(nm)
 
-            x = np.linspace(-5, 10)
+            xmin = -5
+            if nm in ['Log', 'LogSinh']:
+                xmin = 1e-1
+
+            x = np.linspace(xmin, 10, 200)
 
             ntparams = trans.ntparams
-            trans.tparams = np.random.uniform(-1, 1, size=ntparams)
-            y = trans.forward(x)
+
+            if nm in ['LogSinh']:
+                trans.constants = 5
 
             plt.close('all')
             fig, ax = plt.subplots()
-            ax.plot(x, y)
-            ax.set_title(nm + ': rparams = {0}'.format(trans.rparams))
+            for pp in [-5, 0, 2]:
+                trans.tparams = [pp] * ntparams
+                y = trans.forward(x)
+                ax.plot(x, y, label='tparams = {0} (rp={1})'.format(pp,
+                                        trans.rparams))
+            ax.legend(loc=4)
+            ax.set_title(nm)
             fig.savefig(os.path.join(FOUT, 'transform_'+nm+'.png'))
 
 

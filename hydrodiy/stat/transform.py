@@ -2,14 +2,14 @@ import math
 import numpy as np
 
 
-def bounded(a, amin, amax):
-    ''' Convert bounded variable to non-bounded via logit '''
+def forward_bounded(a, amin, amax):
+    ''' Convert forward_bounded variable to non-bounded via logit '''
     bnd = 1-1./(1+math.exp(a))
     bnd = bnd*(amax-amin) + amin
     return bnd
 
 def backward_bounded(bnd, amin, amax, eps=1e-10):
-    ''' Convert non-bounded variable to bounded via logit '''
+    ''' Convert non-bounded variable to forward_bounded via logit '''
     value = (bnd-amin)/(amax-amin)
     if value < eps:
         return amin
@@ -48,10 +48,15 @@ def getinstance(_name):
 class Transform(object):
     ''' Simple interface to common transform functions '''
 
-    def __init__(self, ntparams, name, nrparams=None):
+    def __init__(self, ntparams, name,
+            nrparams=None,  \
+            rparams_mins = None, \
+            rparams_maxs = None, \
+            nconstants=0):
         ''' Initialise transform object with number of transformed
         parameters (ntparams) and _name. Number of raw parameters
         is optional, will be set to ntparams by default.
+        Number of constants is set to 0 by default.
         '''
         self._name = name
 
@@ -70,14 +75,35 @@ class Transform(object):
             nrparams = ntparams
 
         self._nrparams = nrparams
+        self._rparams = np.nan * np.ones(nrparams)
+
+        if rparams_mins is None:
+            rparams_mins = [-np.inf] * nrparams
+
+        self._rparams_mins = np.atleast_1d(rparams_mins)
+        if len(self._rparams_mins) != nrparams:
+            raise ValueError('Wrong length of mins')
+
+        if rparams_maxs is None:
+            rparams_maxs = [np.inf] * nrparams
+
+        self._rparams_maxs = np.atleast_1d(rparams_maxs)
+        if len(self._rparams_maxs) != nrparams:
+            raise ValueError('Wrong length of maxs')
+
+        # Initialise constants
+        self._nconstants = nconstants
         if nrparams > 0:
-            self._rparams = np.nan * np.ones(nrparams)
+            self._constants = np.nan * np.ones(nconstants)
         else:
-            self._rparams = None
+            self._constants = None
 
 
     def __str__(self):
         s = '\n{0} transform\n'.format(self._name)
+        if self._nconstants > 0:
+            s += '  Constants = [' + ', '.join(['{0:3.3e}'.format(cst) \
+                for cst in  self._constants]) + ']'
         if self._nrparams > 0:
             s += '  Raw params = [' + ', '.join(['{0:3.3e}'.format(rp) \
                 for rp in  self._rparams]) + ']'
@@ -104,18 +130,43 @@ class Transform(object):
 
 
     @property
+    def nconstants(self):
+        return self._nconstants
+
+
+    @property
     def rparams(self):
         return self._rparams
 
     @rparams.setter
     def rparams(self, value):
+        if self.nrparams == 0:
+            return
+
         value = np.atleast_1d(value).astype(np.float64)
         if len(value) != self._nrparams:
             raise ValueError('Wrong number of raw parameters' + \
                 ' ({0}), should be {1}'.format(len(value),
                     self._nrparams))
-        self._rparams = value
+        self._rparams = np.clip(value, self._rparams_mins, self._rparams_maxs)
         self._raw2trans()
+
+
+    @property
+    def constants(self):
+        return self._constants
+
+    @constants.setter
+    def constants(self, value):
+        if self.nconstants == 0:
+            return
+
+        value = np.atleast_1d(value).astype(np.float64)
+        if len(value) != self._nconstants:
+            raise ValueError('Wrong number of constants' + \
+                ' ({0}), should be {1}'.format(len(value),
+                    self._nconstants))
+        self._constants = value
 
 
     @property
@@ -124,6 +175,9 @@ class Transform(object):
 
     @tparams.setter
     def tparams(self, value):
+        if self.ntparams == 0:
+            return
+
         value = np.atleast_1d(value).astype(np.float64)
         if len(value) != self._ntparams:
             raise ValueError('Wrong number of trans parameters' + \
@@ -159,7 +213,6 @@ class Transform(object):
         raise NotImplementedError('Method jacobian_det not implemented')
 
 
-
 class IdentityTransform(Transform):
 
     def __init__(self):
@@ -179,31 +232,25 @@ class IdentityTransform(Transform):
 class LogTransform(Transform):
 
     def __init__(self):
-        Transform.__init__(self, 1, 'Log')
-
-    def _trans2raw(self):
-        self._rparams[0] = math.exp(self._tparams[0])
-
-    def _raw2trans(self):
-        self._tparams[0] = math.log(self._rparams[0])
+        Transform.__init__(self, 0, 'Log', nconstants=1)
+        self.constants = 0.
 
     def forward(self, x):
-        cst = self._rparams[0]
-        x = np.clip(x, -cst+self._eps, np.inf)
+        cst = self._constants[0]
         y = np.log(cst+x)
+        y[x<0] = np.nan
         return y
 
     def backward(self, y):
-        cst = self._rparams[0]
+        cst = self._constants[0]
         x =  np.exp(y)-cst
+        x[x<0] = np.nan
         return x
 
     def jacobian_det(self, x):
-        cst = self._rparams[0]
-        x = np.clip(x, -cst+self._eps, np.inf)
-        j = np.nan * x
-        idx = cst+x > 0.
-        j[idx] =  1./(cst+x[idx])
+        cst = self._constants[0]
+        j =  1./(cst+x)
+        j[x<0] = np.nan
         return j
 
 
@@ -214,10 +261,10 @@ class BoxCoxTransform(Transform):
         Transform.__init__(self, 1, 'BoxCox')
 
     def _trans2raw(self):
-        self._rparams[0] = bounded(self._tparams[0], 0, 4)
+        self._rparams[0] = forward_bounded(self._tparams[0], 1e-2, 3)
 
     def _raw2trans(self):
-        self._tparams[0] = backward_bounded(self._rparams[0], 0, 4)
+        self._tparams[0] = backward_bounded(self._rparams[0], 1e-2, 3)
 
     def forward(self, x):
         lam = self._rparams[0]
@@ -226,13 +273,13 @@ class BoxCoxTransform(Transform):
 
     def backward(self, y):
         lam = self._rparams[0]
-        x =  np.sign(y)*np.power(lam*np.abs(y)+1., 1./lam)-1.
+        x =  np.sign(y)*(np.power(lam*np.abs(y)+1., 1./lam)-1.)
         # Highly unreliable for b<0 and if y -> -1/b
         return x
 
     def jacobian_det(self, x):
         lam = self._rparams[0]
-        j = np.sign(x)*np.power(1.+np.abs(x), lam-1)
+        j = np.power(1.+np.abs(x), lam-1)
         return j
 
 
@@ -243,14 +290,14 @@ class YeoJTransform(Transform):
         Transform.__init__(self, 3, 'YeoJohnson')
 
     def _trans2raw(self):
-        self._rparams[0] =  self._tparams[0]
-        self._rparams[1] =  math.exp(self._tparams[1])
-        self._rparams[2] =  bounded(self._tparams[2], -1, 3)
+        self._rparams[0] = self._tparams[0]
+        self._rparams[1] = math.exp(self._tparams[1])
+        self._rparams[2] = forward_bounded(self._tparams[2], -1, 3)
 
     def _raw2trans(self):
-        self._tparams[0] =  self._rparams[0]
-        self._tparams[1] =  math.log(self._rparams[1])
-        self._tparams[2] =  backward_bounded(self._rparams[2], -1, 3)
+        self._tparams[0] = self._rparams[0]
+        self._tparams[1] = math.log(self._rparams[1])
+        self._tparams[2] = backward_bounded(self._rparams[2], -1, 3)
 
     def forward(self, x):
         loc, scale, expon = self._rparams
@@ -312,43 +359,62 @@ class YeoJTransform(Transform):
         return j*scale
 
 
+def logsinh_ab(eps):
+    A = math.sqrt(4788.*eps*eps-8467.2*eps+3969.)
+    nu = math.sqrt((210.*eps-157.5+2.5*A)/(14.-15.*eps))
+
+    c_constant = 1e-2
+    a = nu/(1+5./c_constant)
+    b = a/c_constant
+
+    return a, b
+
 
 class LogSinhTransform(Transform):
 
     def __init__(self):
-        Transform.__init__(self, 2, 'LogSinh')
+        Transform.__init__(self, 1, 'LogSinh', nconstants=1)
+
 
     def _trans2raw(self):
-        self._rparams = np.exp(self._tparams)
+        self._rparams[0] = forward_bounded(self._tparams[0], 0.3, 0.93)
+
 
     def _raw2trans(self):
-        self._rparams = np.log(self._rparams)
+        self._tparams[0] = backward_bounded(self._rparams[0], 0.3, 0.93)
+
 
     def forward(self, x):
-        a, b = self._rparams
-        x = np.clip(x, -a/b+self._eps, np.inf)
-        w = a + b*x
+        a, b = logsinh_ab(self._rparams[0])
+        xmax = self._constants[0]
+        w = a + b*x/xmax
         y = x*np.nan
         y = (w+np.log((1.-np.exp(-2.*w))/2.))/b
+        y[x<0] = np.nan
 
         return y
 
 
     def backward(self, y):
-        a, b = self._rparams
+        a, b = logsinh_ab(self._rparams[0])
+        xmax = self._constants[0]
         w = b*y
         output = y*np.nan
         x = y + (np.log(1.+np.sqrt(1.+np.exp(-2.*w)))-a)/b
+        x *= xmax
+        x[x<0] = np.nan
 
         return x
 
 
     def jacobian_det(self, x):
-        a, b = self._rparams
-        x = np.clip(x, -a/b+self._eps, np.inf)
-        w = a + b*x
+        a, b = logsinh_ab(self._rparams[0])
+        xmax = self._constants[0]
+        w = a + b*x/xmax
 
-        return 1./np.tanh(w)
+        jac = 1./xmax/np.tanh(w)
+        jac[x<0] = np.nan
 
+        return jac
 
 
