@@ -389,7 +389,8 @@ class LogSinhTransform(Transform):
     def forward(self, x):
         a, b = logsinh_ab(self._rparams[0])
         xmax = self._constants[0]
-        w = a + b*x/xmax
+        u = 5.*x/xmax
+        w = a + b*u
         y = np.where(x>0, (w+np.log((1.-np.exp(-2.*w))/2.))/b, np.nan)
 
         return y
@@ -399,8 +400,8 @@ class LogSinhTransform(Transform):
         xmax = self._constants[0]
         w = b*y
         output = y*np.nan
-        x = y + (np.log(1.+np.sqrt(1.+np.exp(-2.*w)))-a)/b
-        x *= xmax
+        u = y + (np.log(1.+np.sqrt(1.+np.exp(-2.*w)))-a)/b
+        x = xmax*u/5
 
         return x
 
@@ -408,9 +409,9 @@ class LogSinhTransform(Transform):
     def jacobian_det(self, x):
         a, b = logsinh_ab(self._rparams[0])
         xmax = self._constants[0]
-        w = a + b*x/xmax
-        jac = 1./xmax/np.tanh(w)
-        jac = np.where(x>0, 1./xmax/np.tanh(w), np.nan)
+        u = 5.*x/xmax
+        w = a + b*u
+        jac = np.where(x>0, 5./xmax/np.tanh(w), np.nan)
 
         return jac
 
