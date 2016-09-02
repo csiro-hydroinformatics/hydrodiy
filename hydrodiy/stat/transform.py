@@ -257,7 +257,7 @@ class BoxCoxTransform(Transform):
 
     def __init__(self):
         Transform.__init__(self, 'BoxCox', 1,
-            rparams_mins=1e-2,
+            rparams_mins=1e-5,
             rparams_maxs=3.)
 
     def _trans2raw(self):
@@ -375,7 +375,7 @@ class LogSinhTransform(Transform):
 
     def __init__(self):
         Transform.__init__(self, 'LogSinh', 1, nconstants=1,
-            rparams_mins=0.3,
+            rparams_mins=1e-5,
             rparams_maxs=0.93)
 
     def _trans2raw(self):
