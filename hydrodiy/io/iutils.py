@@ -163,7 +163,7 @@ def script_template(filename, comment,
 
 def get_logger(name, level='INFO', \
         console=True, flog=None, \
-        fmt='%(asctime)s - %(levelname)s - %(message)s', \
+        fmt='%(asctime)s - %(name)s - %(levelname)s - %(message)s', \
         remove_flog=True,
         no_duplicate_handler=True):
     ''' Get a logger object
