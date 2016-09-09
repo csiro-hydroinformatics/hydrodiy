@@ -9,6 +9,10 @@ import matplotlib.pyplot as plt
 import warnings
 #warnings.filterwarnings('error')
 
+TRANS_NAMES = ['Log', 'BoxCox', 'Bound', \
+                'YeoJohnson', 'LogSinh', 'Identity']
+
+
 class TransformTestCase(unittest.TestCase):
 
     def setUp(self):
@@ -63,11 +67,10 @@ class TransformTestCase(unittest.TestCase):
     def test_print(self):
         ''' Test printing for all transforms '''
 
-        for nm in ['Log', 'BoxCox', \
-                'YeoJohnson', 'LogSinh', 'Identity']:
+        for nm in TRANS_NAMES:
 
             trans = transform.getinstance(nm)
-            if trans.nconstants > 0:
+            if trans.nconstants == 1:
                 trans.constants = 5.
 
             ntparams = trans.ntparams
@@ -78,11 +81,10 @@ class TransformTestCase(unittest.TestCase):
     def test_set_params(self):
         ''' Test setting parameters for all transforms '''
 
-        for nm in ['Log', 'BoxCox', \
-                'YeoJohnson', 'LogSinh', 'Identity']:
+        for nm in TRANS_NAMES:
 
             trans = transform.getinstance(nm)
-            if trans.nconstants > 0:
+            if trans.nconstants == 1:
                 trans.constants = 5.
 
             ntparams = trans.ntparams
@@ -109,11 +111,10 @@ class TransformTestCase(unittest.TestCase):
     def test_forward_backward(self):
         ''' Test all transforms backward/forward '''
 
-        for nm in ['Log', 'BoxCox', \
-                'YeoJohnson', 'LogSinh', 'Identity']:
+        for nm in TRANS_NAMES:
 
             trans = transform.getinstance(nm)
-            if trans.nconstants > 0:
+            if trans.nconstants == 1:
                 trans.constants = 5.
 
             for sample in range(100):
@@ -122,6 +123,9 @@ class TransformTestCase(unittest.TestCase):
 
                 if nm == 'Log':
                     x = np.clip(x, -5, np.inf)
+
+                if nm == 'Bound':
+                    trans.constants = [np.min(x)-1, np.max(x)+1]
 
                 ntparams = trans.ntparams
                 trans.tparams = np.random.uniform(-5, 5, size=ntparams)
@@ -135,6 +139,7 @@ class TransformTestCase(unittest.TestCase):
                 ck = np.allclose(x[idx], xx[idx])
                 if not ck:
                     print('Transform {0} failing the forward/backward test'.format(trans.name))
+
                 self.assertTrue(ck)
 
 
@@ -143,19 +148,23 @@ class TransformTestCase(unittest.TestCase):
 
         delta = 1e-5
 
-        for nm in ['Log', 'BoxCox', \
-                'YeoJohnson', 'LogSinh', 'Identity']:
+        for nm in TRANS_NAMES:
 
             trans = transform.getinstance(nm)
-            if trans.nconstants > 0:
+            if trans.nconstants == 1:
                 trans.constants = 5.
 
             for sample in range(100):
 
                 x = np.random.normal(size=1000, loc=5, scale=20)
 
-                if nm == 'Log':
-                    x = np.clip(x, -5, np.inf)
+                if nm in ['Log', 'BoxCox']:
+                    x = np.clip(x, -1, np.inf)
+                    # Avoid regions of infinite gradient
+                    x = x[np.abs(x)>1e-1]
+
+                if nm == 'Bound':
+                    trans.constants = [np.min(x)-1, np.max(x)+1]
 
                 ntparams = trans.ntparams
                 trans.tparams = np.random.uniform(-5, 5, size=ntparams)
@@ -175,10 +184,12 @@ class TransformTestCase(unittest.TestCase):
 
                 # Check jacobian are equal
                 idx = idx & (jac>0.)
-                crit = np.abs(jac-jacn)/(jac+jacn)
-                ck = np.all(crit[idx]<1e-2)
+                crit = np.abs(jac-jacn)/(1+jac+jacn)
+                idx = idx & ~np.isnan(crit)
+                ck = np.all(crit[idx]<5e-4)
                 if not ck:
                     print('Transform {0} failing the numerical Jacobian test'.format(trans.name))
+
                 self.assertTrue(ck)
 
 
@@ -186,8 +197,7 @@ class TransformTestCase(unittest.TestCase):
 
         FOUT = self.FOUT
 
-        for nm in ['Log', 'BoxCox', \
-                'YeoJohnson', 'LogSinh']:
+        for nm in TRANS_NAMES:
 
             trans = transform.getinstance(nm)
 

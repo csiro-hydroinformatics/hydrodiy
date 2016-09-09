@@ -1,19 +1,21 @@
 import math
 import numpy as np
 
+EPS = 1e-10
 
-def forward_bounded(a, amin, amax):
-    ''' Convert forward_bounded variable to non-bounded via logit '''
+
+def inf2bound(a, amin, amax):
+    ''' Convert inf2bound variable to non-bounded via logit '''
     bnd = 1-1./(1+math.exp(a))
     bnd = bnd*(amax-amin) + amin
     return bnd
 
-def backward_bounded(bnd, amin, amax, eps=1e-10):
-    ''' Convert non-bounded variable to forward_bounded via logit '''
-    value = (bnd-amin)/(amax-amin)
-    if value < eps:
+def bound2inf(bnd, amin, amax):
+    ''' Convert non-bounded variable to inf2bound via logit '''
+    value = min(1-EPS, max(EPS, (bnd-amin)/(amax-amin)))
+    if value < EPS:
         return amin
-    elif value > 1.-eps:
+    elif value > 1.-EPS:
         return amax
     else:
         value = math.log(1./(1-value)-1)
@@ -25,6 +27,9 @@ def getinstance(_name):
 
     if _name == IdentityTransform()._name:
         return IdentityTransform()
+
+    if _name == BoundTransform()._name:
+        return BoundTransform()
 
     if _name == LogTransform()._name:
         return LogTransform()
@@ -61,7 +66,7 @@ class Transform(object):
         self._name = name
 
         # Value added to avoid nan around 0.
-        self._eps = 1e-10
+        self._eps = EPS
 
         # Initialise trans params
         self._ntparams = ntparams
@@ -228,6 +233,34 @@ class IdentityTransform(Transform):
         return np.ones_like(x)
 
 
+class BoundTransform(Transform):
+
+    def __init__(self):
+        Transform.__init__(self, 'Bound', 0,
+            nconstants=2)
+        self.constants = [-10, 10]
+
+    def forward(self, x):
+        lower, upper = self._constants
+        value = (x-lower)/(upper-lower)
+        y = np.log(1./(1-value)-1)
+        return y
+
+    def backward(self, y):
+        lower, upper = self._constants
+        bnd = 1-1./(1+np.exp(y))
+        x = bnd*(upper-lower) + lower
+        return x
+
+    def jacobian_det(self, x):
+        lower, upper = self._constants
+        value = (x-lower)/(upper-lower)
+        j = 1./(upper-lower) / value / (1-value)
+        j[value<EPS] = np.nan
+        j[value>1-EPS] = np.nan
+        return j
+
+
 
 class LogTransform(Transform):
 
@@ -261,24 +294,24 @@ class BoxCoxTransform(Transform):
             rparams_maxs=3.)
 
     def _trans2raw(self):
-        self._rparams[0] = forward_bounded(self._tparams[0], 1e-2, 3.)
+        self._rparams[0] = inf2bound(self._tparams[0], 1e-2, 3.)
 
     def _raw2trans(self):
-        self._tparams[0] = backward_bounded(self._rparams[0], 1e-2, 3.)
+        self._tparams[0] = bound2inf(self._rparams[0], 1e-2, 3.)
 
     def forward(self, x):
         lam = self._rparams[0]
-        y = np.where(x>0, (np.power(x,lam)-1.)/lam, np.nan)
+        y = (np.power(x, lam)-1)/lam
         return y
 
     def backward(self, y):
         lam = self._rparams[0]
-        x =  np.where(y>-1./lam, np.power(lam*y+1., 1./lam), np.nan)
+        x =  np.power(lam*y+1., 1./lam)
         return x
 
     def jacobian_det(self, x):
         lam = self._rparams[0]
-        j = np.where(x>0, np.power(x,lam-1.), np.nan)
+        j = np.power(x,lam-1.)
         return j
 
 
@@ -293,12 +326,12 @@ class YeoJTransform(Transform):
     def _trans2raw(self):
         self._rparams[0] = self._tparams[0]
         self._rparams[1] = math.exp(self._tparams[1])
-        self._rparams[2] = forward_bounded(self._tparams[2], -1., 3.)
+        self._rparams[2] = inf2bound(self._tparams[2], -1., 3.)
 
     def _raw2trans(self):
         self._tparams[0] = self._rparams[0]
         self._tparams[1] = math.log(self._rparams[1])
-        self._tparams[2] = backward_bounded(self._rparams[2], -1., 3.)
+        self._tparams[2] = bound2inf(self._rparams[2], -1., 3.)
 
     def forward(self, x):
         loc, scale, expon = self._rparams
@@ -379,11 +412,11 @@ class LogSinhTransform(Transform):
             rparams_maxs=0.93)
 
     def _trans2raw(self):
-        self._rparams[0] = forward_bounded(self._tparams[0], 0.3, 0.93)
+        self._rparams[0] = inf2bound(self._tparams[0], 0.3, 0.93)
 
 
     def _raw2trans(self):
-        self._tparams[0] = backward_bounded(self._rparams[0], 0.3, 0.93)
+        self._tparams[0] = bound2inf(self._rparams[0], 0.3, 0.93)
 
     def forward(self, x):
         a, b = logsinh_ab(self._rparams[0])
