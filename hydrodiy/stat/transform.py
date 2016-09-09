@@ -22,29 +22,29 @@ def bound2inf(bnd, amin, amax):
     return value
 
 
-def getinstance(_name):
+def get_transform(name):
     ''' Returns an instance of a particular transform '''
 
-    if _name == IdentityTransform()._name:
-        return IdentityTransform()
+    if name == 'Identity':
+        return IdentityTransform
 
-    if _name == BoundTransform()._name:
-        return BoundTransform()
+    if name == 'Bound':
+        return BoundTransform
 
-    if _name == LogTransform()._name:
-        return LogTransform()
+    if name == 'Log':
+        return LogTransform
 
-    elif _name == BoxCoxTransform()._name:
-        return BoxCoxTransform()
+    elif name == 'BoxCox':
+        return BoxCoxTransform
 
-    elif _name == YeoJTransform()._name:
-        return YeoJTransform()
+    elif name == 'YeoJohnson':
+        return YeoJTransform
 
-    elif _name == LogSinhTransform()._name:
-        return LogSinhTransform()
+    elif name == 'LogSinh':
+        return LogSinhTransform
 
     else:
-        raise ValueError('Cannot find transform _name %s' % _name)
+        raise ValueError('Cannot recognised transform ' + name)
 
     return trans
 
@@ -55,9 +55,10 @@ class Transform(object):
 
     def __init__(self, name, ntparams,
             nrparams=None,  \
+            nconstants=0, \
             rparams_mins=None, \
             rparams_maxs=None, \
-            nconstants=0):
+            constants=None):
         ''' Initialise transform object with number of transformed
         parameters (ntparams) and _name. Number of raw parameters
         is optional, will be set to ntparams by default.
@@ -97,16 +98,22 @@ class Transform(object):
             raise ValueError('Wrong length of maxs')
 
         # Initialise constants
-        self._nconstants = nconstants
-        if nrparams > 0:
-            self._constants = np.nan * np.ones(nconstants)
-        else:
+        if nconstants == 0:
             self._constants = None
+        else:
+            constants = np.atleast_1d(constants).astype(float)
+
+            if constants.shape[0] != nconstants:
+                raise ValueError(('Expected constants of length' + \
+                    ' {0}, got {1}').format(nconstants, \
+                        constants.shape[0]))
+
+            self._constants = constants
 
 
     def __str__(self):
         s = '\n{0} transform\n'.format(self._name)
-        if self._nconstants > 0:
+        if not self._constants is None :
             s += '  Constants = [' + ', '.join(['{0:3.3e}'.format(cst) \
                 for cst in  self._constants]) + ']'
         if self._nrparams > 0:
@@ -135,11 +142,6 @@ class Transform(object):
 
 
     @property
-    def nconstants(self):
-        return self._nconstants
-
-
-    @property
     def rparams(self):
         return self._rparams
 
@@ -160,18 +162,6 @@ class Transform(object):
     @property
     def constants(self):
         return self._constants
-
-    @constants.setter
-    def constants(self, value):
-        if self.nconstants == 0:
-            return
-
-        value = np.atleast_1d(value).astype(np.float64)
-        if len(value) != self._nconstants:
-            raise ValueError('Wrong number of constants' + \
-                ' ({0}), should be {1}'.format(len(value),
-                    self._nconstants))
-        self._constants = value
 
 
     @property
@@ -218,10 +208,13 @@ class Transform(object):
         raise NotImplementedError('Method jacobian_det not implemented')
 
 
+
 class IdentityTransform(Transform):
 
-    def __init__(self):
-        Transform.__init__(self, 'Identity', 0)
+    def __init__(self, constants=None):
+        Transform.__init__(self, 'Identity', \
+                ntparams=0, \
+                nconstants=0)
 
     def forward(self, x):
         return x
@@ -233,12 +226,15 @@ class IdentityTransform(Transform):
         return np.ones_like(x)
 
 
+
 class BoundTransform(Transform):
 
-    def __init__(self):
-        Transform.__init__(self, 'Bound', 0,
-            nconstants=2)
-        self.constants = [-10, 10]
+    def __init__(self, constants=[-10., 10.]):
+
+        Transform.__init__(self, 'Bound', \
+                ntparams=0, \
+                nconstants=2, \
+                constants=constants)
 
     def forward(self, x):
         lower, upper = self._constants
@@ -264,33 +260,41 @@ class BoundTransform(Transform):
 
 class LogTransform(Transform):
 
-    def __init__(self):
-        Transform.__init__(self, 'Log', 0,
-            nconstants=1)
-        self.constants = 0.
+    def __init__(self, constants=1e-3):
+
+        Transform.__init__(self, 'Log', \
+                ntparams=0, \
+                nconstants=1, \
+                constants=constants)
 
     def forward(self, x):
         cst = self._constants[0]
-        y = np.where(x>0, np.log(x+cst), np.nan)
+        y = np.log(x+cst)
+        y[x<0] = np.nan
         return y
 
     def backward(self, y):
         cst = self._constants[0]
-        x =  np.where(y>math.log(cst), np.exp(y)-cst, np.nan)
+        x =  np.exp(y)-cst
         return x
 
     def jacobian_det(self, x):
         cst = self._constants[0]
-        j = np.where(x>0, 1./(x+cst), np.nan)
+        j = 1./(x+cst)
+        j[x<0] = np.nan
         return j
 
 
 
 class BoxCoxTransform(Transform):
 
-    def __init__(self):
-        Transform.__init__(self, 'BoxCox', 1,
-            rparams_mins=1e-5,
+    def __init__(self, constants=1e-3):
+
+        Transform.__init__(self, 'BoxCox',
+            ntparams=1,
+            nconstants=1, \
+            constants=constants, \
+            rparams_mins=1e-5, \
             rparams_maxs=3.)
 
     def _trans2raw(self):
@@ -300,27 +304,34 @@ class BoxCoxTransform(Transform):
         self._tparams[0] = bound2inf(self._rparams[0], 1e-2, 3.)
 
     def forward(self, x):
+        cst = self._constants[0]
         lam = self._rparams[0]
-        y = (np.power(x, lam)-1)/lam
+        y = (np.power(x+cst, lam)-cst**lam)/lam
         return y
 
     def backward(self, y):
+        cst = self._constants[0]
         lam = self._rparams[0]
-        x =  np.power(lam*y+1., 1./lam)
+        x =  np.power(lam*y+cst**lam, 1./lam)-cst
         return x
 
     def jacobian_det(self, x):
+        cst = self._constants[0]
         lam = self._rparams[0]
-        j = np.power(x,lam-1.)
+        j = np.power(x+cst,lam-1.)
         return j
 
 
 
 class YeoJTransform(Transform):
 
-    def __init__(self):
-        Transform.__init__(self, 'YeoJohnson', 3,
-            rparams_mins=[-np.inf, 0., -1.],
+    def __init__(self, constants=None):
+
+        Transform.__init__(self, 'YeoJohnson',
+            ntparams=3, \
+            nconstants=0, \
+            constants=constants, \
+            rparams_mins=[-np.inf, 0., -1.], \
             rparams_maxs=[np.inf, np.inf, 3.])
 
     def _trans2raw(self):
@@ -406,14 +417,17 @@ def logsinh_ab(eps):
 
 class LogSinhTransform(Transform):
 
-    def __init__(self):
-        Transform.__init__(self, 'LogSinh', 1, nconstants=1,
-            rparams_mins=1e-5,
+    def __init__(self, constants=10.):
+
+        Transform.__init__(self, 'LogSinh', \
+            ntparams=1, \
+            nconstants=1, \
+            constants=constants, \
+            rparams_mins=1e-5, \
             rparams_maxs=0.93)
 
     def _trans2raw(self):
         self._rparams[0] = inf2bound(self._tparams[0], 0.3, 0.93)
-
 
     def _raw2trans(self):
         self._tparams[0] = bound2inf(self._rparams[0], 0.3, 0.93)

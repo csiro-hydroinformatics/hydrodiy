@@ -69,9 +69,8 @@ class TransformTestCase(unittest.TestCase):
 
         for nm in TRANS_NAMES:
 
-            trans = transform.getinstance(nm)
-            if trans.nconstants == 1:
-                trans.constants = 5.
+            T = transform.get_transform(nm)
+            trans = T()
 
             ntparams = trans.ntparams
             trans.tparams = np.random.uniform(-5, 5, size=ntparams)
@@ -83,9 +82,8 @@ class TransformTestCase(unittest.TestCase):
 
         for nm in TRANS_NAMES:
 
-            trans = transform.getinstance(nm)
-            if trans.nconstants == 1:
-                trans.constants = 5.
+            T = transform.get_transform(nm)
+            trans = T()
 
             ntparams = trans.ntparams
             if ntparams == 0:
@@ -113,9 +111,11 @@ class TransformTestCase(unittest.TestCase):
 
         for nm in TRANS_NAMES:
 
-            trans = transform.getinstance(nm)
-            if trans.nconstants == 1:
-                trans.constants = 5.
+            T = transform.get_transform(nm)
+            if nm == 'LogSinh':
+                trans = T(5.)
+            else:
+                trans = T()
 
             for sample in range(100):
 
@@ -125,7 +125,7 @@ class TransformTestCase(unittest.TestCase):
                     x = np.clip(x, -5, np.inf)
 
                 if nm == 'Bound':
-                    trans.constants = [np.min(x)-1, np.max(x)+1]
+                    trans = T([np.min(x)-1, np.max(x)+1])
 
                 ntparams = trans.ntparams
                 trans.tparams = np.random.uniform(-5, 5, size=ntparams)
@@ -150,9 +150,11 @@ class TransformTestCase(unittest.TestCase):
 
         for nm in TRANS_NAMES:
 
-            trans = transform.getinstance(nm)
-            if trans.nconstants == 1:
-                trans.constants = 5.
+            T = transform.get_transform(nm)
+            if nm == 'LogSinh':
+                trans = T(5.)
+            else:
+                trans = T()
 
             for sample in range(100):
 
@@ -164,7 +166,7 @@ class TransformTestCase(unittest.TestCase):
                     x = x[np.abs(x)>1e-1]
 
                 if nm == 'Bound':
-                    trans.constants = [np.min(x)-1, np.max(x)+1]
+                    trans = T([np.min(x)-1, np.max(x)+1])
 
                 ntparams = trans.ntparams
                 trans.tparams = np.random.uniform(-5, 5, size=ntparams)
@@ -199,14 +201,15 @@ class TransformTestCase(unittest.TestCase):
 
         for nm in TRANS_NAMES:
 
-            trans = transform.getinstance(nm)
+            T = transform.get_transform(nm)
+            if nm == 'LogSinh':
+                trans = T(5.)
+            else:
+                trans = T()
 
             x = np.linspace(-3, 10, 200)
 
             ntparams = trans.ntparams
-
-            if nm in ['LogSinh']:
-                trans.constants = 5
 
             plt.close('all')
             fig, ax = plt.subplots()
