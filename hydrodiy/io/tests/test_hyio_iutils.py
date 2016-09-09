@@ -38,12 +38,17 @@ class UtilsTestCase(unittest.TestCase):
         subprocess.check_call('python ' + fs, shell=True)
 
         fs = '%s/script_test2.pytest' % self.FOUT
-        iutils.script_template(fs, 'test', type='plot')
+        iutils.script_template(fs, 'test', stype='plot')
         subprocess.check_call('python ' + fs, shell=True)
 
         fs = '%s/script_test3.pytest' % self.FOUT
-        iutils.script_template(fs, 'test', type='simple')
+        iutils.script_template(fs, 'test', stype='simple')
         subprocess.check_call('python ' + fs, shell=True)
+
+        fs = '%s/script_test4.sh' % self.FOUT
+        os.remove(fs)
+        iutils.script_template(fs, 'test', stype='bash')
+        subprocess.check_call(fs, shell=True)
 
 
     def test_str2vardict(self):

@@ -115,7 +115,7 @@ def str2vardict(source):
 
 
 def script_template(filename, comment,
-        type='process',
+        stype='process',
         author=None):
     ''' Write a script template
 
@@ -125,7 +125,7 @@ def script_template(filename, comment,
         Filename to write the script to
     comment : str
         Comment on purpose of the script
-    type : str
+    stype : str
         Type of script:
         * simple: script with minimal functionalities
         * process: data processing script
@@ -138,8 +138,16 @@ def script_template(filename, comment,
     >>> iutils.script_template('a_cool_script.py', 'Testing', 'plot', 'Bob Marley')
 
     '''
-    FMOD, modfile = os.path.split(__file__)
-    f = os.path.join(FMOD, 'script_template_%s.py' % type)
+    if not stype in ['simple', 'process', 'plot', 'bash']:
+        raise ValueError('Script type {0} not recognised'.format(stype))
+
+    ext = 'py'
+    if stype == 'bash':
+        ext = 'sh'
+
+    # Open script template
+    FMOD = os.path.dirname(os.path.abspath(__file__))
+    f = os.path.join(FMOD, 'script_template_{0}.{1}'.format(stype, ext))
     with open(f, 'r') as ft:
         txt = ft.readlines()
 
@@ -159,6 +167,9 @@ def script_template(filename, comment,
 
     with open(filename, 'w') as fs:
         fs.writelines(txt)
+
+    if stype == 'bash':
+        os.chmod(filename, 0o777)
 
 
 def get_logger(name, level='INFO', \

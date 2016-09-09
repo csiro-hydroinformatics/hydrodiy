@@ -9,6 +9,7 @@ build
 *.html
 *.gz
 *.bin
+*.sh
 *.so
 *.binh
 *.pytest

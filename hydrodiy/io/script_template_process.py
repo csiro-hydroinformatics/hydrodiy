@@ -13,16 +13,25 @@ import pandas as pd
 
 from hydrodiy.io import csv, iutils
 
-#----------------------------------------------------------------------
-def set_config():
-    ''' Set script configuration '''
+def entry_point():
 
+    #------------------------------------------------------------
+    # Config
+    #------------------------------------------------------------
     # Script args
     #nargs = len(sys.argv)
     #if nargs > 0:
     #    arg1 = sys.argv[1]
 
-    # Script path
+    ibatch = 0
+    nbatch = 5
+
+    config = {'ibatch':ibatch, 'nbatch':nbatch}
+    configstr = iutils.vardict2str(config)
+
+    #------------------------------------------------------------
+    # Paths
+    #------------------------------------------------------------
     source_file = os.path.abspath(__file__)
     froot = os.path.dirname(source_file)
 
@@ -31,29 +40,12 @@ def set_config():
     #    os.mkdir(fdata)
     fout = froot
 
-    config = {
-        'ibatch': 0,
-        'nbatch': 5,
-        'source_file': source_file,
-        'start': '{0}'.format(datetime.now()),
-        'froot': froot,
-        'fout': fout,
-        'fdata': fdata
-    }
-
-    # Set instance of logger
-    select = ['ibatch', 'nbatch']
-    vartxt = iutils.vardict2str({key:config[key] for key in select})
+    #------------------------------------------------------------
+    # Logging
+    #------------------------------------------------------------
     basename = re.sub('\\.py.*', '', os.path.basename(source_file))
-    flog = os.path.join(fout, basename + '_'+vartxt+'.log')
+    flog = os.path.join(fout, basename + '_'+configstr+'.log')
     LOGGER = iutils.get_logger(basename, flog=flog)
-
-    return config, LOGGER
-
-
-#----------------------------------------------------------------------
-def process(config, LOGGER):
-    ''' Process script '''
 
     #------------------------------------------------------------
     # Get data
@@ -81,7 +73,7 @@ def process(config, LOGGER):
 
     # To run a bash command
     cmd = 'ls -al'
-    subprocess.check_call(cmd, shell=True)
+    #subprocess.check_call(cmd, shell=True)
 
     # To run process across sites
     for idx, row in sites.iterrows():
@@ -98,20 +90,8 @@ def process(config, LOGGER):
     #-----------------------------------------------
     pass
 
+    LOGGER.info('Script {0} completed'.format(source_file))
 
-#----------------------------------------------------------------------
-def entry_point():
-    ''' Main function of the script. No need to edit that section. '''
-
-    # Define config options
-    config, LOGGER = set_config()
-
-    # Process data
-    process(config, LOGGER)
-    LOGGER.info('Process completed')
-
-    LOGGER.info('Script {0} completed'.format( \
-        config['source_file']))
 
 #----------------------------------------------------------------------
 if __name__ == "__main__":
