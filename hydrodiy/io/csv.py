@@ -40,7 +40,7 @@ def _header2comment(header):
             k = re.sub(' +', '_', k.strip().lower())
 
             if not bool(re.search('\:', s[:key_length_max])):
-                k = 'comment_%2.2d' % i
+                k = 'comment_{0:02d}'.format(i)
                 val = s
                 i += 1
 
@@ -123,7 +123,40 @@ def write_csv(data, filename, comment,
         float_format='%0.3f',
         archive=None,
         **kwargs):
-    """ write a pandas dataframe to csv with comments """
+    ''' write a pandas dataframe to csv with comments in header
+
+    Parameters
+    -----------
+    data : pandas.DataFrame
+        Dataframe to be written to file
+    filename : str
+        Path to file
+    comment : str (or dict)
+        Comments to be added to header
+    source_file : str
+        Path to script used to generate the data
+    author : str
+        Data author (default is given by os.getlogin)
+    write_index : bool
+        Write dataframe index or not (default not)
+    compress : bool
+        Compress data to gzip format
+    float_format : str
+        Floating point number format
+    archive : tarfile.TarFile
+        Archive to which data is to be added.
+    kwargs : dict
+        Arguments passed to pd.DataFrame.to_csv
+
+    Example
+    -----------
+    >>> df = pd.DataFrame(np.random.uniform(0, 1, (100, 4))
+    >>> # Create an empty script
+    >>> fo = open('script.py', 'w'); fo.close()
+    >>> # Store data
+    >>> csv.write_csv(df, 'data.csv', 'This is a test', 'script.py')
+
+    '''
 
     head = _csvhead(data.shape[0], data.shape[1],
                 comment,
@@ -150,7 +183,7 @@ def write_csv(data, filename, comment,
         else:
             fcsv = open(filename_full, 'w')
     else:
-        fcsv = tempfile.NamedTemporaryFile('w', suffix='.csv')
+        fcsv = tempfile.NamedTemporaryFile('w', delete=False)
         filename_full = fcsv.name
 
     # Write header
@@ -162,20 +195,48 @@ def write_csv(data, filename, comment,
         float_format=float_format, \
         **kwargs)
 
+    fcsv.close()
+
     if not archive is None:
         # Add file to archive
         archive.add(filename_full, arcname=filename)
 
-    fcsv.close()
+        # Delete file
+        os.remove(filename_full)
+
+
+
 
 def read_csv(filename, has_colnames=True, archive=None, **kwargs):
-    """ Reads data with comments on top to a pandas data frame"""
+    ''' Read a pandas dataframe from a csv with comments in header
+
+    Parameters
+    -----------
+    filename : str
+        Path to file
+    has_colnames : bool
+        Are column names stored in the first line of the data ?
+    archive : tarfile.TarFile
+        Archive to which data is to be added.
+    kwargs : dict
+        Arguments passed to pd.read_csv
+
+    Example
+    -----------
+    >>> df = pd.DataFrame(np.random.uniform(0, 1, (100, 4))
+    >>> # Create an empty script
+    >>> fo = open('script.py', 'w'); fo.close()
+    >>> # Store data
+    >>> csv.write_csv(df, 'data.csv', 'This is a test', 'script.py')
+    >>> df2 = csv.read_csv('data.csv')
+
+    '''
 
     if archive is None:
         # Add gz if file does not exists
         try:
             if not os.path.exists(filename):
-                filename = '%s.gz' % filename
+                filename += '.gz'
 
             # Open proper file type
             if filename.endswith('gz'):
@@ -187,13 +248,8 @@ def read_csv(filename, has_colnames=True, archive=None, **kwargs):
             # Assume filename is stream
             fcsv = filename
     else:
-        # Clean filename
-        filename = re.sub('\\.gz', '', filename)
-
         # Use the archive mode
-        tar = tarfile.open(archive, 'r:gz')
-        fcsv = tar.extractfile(filename)
-
+        fcsv = archive.extractfile(filename)
 
     # Reads content
     header = []
@@ -233,9 +289,6 @@ def read_csv(filename, has_colnames=True, archive=None, **kwargs):
         data = pd.read_csv(fcsv, header=None, **kwargs)
 
     fcsv.close()
-
-    if not archive is None:
-        tar.close()
 
     return data, comment
 

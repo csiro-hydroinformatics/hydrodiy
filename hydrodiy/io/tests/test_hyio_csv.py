@@ -131,20 +131,29 @@ class CsvTestCase(unittest.TestCase):
 
     def test_read_write_tar(self):
 
-        df = []
+        # Generate data
+        df = {}
         for i in range(4):
-            df.append(pd.DataFrame(np.random.normal(size=(100, 4))))
+            df['test_{0:02d}/test_{0}.csv'.format(i)] = \
+                    pd.DataFrame(np.random.normal(size=(100, 4)))
 
-        farchive = os.path.join(self.FOUT, 'test_archive.tar.gz')
-
-        with tarfile.open(farchive, 'w:gz') as archive:
-            for i in range(4):
-                csv.write_csv(df[i],
-                    filename='test_{0}.csv'.format(i),
+        # Write data to archive
+        farc = os.path.join(self.FOUT, 'test_archive.tar.gz')
+        with tarfile.open(farc, 'w:gz') as tar:
+            for k in df:
+                # Add file to tar with a directory structure
+                csv.write_csv(df[k],
+                    filename=k,
                     comment='test '+str(i),
-                    archive=archive,
+                    archive=tar,
+                    float_format='%0.20f',
                     source_file=os.path.abspath(__file__))
 
+        # Read it back and compare
+        with tarfile.open(farc, 'r:gz') as tar:
+            for k in df:
+                df2, _ = csv.read_csv(k, archive=tar)
+                self.assertTrue(np.allclose(df[k].values, df2.values))
 
 
 
