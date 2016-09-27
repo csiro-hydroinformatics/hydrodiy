@@ -2,6 +2,7 @@ import os
 import unittest
 import numpy as np
 import pandas as pd
+import tarfile
 
 from hydrodiy.io import csv
 
@@ -126,6 +127,25 @@ class CsvTestCase(unittest.TestCase):
         self.assertTrue(comment1['co2'] == comment2['co2'])
         self.assertTrue('toto' == comment2['author'])
         self.assertTrue(os.path.abspath(__file__) == comment2['source_file'])
+
+
+    def test_read_write_tar(self):
+
+        df = []
+        for i in range(4):
+            df.append(pd.DataFrame(np.random.normal(size=(100, 4))))
+
+        farchive = os.path.join(self.FOUT, 'test_archive.tar.gz')
+
+        with tarfile.open(farchive, 'w:gz') as archive:
+            for i in range(4):
+                csv.write_csv(df[i],
+                    filename='test_{0}.csv'.format(i),
+                    comment='test '+str(i),
+                    archive=archive,
+                    source_file=os.path.abspath(__file__))
+
+
 
 
 if __name__ == "__main__":

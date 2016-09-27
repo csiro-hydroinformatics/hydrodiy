@@ -1,6 +1,14 @@
 import sys, os, re, time, string
 
 import gzip
+import tarfile
+import tempfile
+
+# Python 2/3 string io import
+try:
+    from io import StringIO
+except ImportError:
+    from StringIO import StringIO
 
 has_distutils = False
 try:
@@ -109,10 +117,11 @@ def _csvhead(nrow, ncol, comment, source_file, author=None):
 
 def write_csv(data, filename, comment,
         source_file,
-        author = None,
-        write_index = False,
+        author=None,
+        write_index=False,
         compress=True,
         float_format='%0.3f',
+        archive=None,
         **kwargs):
     """ write a pandas dataframe to csv with comments """
 
@@ -125,43 +134,66 @@ def write_csv(data, filename, comment,
     if not os.path.exists(source_file):
         raise ValueError('%s file does not exists' % source_file)
 
+    if not archive is None:
+        compress = False
+
     # defines file name
     filename_full = filename
 
     if compress and ~filename.endswith('.gz'):
         filename_full += '.gz'
 
-    if compress:
-        fcsv = gzip.open(filename_full, 'wb')
+    # Open pipe depending on file type
+    if archive is None:
+        if compress:
+            fcsv = gzip.open(filename_full, 'wb')
+        else:
+            fcsv = open(filename_full, 'w')
     else:
-        fcsv = open(filename_full, 'w')
+        fcsv = tempfile.NamedTemporaryFile('w', suffix='.csv')
+        filename_full = fcsv.name
 
-    # Write data to file
+    # Write header
     for line in head:
-        fcsv.write('%s\n'%line)
+        fcsv.write(line+'\n')
 
+    # Write data itself
     data.to_csv(fcsv, index=write_index,
-        float_format=float_format, **kwargs)
+        float_format=float_format, \
+        **kwargs)
+
+    if not archive is None:
+        # Add file to archive
+        archive.add(filename_full, arcname=filename)
 
     fcsv.close()
 
-
-def read_csv(filename, has_colnames=True, **kwargs):
+def read_csv(filename, has_colnames=True, archive=None, **kwargs):
     """ Reads data with comments on top to a pandas data frame"""
 
-    # Add gz if file does not exists
-    try:
-        if not os.path.exists(filename):
-            filename = '%s.gz' % filename
+    if archive is None:
+        # Add gz if file does not exists
+        try:
+            if not os.path.exists(filename):
+                filename = '%s.gz' % filename
 
-        # Open proper file type
-        if filename.endswith('gz'):
-            fcsv = gzip.open(filename, 'rb')
-        else:
-            fcsv = open(filename, 'r')
-    except TypeError:
-        # Assume filename is stream
-        fcsv = filename
+            # Open proper file type
+            if filename.endswith('gz'):
+                fcsv = gzip.open(filename, 'rb')
+            else:
+                fcsv = open(filename, 'r')
+
+        except TypeError:
+            # Assume filename is stream
+            fcsv = filename
+    else:
+        # Clean filename
+        filename = re.sub('\\.gz', '', filename)
+
+        # Use the archive mode
+        tar = tarfile.open(archive, 'r:gz')
+        fcsv = tar.extractfile(filename)
+
 
     # Reads content
     header = []
@@ -201,6 +233,9 @@ def read_csv(filename, has_colnames=True, **kwargs):
         data = pd.read_csv(fcsv, header=None, **kwargs)
 
     fcsv.close()
+
+    if not archive is None:
+        tar.close()
 
     return data, comment
 
