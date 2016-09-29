@@ -27,14 +27,14 @@ class BoxplotTestCase(unittest.TestCase):
         fig, ax = plt.subplots()
         bx = Boxplot(ax=ax, data=self.data)
         bx.draw()
-        fig.savefig(os.path.join(self.FOUT, 'bx1.png'))
+        fig.savefig(os.path.join(self.FOUT, 'bx1_draw.png'))
 
 
     def test_draw_short(self):
         fig, ax = plt.subplots()
         bx = Boxplot(ax=ax, data=self.data[:5])
         bx.draw()
-        fig.savefig(os.path.join(self.FOUT, 'bx2.png'))
+        fig.savefig(os.path.join(self.FOUT, 'bx2_short.png'))
 
 
     def test_draw_props(self):
@@ -55,14 +55,14 @@ class BoxplotTestCase(unittest.TestCase):
             self.assertTrue(str(err).startswith('Cannot set value'))
 
         bx.draw()
-        fig.savefig(os.path.join(self.FOUT, 'bx3.png'))
+        fig.savefig(os.path.join(self.FOUT, 'bx3_props.png'))
 
 
     def test_by(self):
         fig, ax = plt.subplots()
         bx = Boxplot(ax=ax, data=self.data['data1'], by=self.data['cat'])
         bx.draw()
-        fig.savefig(os.path.join(self.FOUT, 'bx4.png'))
+        fig.savefig(os.path.join(self.FOUT, 'bx4_by.png'))
 
 
     def test_numpy(self):
@@ -70,15 +70,42 @@ class BoxplotTestCase(unittest.TestCase):
         data = np.random.uniform(0, 10, size=(1000, 6))
         bx = Boxplot(ax=ax, data=data)
         bx.draw()
-        fig.savefig(os.path.join(self.FOUT, 'bx5.png'))
+        fig.savefig(os.path.join(self.FOUT, 'bx5_numpy.png'))
 
 
     def test_log(self):
         fig, ax = plt.subplots()
         bx = Boxplot(ax=ax, data=self.data+3)
+        bx['count'] = {'showtext':True}
         bx.draw(logscale=True)
-        fig.savefig(os.path.join(self.FOUT, 'bx6.png'))
+        fig.savefig(os.path.join(self.FOUT, 'bx6_log.png'))
 
+
+    def test_width_by_count(self):
+        fig, ax = plt.subplots()
+        cat = self.data['cat']
+        cat.loc[cat<3] = 0
+        bx = Boxplot(ax=ax, data=self.data['data1'], by=cat,
+                                width_from_count=True)
+        bx.draw()
+        fig.savefig(os.path.join(self.FOUT, 'bx7_width_count.png'))
+
+
+    def test_coverage(self):
+        fig, ax = plt.subplots()
+        bx = Boxplot(ax=ax, data=self.data, whiskers_coverage=51)
+        bx.draw()
+        fig.savefig(os.path.join(self.FOUT, 'bx8_coverage.png'))
+
+
+    def test_coverage_by(self):
+        fig, ax = plt.subplots()
+        cat = self.data['cat']
+        cat.loc[cat<3] = 0
+        bx = Boxplot(ax=ax, data=self.data['data1'], by=cat,
+                    whiskers_coverage=60)
+        bx.draw()
+        fig.savefig(os.path.join(self.FOUT, 'bx9_coverage_by.png'))
 
 
 if __name__ == "__main__":

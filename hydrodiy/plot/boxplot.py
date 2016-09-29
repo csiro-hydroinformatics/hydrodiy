@@ -13,10 +13,18 @@ PROPS_NAMES = ['median', 'whisker', 'box', 'count', 'minmax']
 PROPS_VALUES = ['linestyle', 'linewidth', 'linecolor', 'va', 'ha', 'fontcolor', \
     'textformat', 'fontsize', 'marker', 'markercolor', 'showline', 'showtext']
 
+def whiskers_percentiles(coverage):
+    ''' Compute whiskers percentiles from coverage '''
+    qq1 = float(100-coverage)/2
+    qq2 = 100-qq1
+    return qq1, qq2
 
-def perct(data):
+
+def boxplot_stats(data, coverage):
+    ''' Compute boxplot stats '''
     idx = pd.notnull(data)
-    prc = sutils.percentiles(data[idx], [10, 25, 50, 75, 90])
+    qq1, qq2 = whiskers_percentiles(coverage)
+    prc = sutils.percentiles(data[idx], [qq1, 25, 50, 75, qq2])
     prc['count'] = np.sum(idx)
     prc['max'] = data[idx].max()
     prc['min'] = data[idx].min()
@@ -26,8 +34,26 @@ def perct(data):
 class Boxplot(object):
 
     def __init__(self, data, ax=None, by=None, default_width=0.7, \
-                width_from_number=False):
-        ''' Draw boxplots with labels and defined colors '''
+                width_from_count=False,
+                whiskers_coverage=80.):
+        ''' Draw boxplots with labels and defined colors
+
+        Parameters
+        -----------
+        data : pandas.Series, pandas.DataFrame, numpy.ndarray
+            Data to be plotted
+        ax : matplotlib.axes
+            Axe to draw the boxplot on
+        by : pandas.Series
+            Categories used to split data
+        default_width : float
+            boxplot width
+        width_from_count : bool
+            Use counts to define the boxplot width
+        whiskers_coverage : float
+            Coverage defining the percentile used to compute whiskers extent.
+            Example: coverage = 80% -> 10%/90% whiskers
+        '''
 
         if not by is None:
             by = pd.Series(by)
@@ -38,6 +64,10 @@ class Boxplot(object):
         self._data = data
         self._by = by
 
+        if whiskers_coverage <= 50.:
+            raise ValueError('Whiskers coverage cannot be below 50.')
+        self._whiskers_coverage = whiskers_coverage
+
         if ax is None:
             self._ax = plt.gca()
         else:
@@ -45,7 +75,7 @@ class Boxplot(object):
 
         self._default_width = default_width
 
-        self._width_from_number = width_from_number
+        self._width_from_count = width_from_count
 
         self._props = {
             'median':{'linestyle':'-', 'linewidth':3, 'linecolor':COLORS[3], \
@@ -82,14 +112,22 @@ class Boxplot(object):
 
         data = self._data
         by = self._by
+        whc = self._whiskers_coverage
 
         if by is None:
-            self._stats = data.apply(perct)
+            self._stats = data.apply(boxplot_stats, args=(whc, ))
         else:
-            stats = data.groupby(by).apply(perct)
+            stats = data.groupby(by).apply(boxplot_stats, whc)
+
+            # Reformat to make a 2d dataframe
             stats = stats.reset_index()
             self._stats = pd.pivot_table(stats, \
                 index='level_1', columns=by.name, values=stats.columns[-1])
+
+
+    @property
+    def stats(self):
+        return self._stats
 
 
     def draw(self, logscale=False):
@@ -100,9 +138,13 @@ class Boxplot(object):
         default_width = self._default_width
         ncols = stats.shape[1]
 
+        qq1, qq2 = whiskers_percentiles(self._whiskers_coverage)
+        qq1txt = '{0:0.1f}%'.format(qq1)
+        qq2txt = '{0:0.1f}%'.format(qq2)
+
         # Boxplot widths
-        if self._width_from_number:
-            cnt = stats['count']
+        if self._width_from_count:
+            cnt = stats.loc['count', :].values
             widths = cnt/cnt.max()*default_width
         else:
             widths = np.ones(ncols)*default_width
@@ -144,7 +186,7 @@ class Boxplot(object):
             props = self._props['whisker']
 
             if props['showline']:
-                for cc in [['10.0%', '25.0%'], ['90.0%', '75.0%']]:
+                for cc in [[qq1txt, '25.0%'], [qq2txt, '75.0%']]:
                     q1 = stats.loc[cc[0], cn]
                     q2 = stats.loc[cc[1], cn]
                     x = [i]*2
@@ -196,8 +238,8 @@ class Boxplot(object):
 
         ylim = ax.get_ylim()
         dy = ylim[1]-ylim[0]
-        ylim0 = min(ylim[0], stats.loc['10.0%', :].min()-dy*0.02)
-        ylim1 = max(ylim[1], stats.loc['90.0%', :].max()+dy*0.02)
+        ylim0 = min(ylim[0], stats.loc[qq1txt, :].min()-dy*0.02)
+        ylim1 = max(ylim[1], stats.loc[qq2txt, :].max()+dy*0.02)
         ax.set_ylim((ylim0, ylim1))
 
         # Display count
@@ -214,3 +256,4 @@ class Boxplot(object):
                         va='bottom', ha='center')
 
         return
+
