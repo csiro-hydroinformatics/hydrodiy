@@ -237,9 +237,22 @@ class Boxplot(object):
         ax.set_xlim((-default_width, ncols-1+default_width))
 
         ylim = ax.get_ylim()
-        dy = ylim[1]-ylim[0]
-        ylim0 = min(ylim[0], stats.loc[qq1txt, :].min()-dy*0.02)
-        ylim1 = max(ylim[1], stats.loc[qq2txt, :].max()+dy*0.02)
+        if not logscale:
+            dy = ylim[1]-ylim[0]
+            ylim0 = min(ylim[0], stats.loc[qq1txt, :].min()-dy*0.02)
+            ylim1 = max(ylim[1], stats.loc[qq2txt, :].max()+dy*0.02)
+        else:
+            dy = math.log(ylim[1])-math.log(ylim[0])
+            ylim0 = ylim[0]
+            miniq = stats.loc[qq1txt, :].min()
+            if miniq>0:
+                ylim0 = min(ylim[0], math.exp(math.log(miniq)-dy*0.02))
+
+            ylim1 = ylim[1]
+            maxiq = stats.loc[qq1txt, :].max()
+            if maxiq>0:
+                ylim1 = max(ylim[1], math.exp(math.log(maxiq)+dy*0.02))
+
         ax.set_ylim((ylim0, ylim1))
 
         # Display count
@@ -248,7 +261,13 @@ class Boxplot(object):
             formatter = '('+props['textformat']+')'
 
             ylim = ax.get_ylim()
-            y = ylim[0] + 0.01*(ylim[1]-ylim[0])
+
+            if not logscale:
+                y = ylim[0] + 0.01*(ylim[1]-ylim[0])
+            else:
+                y = math.exp(math.log(ylim[0]) + \
+                            0.01*(math.log(ylim[1])-math.log(ylim[0])))
+
             for i, cn in enumerate(stats.columns):
                 cnt = formatter % stats.loc['count', cn]
                 ax.text(i, y, cnt, fontsize=props['fontsize'], \

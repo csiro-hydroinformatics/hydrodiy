@@ -75,7 +75,8 @@ class BoxplotTestCase(unittest.TestCase):
 
     def test_log(self):
         fig, ax = plt.subplots()
-        bx = Boxplot(ax=ax, data=self.data+3)
+        data = self.data**2
+        bx = Boxplot(ax=ax, data=data)
         bx['count'] = {'showtext':True}
         bx.draw(logscale=True)
         fig.savefig(os.path.join(self.FOUT, 'bx6_log.png'))
