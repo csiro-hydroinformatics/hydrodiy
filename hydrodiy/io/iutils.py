@@ -48,7 +48,7 @@ def find_files(folder, pattern, recursive=True):
     return found
 
 
-def vardict2str(data):
+def dict2str(data):
     ''' Convert a dict to a string with the format v1[value1]_v2[value2]
 
     Parameters
@@ -63,7 +63,7 @@ def vardict2str(data):
 
     Example
     -----------
-    >>> iutils.vardict2string({'name':'bob', 'phone':2010})
+    >>> iutils.dict2string({'name':'bob', 'phone':2010})
 
     '''
     out = []
@@ -73,7 +73,7 @@ def vardict2str(data):
     return '_'.join(out)
 
 
-def str2vardict(source):
+def str2dict(source):
     ''' Find match in the form v1[value1]_v2[value2] in the
     source string and returns a dict with the value found
 
@@ -87,7 +87,7 @@ def str2vardict(source):
     Example
     -----------
     >>> source = 'name[bob]_phone[2010]'
-    >>> iutils.str2vardict(source)
+    >>> iutils.str2dict(source)
 
     '''
 
@@ -115,7 +115,7 @@ def str2vardict(source):
 
 
 def script_template(filename, comment,
-        stype='process',
+        stype='simple',
         author=None):
     ''' Write a script template
 
@@ -138,7 +138,7 @@ def script_template(filename, comment,
     >>> iutils.script_template('a_cool_script.py', 'Testing', 'plot', 'Bob Marley')
 
     '''
-    if not stype in ['simple', 'process', 'plot', 'bash']:
+    if not stype in ['simple', 'console', 'plot', 'bash']:
         raise ValueError('Script type {0} not recognised'.format(stype))
 
     ext = 'py'

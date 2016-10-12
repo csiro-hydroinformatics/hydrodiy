@@ -1,11 +1,12 @@
 import os
 import re
 import unittest
+import pandas as pd
 import subprocess
 import numpy as np
 import matplotlib.pyplot as plt
 
-from hydrodiy.io import iutils
+from hydrodiy.io import iutils, csv
 
 class UtilsTestCase(unittest.TestCase):
 
@@ -33,6 +34,10 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_script_template(self):
+        sites = pd.DataFrame({'siteid':[1, 2, 3, 4], \
+                    'id':['a', 'b', 'c', 'd']})
+        fs = os.path.join(self.FOUT, 'sites.csv')
+        csv.write_csv(sites, fs, 'site list', __file__)
         fs = '%s/script_test1.pytest' % self.FOUT
         iutils.script_template(fs, 'test')
         subprocess.check_call('python ' + fs, shell=True)
@@ -42,7 +47,7 @@ class UtilsTestCase(unittest.TestCase):
         subprocess.check_call('python ' + fs, shell=True)
 
         fs = '%s/script_test3.pytest' % self.FOUT
-        iutils.script_template(fs, 'test', stype='simple')
+        iutils.script_template(fs, 'test', stype='console')
         subprocess.check_call('python ' + fs, shell=True)
 
         fs = '%s/script_test4.sh' % self.FOUT
@@ -51,22 +56,22 @@ class UtilsTestCase(unittest.TestCase):
         subprocess.check_call(fs, shell=True)
 
 
-    def test_str2vardict(self):
+    def test_str2dict(self):
         data = {'name':'bob', 'phone':2010}
-        source = iutils.vardict2str(data)
-        data2 = iutils.str2vardict(source)
+        source = iutils.dict2str(data)
+        data2 = iutils.str2dict(source)
         ck = data == data2
         self.assertTrue(ck)
 
         data = {'name':'bob_marley', 'phone':2010}
-        source = iutils.vardict2str(data)
-        data2 = iutils.str2vardict(source)
+        source = iutils.dict2str(data)
+        data2 = iutils.str2dict(source)
         ck = data == data2
         self.assertTrue(ck)
 
         data = {'name':'bob_marley%$^_12234123', 'phone':2010}
-        source = iutils.vardict2str(data)
-        data2 = iutils.str2vardict(source)
+        source = iutils.dict2str(data)
+        data2 = iutils.str2dict(source)
         ck = data == data2
         self.assertTrue(ck)
 

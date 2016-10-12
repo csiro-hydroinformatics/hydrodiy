@@ -63,7 +63,7 @@ def set_config():
 
     # Set instance of logger
     select = ['ibatch', 'nbatch']
-    vartxt = iutils.vardict2str({key:config[key] for key in select})
+    vartxt = iutils.dict2str({key:config[key] for key in select})
     basename = re.sub('\\.py.*', '', os.path.basename(source_file))
     flog = os.path.join(fimg, basename + '_'+vartxt+'.log')
     LOGGER = iutils.get_logger(basename, flog=flog)

@@ -27,7 +27,7 @@ def entry_point():
     nbatch = 5
 
     config = {'ibatch':ibatch, 'nbatch':nbatch}
-    configstr = iutils.vardict2str(config)
+    configstr = iutils.dict2str(config)
 
     #------------------------------------------------------------
     # Paths
