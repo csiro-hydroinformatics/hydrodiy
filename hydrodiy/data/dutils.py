@@ -178,4 +178,3 @@ def atmpressure(altitude):
 
     return P
 
-
