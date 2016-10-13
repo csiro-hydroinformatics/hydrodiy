@@ -33,64 +33,115 @@ except ImportError:
 
 from hydrodiy.io import csv
 
+VARIABLES = {
+    'rainfall':[{'type':'totals', 'unit':'mm/d'}],
+    'temperature':[{'type':'maxave', 'unit':'celsius'},
+                   {'type':'minave', 'unit':'celsius'}],
+    'vprp':[{'type':'vprph09', 'unit':'Pa'}],
+    'solar':[{'type':'solarave', 'unit':'MJ/m2'}]
+}
+
+TIMESTEPS = ['day', 'month']
+
+AWAP_URL='http://www.bom.gov.au/web03/ncc/www/awap'
+
+
+def get_cellcoords(header):
+    ''' Get coordinates and cell number of gridded data '''
+
+    nrows = header['nrows']
+    ncols = header['ncols']
+    xll = header['xllcorner']
+    yll = header['yllcorner']
+    csz = header['cellsize']
+
+    longs = xll + csz * np.arange(0, ncols)
+    lats = yll + csz * np.arange(0, nrows)
+
+    # We have to flip the lats
+    llongs, llats = np.meshgrid(longs, lats[::-1])
+
+    cellids = np.array(['%0.2f_%0.2f' % (x, y) \
+                    for x, y in zip(llongs.flat[:], \
+                        llats.flat[:])]).reshape(llongs.shape)
+
+    return cellids, llongs, llats
+
+
+def get_plotconfig(cfg, varname):
+    ''' Generate default plotting configuration '''
+
+    if cfg is None:
+        cfg = {'cmap':None, \
+            'clevs':None, \
+            'norm':None, \
+            'linewidth':1., \
+            'linecolor':'#%02x%02x%02x' % (60, 60, 60)}
+
+    if varname == 'rainfall':
+        if cfg['clevs'] is None:
+            cfg['clevs'] = [0, 1, 5, 10, 15, 25, 50, \
+                                    100, 150, 200, 300, 400]
+
+        if cfg['cmap'] is None:
+            cfg['cmap'] = cm.s3pcpn
+
+    if varname == 'temperature':
+        if cfg['clevs'] is None:
+            cfg['clevs'] = range(-9, 51, 3)
+
+        if cfg['cmap'] is None:
+            cfg['cmap'] = plt.get_cmap('gist_rainbow_r')
+
+    if varname == 'vprp':
+        if cfg['clevs'] is None:
+            cfg['clevs'] = range(0, 40, 2)
+
+        if cfg['cmap'] is None:
+            cfg['cmap'] = plt.get_cmap('gist_rainbow_r')
+
+    if varname == 'solar':
+        if cfg['clevs'] is None:
+            cfg['clevs'] = range(0, 40, 3)
+
+        if cfg['cmap'] is None:
+            cfg['cmap'] = plt.get_cmap('jet_r')
+
+    if cfg['norm'] is None:
+        cfg['norm'] = plt.cm.colors.Normalize( \
+                vmin=np.min(cfg['clevs']), \
+                vmax=np.max(cfg['clevs']))
+
+    return cfg
+
+
 class HyWap(object):
     ''' Class to download daily awap grids '''
 
-    def __init__(self, awap_url='http://www.bom.gov.au/web03/ncc/www/awap'):
-
-        self.awap_url = awap_url
-
-        self.awap_dir = None
-
-        self.variables = {
-            'rainfall':[{'type':'totals', 'unit':'mm/d'}],
-            'temperature':[{'type':'maxave', 'unit':'celsius'},
-                           {'type':'minave', 'unit':'celsius'}],
-            'vprp':[{'type':'vprph09', 'unit':'Pa'}],
-            'solar':[{'type':'solarave', 'unit':'MJ/m2'}]
-        }
-
-        self.timesteps = ['daily', 'month']
+    def __init__(self):
 
         self.current_url = None
 
-    def set_awapdir(self, awap_dir):
-        ''' Set AWAP output directory '''
 
-        self.awap_dir = awap_dir
-
-        for varname in self.variables.keys():
-
-            # Create output directories
-            fout = os.path.join(awap_dir, varname)
-            if not os.path.exists(fout):
-                os.mkdir(fout)
-
-            # Create output directories for each timestep
-            for timestep in ['daily', 'month']:
-                ftmp = os.path.join(awap_dir, varname, timestep)
-                if not os.path.exists(ftmp):
-                    os.mkdir(ftmp)
-
-    def getgriddata(self, varname, vartype, timestep, date):
+    def get_data(self, varname, vartype, timestep, date):
         ''' Download gridded awap daily data '''
 
         # Check variable
-        if not varname in self.variables:
+        if not varname in VARIABLES:
             raise ValueError(('varname(%s) not'+ \
                 ' recognised (should be %s)') % (varname, \
-                    ', '.join(self.variables.keys())))
+                    ', '.join(VARIABLES.keys())))
 
-        vartypes = [v['type'] for v in self.variables[varname]]
+        vartypes = [v['type'] for v in VARIABLES[varname]]
         if not vartype in vartypes:
             raise ValueError(('vartype(%s) not'+ \
                 ' recognised (should be %s)') % (vartype, \
                     ', '.join(vartypes)))
 
-        if not timestep in self.timesteps:
+        if not timestep in TIMESTEPS:
             raise ValueError(('timestep(%s) not'+ \
                 ' recognised (should be %s)') % (varname, \
-                    ', '.join(self.timesteps)))
+                    ', '.join(TIMESTEPS)))
 
         # Define start and end date of period
         dt1 = datetime.datetime.strptime(date, '%Y-%m-%d')
@@ -99,13 +150,16 @@ class HyWap(object):
             raise ValueError(('Invalide date(%s). '+ \
                 'Should be on day 1 of the month') % dt1.date())
 
-        dt2 = dt1
+        if timestep == 'day':
+            timestep = 'daily'
+            dt2 = dt1
+
         if timestep == 'month':
             dt2 = dt1 + delta(months=1) - delta(days=1)
 
         # Download data
         self.current_url = ('%s/%s/%s/%s/grid/0.05/history/nat/'+ \
-                '%4d%2.2d%2.2d%4d%2.2d%2.2d.grid.Z') % (self.awap_url, \
+                '%4d%2.2d%2.2d%4d%2.2d%2.2d.grid.Z') % (AWAP_URL, \
                     varname, vartype, timestep, \
                     dt1.year, dt1.month, dt1.day, \
                     dt2.year, dt2.month, dt2.day)
@@ -113,7 +167,7 @@ class HyWap(object):
         try:
             resp = urllib2.urlopen(self.current_url)
 
-        except urllib2.HTTPError, ehttp:
+        except urllib2.HTTPError as ehttp:
             print('Cannot download %s: HTTP Error = %s' % (self.current_url, \
                             ehttp))
             raise ehttp
@@ -121,10 +175,7 @@ class HyWap(object):
         # Read data from pipe and write it to disk
         zdata = resp.read()
 
-        adir = self.awap_dir
-        if adir is None:
-            adir = tempfile.gettempdir()
-
+        adir = tempfile.gettempdir()
         ftmp = os.path.join(adir, 'tmp.Z')
         with open(ftmp, 'wb') as fobj:
             fobj.write(zdata)
@@ -154,16 +205,28 @@ class HyWap(object):
         header['date'] = date
         header['url'] = self.current_url
 
+        # Reformat header
+        header['ncols'] = int(header['ncols'])
+        header['nrows'] = int(header['nrows'])
+        header['cellsize'] = float(header['cellsize'])
+
+        header['xllcorner'] = float(header['xllcenter'])
+        header.pop('xllcenter')
+        header['yllcorner'] = float(header['yllcenter'])
+        header.pop('yllcenter')
+
+        # Get meta
         meta = [s.strip() for s in txt[-icomment:]]
 
+        # Get data
         data = [np.array(re.split(' +', s.strip())) \
                     for s in txt[iheader:-icomment]]
         data = np.array(data).astype(np.float)
         data[data == header['nodata_value']] = np.nan
 
         # Check dimensions of dataset
-        ncols = int(header['ncols'])
-        nrows = int(header['nrows'])
+        ncols = header['ncols']
+        nrows = header['nrows']
 
         if data.shape != (nrows, ncols):
             raise IOError(('Dataset dimensions (%d,%d)'+ \
@@ -171,116 +234,23 @@ class HyWap(object):
                     data.shape[1], nrows, ncols))
 
         # Build comments
-        comment = ['AWAP Data set downloaded from %s' % self.awap_url, '', '',]
+        comment = ['AWAP Data set downloaded from ' + AWAP_URL, '', '',]
         comment += meta
         comment += ['']
 
         return data, comment, header
 
-    def getcoords(self, header):
-        ''' Get coordinates and cell number of gridded data '''
-
-        nrows = int(header['nrows'])
-        ncols = int(header['ncols'])
-        xll = float(header['xllcenter'])
-        yll = float(header['yllcenter'])
-        csz = float(header['cellsize'])
-
-        longs = xll + csz * np.arange(0, ncols)
-        lats = yll + csz * np.arange(0, nrows)
-
-        # We have to flip the lats
-        llongs, llats = np.meshgrid(longs, lats[::-1])
-
-        cellids = np.array(['%0.2f_%0.2f' % (x, y) \
-                        for x, y in zip(llongs.flat[:], \
-                            llats.flat[:])]).reshape(llongs.shape)
-
-        return cellids, llongs, llats
-
-
-    def savegriddata(self, varname, vartype, timestep, dt):
-        ''' Download gridded data and save it to disk '''
-
-        data, comment, header = self.getgriddata(varname, vartype, timestep, dt)
-
-        data = pd.DataFrame(data)
-        data.columns = ['c%3.3d' % i for i in range(data.shape[1])]
-
-        F = self.awap_dir
-        if F is None:
-            raise ValueError('Cannot write data, awap dir is not setup')
-
-        fout = os.path.join(F, varname, timestep, '%s_%s_%s_%s.csv'%(varname, \
-                                timestep, vartype, dt))
-
-        co = comment + [''] + ['%s:%s' % (k, header[k]) for k in header] + ['']
-
-        source_file = os.path.abspath(__file__)
-
-        csv.write_csv(data, fout, \
-            comment=co, \
-            source_file=source_file)
-
-        return '%s.gz' % fout
-
-    def default_plotconfig(self, cfg, varname):
-        ''' Generate default plotting configuration '''
-
-        if cfg is None:
-            cfg = {'cmap':None, \
-                'clevs':None, \
-                'norm':None, \
-                'linewidth':1., \
-                'linecolor':'#%02x%02x%02x' % (60, 60, 60)}
-
-        if varname == 'rainfall':
-            if cfg['clevs'] is None:
-                cfg['clevs'] = [0, 1, 5, 10, 15, 25, 50, \
-                                        100, 150, 200, 300, 400]
-
-            if cfg['cmap'] is None:
-                cfg['cmap'] = cm.s3pcpn
-
-        if varname == 'temperature':
-            if cfg['clevs'] is None:
-                cfg['clevs'] = range(-9, 51, 3)
-
-            if cfg['cmap'] is None:
-                cfg['cmap'] = plt.get_cmap('gist_rainbow_r')
-
-        if varname == 'vprp':
-            if cfg['clevs'] is None:
-                cfg['clevs'] = range(0, 40, 2)
-
-            if cfg['cmap'] is None:
-                cfg['cmap'] = plt.get_cmap('gist_rainbow_r')
-
-        if varname == 'solar':
-            if cfg['clevs'] is None:
-                cfg['clevs'] = range(0, 40, 3)
-
-            if cfg['cmap'] is None:
-                cfg['cmap'] = plt.get_cmap('jet_r')
-
-        if cfg['norm'] is None:
-            cfg['norm'] = plt.cm.colors.Normalize( \
-                    vmin=np.min(cfg['clevs']), \
-                    vmax=np.max(cfg['clevs']))
-
-        return cfg
-
-    def plot(self, data, header, om, config=None):
+    def plot(self, data, header, basemap_object, config=None):
         ''' Plot gridded data '''
 
         if not HAS_BASEMAP:
             raise ImportError('basemap is not available')
 
-        cfg = self.default_plotconfig(config, header['varname'])
+        cfg = get_plotconfig(config, header['varname'])
 
-        cellnum, llongs, llats, = self.getcoords(header)
+        cellnum, llongs, llats, = get_cellcoords(header)
 
-        m = om.get_map()
+        m = basemap_object.get_map()
         x, y = m(llongs, llats)
         z = data.copy()
 
@@ -310,15 +280,15 @@ class HyWap(object):
                     linewidths=cfg['linewidth'], \
                     colors=cfg['linecolor'])
 
-
         return cs
 
-    def plot_cbar(self, fig, ax, cs, *args, **kwargs):
 
-        div = make_axes_locatable(ax)
+def plot_cbar(fig, ax, cs, *args, **kwargs):
 
-        cbar_ax = div.append_axes(*args, **kwargs)
+    div = make_axes_locatable(ax)
 
-        cb = fig.colorbar(cs, cax=cbar_ax)
+    cbar_ax = div.append_axes(*args, **kwargs)
+
+    cb = fig.colorbar(cs, cax=cbar_ax)
 
 

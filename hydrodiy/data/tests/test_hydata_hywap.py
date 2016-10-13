@@ -26,21 +26,21 @@ class HyWapTestCase(unittest.TestCase):
 
         self.FAWAP = FAWAP
 
-    def test_getgriddata(self):
+    def test_get_data(self):
 
         hya = hywap.HyWap()
 
         dt = '2015-02-01'
 
-        vn = hya.variables
-        ts = hya.timesteps
+        vn = hywap.VARIABLES
+        ts = hywap.TIMESTEPS
 
         for varname, timestep in itertools.product(vn.keys(), ts):
 
             for v in vn[varname]:
                 vartype = v['type']
 
-                data, comment, header = hya.getgriddata(varname, vartype,
+                data, comment, header = hya.get_data(varname, vartype,
                                             timestep, dt)
 
                 nr = int(header['nrows'])
@@ -48,23 +48,8 @@ class HyWapTestCase(unittest.TestCase):
 
                 self.assertEqual(data.shape, (nr, nc))
 
-    def test_savegriddata(self):
 
-        hya = hywap.HyWap()
-
-        F = self.FAWAP
-        hya.set_awapdir(F)
-
-        varname = 'rainfall'
-        vartype = 'totals'
-        ts = 'month'
-        dt = '1900-01-01'
-
-        fdata = hya.savegriddata(varname, vartype, ts, dt)
-
-        self.assertTrue(os.path.exists(fdata))
-
-    def test_getcoord(self):
+    def test_get_cellcoords(self):
 
         hya = hywap.HyWap()
 
@@ -73,36 +58,36 @@ class HyWapTestCase(unittest.TestCase):
         ts = 'month'
         dt = '2015-03-01'
 
-        data, comment, header = hya.getgriddata(varname, vartype, ts, dt)
+        data, comment, header = hya.get_data(varname, vartype, ts, dt)
 
-        cellids, llongs, llats = hya.getcoords(header)
+        cellids, llongs, llats = hywap.get_cellcoords(header)
 
-        nr = int(header['nrows'])
-        nc = int(header['ncols'])
+        nr = header['nrows']
+        nc = header['ncols']
 
         self.assertEqual(cellids.shape, (nr, nc))
         self.assertEqual(llongs.shape, (nr, nc))
         self.assertEqual(llats.shape, (nr, nc))
 
-        xll = float(header['xllcenter'])
-        yll = float(header['yllcenter'])
+        xll = header['xllcorner']
+        yll = header['yllcorner']
         self.assertEqual(cellids[-1,0], '%0.2f_%0.2f' % (xll, yll))
+
 
     def test_plot(self):
 
         hya = hywap.HyWap()
 
-
         dt = '2015-02-01'
 
-        vn = hya.variables
-        ts = hya.timesteps
+        vn = hywap.VARIABLES
+        ts = hywap.TIMESTEPS
 
         if hywap.HAS_BASEMAP:
 
             for varname, timestep in itertools.product(vn.keys(), ts):
 
-                cfg = hya.default_plotconfig(None, varname)
+                cfg = hywap.get_plotconfig(None, varname)
 
                 if varname == 'rainfall':
                     cfg['norm'] = mpl.colors.SymLogNorm(
@@ -113,7 +98,7 @@ class HyWapTestCase(unittest.TestCase):
                 for v in vn[varname]:
                     vartype = v['type']
 
-                    data, comment, header = hya.getgriddata(varname, vartype,
+                    data, comment, header = hya.get_data(varname, vartype,
                                                 timestep, dt)
 
                     fig, ax = plt.subplots()
@@ -126,7 +111,7 @@ class HyWapTestCase(unittest.TestCase):
 
                     sz = axes_size.AxesY(ax, 0.6)
                     sz = '10%'
-                    hya.plot_cbar(fig, ax, cs,
+                    hywap.plot_cbar(fig, ax, cs,
                         position='right', size=sz, pad=0.1)
 
                     ax.set_title('%s - %s' % (varname, dt))
