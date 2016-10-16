@@ -6,7 +6,7 @@ import pandas as pd
 from scipy.stats import t as student
 from scipy.stats import shapiro
 
-from scipy.optimize import fmin
+from scipy.optimize import fmin_powell as fmin
 
 import matplotlib.pyplot as plt
 
@@ -17,6 +17,14 @@ import c_hydrodiy_stat
 # Setup login
 LOGGER = logging.getLogger(__name__)
 
+# Tolerance of values of phi (phi**2 should be lower)
+PHI_EPS = 1e-3
+
+# Tolerance for values of sigma (sigma should be higher)
+SIGMA_EPS = 1e-10
+
+# Types of regressions
+REGTYPES =['ols', 'gls_ar1']
 
 # ------ Utility functions used in the Linreg class ----------
 
@@ -125,7 +133,7 @@ def get_residuals(yvect, yvect_hat, regtype, phi):
 
 # ------ Likelihood functions used to infer parameters ------------
 
-def ar1_loglikelihood(theta, xmat, yvect, eps=1e-10):
+def ar1_loglikelihood(theta, xmat, yvect):
     ''' Returns the components of the GLS ar1 log-likelihood '''
 
     sigma = theta[0]
@@ -140,17 +148,19 @@ def ar1_loglikelihood(theta, xmat, yvect, eps=1e-10):
     sse += innov[0]**2 * (1-phi**2)
 
     #ll1 = -n/2*math.log(2*math.pi)
-    if sigma>eps:
+    if sigma>SIGMA_EPS:
         loglike2 = -nval*math.log(sigma)
+        loglike4 = -sse/(2*sigma**2)
     else:
-        loglike2 = -nval*math.log(eps) - (sigma-eps)**2*1e100
+        #loglike2 = -nval*math.log(eps) - (sigma-eps)**2*1e100
+        loglike2 = -np.inf
+        loglike4 = -np.inf
 
-    if phi**2<1-eps:
+    if phi**2<1-PHI_EPS:
         loglike3 = math.log(1-phi**2)/2
     else:
-        loglike3 = math.log(1-eps**2)/2 - (phi**2-1+eps)**2*1e100
-
-    loglike4 = -sse/(2*sigma**2)
+        #loglike3 = math.log(1-PHI_EPS**2)/2 - (phi**2-1+PHI_EPS)**2*1e100
+        loglike3 = -np.inf
 
     loglike = {'sigma':loglike2, 'phi':loglike3, 'sse':loglike4}
 
@@ -202,8 +212,9 @@ class Linreg:
         self.polyorder = polyorder
         self.nboot_print = 0
 
-        if not regtype in ['ols', 'gls_ar1']:
-            raise ValueError('regtype {0} not recognised'.format(regtype))
+        if not regtype in REGTYPES:
+            raise ValueError('regtype {0} not in {1}'.format(regtype, \
+                '/'.join(REGTYPES)))
 
         self.regtype = regtype
 
@@ -234,7 +245,7 @@ class Linreg:
     def __str__(self):
         str = '\n\t** Linear model **\n'
         str += '\n\tModel setup:\n'
-        str += '\t  Type: %s\n'% self.regtype
+        str += '\t  Regression type: %s\n'% self.regtype
         str += '\t  Has intercept: %s\n' % self.has_intercept
         str += '\t  Polynomial order: %d\n\n' % self.polyorder
 
@@ -361,12 +372,12 @@ class Linreg:
         sigma = res[0]
         phi = res[1]
 
-        if (phi<-1+1e-5)|(phi>1-1e-5):
+        if (phi<-1+PHI_EPS)|(phi>1-PHI_EPS):
             raise ValueError(('Phi({0:0.3f}) is not within [-1, 1], Error in' + \
                 ' optimisation of log-likelihood').format(phi))
 
-        if sigma<0:
-            raise ValueError(('Sigma({0}) is not positive, ' + \
+        if sigma<SIGMA_EPS:
+            raise ValueError(('Sigma({0}) is not strictly positive, ' + \
                 'Error in optimisation of log-likelihood').format(sigma))
 
         return params, phi, sigma
@@ -420,7 +431,7 @@ class Linreg:
         return diag
 
 
-    def fit(self, log_entry=True, run_diagnostic=True):
+    def fit(self, use_logger=True, run_diagnostic=True):
         ''' Run parameter estimation and compute diagnostics '''
 
         # Fit
@@ -449,9 +460,9 @@ class Linreg:
             self.diagnostic = self.compute_diagnostic( \
                 self.yvect, yvect_hat)
 
-        if log_entry:
-            LOGGER.critical('Completed fit')
-            LOGGER.critical(str(self))
+        if use_logger:
+            LOGGER.info('Completed fit')
+            LOGGER.info(str(self))
 
 
     def leverages(self):
@@ -600,11 +611,11 @@ class Linreg:
             kk = np.argsort(cc)
             predint = predint.iloc[:, kk]
 
-
         return yvect_hat, predint
 
 
-    def boot(self, nsample=500, run_diagnostic=False):
+    def boot(self, nsample=500, run_diagnostic=False,
+                nboot_print=10):
         ''' Bootstrap the regression fitting process '''
 
         # Performs first fit
@@ -624,7 +635,7 @@ class Linreg:
             if self.nboot_print > 0:
                 if i%self.nboot_print==0:
                     mess = 'Boot sample {0:4d}/{1:4d}'.format(i+1, nsample)
-                    LOGGER.critical(mess)
+                    LOGGER.info(mess)
 
             # Resample residuals
             residuals_boot = residuals.copy()
@@ -640,9 +651,9 @@ class Linreg:
             y_boot = yvect_hat + residuals_boot
 
             # Fit regression
-            self.yvect = data2matrix(y_boot)
+            self.yvect = data2vect(y_boot)
 
-            self.fit(log_entry=False, \
+            self.fit(use_logger=False, \
                 run_diagnostic=run_diagnostic)
 
             # Store results
@@ -663,7 +674,7 @@ class Linreg:
             self.diagnostic_boot = pd.DataFrame(diagnostic_boot, \
                 index=np.arange(nsample))
 
-        LOGGER.critical('Completed bootstrap')
+        LOGGER.info('Completed bootstrap')
 
 
     def scatterplot(self, ax=None,
