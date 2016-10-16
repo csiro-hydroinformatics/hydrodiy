@@ -18,7 +18,7 @@ import c_hydrodiy_stat
 LOGGER = logging.getLogger(__name__)
 
 # Tolerance of values of phi (phi**2 should be lower)
-PHI_EPS = 1e-3
+PHI_EPS = 1e-2
 
 # Tolerance for values of sigma (sigma should be higher)
 SIGMA_EPS = 1e-10
@@ -139,6 +139,16 @@ def ar1_loglikelihood(theta, xmat, yvect):
     sigma = theta[0]
     phi = theta[1]
     params = np.array(theta[2:]).reshape((len(theta)-2, 1))
+
+    # Return 0 likelihood of parameters are outside bounds
+    default = {'sigma':-np.inf, 'phi':-np.inf, 'sse':-np.inf}
+    if abs(phi)>1-PHI_EPS:
+        return default
+
+    if sigma < SIGMA_EPS:
+        return default
+
+    # Compute predictions
     yvect_hat = np.dot(xmat, params).flat[:]
 
     nval = yvect_hat.shape[0]
@@ -147,22 +157,11 @@ def ar1_loglikelihood(theta, xmat, yvect):
     sse = np.sum(innov[1:]**2)
     sse += innov[0]**2 * (1-phi**2)
 
-    #ll1 = -n/2*math.log(2*math.pi)
-    if sigma>SIGMA_EPS:
-        loglike2 = -nval*math.log(sigma)
-        loglike4 = -sse/(2*sigma**2)
-    else:
-        #loglike2 = -nval*math.log(eps) - (sigma-eps)**2*1e100
-        loglike2 = -np.inf
-        loglike4 = -np.inf
-
-    if phi**2<1-PHI_EPS:
-        loglike3 = math.log(1-phi**2)/2
-    else:
-        #loglike3 = math.log(1-PHI_EPS**2)/2 - (phi**2-1+PHI_EPS)**2*1e100
-        loglike3 = -np.inf
-
-    loglike = {'sigma':loglike2, 'phi':loglike3, 'sse':loglike4}
+    loglike = {
+        'sigma':-nval*math.log(sigma),
+        'phi':math.log(1-phi**2)/2,
+        'sse':-sse/(2*sigma**2)
+    }
 
     return loglike
 
@@ -352,11 +351,11 @@ class Linreg:
         # Estimate auto-correlation of residuals
         pp = np.array(params['estimate']).reshape((params.shape[0],1))
         residuals = self.yvect-np.dot(self.xmat, pp).flat[:]
+        phi = np.corrcoef(residuals[1:], residuals[:-1])[0, 1]
 
-        lm_residuals = Linreg(residuals[:-1], residuals[1:],
-                            regtype='ols', has_intercept=False)
-        lm_residuals.fit(False)
-        phi = lm_residuals.params['estimate'].values[0]
+        if abs(phi) > 1-PHI_EPS:
+            # Case where starting point is highly auto-correlated
+            phi = (1-2*PHI_EPS)*np.sign(phi)
 
         # Maximisation of log-likelihood
         theta0 = [sigma, phi] + list(params['estimate'])
@@ -369,15 +368,16 @@ class Linreg:
         params = params.set_index('parameter')
 
         # Extract sigma and phi
-        sigma = res[0]
-        phi = res[1]
+        sigma = max(SIGMA_EPS, res[0])
+        phi = np.sign(res[1]) * min(1-PHI_EPS, abs(res[1]))
 
-        if (phi<-1+PHI_EPS)|(phi>1-PHI_EPS):
-            raise ValueError(('Phi({0:0.3f}) is not within [-1, 1], Error in' + \
-                ' optimisation of log-likelihood').format(phi))
+        if phi**2>1-PHI_EPS:
+            raise ValueError(('Phi({0:0.5f}) is not within [-1, 1], Error in' + \
+                ' optimisation of log-likelihood. Phi0 is {0:0.5f}').format( \
+                phi, theta0[1]))
 
         if sigma<SIGMA_EPS:
-            raise ValueError(('Sigma({0}) is not strictly positive, ' + \
+            raise ValueError(('Sigma({0:0.5f}) is not strictly positive, ' + \
                 'Error in optimisation of log-likelihood').format(sigma))
 
         return params, phi, sigma

@@ -195,6 +195,20 @@ class LinregTestCase(unittest.TestCase):
             self.assertTrue(ck)
 
 
+    def test_gls_elasticity(self):
+
+        fd = '%s/data/elasticity_data.csv' % self.FOUT
+        data, comment = csv.read_csv(fd)
+
+        # Fit model
+        lm = linreg.Linreg(data[['x1', 'x2']], data['y'],
+                regtype='gls_ar1',
+                has_intercept=False)
+
+        # Initial tests were producing an error
+        lm.fit()
+
+
     def test_boot_ols(self):
         ''' Test bootstrap on OLS regression '''
 
