@@ -35,6 +35,14 @@ ext_modules = [
             'hydrodiy/stat/c_ar1.c'
         ],
         include_dirs=[numpy.get_include()]),
+    Extension(
+        name='c_hydrodiy_gis',
+        sources=[
+            'hydrodiy/gis/c_hydrodiy_gis.pyx',
+            'hydrodiy/gis/c_grid.c',
+            'hydrodiy/gis/c_catchment.c'
+        ],
+        include_dirs=[numpy.get_include()])
 ]
 
 cmdclass = versioneer.get_cmdclass()
