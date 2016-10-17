@@ -130,7 +130,7 @@ def slice(double xll, double yll, double csz,
 def neighbours(long nrows, long ncols, long idxcell,
             np.ndarray[long, ndim=1, mode='c'] neighbours not None):
 
-    cdef long ierr;
+    cdef long ierr
 
     # check dimensions
     assert neighbours.shape[0] == 9
