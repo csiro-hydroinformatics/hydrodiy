@@ -65,6 +65,14 @@ class BoxplotTestCase(unittest.TestCase):
         fig.savefig(os.path.join(self.FOUT, 'bx4_by.png'))
 
 
+    def test_by_missing(self):
+        fig, ax = plt.subplots()
+        cat = pd.cut(self.data['cat'], range(-4, 5))
+        bx = Boxplot(ax=ax, data=self.data['data1'], by=cat)
+        bx.draw()
+        fig.savefig(os.path.join(self.FOUT, 'bx10_by_missing.png'))
+
+
     def test_numpy(self):
         fig, ax = plt.subplots()
         data = np.random.uniform(0, 10, size=(1000, 6))

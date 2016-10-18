@@ -22,12 +22,24 @@ def whiskers_percentiles(coverage):
 
 def boxplot_stats(data, coverage):
     ''' Compute boxplot stats '''
+
     idx = pd.notnull(data)
     qq1, qq2 = whiskers_percentiles(coverage)
-    prc = sutils.percentiles(data[idx], [qq1, 25, 50, 75, qq2])
-    prc['count'] = np.sum(idx)
-    prc['max'] = data[idx].max()
-    prc['min'] = data[idx].min()
+
+    if idx.shape[0]>3:
+        prc = sutils.percentiles(data[idx], [qq1, 25, 50, 75, qq2])
+        prc['count'] = np.sum(idx)
+        prc['mean'] = data[idx].mean()
+        prc['max'] = data[idx].max()
+        prc['min'] = data[idx].min()
+    else:
+        prc = {'count': idx.shape[0]}
+        pnames = ['{0:0.1f}%'.format(qq1), '25.0%', \
+                '50.0%', '75.0%', '{0:0.1f}%'.format(qq2), \
+                'min', 'max', 'mean']
+        for pn in pnames:
+            prc[pn] = np.nan
+
     return prc
 
 
@@ -158,11 +170,11 @@ class Boxplot(object):
             y = [med] * 2
             props = self._props['median']
 
-            if props['showline']:
+            if props['showline'] and not np.isnan(med):
                 ax.plot(x, y, lw=props['linewidth'],
                     color=props['linecolor'])
 
-            if props['showtext']:
+            if props['showtext'] and not np.isnan(med):
                 formatter = props['textformat']
                 if props['ha'] == 'left':
                     formatter = ' '+formatter
@@ -175,6 +187,11 @@ class Boxplot(object):
             x = [i-w/2, i+w/2, i+w/2, i-w/2, i-w/2]
             q1 = stats.loc['25.0%', cn]
             q2 = stats.loc['75.0%', cn]
+
+            # Skip missing data
+            if np.isnan(q1) or np.isnan(q2):
+                continue
+
             y =  [q1, q1, q2, q2 ,q1]
             props = self._props['box']
 
@@ -189,6 +206,7 @@ class Boxplot(object):
                 for cc in [[qq1txt, '25.0%'], [qq2txt, '75.0%']]:
                     q1 = stats.loc[cc[0], cn]
                     q2 = stats.loc[cc[1], cn]
+
                     x = [i]*2
                     y = [q1, q2]
 
