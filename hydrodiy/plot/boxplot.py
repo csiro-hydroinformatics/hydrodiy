@@ -33,7 +33,7 @@ def boxplot_stats(data, coverage):
         prc['max'] = data[idx].max()
         prc['min'] = data[idx].min()
     else:
-        prc = {'count': idx.shape[0]}
+        prc = pd.Series({'count': idx.shape[0]})
         pnames = ['{0:0.1f}%'.format(qq1), '25.0%', \
                 '50.0%', '75.0%', '{0:0.1f}%'.format(qq2), \
                 'min', 'max', 'mean']
@@ -170,11 +170,13 @@ class Boxplot(object):
             y = [med] * 2
             props = self._props['median']
 
-            if props['showline'] and not np.isnan(med):
+            valid_med = np.all(~np.isnan(med))
+
+            if props['showline'] and valid_med:
                 ax.plot(x, y, lw=props['linewidth'],
                     color=props['linecolor'])
 
-            if props['showtext'] and not np.isnan(med):
+            if props['showtext'] and valid_med:
                 formatter = props['textformat']
                 if props['ha'] == 'left':
                     formatter = ' '+formatter
@@ -189,7 +191,9 @@ class Boxplot(object):
             q2 = stats.loc['75.0%', cn]
 
             # Skip missing data
-            if np.isnan(q1) or np.isnan(q2):
+            valid_q1 = np.all(~np.isnan(q1))
+            valid_q2 = np.all(~np.isnan(q2))
+            if not valid_q1 or not valid_q2:
                 continue
 
             y =  [q1, q1, q2, q2 ,q1]
@@ -227,7 +231,7 @@ class Boxplot(object):
                 if props['ha'] == 'left':
                     formatter = ' '+formatter
 
-                for value in stats.loc[['25.0%', '75.0%'], cn]:
+                for value in stats.loc[['25.0%', '75.0%'], cn].values:
                     valuetext = formatter % value
                     ax.text(i+w/2, value, valuetext, fontsize=props['fontsize'], \
                         color=props['fontcolor'], \

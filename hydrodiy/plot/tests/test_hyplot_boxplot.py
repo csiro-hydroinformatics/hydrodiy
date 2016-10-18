@@ -70,8 +70,18 @@ class BoxplotTestCase(unittest.TestCase):
         cat = pd.cut(self.data['cat'], range(-4, 5))
         bx = Boxplot(ax=ax, data=self.data['data1'], by=cat)
         bx.draw()
-        fig.savefig(os.path.join(self.FOUT, 'bx10_by_missing.png'))
+        fig.savefig(os.path.join(self.FOUT, 'bx10_by_missing1.png'))
 
+
+    def test_by_missing2(self):
+        df = pd.read_csv(os.path.join(self.FOUT, 'boxplot_test_data.csv'))
+        cats = list(np.arange(0.8, 3.8, 0.2)) + [30]
+        by = pd.cut(df['cat_value'], cats)
+
+        fig, ax = plt.subplots()
+        bx = Boxplot(ax=ax, data=df['value'], by=by)
+        bx.draw()
+        fig.savefig(os.path.join(self.FOUT, 'bx11_by_missing2.png'))
 
     def test_numpy(self):
         fig, ax = plt.subplots()
