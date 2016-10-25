@@ -140,6 +140,10 @@ long c_delineate_area(long nrows, long ncols,
     long nbuffer1, nbuffer2, nlayer, idxcell[1];
     long idxup[9];
 
+    /* Check buffer size */
+    if(nval<1)
+        return CATCHMENT_ERROR + __LINE__;
+
     /* Check cell */
     if(idxoutlet<0 || idxoutlet>nrows*ncols-1)
         return CATCHMENT_ERROR + __LINE__;
@@ -253,6 +257,10 @@ long c_delineate_boundary(long nrows, long ncols,
     long nxycell[2], nxybuf[2], nxystart[2];
     long dx, dy, dist, dmin, knext;
     double percmax;
+
+    /* Check buffer size */
+    if(nval<1)
+        return CATCHMENT_ERROR + __LINE__;
 
     /* Grid size */
     ngrid = nrows*ncols;
