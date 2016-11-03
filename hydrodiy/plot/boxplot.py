@@ -142,6 +142,13 @@ class Boxplot(object):
         return self._stats
 
 
+    def set_all(self, propname, value):
+        ''' Set the a particular property (e.g. textformat) for all items '''
+
+        for key, item in self._props.iteritems():
+            item[propname] = value
+
+
     def draw(self, logscale=False):
         ''' Draw the boxplot '''
 
@@ -180,8 +187,12 @@ class Boxplot(object):
                 formatter = props['textformat']
                 if props['ha'] == 'left':
                     formatter = ' '+formatter
+                    xshift = w/2
+                elif props['ha'] == 'center':
+                    xshift = 0
+
                 medtext = formatter % med
-                ax.text(i+w/2, med, medtext, fontsize=props['fontsize'], \
+                ax.text(i+xshift, med, medtext, fontsize=props['fontsize'], \
                         color=props['fontcolor'], \
                         va=props['va'], ha=props['ha'])
 
@@ -230,10 +241,13 @@ class Boxplot(object):
                 formatter = props['textformat']
                 if props['ha'] == 'left':
                     formatter = ' '+formatter
+                    xshift = w/2
+                elif props['ha'] == 'center':
+                    xshift = 0
 
                 for value in stats.loc[['25.0%', '75.0%'], cn].values:
                     valuetext = formatter % value
-                    ax.text(i+w/2, value, valuetext, fontsize=props['fontsize'], \
+                    ax.text(i+xshift, value, valuetext, fontsize=props['fontsize'], \
                         color=props['fontcolor'], \
                         va=props['va'], ha=props['ha'])
 
