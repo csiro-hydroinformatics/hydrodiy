@@ -30,6 +30,9 @@ def find_files(folder, pattern, recursive=True):
     >>> lf = iutils.find_files('.', '.*\\.py', False)
     '''
 
+    if not os.path.exists(folder):
+        raise ValueError('Folder {0} does not exists'.format(folder))
+
     found = []
 
     if recursive:
