@@ -76,7 +76,7 @@ def dict2str(data):
     return '_'.join(out)
 
 
-def str2dict(source):
+def str2dict(source, num2str=True):
     ''' Find match in the form v1[value1]_v2[value2] in the
     source string and returns a dict with the value found
 
@@ -84,8 +84,8 @@ def str2dict(source):
     -----------
     source : str
         String to search in
-    varnames : list
-        List of variable names to be searched
+    num2str : bool
+        Convert all value to string
 
     Example
     -----------
@@ -95,22 +95,24 @@ def str2dict(source):
     '''
 
     out = {}
-
     se = re.findall('[^_]+\\[[^\\[]+\\]', source)
 
     for vn in se:
         # Get name
         name = re.sub('\[.*', '', vn)
 
-        # Get value and attempt conversion
+        # Get value
         value = re.sub('.*\[|\]', '', vn)
-        try:
-            value = int(value)
-        except ValueError:
+
+        # Attempt conversion if required
+        if not num2str:
             try:
-                value = float(value)
+                value = int(value)
             except ValueError:
-                pass
+                try:
+                    value = float(value)
+                except ValueError:
+                    pass
 
         out[name] = value
 

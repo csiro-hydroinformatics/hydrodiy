@@ -57,21 +57,27 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_str2dict(self):
+        data = {'name':'bob', 'phone':'2010'}
+        source = iutils.dict2str(data)
+        data2 = iutils.str2dict(source)
+        ck = data == data2
+        self.assertTrue(ck)
+
+        data = {'name':'bob_marley', 'phone':'2010'}
+        source = iutils.dict2str(data)
+        data2 = iutils.str2dict(source)
+        ck = data == data2
+        self.assertTrue(ck)
+
+        data = {'name':'bob_marley%$^_12234123', 'phone':'2010'}
+        source = iutils.dict2str(data)
+        data2 = iutils.str2dict(source)
+        ck = data == data2
+        self.assertTrue(ck)
+
         data = {'name':'bob', 'phone':2010}
         source = iutils.dict2str(data)
-        data2 = iutils.str2dict(source)
-        ck = data == data2
-        self.assertTrue(ck)
-
-        data = {'name':'bob_marley', 'phone':2010}
-        source = iutils.dict2str(data)
-        data2 = iutils.str2dict(source)
-        ck = data == data2
-        self.assertTrue(ck)
-
-        data = {'name':'bob_marley%$^_12234123', 'phone':2010}
-        source = iutils.dict2str(data)
-        data2 = iutils.str2dict(source)
+        data2 = iutils.str2dict(source, False)
         ck = data == data2
         self.assertTrue(ck)
 
