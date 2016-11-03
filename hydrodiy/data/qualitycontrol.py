@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def islinear(data, npoints=1, eps=1e-5, minthreshold=0.):
+def islinear(data, npoints=1, eps=None, minthreshold=None):
     '''
     Detect linearly interpolated data
 
@@ -32,6 +32,17 @@ def islinear(data, npoints=1, eps=1e-5, minthreshold=0.):
     '''
 
     data = np.atleast_1d(data)
+
+    # Compute min threhsold
+    if minthreshold is None:
+        minthreshold = np.nanmin(data[data>0])/10.
+
+    # Compute eps as the min of the diff between two points divided by 10
+    if eps is None:
+        diff = np.abs(np.diff(data))
+        diff = diff[diff>0]
+        eps = np.nanmin(diff)/10.
+
     nval = data.shape[0]
     if nval < 2*npoints+2:
         raise ValueError('data has less than {0} points'.format(2*npoints+2))
@@ -49,13 +60,13 @@ def islinear(data, npoints=1, eps=1e-5, minthreshold=0.):
 
     dist = np.max(np.abs(interp[:, 1:-1] - lagged[:, 1:-1]), axis=1)
 
-    status = np.array([False] * len(data))
 
     # Set status to True for points were linear interpolation
     # is valid and either one of endpoints is non zero
     st = (dist < eps) & \
         ((np.abs(lag0[:, 0])>minthreshold)|(np.abs(lag1[:, -1])>minthreshold))
 
+    status = np.array([False] * len(data))
     status[npoints:-npoints] = st
 
     return status
