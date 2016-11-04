@@ -28,3 +28,9 @@ To setup a model, change its parameters and run it:
 
 
 More examples in the `examples folder <https://bitbucket.org/jlerat/hydrodiy/downloads>`__ directory.
+
+License
+~~~~~~~~~
+
+The source code and documentation of the hydrodiy package is licensed under the
+`GPLv3 license <https://www.gnu.org/licenses/gpl-3.0.en.html>`__.
