@@ -106,14 +106,40 @@ class UtilsTestCase(unittest.TestCase):
         nval = 100
         x = np.random.normal(size=nval)
         y = np.random.normal(scale=2, size=nval)
-
         ax.plot(x, y, label='data')
-
         leg = ax.legend()
         putils.set_legend(leg, textcolor='green', framealpha=0.5)
 
         fp = '%s/legend.png' % self.FOUT
         fig.savefig(fp)
+
+    def test_set_mpl(self):
+
+        putils.set_mpl()
+        fig, ax = plt.subplots()
+        nval = 100
+        x = np.arange(nval)
+        y1 = np.random.normal(scale=2, size=nval)
+        ax.plot(x, y1, 'o-', label='data1')
+        y2 = np.random.normal(scale=2, size=nval)
+        ax.plot(x, y2, 'o-', label='data2')
+        leg = ax.legend()
+        fp = '%s/set_mpl1.png' % self.FOUT
+        fig.savefig(fp)
+
+
+        putils.set_mpl(True)
+        fig, ax = plt.subplots()
+        nval = 100
+        x = np.arange(nval)
+        y1 = np.random.normal(scale=2, size=nval)
+        ax.plot(x, y1, 'o-', label='data1')
+        y2 = np.random.normal(scale=2, size=nval)
+        ax.plot(x, y2, 'o-', label='data2')
+        leg = ax.legend()
+        fp = '%s/set_mpl2.png' % self.FOUT
+        fig.savefig(fp)
+
 
 
 if __name__ == "__main__":

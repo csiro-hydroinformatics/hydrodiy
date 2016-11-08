@@ -3,6 +3,8 @@ import re
 from datetime import datetime
 import datetime
 
+from cycler import cycler
+
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
@@ -18,11 +20,11 @@ import numpy as np
 import pandas as pd
 
 # Some useful colors
-tercile_colors = ['#FF9933', '#64A0C8', '#005BBB']
+COLORS1 = '#002745'
 
-bureau_background_color = '#002745'
+COLORS3 = ['#FF9933', '#64A0C8', '#005BBB']
 
-tableau_colors = [colors.rgb2hex([float(coo)/255 for coo in co]) for co in [ \
+COLORS10 = [colors.rgb2hex([float(coo)/255 for coo in co]) for co in [ \
             (31, 119, 180), (255, 127, 14), (44, 160, 44), \
             (214, 39, 40), (148, 103, 189), (140, 86, 75), \
             (227, 119, 194), (127, 127, 127), (188, 189, 34), \
@@ -181,10 +183,10 @@ def col2cmap(colors):
     keys = np.sort(colors.keys()).astype(float)
 
     if keys[0] < 0.:
-        raise ValueError('lowest key(%f) is lower than 0' % keys[0])
+        raise ValueError('lowest key({0}) is lower than 0'.format(keys[0]))
 
     if keys[-1] > 1.:
-        raise ValueError('lowest key(%f) is lower than 0' % keys[-1])
+        raise ValueError('Greatest key({0}) is greater than 1'.format(keys[-1]))
 
     cdict = {
             'red': [],
@@ -362,4 +364,17 @@ def set_legend(leg, textcolor='black', framealpha=1):
     for text in leg.get_texts():
         text.set_color(textcolor)
 
+
+def set_mpl(reset=False):
+    ''' Set convenient default matplotlib parameters '''
+
+    if reset:
+        mpl.rcdefaults()
+    else:
+        mpl.rc('axes', prop_cycle=cycler('color', COLORS10))
+        mpl.rc('lines', linewidth=2)
+        mpl.rc('legend', fancybox=True)
+        mpl.rc('legend', fontsize='small')
+        mpl.rc('legend', numpoints=1)
+        mpl.rc('legend', markerscale=0.8)
 
