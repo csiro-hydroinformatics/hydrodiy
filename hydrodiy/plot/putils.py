@@ -117,41 +117,6 @@ def img2html(title, image_data, root_http=None, filename=None):
     return html
 
 
-def footer(fig, label=None, version=None):
-    ''' Adds a footer to matplotlib
-
-    Parameters
-    -----------
-    fig : matplotlib.Figure
-        Figure to decorate
-    label : str
-        Label to add in the footer
-    version : str
-        Version of the figure
-
-    Example
-    -----------
-    >>> import matplotlib.pyplot as plt
-    >>> fig, ax = plt.subplots()
-    >>> ax.plot([0, 1], [0, 1])
-    >>> putils.footer(fig, 'this is a test')
-
-    '''
-    now = datetime.datetime.now()
-
-    if not label is None:
-        label = '%s - Generated: %s' % (label,
-                now.strftime('%H:%M %d/%m/%Y'))
-    else:
-        label = 'Generated: %s' % now.strftime('%H:%M %d/%m/%Y')
-
-    if not version is None:
-        label = label + ' (ver. %s)'%version
-
-    # Add label
-    fig.text(0.05, 0.010, label, color='#595959', ha='left', fontsize=9)
-
-
 def col2cmap(colors):
     ''' Define a linear color map from a set of colors
 
