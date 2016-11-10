@@ -169,7 +169,16 @@ def col2cmap(colors):
     return LinearSegmentedColormap('mycmap', cdict, 256)
 
 
-def line(ax, vx=1., vy=0., x0=0., y0=0., *args, **kwargs):
+def _float(u):
+    ''' Function to convert object to float '''
+    try:
+        v = float(u)
+    except TypeError:
+        v = u.toordinal()
+    return v
+
+
+def line(ax, vx=0., vy=1., x0=0., y0=0., *args, **kwargs):
     ''' Plot a line following a vector (vx, vy) and
     going through the point (x0, y0). Example
     * Vertical line through (0, 0): vx=0, vy=1, x0=0, y0=0
@@ -215,8 +224,8 @@ def line(ax, vx=1., vy=0., x0=0., y0=0., *args, **kwargs):
         raise ValueError(('Both vx({0}) and vy({1}) are ' + \
             ' close to zero').format(vx, vy))
 
-    x0 = float(x0)
-    y0 = float(y0)
+    x0 = _float(x0)
+    y0 = _float(y0)
 
     if abs(vx)>0:
         a1 = (xlim[0]-x0)/vx

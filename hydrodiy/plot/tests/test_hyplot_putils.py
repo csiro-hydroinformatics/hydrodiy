@@ -56,12 +56,31 @@ class UtilsTestCase(unittest.TestCase):
 
         ax.plot(x, y)
 
-        putils.line(ax, 0, 1, 0, 0, '-')
+        putils.line(ax, 0, 1, 0, 1, '-')
         putils.line(ax, 1, 0, 0, 0, '--')
         putils.line(ax, 1, 0.4, 0, 0, ':')
         putils.line(ax, 1, 0.2, 1., 2, '-.')
 
         fp = '%s/line.png' % self.FOUT
+        fig.savefig(fp)
+
+
+    def test_line_dates(self):
+
+        fig, ax = plt.subplots()
+
+        nval = 100
+        x = pd.date_range('2001-01-01', periods=nval)
+        y = np.random.normal(scale=2, size=nval)
+
+        ax.plot(x, y)
+
+        x0 = x[nval/2]
+        putils.line(ax, 0, 1, x0, 1, '-')
+        putils.line(ax, 1, 0, x0, 0, '--')
+        putils.line(ax, 1, 0.4, x0, 0, ':')
+
+        fp = '%s/line_dates.png' % self.FOUT
         fig.savefig(fp)
 
 
