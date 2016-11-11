@@ -6,7 +6,7 @@ import pandas as pd
 from hydrodiy.stat import sutils
 from hydrodiy.plot import putils
 
-COLORS = putils.tableau_colors
+COLORS = putils.COLORS10
 
 PROPS_NAMES = ['median', 'whisker', 'box', 'count', 'minmax']
 

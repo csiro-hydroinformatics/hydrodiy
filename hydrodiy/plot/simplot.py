@@ -18,7 +18,7 @@ from hydrodiy.stat import sutils
 from hydrodiy.plot import putils
 
 # Select color scheme
-sim_colors = putils.tableau_colors
+COLORS = putils.COLORS10
 
 
 class Simplot(object):
@@ -152,7 +152,7 @@ class Simplot(object):
         datam = datam.groupby(datam.index.month).mean()
         datam.columns = [self._getname(cn) for cn in  datam.columns]
 
-        datam.plot(ax=ax, color=sim_colors, marker='o', lw=3)
+        datam.plot(ax=ax, color=COLORS, marker='o', lw=3)
 
         lines, labels = ax.get_legend_handles_labels()
         ax.legend(lines, labels, loc=2, frameon=False)
@@ -187,7 +187,7 @@ class Simplot(object):
             name = self._getname(cn)
             ax.plot(ff, value, '+-', label=name,
                 markersize=6,
-                color=sim_colors[icol], lw=1)
+                color=COLORS[icol], lw=1)
             icol += 1
 
         ax.set_xlabel('Frequency')
@@ -211,7 +211,7 @@ class Simplot(object):
         dataf = data.loc[idx, :]
         dataf.columns = [self._getname(cn) for cn in  data.columns]
 
-        dataf.plot(ax=ax, color=sim_colors, lw=2, \
+        dataf.plot(ax=ax, color=COLORS, lw=2, \
                 marker='o', legend=iflood==0)
 
         if iflood == 0:
@@ -240,7 +240,7 @@ class Simplot(object):
         datay.columns = [self._getname(cn) for cn in  datay.columns]
 
         # plot
-        datay.iloc[:-1, :].plot(ax=ax, color=sim_colors, marker='o', lw=3)
+        datay.iloc[:-1, :].plot(ax=ax, color=COLORS, marker='o', lw=3)
 
         lines, labels = ax.get_legend_handles_labels()
         ax.legend(lines, labels, loc=2, frameon=False)
@@ -270,7 +270,7 @@ class Simplot(object):
         datab = datab * fact
 
         # plot
-        datab.plot(ax=ax, kind='bar', color=sim_colors, edgecolor='none')
+        datab.plot(ax=ax, kind='bar', color=COLORS, edgecolor='none')
 
         ax.set_ylabel('Average flow')
         ax.set_title('({0}) Water Balance'.format(ax_letter))
