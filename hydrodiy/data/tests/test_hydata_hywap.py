@@ -26,6 +26,7 @@ class HyWapTestCase(unittest.TestCase):
 
         self.FAWAP = FAWAP
 
+
     def test_get_data(self):
 
         hya = hywap.HyWap()
@@ -111,7 +112,7 @@ class HyWapTestCase(unittest.TestCase):
 
                     sz = axes_size.AxesY(ax, 0.6)
                     sz = '10%'
-                    hywap.plot_cbar(fig, ax, cs,
+                    hywap.plot_colorbar(fig, ax, cs,
                         position='right', size=sz, pad=0.1)
 
                     ax.set_title('%s - %s' % (varname, dt))

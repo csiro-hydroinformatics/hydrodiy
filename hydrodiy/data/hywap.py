@@ -9,13 +9,9 @@ import urllib2
 from dateutil.relativedelta import relativedelta as delta
 
 import tempfile
-
-import itertools
-
 from subprocess import Popen, PIPE
 
 import numpy as np
-import pandas as pd
 from scipy.ndimage.filters import gaussian_filter
 
 HAS_BASEMAP = True
@@ -31,8 +27,6 @@ try:
 except ImportError:
     HAS_BASEMAP = False
 
-from hydrodiy.io import csv
-
 VARIABLES = {
     'rainfall':[{'type':'totals', 'unit':'mm/d'}],
     'temperature':[{'type':'maxave', 'unit':'celsius'},
@@ -43,7 +37,7 @@ VARIABLES = {
 
 TIMESTEPS = ['day', 'month']
 
-AWAP_URL='http://www.bom.gov.au/web03/ncc/www/awap'
+AWAP_URL = 'http://www.bom.gov.au/web03/ncc/www/awap'
 
 
 def get_cellcoords(header):
@@ -250,45 +244,46 @@ class HyWap(object):
 
         cellnum, llongs, llats, = get_cellcoords(header)
 
-        m = basemap_object.get_map()
-        x, y = m(llongs, llats)
-        z = data.copy()
+        bmap = basemap_object.get_map()
+        xcoord, ycoord = bmap(llongs, llats)
+        zval = data.copy()
 
         # Filter data
         clevs = cfg['clevs']
-        ix, iy = np.where(z < clevs[0])
-        z[ix, iy] = np.nan
+        idx_x, idx_y = np.where(zval < clevs[0])
+        zval[idx_x, idx_y] = np.nan
 
-        ix, iy = np.where(z > clevs[-1])
-        z[ix, iy] = np.nan
+        idx_x, idx_y = np.where(zval > clevs[-1])
+        zval[idx_x, idx_y] = np.nan
 
         if 'sigma' in cfg:
-            z = gaussian_filter(z, sigma=cfg['sigma'], mode='nearest')
+            zval = gaussian_filter(zval, sigma=cfg['sigma'], mode='nearest')
 
         # Refine levels
-        if np.nanmax(z) < np.max(clevs):
-            iw = np.min(np.where(np.nanmax(z) < np.sort(clevs))[0])
-            clevs = clevs[:iw+1]
+        if np.nanmax(zval) < np.max(clevs):
+            idx_z = np.min(np.where(np.nanmax(zval) < np.sort(clevs))[0])
+            clevs = clevs[:idx_z+1]
 
         # draw contour
-        cs = m.contourf(x, y, z, cfg['clevs'], \
+        contf = bmap.contourf(xcoord, ycoord, zval, cfg['clevs'], \
                     cmap=cfg['cmap'], \
                     norm=cfg['norm'])
 
         if cfg['linewidth'] > 0.:
-            m.contour(x, y, z, cfg['clevs'], \
+            bmap.contour(xcoord, ycoord, zval, cfg['clevs'], \
                     linewidths=cfg['linewidth'], \
                     colors=cfg['linecolor'])
 
-        return cs
+        return contf
 
 
-def plot_cbar(fig, ax, cs, *args, **kwargs):
+def plot_colorbar(fig, ax, contf, *args, **kwargs):
+    ''' Add a colorbar to a plot '''
 
     div = make_axes_locatable(ax)
-
     cbar_ax = div.append_axes(*args, **kwargs)
+    colorb = fig.colorbar(contf, cax=cbar_ax)
 
-    cb = fig.colorbar(cs, cax=cbar_ax)
+    return colorb
 
 
