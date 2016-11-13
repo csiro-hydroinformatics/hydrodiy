@@ -12,6 +12,9 @@ cdef extern from 'c_dateutils.h':
     int c_dateutils_comparedates(int * date1, int * date2)
     int c_dateutils_getdate(double day, int * date)
 
+def __cinit__(self):
+    pass
+
 
 def isleapyear(int year):
     return c_dateutils_isleapyear(year)

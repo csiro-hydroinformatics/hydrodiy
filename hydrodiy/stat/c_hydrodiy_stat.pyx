@@ -25,6 +25,10 @@ cdef extern from 'c_olsleverage.h':
         double * tXXinv, double* leverages)
 
 
+def __cinit__(self):
+    pass
+
+
 def olsleverage(np.ndarray[double, ndim=2, mode='c'] predictors not None,
         np.ndarray[double, ndim=2, mode='c'] tXXinv not None,
         np.ndarray[double, ndim=1, mode='c'] leverages not None):

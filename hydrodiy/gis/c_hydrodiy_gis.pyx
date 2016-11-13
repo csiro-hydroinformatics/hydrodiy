@@ -70,6 +70,9 @@ cdef extern from 'c_catchment.h':
         double * weights)
 
 
+def __cinit__(self):
+    pass
+
 
 def coord2cell(long nrows, long ncols, double xll, double yll,
         double csz,
