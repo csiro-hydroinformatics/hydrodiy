@@ -14,75 +14,85 @@ import urllib2
 import numpy as np
 import pandas as pd
 
-
-class HyClimInd():
-    ''' Class to download climate indices '''
-
-    def __init__(self):
-
-        self.noaa_url1 = 'http://www.esrl.noaa.gov/psd/gcos_wgsp/Timeseries/Data'
-
-        self.noaa_url2 = 'http://www.ncdc.noaa.gov/teleconnections'
-
-        self.bom_soi_url = ('ftp://ftp.bom.gov.au/anon/home/ncc/'
+NOAA_URL1 = 'http://www.esrl.noaa.gov/psd/gcos_wgsp/Timeseries/Data'
+NOAA_URL2 = 'http://www.ncdc.noaa.gov/teleconnections'
+BOM_SOI_URL = ('ftp://ftp.bom.gov.au/anon/home/ncc/' + \
                                 'www/sco/soi/soiplaintext.html')
 
-        self.index_names = ['nao', 'pdo', 'soi', 'pna',
-                            'nino12', 'nino34', 'nino4',
-                            'ao', 'amo']
+INDEX_NAMES = ['nao', 'pdo', 'soi', 'pna', \
+                'nino12', 'nino34', 'nino4', 'ao', 'amo']
 
-    def get_data(self, name):
-        ''' Download climate indices time series '''
 
-        if not name in self.index_names:
-            raise ValueError('wron index name(%s), not in %s' % (name,
-                    ','.join(self.index_names)))
+def get_data(index):
+    ''' Download climate indices time series
 
-        # Download data
-        url = '%s/%s.long.data' % (self.noaa_url1, name)
-        sep = ' +'
+    Parameters
+    -----------
+    index : str
+        Climate index name : nao, pdo, soi, pna,
+        nino12, nino34m nino4, ao, amo
 
-        if name == 'soi':
-            url = self.bom_soi_url
-            sep = '\t'
+    Returns
+    -----------
+    data : pandas.Series
+        Index monthly data
+    url : str
+        Download URL
 
-        if name in ['nao', 'pdo', 'pna', 'ao']:
-            url = '%s/%s/data.json' % (self.noaa_url2, name)
+    Example
+    -----------
+    >>> nao = hyclimind('nao')
+    '''
 
-        if re.search('nino', name):
-            url = re.sub('long', 'long.anom', url)
+    if not index in INDEX_NAMES:
+        raise ValueError('Index index({0}) is not in {1}'.format(index, \
+                ','.join(INDEX_NAMES)))
 
-        # download data
-        req = urllib2.urlopen(url)
-        txt = req.read()
-        req.close()
+    # Build url
+    url = '{0}/{1}.long.data'.format(NOAA_URL1, index)
+    sep = ' +'
 
-        if name in ['nao', 'pdo', 'pna', 'ao']:
-            data = json.loads(''.join(txt))
-            data = pd.Series(
-                    {pd.to_datetime(k, format='%Y%m'):
-                        data['data'][k] for k in data['data']})
+    if index == 'soi':
+        url = BOM_SOI_URL
+        sep = '\t'
 
-        else:
-            # Convert to dataframe (tried read_csv but failed)
-            iotxt = StringIO(unicode(txt))
-            data = pd.read_csv(iotxt, skiprows=11, sep='   ', engine='python')
+    if index in ['nao', 'pdo', 'pna', 'ao']:
+        url = '{0}/{1}/data.json'.format(NOAA_URL2, index)
 
-            # Build time series
-            cn = data.columns[0]
-            data = pd.melt(data, id_vars=cn)
-            data = data[pd.notnull(data['value'])]
+    if re.search('nino', index):
+        url = re.sub('long', 'long.anom', url)
 
-            def fun(x):
-                return '1 {0} {1}'.format(x['variable'], x[cn])
+    # Download data
+    req = urllib2.urlopen(url)
+    txt = req.read()
+    req.close()
 
-            data['month'] = pd.to_datetime(
-                            data[[cn, 'variable']].apply(fun, axis=1))
+    if index in ['nao', 'pdo', 'pna', 'ao']:
+        data = json.loads(''.join(txt))
+        data = pd.Series(
+                {pd.to_datetime(k, format='%Y%m'):
+                    data['data'][k] for k in data['data']})
 
-            data = data.sort('month')
-            data = data.set_index('month')
-            data = data['value']
-            data.name = '%s[%s]' % (name, url)
+    else:
+        # Convert to dataframe (tried read_csv but failed)
+        iotxt = StringIO(unicode(txt))
+        data = pd.read_csv(iotxt, skiprows=11, sep='   ', engine='python')
 
-        return data
+        # Build time series
+        cn = data.columns[0]
+        data = pd.melt(data, id_vars=cn)
+        data = data[pd.notnull(data['value'])]
+
+        def fun(x):
+            return '1 {0} {1}'.format(x['variable'], x[cn])
+
+        data['month'] = pd.to_datetime(
+                        data[[cn, 'variable']].apply(fun, axis=1))
+
+        data = data.sort('month')
+        data = data.set_index('month')
+        data = data['value']
+        data.index = '%s[%s]' % (index, url)
+
+    return data, url
 

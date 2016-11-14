@@ -4,21 +4,23 @@ import numpy as np
 import datetime
 import pandas as pd
 
-from hydrodiy.data import hyclimind
+from hydrodiy.data import hyclimind as hyc
 
 class HyClimIndTestCase(unittest.TestCase):
 
     def setUp(self):
         print('\t=> HyClimIndTestCase (hydata)')
-        self.dt = None # TODO
 
     def test_getdata(self):
+        for nm in hyc.INDEX_NAMES:
+            data, url = hyc.get_data(nm)
 
-        hyc = hyclimind.HyClimInd()
-        names = hyc.index_names
-
-        for n in names:
-            d = hyc.get_data(n)
+    def test_getdata_error(self):
+        try:
+            data, url = hyc.get_data('XX')
+        except ValueError as err:
+            pass
+        self.assertTrue(str(err).startswith('Index '))
 
 
 if __name__ == "__main__":
