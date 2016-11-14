@@ -8,17 +8,18 @@ from hydrodiy.stat import metrics
 class MetricsTestCase(unittest.TestCase):
     def setUp(self):
         print('\t=> MetricsTestCase')
-        FTEST, testfile = os.path.split(__file__)
+        source_file = os.path.abspath(__file__)
+        ftest = os.path.dirname(source_file)
 
-        fd1 = os.path.join(FTEST, 'data', 'crps_testdata_01.txt')
+        fd1 = os.path.join(ftest, 'data', 'crps_testdata_01.txt')
         data = np.loadtxt(fd1)
         self.obs1 = data[:,0].copy()
         self.sim1 = data[:,1:].copy()
 
-        frt1 = os.path.join(FTEST, 'data', 'crps_testres_crpsmatens_01.txt')
+        frt1 = os.path.join(ftest, 'data', 'crps_testres_crpsmatens_01.txt')
         self.crps_reliabtab1 = np.loadtxt(frt1)
 
-        fv1 = os.path.join(FTEST, 'data', 'crps_testres_crpsvalens_01.txt')
+        fv1 = os.path.join(ftest, 'data', 'crps_testres_crpsvalens_01.txt')
         c1 = np.loadtxt(fv1)
         c1[2] *= -1
         self.crps_value1 = {
@@ -30,15 +31,15 @@ class MetricsTestCase(unittest.TestCase):
         }
 
 
-        fd2 = os.path.join(FTEST, 'data', 'crps_testdata_02.txt')
+        fd2 = os.path.join(ftest, 'data', 'crps_testdata_02.txt')
         data = np.loadtxt(fd2)
         self.obs2 = data[:,0].copy()
         self.sim2 = data[:,1:].copy()
 
-        frt2 = os.path.join(FTEST, 'data', 'crps_testres_crpsmatens_02.txt')
+        frt2 = os.path.join(ftest, 'data', 'crps_testres_crpsmatens_02.txt')
         self.crps_reliabtab2 = np.loadtxt(frt2)
 
-        fv2 = os.path.join(FTEST, 'data', 'crps_testres_crpsvalens_02.txt')
+        fv2 = os.path.join(ftest, 'data', 'crps_testres_crpsvalens_02.txt')
         c2 = np.loadtxt(fv2)
         c2[2] *= -1
         self.crps_value2 = {
@@ -53,12 +54,14 @@ class MetricsTestCase(unittest.TestCase):
     def test_crps_reliability_table1(self):
         cr, rt = metrics.crps(self.obs1, self.sim1)
         for i in range(rt.shape[1]):
-            self.assertTrue(np.allclose(rt.iloc[:, i], self.crps_reliabtab1[:,i], atol=1e-5))
+            self.assertTrue(np.allclose(rt.iloc[:, i], \
+                self.crps_reliabtab1[:,i], atol=1e-5))
 
     def test_crps_reliability_table2(self):
         cr, rt = metrics.crps(self.obs2, self.sim2)
         for i in range(rt.shape[1]):
-            self.assertTrue(np.allclose(rt.iloc[:, i], self.crps_reliabtab2[:,i], atol=1e-5))
+            self.assertTrue(np.allclose(rt.iloc[:, i], \
+                self.crps_reliabtab2[:,i], atol=1e-5))
 
     def test_crps_value1(self):
         cr, rt = metrics.crps(self.obs1, self.sim1)

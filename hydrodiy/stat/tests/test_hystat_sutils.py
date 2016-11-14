@@ -16,8 +16,8 @@ class UtilsTestCase(unittest.TestCase):
 
     def setUp(self):
         print('\t=> UtilsTestCase (hystat)')
-        FTEST, testfile = os.path.split(__file__)
-        self.FOUT = FTEST
+        source_file = os.path.abspath(__file__)
+        self.ftest = os.path.dirname(source_file)
 
     def test_empfreq(self):
         nval = 10
@@ -41,10 +41,10 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_acf1(self):
-        fdata = '%s/data/acf1_data.csv'%self.FOUT
+        fdata = '%s/data/acf1_data.csv'%self.ftest
         data, comment = csv.read_csv(fdata)
         data = data.astype(float)
-        fres = '%s/data/acf1_result.csv'%self.FOUT
+        fres = '%s/data/acf1_result.csv'%self.ftest
         expected, comment = csv.read_csv(fres)
 
         res = sutils.acf(data, lag=range(0,6))
@@ -52,9 +52,9 @@ class UtilsTestCase(unittest.TestCase):
             expected['acf'].values))
 
     def test_acf2(self):
-        fdata = '%s/data/acf2_data.csv'%self.FOUT
+        fdata = '%s/data/acf2_data.csv'%self.ftest
         data, comment = csv.read_csv(fdata)
-        fres = '%s/data/acf2_result.csv'%self.FOUT
+        fres = '%s/data/acf2_result.csv'%self.ftest
         expected, comment = csv.read_csv(fres)
 
         res = sutils.acf(data, lag=range(0,6))
@@ -63,13 +63,13 @@ class UtilsTestCase(unittest.TestCase):
             expected['acf'].values))
 
     def test_acf3(self):
-        fdata = '%s/data/acf1_data.csv'%self.FOUT
+        fdata = '%s/data/acf1_data.csv'%self.ftest
         data, comment = csv.read_csv(fdata)
         data = data.astype(float).values
         data = np.vstack([data[:5], 1000.,  np.nan, data[5:],
                     np.nan, np.nan])
 
-        fres = '%s/data/acf1_result.csv'%self.FOUT
+        fres = '%s/data/acf1_result.csv'%self.ftest
         expected, comment = csv.read_csv(fres)
 
         filter = np.array([True]*len(data))

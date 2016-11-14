@@ -12,12 +12,12 @@ class UtilsTestCase(unittest.TestCase):
 
     def setUp(self):
         print('\t=> UtilsTestCase (hyio)')
-        FTEST, testfile = os.path.split(__file__)
-        self.FOUT = FTEST
+        source_file = os.path.abspath(__file__)
+        self.ftest = os.path.dirname(source_file)
 
     def test_find_files(self):
         # Recursive
-        folder = '%s/../..' % self.FOUT
+        folder = '%s/../..' % self.ftest
         pattern = '(_[\\d]{2}){3}( \\(|.txt)'
         found = iutils.find_files(folder, pattern)
         fn = [re.sub('_.*', '', os.path.basename(f))
@@ -28,7 +28,7 @@ class UtilsTestCase(unittest.TestCase):
         found = iutils.find_files(folder, pattern, recursive=False)
         self.assertTrue(len(found)==0)
 
-        folder = '%s/find' % self.FOUT
+        folder = '%s/find' % self.ftest
         found = iutils.find_files(folder, pattern, recursive=False)
         self.assertTrue(len(found)==3)
 
@@ -36,21 +36,21 @@ class UtilsTestCase(unittest.TestCase):
     def test_script_template(self):
         sites = pd.DataFrame({'siteid':[1, 2, 3, 4], \
                     'id':['a', 'b', 'c', 'd']})
-        fs = os.path.join(self.FOUT, 'sites.csv')
+        fs = os.path.join(self.ftest, 'sites.csv')
         csv.write_csv(sites, fs, 'site list', __file__)
-        fs = '%s/script_test1.pytest' % self.FOUT
+        fs = '%s/script_test1.pytest' % self.ftest
         iutils.script_template(fs, 'test')
         subprocess.check_call('python ' + fs, shell=True)
 
-        fs = '%s/script_test2.pytest' % self.FOUT
+        fs = '%s/script_test2.pytest' % self.ftest
         iutils.script_template(fs, 'test', stype='plot')
         subprocess.check_call('python ' + fs, shell=True)
 
-        fs = '%s/script_test3.pytest' % self.FOUT
+        fs = '%s/script_test3.pytest' % self.ftest
         iutils.script_template(fs, 'test', stype='console')
         subprocess.check_call('python ' + fs, shell=True)
 
-        fs = '%s/script_test4.sh' % self.FOUT
+        fs = '%s/script_test4.sh' % self.ftest
         os.remove(fs)
         iutils.script_template(fs, 'test', stype='bash')
         subprocess.check_call(fs, shell=True)

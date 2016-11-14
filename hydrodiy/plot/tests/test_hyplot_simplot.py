@@ -12,8 +12,8 @@ class SimplotTestCase(unittest.TestCase):
 
     def setUp(self):
         print('\t=> SimplotTestCase (hyplot)')
-        FTEST, testfile = os.path.split(__file__)
-        self.FOUT = FTEST
+        source_file = os.path.abspath(__file__)
+        self.ftest = os.path.dirname(source_file)
 
     def test_sim_daily(self):
 
@@ -30,7 +30,7 @@ class SimplotTestCase(unittest.TestCase):
         sm.add_sim(sim2, sim_name='truc')
         sm.draw()
 
-        fp = '%s/simplot_daily.png' % self.FOUT
+        fp = os.path.join(self.ftest, 'simplot_daily.png')
         sm.savefig(fp)
 
 
@@ -46,7 +46,7 @@ class SimplotTestCase(unittest.TestCase):
         sm = Simplot(obs, sim)
         sm.draw()
 
-        fp = '%s/simplot_monthly.png' % self.FOUT
+        fp = os.path.join(self.ftest, 'simplot_monthly.png')
         sm.savefig(fp)
 
 

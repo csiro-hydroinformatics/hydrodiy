@@ -17,8 +17,8 @@ class TransformTestCase(unittest.TestCase):
 
     def setUp(self):
         print('\t=> TransformTestCase (hystat)')
-        FTEST, testfile = os.path.split(__file__)
-        self.FOUT = FTEST
+        source_file = os.path.abspath(__file__)
+        self.ftest = os.path.dirname(source_file)
         self.xx = np.exp(np.linspace(-8, 5, 10))
 
     def test_transform_class(self):
@@ -197,7 +197,7 @@ class TransformTestCase(unittest.TestCase):
 
     def test_all_transform_plot(self):
 
-        FOUT = self.FOUT
+        ftest = self.ftest
 
         for nm in TRANS_NAMES:
 
@@ -220,7 +220,7 @@ class TransformTestCase(unittest.TestCase):
                                         trans.rparams))
             ax.legend(loc=4)
             ax.set_title(nm)
-            fig.savefig(os.path.join(FOUT, 'transform_'+nm+'.png'))
+            fig.savefig(os.path.join(ftest, 'transform_'+nm+'.png'))
 
 
 

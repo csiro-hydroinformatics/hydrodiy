@@ -27,7 +27,7 @@ class GridTestCase(unittest.TestCase):
                 'yllcorner':-39.}
 
         source_file = os.path.abspath(__file__)
-        self.FTEST = os.path.dirname(source_file)
+        self.ftest = os.path.dirname(source_file)
 
 
     def test_print(self):
@@ -93,7 +93,7 @@ class GridTestCase(unittest.TestCase):
         gr.data = dt
 
         # Write data
-        fg = os.path.join(self.FTEST, 'grid_test.bil')
+        fg = os.path.join(self.ftest, 'grid_test.bil')
         gr.save(fg)
 
         # Load it back
@@ -194,7 +194,7 @@ class GridTestCase(unittest.TestCase):
 
 
     def test_from_header(self):
-        filename = os.path.join(self.FTEST, 'header.hdr')
+        filename = os.path.join(self.ftest, 'header.hdr')
         gr = Grid.from_header(filename)
         ck = gr.nrows == 13857
         ck = ck & (gr.ncols == 16440)
@@ -207,12 +207,12 @@ class GridTestCase(unittest.TestCase):
 
 
     def test_from_load(self):
-        filename = os.path.join(self.FTEST, 'demtest.hdr')
+        filename = os.path.join(self.ftest, 'demtest.hdr')
         gr = Grid.from_header(filename)
 
 
     def test_plot(self):
-        filename = os.path.join(self.FTEST, 'demtest.hdr')
+        filename = os.path.join(self.ftest, 'demtest.hdr')
         gr = Grid.from_header(filename)
         gr.dtype = np.float64
         def fun(x):
@@ -255,7 +255,7 @@ class CatchmentTestCase(unittest.TestCase):
         print('\t=> CatchmentTestCase')
 
         source_file = os.path.abspath(__file__)
-        self.FTEST = os.path.dirname(source_file)
+        self.ftest = os.path.dirname(source_file)
 
         nrows = 6
         gr = Grid(nrows, nrows, dtype=np.int32)
@@ -513,7 +513,7 @@ class CatchmentTestCase(unittest.TestCase):
         if not run_advanced:
             return
 
-        filename = os.path.join(self.FTEST, 'fdtest.hdr')
+        filename = os.path.join(self.ftest, 'fdtest.hdr')
         flowdir = Grid.from_header(filename)
 
         acc = accumulate(flowdir, nprint=30000)
@@ -549,7 +549,7 @@ class CatchmentTestCase(unittest.TestCase):
 
             outletxy = cfg['outletxy']
             upstreamxy = cfg['upstreamxy']
-            filename = os.path.join(self.FTEST, cfg['filename'])
+            filename = os.path.join(self.ftest, cfg['filename'])
 
             flowdir = Grid.from_header(filename)
 

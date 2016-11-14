@@ -9,8 +9,8 @@ from hydrodiy.gis import gutils
 class GutilsTestCase(unittest.TestCase):
     def setUp(self):
         print('\t=> GutilsTestCase')
-        FTEST, ozfile = os.path.split(__file__)
-        self.FOUT = FTEST
+        source_file = os.path.abspath(__file__)
+        self.ftest = os.path.dirname(source_file)
 
     def test_xy2kml(self):
         npt = 5
@@ -20,16 +20,16 @@ class GutilsTestCase(unittest.TestCase):
         siteid = ['test'] * npt
         label = ['label'] * npt
 
-        fkml = '{0}/test1.kml'.format(self.FOUT)
+        fkml = '{0}/test1.kml'.format(self.ftest)
         gutils.xy2kml(x, y, fkml)
 
-        fkml = '{0}/test2.kml'.format(self.FOUT)
+        fkml = '{0}/test2.kml'.format(self.ftest)
         gutils.xy2kml(x, y, fkml, z=z)
 
-        fkml = '{0}/test3.kml'.format(self.FOUT)
+        fkml = '{0}/test3.kml'.format(self.ftest)
         gutils.xy2kml(x, y, fkml, siteid=siteid)
 
-        fkml = '{0}/test4.kml'.format(self.FOUT)
+        fkml = '{0}/test4.kml'.format(self.ftest)
         gutils.xy2kml(x, y, fkml, siteid=siteid, label=label)
 
 

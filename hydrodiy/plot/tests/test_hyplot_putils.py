@@ -12,8 +12,8 @@ class UtilsTestCase(unittest.TestCase):
 
     def setUp(self):
         print('\t=> UtilsTestCase (hyplot)')
-        FTEST, testfile = os.path.split(__file__)
-        self.FOUT = FTEST
+        source_file = os.path.abspath(__file__)
+        self.ftest = os.path.dirname(source_file)
 
     def test_col2cmap(self):
 
@@ -23,7 +23,7 @@ class UtilsTestCase(unittest.TestCase):
         x = np.arange(1, 257).reshape((1,256))
         fig, ax = plt.subplots()
         ax.pcolor(x, cmap=cmap, vmin=1, vmax=256)
-        fp = '%s/cmap.png' % self.FOUT
+        fp = os.path.join(self.ftest, 'cmap.png')
         fig.savefig(fp)
 
 
@@ -42,7 +42,7 @@ class UtilsTestCase(unittest.TestCase):
         putils.line(ax, 1, 0.4, 0, 0, ':')
         putils.line(ax, 1, 0.2, 1., 2, '-.')
 
-        fp = '%s/line.png' % self.FOUT
+        fp = os.path.join(self.ftest, 'lines.png')
         fig.savefig(fp)
 
 
@@ -61,24 +61,24 @@ class UtilsTestCase(unittest.TestCase):
         putils.line(ax, 1, 0, x0, 0, '--')
         putils.line(ax, 1, 0.4, x0, 0, ':')
 
-        fp = '%s/line_dates.png' % self.FOUT
+        fp = os.path.join(self.ftest, 'lines_date.png')
         fig.savefig(fp)
 
 
     def test_equation(self):
 
         tex = r'\begin{equation} y = ax+b \end{equation}'
-        fp = '%s/equation1.png' % self.FOUT
+        fp = os.path.join(self.ftest, 'equations1.png')
         putils.equation(tex, fp)
 
 
         tex = r'\begin{equation} y = \frac{\int_0^{+\infty} x\ \exp(-\alpha x)}{\pi} \end{equation}'
-        fp = '%s/equation2.png' % self.FOUT
+        fp = os.path.join(self.ftest, 'equations2.png')
         putils.equation(tex, fp)
 
 
         tex = r'\begin{eqnarray} y & = & ax+b \\ z & = & \zeta \end{eqnarray}'
-        fp = '%s/equation3.png' % self.FOUT
+        fp = os.path.join(self.ftest, 'equations3.png')
         putils.equation(tex, fp)
 
 
@@ -95,7 +95,7 @@ class UtilsTestCase(unittest.TestCase):
         putils.set_spines(ax, ['right', 'top'], visible=False)
         putils.set_spines(ax, ['left', 'bottom'], color='red', style=':')
 
-        fp = '%s/spines.png' % self.FOUT
+        fp = os.path.join(self.ftest, 'spines.png')
         fig.savefig(fp)
 
 
@@ -110,7 +110,7 @@ class UtilsTestCase(unittest.TestCase):
         leg = ax.legend()
         putils.set_legend(leg, textcolor='green', framealpha=0.5)
 
-        fp = '%s/legend.png' % self.FOUT
+        fp = os.path.join(self.ftest, 'legend.png')
         fig.savefig(fp)
 
     def test_set_mpl(self):
@@ -124,7 +124,7 @@ class UtilsTestCase(unittest.TestCase):
         y2 = np.random.normal(scale=2, size=nval)
         ax.plot(x, y2, 'o-', label='data2')
         leg = ax.legend()
-        fp = '%s/set_mpl1.png' % self.FOUT
+        fp = os.path.join(self.ftest, 'set_mpl1.png')
         fig.savefig(fp)
 
 
@@ -137,7 +137,7 @@ class UtilsTestCase(unittest.TestCase):
         y2 = np.random.normal(scale=2, size=nval)
         ax.plot(x, y2, 'o-', label='data2')
         leg = ax.legend()
-        fp = '%s/set_mpl2.png' % self.FOUT
+        fp = os.path.join(self.ftest, 'set_mpl2.png')
         fig.savefig(fp)
 
 

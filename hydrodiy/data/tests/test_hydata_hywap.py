@@ -20,11 +20,11 @@ class HyWapTestCase(unittest.TestCase):
     def setUp(self):
         print('\t=> HyWapTestCase (hydata)')
 
-        FAWAP = '%s/awap' % os.path.dirname(os.path.abspath(__file__))
-        if not os.path.exists(FAWAP):
-            os.mkdir(FAWAP)
+        fawap = '%s/awap' % os.path.dirname(os.path.abspath(__file__))
+        if not os.path.exists(fawap):
+            os.mkdir(fawap)
 
-        self.FAWAP = FAWAP
+        self.fawap = fawap
 
 
     def test_get_data(self):
@@ -117,7 +117,7 @@ class HyWapTestCase(unittest.TestCase):
 
                     ax.set_title('%s - %s' % (varname, dt))
 
-                    fp = '%s/%s_%s_%s.png' % (self.FAWAP, varname, timestep, vartype)
+                    fp = '%s/%s_%s_%s.png' % (self.fawap, varname, timestep, vartype)
                     fig.savefig(fp)
 
 

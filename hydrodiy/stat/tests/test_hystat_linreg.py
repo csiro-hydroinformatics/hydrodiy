@@ -33,9 +33,8 @@ class LinregTestCase(unittest.TestCase):
 
     def setUp(self):
         print('\t=> LinregTestCase (hystat)')
-        FTEST, testfile = os.path.split(__file__)
-        self.FOUT = FTEST
-        self.y1 = np.array(1)
+        source_file = os.path.abspath(__file__)
+        self.ftest = os.path.dirname(source_file)
 
     def test_aprint(self):
         x = [[3, 5], [1, 4], [5, 6], [2, 4], [4, 6]]
@@ -73,13 +72,13 @@ class LinregTestCase(unittest.TestCase):
     def test_ols_rcran1(self):
 
         # data set from R - see linreg.r
-        fd = '%s/data/olslinreg1_data.csv'%self.FOUT
+        fd = '%s/data/olslinreg1_data.csv'%self.ftest
         data, comment = csv.read_csv(fd)
 
-        fd = '%s/data/olslinreg1_result_estimate.csv' % self.FOUT
+        fd = '%s/data/olslinreg1_result_estimate.csv' % self.ftest
         estimate, comment = csv.read_csv(fd)
 
-        fd = '%s/data/olslinreg1_result_predict.csv' % self.FOUT
+        fd = '%s/data/olslinreg1_result_predict.csv' % self.ftest
         pred_R, comment = csv.read_csv(fd)
 
         # Fit model
@@ -102,13 +101,13 @@ class LinregTestCase(unittest.TestCase):
     def test_ols_rcran2(self):
 
         # data set from R - see linreg.r
-        fd = '%s/data/olslinreg2_data.csv'%self.FOUT
+        fd = '%s/data/olslinreg2_data.csv'%self.ftest
         data, comment = csv.read_csv(fd)
 
-        fd = '%s/data/olslinreg2_result_estimate.csv' % self.FOUT
+        fd = '%s/data/olslinreg2_result_estimate.csv' % self.ftest
         estimate, comment = csv.read_csv(fd)
 
-        fd = '%s/data/olslinreg2_result_predict.csv' % self.FOUT
+        fd = '%s/data/olslinreg2_result_predict.csv' % self.ftest
         pred_R, comment = csv.read_csv(fd)
 
         # Fit model
@@ -131,7 +130,7 @@ class LinregTestCase(unittest.TestCase):
     def test_ols_scatterplot(self):
 
         # data set from R - see linreg.r
-        fd = '%s/data/olslinreg2_data.csv'%self.FOUT
+        fd = '%s/data/olslinreg2_data.csv'%self.ftest
         data, comment = csv.read_csv(fd)
 
         # Fit model
@@ -141,14 +140,14 @@ class LinregTestCase(unittest.TestCase):
         # Plot
         fig, ax = plt.subplots()
         lm.scatterplot(ax=ax)
-        fp = os.path.join(self.FOUT, 'olslinreg2_scatter.png')
+        fp = os.path.join(self.ftest, 'olslinreg2_scatter.png')
         fig.savefig(fp)
 
         # Plot
         lm.boot()
         fig, ax = plt.subplots()
         lm.scatterplot(ax=ax, boot=True)
-        fp = os.path.join(self.FOUT, 'olslinreg2_scatter_boot.png')
+        fp = os.path.join(self.ftest, 'olslinreg2_scatter_boot.png')
         fig.savefig(fp)
 
 
@@ -157,15 +156,15 @@ class LinregTestCase(unittest.TestCase):
         # data set from R - see linreg_gls.r
         for itest in range(1, 3):
 
-            fd = '%s/data/glslinreg%d_data.csv' % (self.FOUT, itest)
+            fd = '%s/data/glslinreg%d_data.csv' % (self.ftest, itest)
             data, comment = csv.read_csv(fd)
 
             fd = ('%s/data/glslinreg%d_result_estimate'
-                    '_gls.csv') % (self.FOUT, itest)
+                    '_gls.csv') % (self.ftest, itest)
             estimate, comment = csv.read_csv(fd)
 
             fd = ('%s/data/glslinreg%d_result_predict_'
-                    'gls.csv') % (self.FOUT, itest)
+                    'gls.csv') % (self.ftest, itest)
             pred_R, comment = csv.read_csv(fd)
 
             # Fit model
@@ -197,7 +196,7 @@ class LinregTestCase(unittest.TestCase):
 
     def test_gls_elasticity(self):
 
-        fd = '%s/data/elasticity_data.csv' % self.FOUT
+        fd = '%s/data/elasticity_data.csv' % self.ftest
         data, comment = csv.read_csv(fd)
 
         # Fit model
@@ -213,7 +212,7 @@ class LinregTestCase(unittest.TestCase):
         ''' Test bootstrap on OLS regression '''
 
         # data set from R - see linreg.r
-        #fd = '%s/data/olslinreg1_data.csv'%self.FOUT
+        #fd = '%s/data/olslinreg1_data.csv'%self.ftest
         #data, comment = csv.read_csv(fd)
 
         # Simple normal data

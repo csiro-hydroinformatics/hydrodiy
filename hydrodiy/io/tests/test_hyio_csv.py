@@ -10,13 +10,13 @@ class CsvTestCase(unittest.TestCase):
 
     def setUp(self):
         print('\t=> CsvTestCase')
-        FTEST, testfile = os.path.split(__file__)
-        self.FOUT = FTEST
+        source_file = os.path.abspath(__file__)
+        self.ftest = os.path.dirname(source_file)
 
 
     def test_read_csv1(self):
 
-        fcsv = '%s/states_centroids.csv.gz'%self.FOUT
+        fcsv = '%s/states_centroids.csv.gz'%self.ftest
 
         data, comment = csv.read_csv(fcsv)
 
@@ -27,7 +27,7 @@ class CsvTestCase(unittest.TestCase):
 
     def test_read_csv2(self):
 
-        fcsv = '%s/states_centroids_noheader.csv'%self.FOUT
+        fcsv = '%s/states_centroids_noheader.csv'%self.ftest
 
         data, comment = csv.read_csv(fcsv, has_colnames=False)
 
@@ -38,7 +38,7 @@ class CsvTestCase(unittest.TestCase):
 
     def test_read_csv3(self):
 
-        fcsv = '%s/multiindex.csv'%self.FOUT
+        fcsv = '%s/multiindex.csv'%self.ftest
 
         data, comment = csv.read_csv(fcsv)
 
@@ -50,7 +50,7 @@ class CsvTestCase(unittest.TestCase):
 
     def test_read_csv4(self):
 
-        fcsv = '%s/climate.csv'%self.FOUT
+        fcsv = '%s/climate.csv'%self.ftest
 
         data, comment = csv.read_csv(fcsv,
                 parse_dates=[''], index_col=0)
@@ -63,7 +63,7 @@ class CsvTestCase(unittest.TestCase):
 
     def test_read_csv5(self):
 
-        fcsv = '%s/207004_monthly_total_01.csv'%self.FOUT
+        fcsv = '%s/207004_monthly_total_01.csv'%self.ftest
 
         data, comment = csv.read_csv(fcsv,
                 parse_dates=True, index_col=0)
@@ -71,8 +71,8 @@ class CsvTestCase(unittest.TestCase):
 
     def test_write_csv1(self):
 
-        fcsv1 = '%s/testwrite1.csv'%self.FOUT
-        fcsv2 = '%s/testwrite2.csv'%self.FOUT
+        fcsv1 = '%s/testwrite1.csv'%self.ftest
+        fcsv2 = '%s/testwrite2.csv'%self.ftest
 
         nval = 100
         nc = 5
@@ -106,7 +106,7 @@ class CsvTestCase(unittest.TestCase):
 
     def test_write_csv2(self):
 
-        fcsv = '%s/testwrite.csv'%self.FOUT
+        fcsv = '%s/testwrite.csv'%self.ftest
 
         nval = 100
         nc = 5
@@ -138,7 +138,7 @@ class CsvTestCase(unittest.TestCase):
                     pd.DataFrame(np.random.normal(size=(100, 4)))
 
         # Write data to archive
-        farc = os.path.join(self.FOUT, 'test_archive.tar.gz')
+        farc = os.path.join(self.ftest, 'test_archive.tar.gz')
         with tarfile.open(farc, 'w:gz') as tar:
             for k in df:
                 # Add file to tar with a directory structure

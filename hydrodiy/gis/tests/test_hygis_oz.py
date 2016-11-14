@@ -13,8 +13,8 @@ from hydrodiy.plot import putils
 class OzTestCase(unittest.TestCase):
     def setUp(self):
         print('\t=> OzTestCase')
-        FTEST, ozfile = os.path.split(__file__)
-        self.FOUT = FTEST
+        source_file = os.path.abspath(__file__)
+        self.ftest = os.path.dirname(source_file)
 
     def test_oz0(self):
         plt.close('all')
@@ -23,7 +23,7 @@ class OzTestCase(unittest.TestCase):
         om.drawcoastoz()
         om.drawstates()
 
-        fp = '%s/oz_plot0.png'%self.FOUT
+        fp = os.path.join(self.ftest, 'oz_plot0.png')
         plt.savefig(fp)
 
     def test_oz1(self):
@@ -39,8 +39,7 @@ class OzTestCase(unittest.TestCase):
         y = np.random.normal(loc=-25, scale=20, size=npt)
         om.plot(x, y, 'ro')
 
-        putils.footer(fig)
-        fp = '%s/oz_plot1.png'%self.FOUT
+        fp = os.path.join(self.ftest, 'oz_plot1.png')
         fig.savefig(fp)
 
     def test_oz2(self):
@@ -51,7 +50,7 @@ class OzTestCase(unittest.TestCase):
         om.drawcoastoz(color='blue')
         om.drawstates(color='red', linestyle='--')
 
-        fp = '%s/oz_plot2.png'%self.FOUT
+        fp = os.path.join(self.ftest, 'oz_plot2.png')
         plt.savefig(fp)
 
     def test_oz3(self):
@@ -63,7 +62,7 @@ class OzTestCase(unittest.TestCase):
 
         om.set_lim([135, 157],[-24, -39])
 
-        fp = '%s/oz_plot3.png'%self.FOUT
+        fp = os.path.join(self.ftest, 'oz_plot3.png')
         plt.savefig(fp)
 
     #def test_oz4(self):
@@ -80,7 +79,7 @@ class OzTestCase(unittest.TestCase):
     #                (xx+dxx, yy+dyy), (xx, yy+dyy)])
     #                for xx, dxx, yy, dyy in zip(x,dx,y,dy)]})
 
-    #    fshp = '%s/test' % self.FOUT
+    #    fshp = '%s/test' % self.ftest
     #    df.to_file('%s.shp' % fshp, driver='ESRI Shapefile')
 
     #    plt.close('all')
@@ -92,7 +91,7 @@ class OzTestCase(unittest.TestCase):
     #    om.drawpolygons(fshp, edgecolor='red', facecolor='none')
 
 
-    #    fp = '%s/oz_plot4.png'%self.FOUT
+    #    fp = '%s/oz_plot4.png'%self.ftest
     #    plt.savefig(fp)
 
 
@@ -103,7 +102,7 @@ class OzTestCase(unittest.TestCase):
         om.drawcoastoz('k-')
         om.drawstates()
 
-        fp = '%s/oz_plot5.png'%self.FOUT
+        fp = os.path.join(self.ftest, 'oz_plot5.png')
         plt.savefig(fp)
 
 
@@ -114,7 +113,7 @@ class OzTestCase(unittest.TestCase):
         om.drawcoast()
         om.drawdrainageoz('k--')
 
-        fp = '%s/oz_plot6.png'%self.FOUT
+        fp = os.path.join(self.ftest, 'oz_plot6.png')
         plt.savefig(fp)
 
 
