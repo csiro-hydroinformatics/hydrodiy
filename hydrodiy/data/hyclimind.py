@@ -89,7 +89,7 @@ def get_data(index):
         data['month'] = pd.to_datetime(
                         data[[cn, 'variable']].apply(fun, axis=1))
 
-        data = data.sort('month')
+        data = data.sort_values(by='month')
         data = data.set_index('month')
         data = data['value']
         data.index = '%s[%s]' % (index, url)
