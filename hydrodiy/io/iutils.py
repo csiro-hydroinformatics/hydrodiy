@@ -232,7 +232,7 @@ def get_logger(name, level='INFO', \
 
     # log to console
     if console and not has_console:
-        sh = logging.StreamHandler()
+        sh = logging.StreamHandler(sys.stdout)
         sh.setFormatter(ft)
         logger.addHandler(sh)
 
