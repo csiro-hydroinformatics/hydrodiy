@@ -72,8 +72,11 @@ def entry_point():
     count = 0
 
     # To run a bash command
-    cmd = 'ls -al'
-    #subprocess.check_call(cmd, shell=True)
+    cmd = ['ls', '-al']
+    pipe = subprocess.Popen(cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE)
+    stdout, stderr = pipe.communicate()
 
     # To run process across sites
     for idx, row in sites.iterrows():
