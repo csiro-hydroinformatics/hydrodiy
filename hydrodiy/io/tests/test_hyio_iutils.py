@@ -38,22 +38,45 @@ class UtilsTestCase(unittest.TestCase):
                     'id':['a', 'b', 'c', 'd']})
         fs = os.path.join(self.ftest, 'sites.csv')
         csv.write_csv(sites, fs, 'site list', __file__)
-        fs = '%s/script_test1.pytest' % self.ftest
+
+        # Run defaut script file template
+        fs = os.path.join(self.ftest, 'script_test1.pytest')
         iutils.script_template(fs, 'test')
-        subprocess.check_call('python ' + fs, shell=True)
-
-        fs = '%s/script_test2.pytest' % self.ftest
-        iutils.script_template(fs, 'test', stype='plot')
-        subprocess.check_call('python ' + fs, shell=True)
-
-        fs = '%s/script_test3.pytest' % self.ftest
-        iutils.script_template(fs, 'test', stype='console')
-        subprocess.check_call('python ' + fs, shell=True)
-
-        fs = '%s/script_test4.sh' % self.ftest
+        pipe = subprocess.Popen(['python', fs],
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
+        stdout, stderr = pipe.communicate()
+        self.assertTrue(stdout != '')
+        self.assertTrue(stderr == '')
         os.remove(fs)
+
+        # Run plot script file template
+        fs = os.path.join(self.ftest, 'script_test2.pytest')
+        iutils.script_template(fs, 'test', stype='plot')
+        # (cannot use Popen because matplotlib is throwing warnings)
+        subprocess.check_call('python '+fs, shell=True)
+        os.remove(fs)
+
+        # Run console script file template
+        fs = os.path.join(self.ftest, 'script_test3.pytest')
+        iutils.script_template(fs, 'test', stype='console')
+        pipe = subprocess.Popen(['python', fs],
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
+        stdout, stderr = pipe.communicate()
+        self.assertTrue(stdout != '')
+        self.assertTrue(stderr == '')
+        os.remove(fs)
+
+        # Run bash script file template
+        fs = os.path.join(self.ftest, 'script_test4.sh')
         iutils.script_template(fs, 'test', stype='bash')
-        subprocess.check_call(fs, shell=True)
+        pipe = subprocess.Popen(fs, shell=True,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
+        stdout, stderr = pipe.communicate()
+        self.assertTrue(stderr == '')
+        os.remove(fs)
 
 
     def test_str2dict(self):
