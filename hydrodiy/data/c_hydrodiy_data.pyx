@@ -12,6 +12,10 @@ cdef extern from 'c_dateutils.h':
     int c_dateutils_comparedates(int * date1, int * date2)
     int c_dateutils_getdate(double day, int * date)
 
+cdef extern from 'c_dutils.h':
+    int c_aggregate(int nval, int oper, int * aggindex,
+            double * inputs, double * outputs, int * iend);
+
 def __cinit__(self):
     pass
 
@@ -77,6 +81,50 @@ def getdate(double day,
     assert date.shape[0] == 3
 
     ierr = c_dateutils_getdate(day, <int*> np.PyArray_DATA(date))
+
+    return ierr
+
+
+def aggregate(int oper,
+        np.ndarray[int, ndim=1, mode='c'] aggindex not None,
+        np.ndarray[double, ndim=1, mode='c'] inputs not None,
+        np.ndarray[double, ndim=1, mode='c'] outputs not None,
+        np.ndarray[int, ndim=1, mode='c'] iend not None):
+
+    cdef int ierr
+
+    # check dimensions
+    assert aggindex.shape[0] == inputs.shape[0]
+    assert aggindex.shape[0] == outputs.shape[0]
+    assert iend.shape[0] == 1
+
+    ierr = c_aggregate(inputs.shape[0], oper,
+            <int*> np.PyArray_DATA(aggindex),
+            <double*> np.PyArray_DATA(inputs),
+            <double*> np.PyArray_DATA(outputs),
+            <int*> np.PyArray_DATA(iend))
+
+    return ierr
+
+
+def aggregate(int oper,
+        np.ndarray[int, ndim=1, mode='c'] aggindex not None,
+        np.ndarray[double, ndim=1, mode='c'] inputs not None,
+        np.ndarray[double, ndim=1, mode='c'] outputs not None,
+        np.ndarray[int, ndim=1, mode='c'] iend not None):
+
+    cdef int ierr
+
+    # check dimensions
+    assert aggindex.shape[0] == inputs.shape[0]
+    assert aggindex.shape[0] == outputs.shape[0]
+    assert iend.shape[0] == 1
+
+    ierr = c_aggregate(inputs.shape[0], oper,
+            <int*> np.PyArray_DATA(aggindex),
+            <double*> np.PyArray_DATA(inputs),
+            <double*> np.PyArray_DATA(outputs),
+            <int*> np.PyArray_DATA(iend))
 
     return ierr
 

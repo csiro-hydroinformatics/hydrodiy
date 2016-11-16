@@ -22,7 +22,8 @@ ext_modules = [
         name='c_hydrodiy_data',
         sources=[
             'hydrodiy/data/c_hydrodiy_data.pyx',
-            'hydrodiy/data/c_dateutils.c'
+            'hydrodiy/data/c_dateutils.c',
+            'hydrodiy/data/c_dutils.c'
         ],
         include_dirs=[numpy.get_include()]),
 

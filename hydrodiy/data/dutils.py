@@ -8,6 +8,8 @@ import calendar
 import numpy as np
 import pandas as pd
 
+import c_hydrodiy_data
+
 
 def normaliseid(id):
     ''' Normalise station id by removing trailing letters,
@@ -177,4 +179,45 @@ def atmpressure(altitude):
     P = P0 * np.exp(-g*M/R/T0 * altitude)
 
     return P
+
+
+def aggregate(aggindex, inputs, oper=0):
+    ''' Fast aggregation of inputs based on aggregation indices
+        This is an equivalent of pandas.Series.resample method,
+        but much faster.
+
+    Parameters
+    -----------
+    aggindex : numpy.ndarray
+        Aggregation index (e.g. month in the form 199501 for
+        Jan 1995). Index should be in increasing order.
+    inputs : numpy.ndarray
+        Inputs data to be aggregated
+    oper : int
+        Aggregation operator:
+        0 = sum
+        1 = mean
+
+    Returns
+    -----------
+    outputs : numpy.ndarray
+        Aggregated data
+
+    '''
+
+    oper = np.int32(oper)
+    aggindex = aggindex.astype(np.int32)
+    inputs = inputs.astype(np.float64)
+    outputs = 0.*inputs
+    iend = np.array([0]).astype(np.int32)
+
+    ierr = c_hydrodiy_data.aggregate(oper, aggindex, \
+                inputs, outputs, iend)
+
+    if ierr>0:
+        raise ValueError('c_likelihoods.aggregate returns {0}'.format(ierr))
+
+    outputs = outputs[:iend[0]]
+    return outputs
+
 

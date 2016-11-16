@@ -89,11 +89,9 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_atmpressure(self):
-
         alt = 0
         p = dutils.atmpressure(alt)
         self.assertTrue(np.allclose(p, 101325.))
-
 
         alt = 100
         p = dutils.atmpressure(alt)
@@ -102,6 +100,24 @@ class UtilsTestCase(unittest.TestCase):
         alt = 200
         p = dutils.atmpressure(alt)
         self.assertTrue(np.allclose(p, 98950.6765392))
+
+
+    def test_aggregate(self):
+        dt = pd.date_range('1990-01-01', '2000-12-31')
+        nval = len(dt)
+        obs = pd.Series(np.random.uniform(0, 1, nval), \
+                index=dt)
+
+        aggindex = dt.year * 100 + dt.month
+
+        obsm = obs.resample('MS', how='sum').values
+        obsm2 = dutils.aggregate(aggindex, obs.values)
+        self.assertTrue(np.allclose(obsm, obsm2))
+
+        obsm = obs.resample('MS', how='mean').values
+        obsm2 = dutils.aggregate(aggindex, obs.values, oper=1)
+        self.assertTrue(np.allclose(obsm, obsm2))
+
 
 
 if __name__ == "__main__":
