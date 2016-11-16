@@ -215,7 +215,7 @@ def aggregate(aggindex, inputs, oper=0):
                 inputs, outputs, iend)
 
     if ierr>0:
-        raise ValueError('c_likelihoods.aggregate returns {0}'.format(ierr))
+        raise ValueError('c_hydrodiy_data.aggregate returns {0}'.format(ierr))
 
     outputs = outputs[:iend[0]]
     return outputs
