@@ -3,6 +3,8 @@ import re
 from datetime import datetime
 import datetime
 
+from scipy.stats import gaussian_kde
+
 from cycler import cycler
 
 import matplotlib as mpl
@@ -196,6 +198,7 @@ def equation(tex, filename, \
         Figure height in pixels
     fontsize : int
         Font size in points
+
     Example
     -----------
     >>> from hyplot import putils
@@ -262,8 +265,13 @@ def set_legend(leg, textcolor='black', framealpha=1):
 
 
 def set_mpl(reset=False):
-    ''' Set convenient default matplotlib parameters '''
+    ''' Set convenient default matplotlib parameters
 
+    Parameters
+    -----------
+    reset : bool
+        Reset matplotlib config to default
+    '''
     if reset:
         mpl.rcdefaults()
     else:
@@ -273,4 +281,41 @@ def set_mpl(reset=False):
         mpl.rc('legend', fontsize='small')
         mpl.rc('legend', numpoints=1)
         mpl.rc('legend', markerscale=0.8)
+
+
+def kde(xy, ngrid=50):
+    ''' Interpolate a 2d pdf from a set of x/y data points using
+    a Gaussian KDE. The outputs can be used to plot the pdf
+    with something like matplotlib.Axes.contourf
+
+    Parameters
+    -----------
+    xy : numpy.ndarray
+        A set of x/y coordinates. Should be a 2d Nx2 array
+    ngrid : int
+        Size of grid generated
+
+    Returns
+    -----------
+    xx : numpy.ndarray
+        A grid ngridxngrid containing the X coordinates
+    yy : numpy.ndarray
+        A grid ngridxngrid containing the Y coordinates
+    zz : numpy.ndarray
+        A grid ngridxngrid containing the PDF estimates
+    '''
+    if xy.shape[1] !=2:
+        xy = xy.T
+
+    x = np.linspace(xy[:, 0].min(), xy[:, 0].max(), ngrid)
+    y = np.linspace(xy[:, 1].min(), xy[:, 1].max(), ngrid)
+    xx, yy = np.meshgrid(x, y)
+
+    kd = gaussian_kde(xy.T)
+    zz = kd(np.vstack([xx.ravel(), yy.ravel()]))
+    zz = zz.reshape(xx.shape)
+
+    return xx, yy, zz
+
+
 
