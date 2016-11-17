@@ -67,13 +67,21 @@ class Boxplot(object):
             Example: coverage = 80% -> 10%/90% whiskers
         '''
 
+        # Check input data
         if not by is None:
             by = pd.Series(by)
+            if by.name is None:
+                by.name = 'by'
+
+            if len(by.unique()) == 1:
+                raise ValueError('by has 1 category only')
+
             data = pd.Series(data)
         else:
             data = pd.DataFrame(data)
 
         self._data = data
+
         self._by = by
 
         if whiskers_coverage <= 50.:
