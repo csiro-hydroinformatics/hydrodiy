@@ -77,7 +77,7 @@ setup(
         'Intended Audience :: Science/Research',
         'Development Status :: 3 - Alpha',
         'Programming Language :: Python :: 2.7',
-        'License :: OSI Approved :: MIT License'
+        'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)'
     ]
 )
 
