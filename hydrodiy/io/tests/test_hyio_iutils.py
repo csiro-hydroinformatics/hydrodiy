@@ -80,29 +80,55 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_str2dict(self):
+        prefix = 'this_is_a_prefix'
+
         data = {'name':'bob', 'phone':'2010'}
         source = iutils.dict2str(data)
-        data2 = iutils.str2dict(source)
-        ck = data == data2
-        self.assertTrue(ck)
+        data2, prefix2 = iutils.str2dict(source)
+        source2 = iutils.dict2str(data2)
+        self.assertTrue(prefix2 == '')
+        self.assertTrue(data == data2)
+        self.assertTrue(source == source2)
+
+        source = os.path.join(self.ftest, source + '.csv')
+        data2, prefix2 = iutils.str2dict(source)
+        source2 = iutils.dict2str(data2)
+        self.assertTrue(prefix2 == '')
+        self.assertTrue(data == data2)
+        self.assertTrue(re.sub('\\.csv', '', os.path.basename(source)) == source2)
+
+
+        data = {'name':'bob', 'phone':'2010'}
+        source = iutils.dict2str(data, prefix=prefix)
+        data2, prefix2 = iutils.str2dict(source)
+        source2 = iutils.dict2str(data2, prefix2)
+        self.assertTrue(data == data2)
+        self.assertTrue(prefix2 == prefix)
+        self.assertTrue(source == source2)
 
         data = {'name':'bob_marley', 'phone':'2010'}
         source = iutils.dict2str(data)
-        data2 = iutils.str2dict(source)
-        ck = data == data2
-        self.assertTrue(ck)
+        data2, prefix2 = iutils.str2dict(source)
+        source2 = iutils.dict2str(data2, prefix2)
+        self.assertTrue(data == data2)
+        self.assertTrue(prefix2 == '')
+        self.assertTrue(source == source2)
 
         data = {'name':'bob_marley%$^_12234123', 'phone':'2010'}
         source = iutils.dict2str(data)
-        data2 = iutils.str2dict(source)
-        ck = data == data2
-        self.assertTrue(ck)
+        data2, prefix2 = iutils.str2dict(source)
+        source2 = iutils.dict2str(data2, prefix2)
+        self.assertTrue(data == data2)
+        #self.assertTrue(prefix2 == '')
+        #self.assertTrue(source == source2)
 
         data = {'name':'bob', 'phone':2010}
         source = iutils.dict2str(data)
-        data2 = iutils.str2dict(source, False)
-        ck = data == data2
-        self.assertTrue(ck)
+        data2, prefix2 = iutils.str2dict(source, False)
+        source2 = iutils.dict2str(data2, prefix2)
+        self.assertTrue(data == data2)
+        self.assertTrue(prefix2 == '')
+        self.assertTrue(source == source2)
 
 
     def test_get_logger(self):

@@ -51,18 +51,20 @@ def find_files(folder, pattern, recursive=True):
     return found
 
 
-def dict2str(data):
+def dict2str(data, prefix=None):
     ''' Convert a dict to a string with the format v1[value1]_v2[value2]
 
     Parameters
     -----------
     data : dict
         Non nested dictionary containing data
+    prefix : str
+        Prefix to be added at the beginning of the string
 
     Returns
     -----------
     vars : str
-        String containing variables
+        String containing variables with prefix
 
     Example
     -----------
@@ -70,10 +72,19 @@ def dict2str(data):
 
     '''
     out = []
+
+    # Add items
     for k, v in data.iteritems():
         out.append('{0}[{1}]'.format(k, v))
 
-    return '_'.join(out)
+    out = '_'.join(out)
+
+    # Add prefix if needed
+    if not prefix is None:
+        if prefix!='':
+            out = prefix + '_' + out
+
+    return out
 
 
 def str2dict(source, num2str=True):
@@ -94,15 +105,23 @@ def str2dict(source, num2str=True):
 
     '''
 
-    out = {}
-    se = re.findall('[^_]+\\[[^\\[]+\\]', source)
+    # Excludes path and file extension
+    source = re.sub('\\.[^\\.]+$', '', os.path.basename(source))
+    prefix = source
 
-    for vn in se:
+    # Search for pattern match
+    out = {}
+    search = re.findall('[^_]+\\[[^\\[]+\\]', source)
+
+    for match in search:
         # Get name
-        name = re.sub('\[.*', '', vn)
+        name = re.sub('\[.*', '', match)
 
         # Get value
-        value = re.sub('.*\[|\]', '', vn)
+        value = re.sub('.*\[|\]', '', match)
+
+        # Remove item from prefix
+        prefix = re.sub('_*'+name+'\\[' + value + '\\]', '', prefix)
 
         # Attempt conversion if required
         if not num2str:
@@ -116,7 +135,7 @@ def str2dict(source, num2str=True):
 
         out[name] = value
 
-    return out
+    return out, prefix
 
 
 def script_template(filename, comment,
