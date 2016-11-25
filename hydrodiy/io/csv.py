@@ -1,14 +1,17 @@
-import sys, os, re, time, string
+import sys, os, re, string
+
+from datetime import datetime
 
 import gzip
+import zipfile
 import tarfile
-import tempfile
 
-# Python 2/3 string io import
+# Deal with change of import syntax Python 2 and 3
 try:
-    from io import StringIO
+    from cStringIO import cStringIO
 except ImportError:
-    from StringIO import StringIO
+    from io import StringIO
+
 
 has_distutils = False
 try:
@@ -69,23 +72,24 @@ def _csvhead(nrow, ncol, comment, source_file, author=None):
 
     else:
         comment = list(comment)
-
         comments = {}
         for i in range(len(comment)):
             comments['comment%2.2d' % i] = comment[i]
 
-
     # Generate file header
     h = []
-    h.append("# --------------------------------------------------")
+    h.append('# --------------------------------------------------')
+    h.append('# nrow : {0}'.format(nrow))
+    h.append('# ncol : {0}'.format(ncol))
 
-    h.append("# nrow : %d" % nrow)
-    h.append("# ncol : %d" % ncol)
+    for k, value in comments.iteritems():
+        h.append('# {0} : {1}'.format(k, value))
 
-    for k in comments:
-        h.append("# %s : %s" %(k, comments[k]))
-
-    h.append("# time_generated : %s" % time.strftime("%Y-%m-%d %H:%M"))
+    now = datetime.now()
+    h.append('# time_generated : ' + \
+        '{0}-{1:02d}-{2:02d} {3:02d}:{4:02d}:{5:02d}'.format(\
+            now.year, now.month, now.day, now.hour, now.minute,
+            now.second))
 
     # seek author
     if author is None:
@@ -94,25 +98,71 @@ def _csvhead(nrow, ncol, comment, source_file, author=None):
         except:
             author = 'unknown'
 
-    h.append("# author : %s" % author)
+    h.append('# author : ' + author)
 
     # seek source file
-    h.append("# source_file : %s" % source_file)
+    h.append('# source_file : ' + source_file)
 
     # Python config
-    h.append("# work_dir : %s" % os.getcwd())
-    h.append("# python_environment : %s" % os.name)
-    h.append("# python_version : %s" % sys.version.replace("\n"," "))
-    h.append("# pandas_version : %s" % pd.__version__)
-    h.append("# numpy_version : %s" % np.__version__)
+    h.append('# work_dir : ' + os.getcwd())
+    h.append('# python_environment : ' + os.name)
+    h.append('# python_version : ' + sys.version.replace('\n',' '))
+    h.append('# pandas_version : ' + pd.__version__)
+    h.append('# numpy_version : ' + np.__version__)
 
     if has_distutils:
-        h.append("# python_inc : %s" % get_python_inc())
-        h.append("# python_lib : %s" % get_python_lib())
+        h.append('# python_inc : ' + get_python_inc())
+        h.append('# python_lib : ' + get_python_lib())
 
-    h.append("# --------------------------------------------------")
+    h.append('# --------------------------------------------------')
 
     return h
+
+
+def _check_name(filename):
+    ''' Check the name and add the relevant extension '''
+
+    filename_full = str(filename)
+
+    if not os.path.exists(filename_full):
+        filename_full = re.sub('csv$', 'gz', filename)
+
+    if not os.path.exists(filename_full):
+        filename_full = filename + '.gz'
+
+    if not os.path.exists(filename_full):
+        filename_full = re.sub('csv$', 'zip', filename)
+
+    if not os.path.exists(filename_full):
+        filename_full = filename + '.zip'
+
+    if not os.path.exists(filename_full):
+        raise ValueError('Cannot find file {0} (filename={1})'.format( + \
+            filename_full, filename))
+
+    return filename_full
+
+
+def _write2zip(archive, arcname, txt):
+    ''' Write txt to fcsv file in zip archive '''
+
+    # Check file is not in the archive
+    zinfo_test = archive.NameToInfo.get(arcname)
+    if not zinfo_test is None:
+        raise ValueError('File {0} already exists in archive'.format(fn))
+
+    # Create fileinfo object
+    zinfo = zipfile.ZipInfo(arcname)
+
+    now = datetime.now()
+    zinfo.date_time = (now.year, now.month, now.day, \
+                            now.hour, now.minute, now.second)
+    # File permission
+    zinfo.external_attr = 0777 << 16
+
+    # Write to archive with header
+    archive.writestr(zinfo, txt, \
+        compress_type=zipfile.ZIP_DEFLATED)
 
 
 def write_csv(data, filename, comment,
@@ -151,13 +201,16 @@ def write_csv(data, filename, comment,
     Example
     -----------
     >>> df = pd.DataFrame(np.random.uniform(0, 1, (100, 4))
-    >>> # Create an empty script
+    >>> # Create an empty source file
     >>> fo = open('script.py', 'w'); fo.close()
     >>> # Store data
     >>> csv.write_csv(df, 'data.csv', 'This is a test', 'script.py')
 
     '''
+    # Check inputs
+    data = pd.DataFrame(data)
 
+    # Generate head
     head = _csvhead(data.shape[0], data.shape[1],
                 comment,
                 source_file = source_file,
@@ -165,7 +218,7 @@ def write_csv(data, filename, comment,
 
     # Check source_file exists
     if not os.path.exists(source_file):
-        raise ValueError('%s file does not exists' % source_file)
+        raise ValueError(source_file + ' file does not exists')
 
     if not archive is None:
         compress = False
@@ -173,38 +226,45 @@ def write_csv(data, filename, comment,
     # defines file name
     filename_full = filename
 
-    if compress and ~filename.endswith('.gz'):
-        filename_full += '.gz'
+    if compress and ~filename.endswith('.zip'):
+        filename_full = re.sub('csv$', 'zip', filename)
 
     # Open pipe depending on file type
-    if archive is None:
-        if compress:
-            fcsv = gzip.open(filename_full, 'wb')
-        else:
-            fcsv = open(filename_full, 'w')
+    if archive or compress:
+        # No pipe, store dataframe in a string
+        # and then write it to archive
+        fobj = None
     else:
-        fcsv = tempfile.NamedTemporaryFile('w', delete=False)
-        filename_full = fcsv.name
+        fobj = open(filename_full, 'w')
 
-    # Write header
-    for line in head:
-        fcsv.write(line+'\n')
+        # Write header
+        for line in head:
+            fobj.write(line+'\n')
 
     # Write data itself
-    data.to_csv(fcsv, index=write_index,
+    txt = data.to_csv(fobj, index=write_index,
         float_format=float_format, \
         **kwargs)
 
-    fcsv.close()
+    # Store compressed data
+    if archive or compress:
+        txt = '\n'.join(head) + '\n' + txt
 
-    if not archive is None:
-        # Add file to archive
-        archive.add(filename_full, arcname=filename)
+        # If compress argument, create a new zip file
+        arcname = filename
+        if compress:
+            arcname = os.path.basename(filename)
+            archive = zipfile.ZipFile(filename_full, \
+                            mode='w', \
+                            compression=zipfile.ZIP_DEFLATED)
 
-        # Delete file
-        os.remove(filename_full)
+        _write2zip(archive, arcname, txt)
 
+        if compress:
+            archive.close()
 
+    else:
+        fcsv.close()
 
 
 def read_csv(filename, has_colnames=True, archive=None, **kwargs):
@@ -233,23 +293,36 @@ def read_csv(filename, has_colnames=True, archive=None, **kwargs):
     '''
 
     if archive is None:
-        # Add gz if file does not exists
         try:
-            if not os.path.exists(filename):
-                filename += '.gz'
+            # Add gz or zip if file does not exists
+            filename_full = _check_name(filename)
 
             # Open proper file type
-            if filename.endswith('gz'):
-                fcsv = gzip.open(filename, 'rb')
-            else:
-                fcsv = open(filename, 'r')
+            if filename_full.endswith('gz'):
+                fobj = gzip.open(filename_full, 'rb')
 
-        except TypeError:
-            # Assume filename is stream
-            fcsv = filename
+            elif filename_full.endswith('zip'):
+                # Extract the data from archive
+                # assumes that file is stored at base level
+                with zipfile.ZipFile(filename_full, 'r') as archive:
+                    fbase = os.path.basename(filename)
+                    uni = unicode(archive.read(fbase))
+                    fobj = StringIO(uni)
+
+            else:
+                fobj = open(filename_full, 'r')
+
+        except TypeError as err:
+            import warnings
+            warnings.warn(('Failed to open {0}, consider it as ' + \
+                        'a buffer').format(filename), \
+                        stacklevel=2)
+            fobj = filename
+
     else:
         # Use the archive mode
-        fcsv = archive.extractfile(filename)
+        uni = unicode(archive.read(filename))
+        fobj = StringIO(uni)
 
     # Reads content
     header = []
@@ -257,11 +330,11 @@ def read_csv(filename, has_colnames=True, archive=None, **kwargs):
 
     if has_colnames:
 
-        line = fcsv.readline()
+        line = fobj.readline()
 
         while line.startswith('#'):
             header.append(re.sub('^# *|\n$', '', line))
-            line = fcsv.readline()
+            line = fobj.readline()
 
         # Extract comment info from header
         comment = _header2comment(header)
@@ -280,15 +353,15 @@ def read_csv(filename, has_colnames=True, archive=None, **kwargs):
         cns = string.strip(linecols).split(',')
 
         # Reads data with proper column names
-        data = pd.read_csv(fcsv, names=cns, **kwargs)
+        data = pd.read_csv(fobj, names=cns, **kwargs)
 
         data.columns = [re.sub('\\.','_',cn)
                         for cn in data.columns]
 
     else:
-        data = pd.read_csv(fcsv, header=None, **kwargs)
+        data = pd.read_csv(fobj, header=None, **kwargs)
 
-    fcsv.close()
+    fobj.close()
 
     return data, comment
 

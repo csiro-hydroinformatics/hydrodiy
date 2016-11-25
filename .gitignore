@@ -13,6 +13,7 @@ build
 *.so
 *.binh
 *.pytest
+*.zip
 hydrodiy/gis/tests/*.png
 hydrodiy/gis/tests/*.kml
 hydrodiy/gis/tests/*.cpg
