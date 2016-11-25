@@ -14,7 +14,7 @@ cdef extern from 'c_dateutils.h':
 
 cdef extern from 'c_dutils.h':
     int c_aggregate(int nval, int oper, int * aggindex,
-            double * inputs, double * outputs, int * iend);
+            double * inputs, double * outputs, int * iend)
 
 def __cinit__(self):
     pass
