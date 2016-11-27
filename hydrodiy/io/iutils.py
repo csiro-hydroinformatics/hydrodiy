@@ -1,7 +1,4 @@
-import sys
-import os
-import re
-import gzip
+import sys, os, re
 from datetime import datetime
 import logging
 
@@ -199,7 +196,8 @@ def script_template(filename, comment,
 def get_logger(name, level='INFO', \
         console=True, flog=None, \
         fmt='%(asctime)s - %(name)s - %(levelname)s - %(message)s', \
-        remove_flog=True,
+        overwrite=True,
+        excepthook=True,
         no_duplicate_handler=True):
     ''' Get a logger object
 
@@ -215,8 +213,11 @@ def get_logger(name, level='INFO', \
         Path to log file. If none, no log file is used.
     fmt : str
         Log format
-    remove_flog : bool
+    overwrite : bool
         If true, removes the flog files if exists
+    excepthook : bool
+        Change sys.excepthook to trap all errors in the logger
+        (does not work within IPython)
     no_duplicate_handler : bool
         Avoid duplicating console or flog log handlers
 
@@ -257,12 +258,19 @@ def get_logger(name, level='INFO', \
 
     # log to file
     if not flog is None and not has_flog:
-        if remove_flog:
+        if overwrite:
             if os.path.exists(flog): os.remove(flog)
 
         fh = logging.FileHandler(flog)
         fh.setFormatter(ft)
         logger.addHandler(fh)
+
+    if excepthook:
+        def catcherr(exc_type, exc_value, exc_traceback):
+            LOGGER.error('Unexpected error', exc_info=(exc_type, exc_value, exc_traceback))
+            sys.__excepthook__(exc_type, exc_value, exc_traceback)
+
+        sys.excepthook = catcherr
 
     return logger
 
