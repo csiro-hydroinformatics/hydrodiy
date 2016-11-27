@@ -1,4 +1,5 @@
 import os
+import time
 import unittest
 import numpy as np
 import datetime
@@ -110,14 +111,41 @@ class UtilsTestCase(unittest.TestCase):
 
         aggindex = dt.year * 100 + dt.month
 
-        obsm = obs.resample('MS', how='sum').values
+        obsm = obs.resample('MS', how='sum')
         obsm2 = dutils.aggregate(aggindex, obs.values)
-        self.assertTrue(np.allclose(obsm, obsm2))
+        self.assertTrue(np.allclose(obsm.values, obsm2))
 
-        obsm = obs.resample('MS', how='mean').values
+        obsm = obs.resample('MS', how='mean')
         obsm2 = dutils.aggregate(aggindex, obs.values, oper=1)
-        self.assertTrue(np.allclose(obsm, obsm2))
+        self.assertTrue(np.allclose(obsm.values, obsm2))
 
+        kk = np.random.choice(range(nval), nval/10, replace=False)
+        obs[kk] = np.nan
+        obsm = obs.resample('MS', how=lambda x: np.sum(x.values))
+        obsm2 = dutils.aggregate(aggindex, obs.values)
+
+        idx = np.isnan(obsm.values)
+        self.assertTrue(np.allclose(idx, np.isnan(obsm2)))
+        self.assertTrue(np.allclose(obsm.values[~idx], obsm2[~idx]))
+
+        obsm = obs.resample('MS', how='sum')
+        obsm3 = dutils.aggregate(aggindex, obs.values, maxnan=31)
+        self.assertTrue(np.allclose(obsm.values, obsm3))
+
+        # Compare timing with  pandas
+        dt = pd.date_range('1700-01-01', '2100-12-31')
+        nval = len(dt)
+        obs = pd.Series(np.random.uniform(0, 1, nval), \
+                index=dt)
+
+        aggindex = dt.year * 100 + dt.month
+
+        t0 = time.time()
+        obsm = obs.resample('MS', how='sum')
+        t1 = time.time()
+        obsm2 = dutils.aggregate(aggindex, obs.values)
+        t2 = time.time()
+        self.assertTrue(t1-t0 > 120*(t2-t1))
 
 
 if __name__ == "__main__":

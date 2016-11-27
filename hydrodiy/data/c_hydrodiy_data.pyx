@@ -13,8 +13,8 @@ cdef extern from 'c_dateutils.h':
     int c_dateutils_getdate(double day, int * date)
 
 cdef extern from 'c_dutils.h':
-    int c_aggregate(int nval, int oper, int * aggindex,
-            double * inputs, double * outputs, int * iend)
+    int c_aggregate(int nval, int oper, int maxnan, int * aggindex,
+        double * inputs, double * outputs, int * iend)
 
 def __cinit__(self):
     pass
@@ -85,42 +85,21 @@ def getdate(double day,
     return ierr
 
 
-def aggregate(int oper,
+def aggregate(int oper, int maxnan,
         np.ndarray[int, ndim=1, mode='c'] aggindex not None,
         np.ndarray[double, ndim=1, mode='c'] inputs not None,
         np.ndarray[double, ndim=1, mode='c'] outputs not None,
         np.ndarray[int, ndim=1, mode='c'] iend not None):
 
-    cdef int ierr
+    cdef int ierr, nval
 
     # check dimensions
-    assert aggindex.shape[0] == inputs.shape[0]
-    assert aggindex.shape[0] == outputs.shape[0]
+    nval = aggindex.shape[0]
+    assert nval == inputs.shape[0]
+    assert nval == outputs.shape[0]
     assert iend.shape[0] == 1
 
-    ierr = c_aggregate(inputs.shape[0], oper,
-            <int*> np.PyArray_DATA(aggindex),
-            <double*> np.PyArray_DATA(inputs),
-            <double*> np.PyArray_DATA(outputs),
-            <int*> np.PyArray_DATA(iend))
-
-    return ierr
-
-
-def aggregate(int oper,
-        np.ndarray[int, ndim=1, mode='c'] aggindex not None,
-        np.ndarray[double, ndim=1, mode='c'] inputs not None,
-        np.ndarray[double, ndim=1, mode='c'] outputs not None,
-        np.ndarray[int, ndim=1, mode='c'] iend not None):
-
-    cdef int ierr
-
-    # check dimensions
-    assert aggindex.shape[0] == inputs.shape[0]
-    assert aggindex.shape[0] == outputs.shape[0]
-    assert iend.shape[0] == 1
-
-    ierr = c_aggregate(inputs.shape[0], oper,
+    ierr = c_aggregate(inputs.shape[0], oper, maxnan,
             <int*> np.PyArray_DATA(aggindex),
             <double*> np.PyArray_DATA(inputs),
             <double*> np.PyArray_DATA(outputs),

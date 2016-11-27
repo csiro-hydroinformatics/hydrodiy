@@ -181,7 +181,7 @@ def atmpressure(altitude):
     return P
 
 
-def aggregate(aggindex, inputs, oper=0):
+def aggregate(aggindex, inputs, oper=0, maxnan=0):
     ''' Fast aggregation of inputs based on aggregation indices
         This is an equivalent of pandas.Series.resample method,
         but much faster.
@@ -197,27 +197,33 @@ def aggregate(aggindex, inputs, oper=0):
         Aggregation operator:
         0 = sum
         1 = mean
+    maxnan : int
+        Maximum number of nan in inputs for each
+        aggregation index
 
     Returns
     -----------
     outputs : numpy.ndarray
         Aggregated data
-
     '''
 
+    # Allocate arrays
     oper = np.int32(oper)
+    maxnan = np.int32(maxnan)
     aggindex = aggindex.astype(np.int32)
     inputs = inputs.astype(np.float64)
     outputs = 0.*inputs
     iend = np.array([0]).astype(np.int32)
 
-    ierr = c_hydrodiy_data.aggregate(oper, aggindex, \
+    # Run C function
+    ierr = c_hydrodiy_data.aggregate(oper, maxnan, aggindex, \
                 inputs, outputs, iend)
 
     if ierr>0:
         raise ValueError('c_hydrodiy_data.aggregate returns {0}'.format(ierr))
 
     outputs = outputs[:iend[0]]
+
     return outputs
 
 

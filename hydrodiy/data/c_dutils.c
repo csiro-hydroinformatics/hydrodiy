@@ -3,20 +3,21 @@
 /**
 * Aggregate inputs based on the aggindex
 * The operator applied to the aggregation is defined by op:
-* op = 0 : sum
-* op = 1 : mean
+* oper = 0 : sum
+* oper = 1 : mean
 **/
-int c_aggregate(int nval, int oper, int * aggindex,
+int c_aggregate(int nval, int oper, int maxnan, int * aggindex,
     double * inputs, double * outputs, int * iend)
 {
-    int i, ncount, count, ia, iaprev;
-    double sum;
+    int i, cond, nagg, nagg_nan, count, ia, iaprev;
+    double agg, inp;
 
     iaprev = aggindex[0];
     ia = 0;
     count = 0;
-    sum = 0;
-    ncount = 0;
+    agg = 0;
+    nagg = 0;
+    nagg_nan = 0;
 
     for(i=0; i<nval; i++)
     {
@@ -28,27 +29,48 @@ int c_aggregate(int nval, int oper, int * aggindex,
 
         if(ia != iaprev)
         {
-            /* Mean instead of sum */
-            if(oper == 1) sum/=ncount;
+            /* Mean instead of agg */
+            if(oper == 1 && nagg>0)
+                agg/=nagg;
 
-            outputs[count] = sum;
+            /* Store outputs */
+            if(nagg_nan > maxnan)
+                agg = NAN;
 
+            outputs[count] = agg;
+
+            /* Iterates */
             count ++;
             if(count >= nval)
                 return DUTILS_ERROR + __LINE__;
 
-            sum = 0;
-            ncount = 0;
+            agg = 0;
+            nagg = 0;
+            nagg_nan = 0;
             iaprev = ia;
         }
 
-        sum += inputs[i];
-        ncount ++;
+        /* check input and skip value if nan */
+        inp = inputs[i];
+
+        if(isnan(inp)){
+            nagg_nan ++;
+            inp = 0;
+        } else
+            nagg ++;
+
+        agg += inp;
     }
 
     /* Final step */
-    if(oper == 1) sum/=ncount;
-    outputs[count] = sum;
+    if(oper == 1 && nagg>0)
+        agg/=nagg;
+
+    if(nagg_nan > maxnan)
+        agg = NAN;
+
+    outputs[count] = agg;
+
     iend[0] = count+1;
 
     return 0;
