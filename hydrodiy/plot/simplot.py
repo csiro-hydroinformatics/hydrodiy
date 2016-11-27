@@ -38,11 +38,10 @@ class Simplot(object):
 
         # data
         self.idx_obs = pd.notnull(obs) & (obs >= 0)
-        obs = pd.Series(obs.values, name='obs', index=obs.index)
-        self.data = pd.DataFrame(obs)
+        self.data = pd.DataFrame(obs, columns=['obs'])
         self.nsim = 0
         self.sim_names=[]
-        self.add_sim(sim, sim_name=sim_name)
+        self.add_sim(sim, name=sim_name)
 
         self._compute_idx_all()
 
@@ -64,52 +63,51 @@ class Simplot(object):
                 width_ratios=[1] * fig_ncols,
                 height_ratios=[0.5] * 1 + [1] * (fig_nrows-1))
 
-    def _compute_idx_all(self):
 
-        self.idx_all = self.data.apply(lambda x:
-                                        np.all(pd.notnull(x)), axis=1)
+    def _compute_idx_all(self):
+        ''' Compute indexes where all data are available'''
+        self.idx_all = pd.isnull(self.data).sum(axis=1) == 0
 
 
     def _get_flood_indexes(self):
-
+        ''' Identify flood events '''
+        dates = self.data.index
         obs_tmp = self.data['obs'].copy()
-        sim = self.data['sim_01']
-        dates = self.data.index.astype(datetime).values
         nval = len(obs_tmp)
         self.flood_idx = []
         iflood = 0
 
         while iflood < self.nfloods:
-            imax = np.where(obs_tmp == obs_tmp.max())[0]
-            date_max = pd.to_datetime(dates[imax][0])
+            date_max = obs_tmp.argmax()
             idx = dates >= date_max - delta(days=self.nbeforepeak)
             idx = idx & (dates <= date_max + delta(days=self.nafterpeak))
 
-            if np.any(pd.notnull(sim[idx])):
+            if np.any(self.idx_all[idx]):
                 self.flood_idx.append({'index':idx, 'date_max':date_max})
                 iflood += 1
 
             obs_tmp.loc[idx] = np.nan
 
-    def _getname(self, cn):
-        if cn.startswith('sim'):
-            k = int(re.sub('sim_', '', cn))-1
-            return self.sim_names[k]
-        else:
-            return cn
 
-    def add_sim(self, sim, sim_name=None):
+    def _getname(self, cn):
+        return re.sub('_', '\n', cn)
+
+
+    def add_sim(self, sim, name=None):
+        ''' Add a new simulations '''
 
         self.nsim += 1
-        sim = pd.Series(sim.values,
-                name = 'sim_{0:02d}'.format(self.nsim),
-                index=sim.index)
 
-        if sim_name is None:
-            sim_name = sim.name
-        self.sim_names.append(sim_name)
+        # Set sim name
+        if name is None:
+            name = sim.name
 
-        self.data = self.data.join(sim)
+        if name is None or name == '':
+            name = 'sim_{0:02}'.format(self.nsim)
+        self.sim_names.append(name)
+
+        # Store data
+        self.data[name] = sim
 
         self._compute_idx_all()
 

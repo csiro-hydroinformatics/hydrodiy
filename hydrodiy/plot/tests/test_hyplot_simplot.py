@@ -17,7 +17,7 @@ class SimplotTestCase(unittest.TestCase):
 
     def test_sim_daily(self):
 
-        dt = pd.date_range('2010-01-01', '2015-12-01')
+        dt = pd.date_range('1970-01-01', '2015-12-01')
         nval = len(dt)
 
         obs = pd.Series(np.exp(np.random.normal(size=nval)), index=dt)
@@ -27,7 +27,7 @@ class SimplotTestCase(unittest.TestCase):
         plt.close('all')
         sm = Simplot(obs, sim, sim_name='bidule')
 
-        sm.add_sim(sim2, sim_name='truc')
+        sm.add_sim(sim2, name='truc')
         sm.draw()
 
         fp = os.path.join(self.ftest, 'simplot_daily.png')
