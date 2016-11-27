@@ -27,6 +27,7 @@ class BoxplotTestCase(unittest.TestCase):
         fig, ax = plt.subplots()
         bx = Boxplot(ax=ax, data=self.data)
         bx.draw()
+        bx.count()
         fig.savefig(os.path.join(self.ftest, 'bx01_draw.png'))
 
 
@@ -95,8 +96,8 @@ class BoxplotTestCase(unittest.TestCase):
         fig, ax = plt.subplots()
         data = self.data**2
         bx = Boxplot(ax=ax, data=data)
-        bx['count'] = {'showtext':True}
         bx.draw(logscale=True)
+        bx.count()
         fig.savefig(os.path.join(self.ftest, 'bx06_log.png'))
 
 

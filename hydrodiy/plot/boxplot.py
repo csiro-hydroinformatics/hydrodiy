@@ -113,6 +113,7 @@ class Boxplot(object):
                 'fontsize':7, 'showtext':True},
         }
 
+        self.logscale = False
         self._compute()
 
 
@@ -164,6 +165,7 @@ class Boxplot(object):
         stats = self._stats
         default_width = self._default_width
         ncols = stats.shape[1]
+        self.logscale = logscale
 
         qq1, qq2 = whiskers_percentiles(self._whiskers_coverage)
         qq1txt = '{0:0.1f}%'.format(qq1)
@@ -299,14 +301,20 @@ class Boxplot(object):
 
         ax.set_ylim((ylim0, ylim1))
 
-        # Display count
+    def count(self):
+        ''' Show the counts '''
+
+        ax = self._ax
+        stats = self._stats
+        default_width = self._default_width
         props = self._props['count']
+
         if props['showtext']:
             formatter = '('+props['textformat']+')'
 
             ylim = ax.get_ylim()
 
-            if not logscale:
+            if not self.logscale:
                 y = ylim[0] + 0.01*(ylim[1]-ylim[0])
             else:
                 y = math.exp(math.log(ylim[0]) + \
@@ -317,6 +325,6 @@ class Boxplot(object):
                 ax.text(i, y, cnt, fontsize=props['fontsize'], \
                         color=props['fontcolor'], \
                         va='bottom', ha='center')
-
-        return
+        else:
+            raise ValueError('showtext property for count set to False')
 
