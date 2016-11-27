@@ -267,7 +267,7 @@ def get_logger(name, level='INFO', \
 
     if excepthook:
         def catcherr(exc_type, exc_value, exc_traceback):
-            LOGGER.error('Unexpected error', exc_info=(exc_type, exc_value, exc_traceback))
+            logger.error('Unexpected error', exc_info=(exc_type, exc_value, exc_traceback))
             sys.__excepthook__(exc_type, exc_value, exc_traceback)
 
         sys.excepthook = catcherr
