@@ -13,29 +13,6 @@ class UtilsTestCase(unittest.TestCase):
         print('\t=> UtilsTestCase (hydata)')
         self.dt = None # TODO
 
-    def test_normaliseid(self):
-
-        id = 'GGSDFFSFsdfsdf'
-        idn = dutils.normaliseid(id)
-        self.assertEqual(idn, id.upper())
-
-        id = '0000101'
-        idn = dutils.normaliseid(id)
-        self.assertEqual(idn, '101')
-
-        id = '105GA'
-        idn = dutils.normaliseid(id)
-        self.assertEqual(idn, '105')
-
-        id = '105GA - asd 10'
-        idn = dutils.normaliseid(id)
-        self.assertEqual(idn, '105GA_ASD10')
-
-        id = '101.101'
-        idn = dutils.normaliseid(id)
-        self.assertEqual(idn, '101')
-
-
     def test_aggmonths(self):
 
         # Generate daily data with gaps

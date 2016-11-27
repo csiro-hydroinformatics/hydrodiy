@@ -11,51 +11,6 @@ import pandas as pd
 import c_hydrodiy_data
 
 
-def normaliseid(id):
-    ''' Normalise station id by removing trailing letters,
-    underscores and leading zeros
-
-    Parameters
-    -----------
-    params : str
-        Station id
-
-    Returns
-    -----------
-    idn : str
-        Normalise id
-
-    Example
-    -----------
-    Normalise a complex id
-    >>> dutils.normaliseid('00a04567B.100')
-    'A04567'
-
-    '''
-
-    idn = '%s' % id
-
-    if re.search('[0-9]', idn):
-        idn = re.sub('^0*|[A-Z]*$', '', idn)
-
-    # Remove spaces
-    idn = re.sub(' ', '', idn)
-
-    # Remove delimiters
-    idn = re.sub('\\(|\\)|-', '_', idn)
-
-    # Remove multiple underscores
-    idn = re.sub('_+', '_', idn)
-
-    # Remove character after a dot and first and last underscores
-    idn = re.sub('\\..*$|\\_*$|^\\_*', '', idn)
-
-    # Get upper case
-    idn = idn.upper()
-
-    return idn
-
-
 def aggmonths(ts, nmonths=3, ngapmax=6, ngapcontmax=3):
     ''' Convert time series to aggregated monthly time steps
 
