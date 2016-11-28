@@ -9,9 +9,13 @@
 int c_aggregate(int nval, int oper, int maxnan, int * aggindex,
     double * inputs, double * outputs, int * iend)
 {
-    int i, cond, nagg, nagg_nan, count, ia, iaprev;
-    double agg, inp;
+    int i, nagg, nagg_nan, count, ia, iaprev;
+    double agg, inp, nan;
 
+    /* In case NAN is not defined */
+    nan = 0.0/0;
+
+    /* Initialise */
     iaprev = aggindex[0];
     ia = 0;
     count = 0;
@@ -35,7 +39,7 @@ int c_aggregate(int nval, int oper, int maxnan, int * aggindex,
 
             /* Store outputs */
             if(nagg_nan > maxnan)
-                agg = NAN;
+                agg = nan;
 
             outputs[count] = agg;
 

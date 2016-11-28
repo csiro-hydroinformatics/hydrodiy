@@ -122,7 +122,7 @@ class UtilsTestCase(unittest.TestCase):
         t1 = time.time()
         obsm2 = dutils.aggregate(aggindex, obs.values)
         t2 = time.time()
-        self.assertTrue(t1-t0 > 120*(t2-t1))
+        self.assertTrue(t1-t0 > 80*(t2-t1))
 
 
 if __name__ == "__main__":
