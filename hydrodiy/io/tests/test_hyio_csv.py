@@ -16,11 +16,8 @@ class CsvTestCase(unittest.TestCase):
 
 
     def test_read_csv1(self):
-
         fcsv = '%s/states_centroids.csv.gz'%self.ftest
-
         data, comment = csv.read_csv(fcsv)
-
         st = pd.Series(['ACT', 'NSW', 'NT', 'QLD', 'SA',
                             'TAS', 'VIC', 'WA'])
         self.assertTrue(all(data['state']==st))
@@ -28,9 +25,7 @@ class CsvTestCase(unittest.TestCase):
 
     def test_read_csv2(self):
         fcsv = '%s/states_centroids_noheader.csv'%self.ftest
-
         data, comment = csv.read_csv(fcsv, has_colnames=False)
-
         st = pd.Series(['ACT', 'NSW', 'NT', 'QLD', 'SA',
                             'TAS', 'VIC', 'WA'])
         self.assertTrue(all(data[0]==st))
@@ -38,7 +33,6 @@ class CsvTestCase(unittest.TestCase):
 
     def test_read_csv3(self):
         fcsv = '%s/multiindex.csv'%self.ftest
-
         data, comment = csv.read_csv(fcsv)
 
         cols =['metric', 'runoff_rank',
@@ -63,9 +57,21 @@ class CsvTestCase(unittest.TestCase):
 
     def test_read_csv5(self):
         fcsv = '%s/207004_monthly_total_01.csv'%self.ftest
-
         data, comment = csv.read_csv(fcsv,
                 parse_dates=True, index_col=0)
+
+
+    def test_read_csv_latin(self):
+        fcsv = '%s/latin_1.zip'%self.ftest
+        try:
+            data, comment = csv.read_csv(fcsv,
+                    comment='#')
+        except UnicodeDecodeError as err:
+            pass
+
+        data, comment = csv.read_csv(fcsv,
+                comment='#', encoding='latin_1')
+        self.assertTrue(np.allclose(data.iloc[:, 1:4].values, -99))
 
 
     def test_write_csv1(self):

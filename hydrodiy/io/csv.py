@@ -124,6 +124,9 @@ def _check_name(filename):
 
     filename_full = str(filename)
 
+    if os.path.exists(filename_full):
+        return filename_full
+
     if not os.path.exists(filename_full):
         filename_full = re.sub('csv$', 'gz', filename)
 
@@ -267,7 +270,8 @@ def write_csv(data, filename, comment,
         fcsv.close()
 
 
-def read_csv(filename, has_colnames=True, archive=None, **kwargs):
+def read_csv(filename, has_colnames=True, archive=None, \
+        encoding='utf-8', **kwargs):
     ''' Read a pandas dataframe from a csv with comments in header
 
     Parameters
@@ -291,7 +295,6 @@ def read_csv(filename, has_colnames=True, archive=None, **kwargs):
     >>> df2 = csv.read_csv('data.csv')
 
     '''
-
     if archive is None:
         try:
             # Add gz or zip if file does not exists
@@ -305,8 +308,8 @@ def read_csv(filename, has_colnames=True, archive=None, **kwargs):
                 # Extract the data from archive
                 # assumes that file is stored at base level
                 with zipfile.ZipFile(filename_full, 'r') as archive:
-                    fbase = os.path.basename(filename)
-                    uni = unicode(archive.read(fbase))
+                    fbase = re.sub('zip$', 'csv', os.path.basename(filename))
+                    uni = unicode(archive.read(fbase), encoding=encoding)
                     fobj = StringIO(uni)
 
             else:
@@ -314,14 +317,14 @@ def read_csv(filename, has_colnames=True, archive=None, **kwargs):
 
         except TypeError as err:
             import warnings
-            warnings.warn(('Failed to open {0}, consider it as ' + \
+            warnings.warn(('Failed to open {0}, try considering it as ' + \
                         'a buffer').format(filename), \
                         stacklevel=2)
             fobj = filename
 
     else:
         # Use the archive mode
-        uni = unicode(archive.read(filename))
+        uni = unicode(archive.read(filename), encoding=encoding)
         fobj = StringIO(uni)
 
     # Reads content
@@ -353,13 +356,15 @@ def read_csv(filename, has_colnames=True, archive=None, **kwargs):
         cns = string.strip(linecols).split(',')
 
         # Reads data with proper column names
-        data = pd.read_csv(fobj, names=cns, **kwargs)
+        data = pd.read_csv(fobj, names=cns, \
+                    encoding=encoding, **kwargs)
 
         data.columns = [re.sub('\\.','_',cn)
                         for cn in data.columns]
 
     else:
-        data = pd.read_csv(fobj, header=None, **kwargs)
+        data = pd.read_csv(fobj, header=None, \
+                    encoding=encoding, **kwargs)
 
     fobj.close()
 
