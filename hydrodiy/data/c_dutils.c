@@ -71,7 +71,7 @@ int c_aggregate(int nval, int oper, int maxnan, int * aggindex,
         agg/=nagg;
 
     if(nagg_nan > maxnan)
-        agg = NAN;
+        agg = nan;
 
     outputs[count] = agg;
 
