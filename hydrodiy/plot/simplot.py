@@ -4,6 +4,8 @@ import re
 from datetime import datetime
 from dateutil.relativedelta import relativedelta as delta
 
+from calendar import month_abbr as months
+
 from string import ascii_letters as letters
 
 import pandas as pd
@@ -30,15 +32,16 @@ class Simplot(object):
         fig = None, \
         nfloods = 3, \
         wateryear_start =7, \
-        nbeforepeak = 30, \
-        nafterpeak = 60):
+        ndays_beforepeak = 30, \
+        ndays_afterpeak = 60):
 
         # Properties
         self.wateryear_start = wateryear_start
 
         # data
         self.idx_obs = pd.notnull(obs) & (obs >= 0)
-        self.data = pd.DataFrame(obs, columns=['obs'])
+        obs.name = 'obs'
+        self.data = pd.DataFrame(obs)
         self.nsim = 0
         self.sim_names=[]
         self.add_sim(sim, name=sim_name)
@@ -47,8 +50,8 @@ class Simplot(object):
 
         # Number of flood events
         self.nfloods = nfloods
-        self.nbeforepeak = nbeforepeak
-        self.nafterpeak = nafterpeak
+        self.ndays_beforepeak = ndays_beforepeak
+        self.ndays_afterpeak = ndays_afterpeak
         self._get_flood_indexes()
 
         # Figure to draw on
@@ -58,7 +61,7 @@ class Simplot(object):
 
         # Grid spec
         fig_ncols = 3
-        fig_nrows = 2 + nfloods/3
+        fig_nrows = 3 + (nfloods-1)/3
         self.gs = gridspec.GridSpec(fig_nrows, fig_ncols,
                 width_ratios=[1] * fig_ncols,
                 height_ratios=[0.5] * 1 + [1] * (fig_nrows-1))
@@ -77,19 +80,26 @@ class Simplot(object):
         self.flood_idx = []
         iflood = 0
 
-        while iflood < self.nfloods:
-            date_max = obs_tmp.argmax()
-            idx = dates >= date_max - delta(days=self.nbeforepeak)
-            idx = idx & (dates <= date_max + delta(days=self.nafterpeak))
+        for iflood in range(self.nfloods):
+            idx = pd.notnull(obs_tmp)
+            if np.sum(idx) == 0:
+                continue
+
+            date_max = obs_tmp[idx].argmax()
+            idx = dates >= date_max - delta(days=self.ndays_beforepeak)
+            idx = idx & (dates <= date_max + delta(days=self.ndays_afterpeak))
 
             if np.any(self.idx_all[idx]):
                 self.flood_idx.append({'index':idx, 'date_max':date_max})
-                iflood += 1
 
             obs_tmp.loc[idx] = np.nan
 
+        if len(self.flood_idx) == 0:
+            raise ValueError('Could not identify valid flood data')
+
 
     def _getname(self, cn):
+        ''' Return a proper name for variable '''
         return re.sub('_', '\n', cn)
 
 
@@ -114,7 +124,6 @@ class Simplot(object):
 
     def draw(self):
         ''' Draw all plots '''
-
         # Draw water balance
         ax = plt.subplot(self.gs[0, 0])
         self.draw_balance(ax)
@@ -193,9 +202,9 @@ class Simplot(object):
 
         title = '({0}) Flow duration curve'.format(ax_letter)
         if ylog:
-            title += '- Low flow'
+            title += ' - Low flow'
         if xlog:
-            title += '- High flow'
+            title += ' - High flow'
         ax.set_title(title)
         ax.legend(loc=1, frameon=False)
         ax.grid()
@@ -227,18 +236,11 @@ class Simplot(object):
     def draw_annual(self, ax, ax_letter='b'):
 
         # Compute annual time series
-        datam = self.data.apply(dutils.aggmonths, args=(1,))
-        datay = datam.apply(pd.rolling_sum, args=(12,))
+        ym = months[(self.wateryear_start-2)%12+1].upper()
+        datay = self.data.resample('A-'+ym, how='sum')
 
-        im = self.wateryear_start - 1
-        if im == 0:
-            im = 12
-        datay = datay.loc[datay.index.month == im,:]
-        datay = datay.shift(-1)
-        datay.columns = [self._getname(cn) for cn in  datay.columns]
-
-        # plot
-        datay.iloc[:-1, :].plot(ax=ax, color=COLORS, marker='o', lw=3)
+        # plot - exclude first and last year to avoid missing values
+        datay.iloc[1:-1, :].plot(ax=ax, color=COLORS, marker='o', lw=3)
 
         lines, labels = ax.get_legend_handles_labels()
         ax.legend(lines, labels, loc=2, frameon=False)
@@ -270,14 +272,14 @@ class Simplot(object):
         # plot
         datab.plot(ax=ax, kind='bar', color=COLORS, edgecolor='none')
 
-        ax.set_ylabel('Average flow')
+        ax.set_ylabel('Mean annual')
         ax.set_title('({0}) Water Balance'.format(ax_letter))
         ax.grid()
 
 
     def savefig(self, filename, size=None):
         if size is None:
-            size = (12+6*(self.nfloods/3), 15)
+            size = (18, 10+5*((self.nfloods-1)/3+1))
 
         self.fig.set_size_inches(size)
         self.gs.tight_layout(self.fig)

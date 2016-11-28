@@ -33,6 +33,22 @@ class SimplotTestCase(unittest.TestCase):
         fp = os.path.join(self.ftest, 'simplot_daily.png')
         sm.savefig(fp)
 
+    def test_nfloods(self):
+
+        dt = pd.date_range('2000-01-01', '2015-12-01')
+        nval = len(dt)
+
+        obs = pd.Series(np.exp(np.random.normal(size=nval)), index=dt)
+        sim = pd.Series(np.exp(np.random.normal(size=nval)), index=dt)
+
+        plt.close('all')
+        sm = Simplot(obs, sim, sim_name='bidule', nfloods=10)
+        sm.draw()
+
+        fp = os.path.join(self.ftest, 'simplot_nfloods.png')
+        sm.savefig(fp)
+
+
 
     def test_sim_monthly(self):
 
