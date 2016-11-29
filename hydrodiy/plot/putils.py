@@ -5,7 +5,12 @@ import datetime
 
 from scipy.stats import gaussian_kde
 
-from cycler import cycler
+has_cycler = False
+try:
+    from cycler import cycler
+    has_cycler = True
+except ImportError:
+    pass
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -275,8 +280,22 @@ def set_mpl(reset=False):
     if reset:
         mpl.rcdefaults()
     else:
-        mpl.rc('axes', prop_cycle=cycler('color', COLORS10))
+
+        # Set color cycle - depends on matplotlib version
+        if 'axes.color_cycle' in mpl.rcParams:
+            mpl.rc('axes', color_cycle=COLORS10)
+        else:
+            if has_cycler:
+                mpl.rc('axes', prop_cycle=cycler('color', COLORS10))
+            else:
+                import warnings
+                warnings.warn('Cannot set color cycle '+ \
+                    'because cycler package is missing')
+
+        # Ticker line width than default
         mpl.rc('lines', linewidth=2)
+
+        # Set legend properties
         mpl.rc('legend', fancybox=True)
         mpl.rc('legend', fontsize='small')
         mpl.rc('legend', numpoints=1)
