@@ -103,7 +103,7 @@ class CsvTestCase(unittest.TestCase):
         d = df1exp.index[0]
         self.assertTrue(isinstance(d, pd.tslib.Timestamp))
 
-        self.assertTrue(np.allclose(df1.round(3), df1exp))
+        self.assertTrue(np.allclose(np.round(df1.values, 3), df1exp))
         self.assertTrue(np.allclose(df1, df2exp))
 
 
