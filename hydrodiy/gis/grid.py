@@ -945,3 +945,16 @@ def voronoi(catchment, xypoints):
             ' returns {0}').format(ierr))
 
     return weights
+
+
+# AWAP grid - Bureau of Meteorology
+AWAP_GRID = Grid('awap', nrows=691, ncols=886,
+        xllcorner=112., yllcorner=-44.5,
+        cellsize=0.05, nodata_value=99999.9)
+
+# AWRA grid - Bureau of Meteorology
+AWRA_GRID = Grid('awra', nrows=681, ncols=841,
+        xllcorner=111.975, yllcorner=-44.025,
+        cellsize=0.05, nodata_value=99999.9)
+
+
