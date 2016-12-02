@@ -267,7 +267,7 @@ def write_csv(data, filename, comment,
             archive.close()
 
     else:
-        fcsv.close()
+        fobj.close()
 
 
 def read_csv(filename, has_colnames=True, archive=None, \
