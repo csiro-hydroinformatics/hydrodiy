@@ -60,7 +60,6 @@ def islinear(data, npoints=1, eps=None, minthreshold=None):
 
     dist = np.max(np.abs(interp[:, 1:-1] - lagged[:, 1:-1]), axis=1)
 
-
     # Set status to True for points were linear interpolation
     # is valid and either one of endpoints is non zero
     st = (dist < eps) & \
