@@ -152,7 +152,7 @@ def _write2zip(archive, arcname, txt):
     # Check file is not in the archive
     zinfo_test = archive.NameToInfo.get(arcname)
     if not zinfo_test is None:
-        raise ValueError('File {0} already exists in archive'.format(fn))
+        raise ValueError('File {0} already exists in archive'.format(arcname))
 
     # Create fileinfo object
     zinfo = zipfile.ZipInfo(arcname)
