@@ -1,8 +1,0 @@
-NROWS          7
-NCOLS          5
-XLLCORNER      130.0
-YLLCORNER      -39.0
-CELLSIZE       2.0
-NBITS          64
-PIXELTYPE      FLOAT
-BYTEORDER      I

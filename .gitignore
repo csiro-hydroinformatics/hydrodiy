@@ -14,6 +14,8 @@ build
 *.binh
 *.pytest
 *.zip
+*.bil
+*.hdr
 hydrodiy/gis/tests/*.png
 hydrodiy/gis/tests/*.kml
 hydrodiy/gis/tests/*.cpg

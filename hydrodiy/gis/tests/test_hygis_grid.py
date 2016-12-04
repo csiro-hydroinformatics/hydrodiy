@@ -3,6 +3,8 @@ import unittest
 import numpy as np
 import pandas as pd
 
+import zipfile
+
 from hydrodiy.gis.grid import Grid, Catchment
 from hydrodiy.gis.grid import accumulate, voronoi, delineate_river
 
@@ -20,11 +22,12 @@ class GridTestCase(unittest.TestCase):
     def setUp(self):
         print('\t=> GridTestCase')
 
-        self.config = {'name':'test',
-                'nrows':7, 'ncols':5, 'cellsize':2.,
-                'dtype':np.float64,
-                'xllcorner':130.,
-                'yllcorner':-39.}
+        self.config = {'name':'test', \
+                'nrows':7, 'ncols':5, 'cellsize':2., \
+                'dtype':np.float64, \
+                'xllcorner':130., \
+                'yllcorner':-39., \
+                'comment': 'this is a test grid'}
 
         source_file = os.path.abspath(__file__)
         self.ftest = os.path.dirname(source_file)
@@ -33,6 +36,12 @@ class GridTestCase(unittest.TestCase):
     def test_print(self):
         gr = Grid(**self.config)
         print(gr)
+
+
+    def test_name_comment(self):
+        gr = Grid(**self.config)
+        self.assertTrue(gr.comment == self.config['comment'])
+        self.assertTrue(gr.name == self.config['name'])
 
 
     def test_dtype(self):
@@ -89,11 +98,11 @@ class GridTestCase(unittest.TestCase):
 
     def test_save(self):
         gr = Grid(**self.config)
-        dt = np.random.uniform(0, 1, (gr.nrows, gr.ncols))
-        gr.data = dt
+        gr.data = np.random.uniform(0, 1, \
+                        (gr.nrows, gr.ncols))
 
         # Write data
-        fg = os.path.join(self.ftest, 'grid_test.bil')
+        fg = os.path.join(self.ftest, 'grid_test_save.bil')
         gr.save(fg)
 
         # Load it back
@@ -101,6 +110,8 @@ class GridTestCase(unittest.TestCase):
 
         ck = np.allclose(gr.data, gr2.data)
         self.assertTrue(ck)
+
+        self.assertTrue(self.config['comment'] == gr2.comment)
 
 
     def test_dict(self):
@@ -202,13 +213,10 @@ class GridTestCase(unittest.TestCase):
         ck = ck & (gr.yllcorner == -43.74375)
         ck = ck & (gr.cellsize == 0.0025)
         ck = ck & (gr.nodata_value == 32767)
+        ck = ck & (gr.name == 'mygrid')
+        ck = ck & (gr.comment == 'testing header')
 
         self.assertTrue(ck)
-
-
-    def test_from_load(self):
-        filename = os.path.join(self.ftest, 'demtest.hdr')
-        gr = Grid.from_header(filename)
 
 
     def test_plot(self):

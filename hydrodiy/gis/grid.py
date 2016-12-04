@@ -27,9 +27,10 @@ FLOWDIRCODE = np.array([[32, 64, 128],
 class Grid(object):
     ''' Gridded data object '''
 
-    def __init__(self, name, ncols, nrows=None, cellsize=1.,
-            xllcorner=0, yllcorner=0, dtype=np.float64,
-            nodata_value=np.nan):
+    def __init__(self, name, ncols, nrows=None, cellsize=1., \
+            xllcorner=0, yllcorner=0, dtype=np.float64, \
+            nodata_value=np.nan, \
+            comment=''):
 
         if nrows is None:
             nrows = ncols
@@ -48,6 +49,8 @@ class Grid(object):
         self.nodata = np.nan
         self.maxdata = np.inf
         self.mindata = -np.inf
+        self.comment = comment
+
         self._data = np.zeros((nrows, ncols), dtype=dtype)
 
 
@@ -76,6 +79,7 @@ class Grid(object):
         str += '\tyll      : {0}\n'.format(self.yllcorner)
         str += '\tdtype    : {0}\n'.format(self.dtype)
         str += '\tno_data  : {0}\n'.format(self.nodata_value)
+        str += '\tcomment  : {0}\n'.format(self.comment)
 
         return str
 
@@ -102,26 +106,26 @@ class Grid(object):
                 'exist').format(fileheader))
 
         config = {
-            'name' : re.sub('\\..*$', '', os.path.basename(fileheader)),
-            'xllcorner' : 0.,
-            'yllcorner' : 0.,
-            'cellsize': 1.,
-            'nodata_value' : np.nan,
-            'nbits' : 64,
-            'pixeltype' : 'float',
-            'byteorder' : 'i'
+            'name' : re.sub('\\..*$', '', os.path.basename(fileheader)), \
+            'xllcorner' : 0., \
+            'yllcorner' : 0., \
+            'cellsize': 1., \
+            'nodata_value' : np.nan, \
+            'nbits' : 64, \
+            'pixeltype' : 'float', \
+            'byteorder' : 'i', \
+            'comment': 'No comment'
         }
 
         # Read property from header
         with open(fileheader, 'r') as fh:
             for line in fh.readlines():
                 line = re.split(' ', re.sub(' +', ' ', line))
-
                 pname = line[0].lower()
                 try:
                     if pname in ['pixeltype', 'byteorder',
-                        'layout']:
-                        pvalue = line[1].strip().lower()
+                        'layout', 'comment', 'name']:
+                        pvalue = ' '.join(line[1:]).strip().lower()
                     elif pname.startswith('n'):
                         pvalue = int(line[1].strip())
                     else:
@@ -129,6 +133,9 @@ class Grid(object):
 
                     config[pname] = pvalue
                 except ValueError:
+                    import warnings
+                    warnings.warn(('Header field {0} cannot be' + \
+                            +'processed').format(pname))
                     pass
 
         # Define dtype
@@ -161,7 +168,7 @@ class Grid(object):
                                 config['cellsize']*config['nrows']
 
         # Filters config data
-        keys = ['name', 'ncols', 'nrows', 'cellsize',
+        keys = ['name', 'ncols', 'nrows', 'cellsize', 'comment', \
             'xllcorner', 'yllcorner', 'dtype', 'nodata_value']
         config = {k:config[k] for k in config if k in keys}
 
@@ -196,7 +203,7 @@ class Grid(object):
 
         # Init optional arguments
         for opt in ['nrows', 'cellsize', 'xllcorner', 'yllcorner', \
-            'dtype', 'nodata_value']:
+            'dtype', 'nodata_value', 'comment']:
             if opt in dic:
                 dic2[opt] = dic[opt]
 
@@ -271,15 +278,16 @@ class Grid(object):
 
     def to_dict(self):
         ''' Export grid metadata to json '''
-        js = {
-            'name': self.name,
-            'ncols': self.ncols,
-            'nrows': self.nrows,
-            'cellsize': self.cellsize,
-            'xllcorner': self.xllcorner,
-            'yllcorner': self.yllcorner,
-            'dtype': np.dtype(self.dtype).str,
-            'nodata_value': str(self.nodata_value)
+        js = { \
+            'name': self.name, \
+            'ncols': self.ncols, \
+            'nrows': self.nrows, \
+            'cellsize': self.cellsize, \
+            'xllcorner': self.xllcorner, \
+            'yllcorner': self.yllcorner, \
+            'dtype': np.dtype(self.dtype).str, \
+            'nodata_value': str(self.nodata_value), \
+            'comment': self.comment
         }
 
         return js
@@ -325,6 +333,14 @@ class Grid(object):
                 byteorder = 'I'
             fh.write('{0:<14} {1}\n'.format('BYTEORDER', byteorder))
 
+            # Name
+            fh.write('{0:<14} {1}\n'.format('NAME', self.name))
+
+            # Comment
+            comment = self.comment
+            if comment == '':
+                comment = 'No comment'
+            fh.write('{0:<14} {1}\n'.format('COMMENT', comment))
 
         # Print data
         self._data.tofile(filename)
@@ -336,7 +352,7 @@ class Grid(object):
         Parameters
         -----------
         value : float
-            Value use to fill the grid data.
+            Value used to fill the grid data.
 
         '''
         dtype = self._dtype
