@@ -95,7 +95,7 @@ class Grid(object):
 
         Returns
         -----------
-        grid : hydrodiy.processgrid.Grid
+        grid : hydrodiy.grid.Grid
             Grid instance
         '''
 
@@ -194,7 +194,7 @@ class Grid(object):
 
         Returns
         -----------
-        grid : hydrodiy.processgrid.Grid
+        grid : hydrodiy.grid.Grid
             Grid instance
         '''
 
@@ -585,7 +585,7 @@ class Catchment(object):
 
         Returns
         -----------
-        catchment : hydrodiy.processgrid.Catchment
+        catchment : hydrodiy.grid.Catchment
             Catchment instance
         '''
         flowdir = Grid.from_dict(dic['flowdir'])
@@ -850,7 +850,7 @@ def delineate_river(flowdir, idxupstream, nval=1000000):
 
     Parameters
     -----------
-    flowdir : Grid
+    flowdir : hydrodiy.grid.Grid
         Flow direction grid
     idxuptstream : int
         Index of upstream cell
@@ -929,7 +929,7 @@ def voronoi(catchment, xypoints):
 
     Parameters
     -----------
-    catchment : hydrodiy.processgrid.Catchment
+    catchment : hydrodiy.grid.Catchment
         Catchment of interest. Catchment area must be delineated (via
         catchment.delineate_area)
     xypoints : numpy.ndarray
