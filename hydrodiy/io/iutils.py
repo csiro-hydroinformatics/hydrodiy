@@ -315,7 +315,7 @@ def get_ibatch(nsites, nbatch, ibatch):
     return idx
 
 
-def download(url, filename):
+def download(url, filename, logger=None, nprint=5):
     ''' Download file by chunk. Appropriate for large files
 
     Parameters
@@ -324,6 +324,10 @@ def download(url, filename):
         File URL
     filename : str
         Local file path
+    logger : logging.Logger
+        Logger instance
+    nprint : int
+        Frequency of logger printing in Mb
     '''
 
     req = requests.get(url)
@@ -331,8 +335,8 @@ def download(url, filename):
     with open(filename, 'wb') as fobj:
         for chunk in req.iter_content(chunk_size=1024):
             count += 1
-            if count % 1000 == 0:
-                LOGGER.info('{0} - chunk {1}'.format(\
+            if count % nprint*1000 == 0 and not logger is None:
+                logger.info('{0} - chunk {1}'.format(\
                     os.path.basename(filename), count))
 
             if chunk: # filter out keep-alive new chunks
