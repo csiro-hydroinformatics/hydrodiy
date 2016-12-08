@@ -184,5 +184,14 @@ class UtilsTestCase(unittest.TestCase):
         self.assertTrue(str(err).startswith('Number of sites per batch is 0'))
 
 
+    def test_download(self):
+        url = 'https://www.google.com'
+        fn = os.path.join(self.ftest, 'google.html')
+        iutils.download(url, fn)
+        with open(fn, 'r') as fo:
+            txt = fo.read()
+        self.assertTrue(txt.startswith('<!doctype html>'))
+
+
 if __name__ == "__main__":
     unittest.main()

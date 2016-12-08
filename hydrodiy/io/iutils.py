@@ -2,6 +2,8 @@ import sys, os, re
 from datetime import datetime
 import logging
 
+import requests
+
 import numpy as np
 
 def find_files(folder, pattern, recursive=True):
@@ -311,3 +313,30 @@ def get_ibatch(nsites, nbatch, ibatch):
     idx = list(idx[idx<nsites])
 
     return idx
+
+
+def download(url, filename):
+    ''' Download file by chunk. Appropriate for large files
+
+    Parameters
+    -----------
+    url : str
+        File URL
+    filename : str
+        Local file path
+    '''
+
+    req = requests.get(url)
+    count = 0
+    with open(filename, 'wb') as fobj:
+        for chunk in req.iter_content(chunk_size=1024):
+            count += 1
+            if count % 1000 == 0:
+                LOGGER.info('{0} - chunk {1}'.format(\
+                    os.path.basename(filename), count))
+
+            if chunk: # filter out keep-alive new chunks
+                fobj.write(chunk)
+
+    return req
+
