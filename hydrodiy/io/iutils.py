@@ -2,6 +2,11 @@ import sys, os, re
 from datetime import datetime
 import logging
 
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
+
 import requests
 
 import numpy as np
@@ -315,7 +320,8 @@ def get_ibatch(nsites, nbatch, ibatch):
     return idx
 
 
-def download(url, filename, logger=None, nprint=5):
+def download(url, filename=None, logger=None, nprint=5, \
+        user=None, pwd=None, json=False):
     ''' Download file by chunk. Appropriate for large files
 
     Parameters
@@ -323,16 +329,29 @@ def download(url, filename, logger=None, nprint=5):
     url : str
         File URL
     filename : str
-        Local file path
+        Output file path. If None returns text read via StringIO
     logger : logging.Logger
         Logger instance
     nprint : int
         Frequency of logger printing in Mb
+    user : str
+        User name
+    pwd : str
+        Password
     '''
 
-    req = requests.get(url)
-    count = 0
-    with open(filename, 'wb') as fobj:
+    auth = None
+    if not user is None:
+        auth = requests.auth.HTTPBasicAuth(user, pwd)
+
+    req = requests.get(url, auth=auth)
+
+    # Raise error if HTTP problem
+    req.raise_for_status()
+
+    # Function to download data
+    def get_data(fobj):
+        count = 0
         for chunk in req.iter_content(chunk_size=1024):
             count += 1
             if count % nprint*1000 == 0 and not logger is None:
@@ -342,5 +361,22 @@ def download(url, filename, logger=None, nprint=5):
             if chunk: # filter out keep-alive new chunks
                 fobj.write(chunk)
 
-    return req
+    # Store data in pipe
+    if filename is None:
+        stdata = StringIO()
+        get_data(stdata)
+
+        # Rewind at the start of the file
+        stdata.seek(0)
+        # Read txt
+        txt = stdata.read()
+
+        return txt
+
+    else:
+        # Store data in file
+        with open(filename, 'wb') as fobj:
+            get_data(fobj)
+
+        return None
 

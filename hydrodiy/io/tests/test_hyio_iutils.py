@@ -1,9 +1,11 @@
-import os
-import re
+import os, re, json
+
 import unittest
+
 import pandas as pd
 import subprocess
 import numpy as np
+
 import matplotlib.pyplot as plt
 
 from hydrodiy.io import iutils, csv
@@ -185,12 +187,26 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_download(self):
+
+        # File download
         url = 'https://www.google.com'
         fn = os.path.join(self.ftest, 'google.html')
         iutils.download(url, fn)
         with open(fn, 'r') as fo:
             txt = fo.read()
         self.assertTrue(txt.startswith('<!doctype html>'))
+
+        # StringIO download
+        url = 'https://www.google.com'
+        txt = iutils.download(url)
+        self.assertTrue(txt.startswith('<!doctype html>'))
+
+        # auth
+        url = 'https://httpbin.org/basic-auth/user/pwd'
+        txt = iutils.download(url, user='user', pwd='pwd')
+        js = json.loads(txt)
+        self.assertTrue(js['authenticated'])
+
 
 
 if __name__ == "__main__":
