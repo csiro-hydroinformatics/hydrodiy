@@ -3,6 +3,7 @@ import unittest
 
 import pandas as pd
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from hydrodiy.plot import putils
@@ -82,63 +83,31 @@ class UtilsTestCase(unittest.TestCase):
         putils.equation(tex, fp)
 
 
-    def test_set_spines(self):
-
-        fig, ax = plt.subplots()
-
-        nval = 100
-        x = np.random.normal(size=nval)
-        y = np.random.normal(scale=2, size=nval)
-
-        ax.plot(x, y)
-
-        putils.set_spines(ax, ['right', 'top'], visible=False)
-        putils.set_spines(ax, ['left', 'bottom'], color='red', style=':')
-
-        fp = os.path.join(self.ftest, 'spines.png')
-        fig.savefig(fp)
-
-
-    def test_set_legend(self):
-
-        fig, ax = plt.subplots()
-
-        nval = 100
-        x = np.random.normal(size=nval)
-        y = np.random.normal(scale=2, size=nval)
-        ax.plot(x, y, label='data')
-        leg = ax.legend()
-        putils.set_legend(leg, textcolor='green', framealpha=0.5)
-
-        fp = os.path.join(self.ftest, 'legend.png')
-        fig.savefig(fp)
-
     def test_set_mpl(self):
 
+
+        def plot(fp, transparent=False):
+            fig, ax = plt.subplots()
+            nval = 100
+            x = np.arange(nval)
+            y1 = np.random.normal(scale=2, size=nval)
+            ax.plot(x, y1, 'o-', label='data1')
+            y2 = np.random.normal(scale=2, size=nval)
+            ax.plot(x, y2, 'o-', label='data2')
+            leg = ax.legend()
+            ax.set_title('Title')
+            ax.set_xlabel('X label')
+            ax.set_ylabel('Y label')
+            fig.savefig(fp, transparent=transparent)
+
         putils.set_mpl()
-        fig, ax = plt.subplots()
-        nval = 100
-        x = np.arange(nval)
-        y1 = np.random.normal(scale=2, size=nval)
-        ax.plot(x, y1, 'o-', label='data1')
-        y2 = np.random.normal(scale=2, size=nval)
-        ax.plot(x, y2, 'o-', label='data2')
-        leg = ax.legend()
         fp = os.path.join(self.ftest, 'set_mpl1.png')
-        fig.savefig(fp)
+        plot(fp)
 
-
-        putils.set_mpl(True)
-        fig, ax = plt.subplots()
-        nval = 100
-        x = np.arange(nval)
-        y1 = np.random.normal(scale=2, size=nval)
-        ax.plot(x, y1, 'o-', label='data1')
-        y2 = np.random.normal(scale=2, size=nval)
-        ax.plot(x, y2, 'o-', label='data2')
-        leg = ax.legend()
+        putils.set_mpl(color_theme='white')
         fp = os.path.join(self.ftest, 'set_mpl2.png')
-        fig.savefig(fp)
+        plot(fp, True)
+
 
 
     def test_kde(self):

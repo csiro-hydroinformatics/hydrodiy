@@ -236,70 +236,44 @@ def equation(tex, filename, \
     mpl.rc('text', usetex=usetex)
 
 
-def set_spines(ax, spines='all', color='black', style='-', visible=True):
-    ''' Set spines color and style '''
-
-    if spines == 'all':
-        spines = ['top', 'bottom', 'left', 'right']
-
-    styles = { \
-            ':':'dotted', \
-            '-':'solid', \
-            '-.':'dash_dot', \
-            '--':'dashed'\
-    }
-
-    for spine in spines:
-        ax.spines[spine].set_visible(visible)
-        ax.spines[spine].set_color(color)
-
-        s = style
-        if style in [':', '-', '-.', '--']:
-            s = styles[style]
-        ax.spines[spine].set_linestyle(s)
-
-
-
-def set_legend(leg, textcolor='black', framealpha=1):
-    ''' Set legend text and transparency '''
-
-    leg.get_frame().set_alpha(framealpha)
-
-    for text in leg.get_texts():
-        text.set_color(textcolor)
-
-
-def set_mpl(reset=False):
+def set_mpl(color_theme='black'):
     ''' Set convenient default matplotlib parameters
 
     Parameters
     -----------
-    reset : bool
-        Reset matplotlib config to default
+    color_theme : str
+        Color for text, axes and ticks
     '''
-    if reset:
-        mpl.rcdefaults()
+
+    # Set color cycle - depends on matplotlib version
+    if 'axes.color_cycle' in mpl.rcParams:
+        mpl.rc('axes', color_cycle=COLORS10)
     else:
-
-        # Set color cycle - depends on matplotlib version
-        if 'axes.color_cycle' in mpl.rcParams:
-            mpl.rc('axes', color_cycle=COLORS10)
+        if has_cycler:
+            mpl.rc('axes', prop_cycle=cycler('color', COLORS10))
         else:
-            if has_cycler:
-                mpl.rc('axes', prop_cycle=cycler('color', COLORS10))
-            else:
-                import warnings
-                warnings.warn('Cannot set color cycle '+ \
-                    'because cycler package is missing')
+            import warnings
+            warnings.warn('Cannot set color cycle '+ \
+                'because cycler package is missing')
 
-        # Ticker line width than default
-        mpl.rc('lines', linewidth=2)
+    # Ticker line width than default
+    mpl.rc('lines', linewidth=2)
 
-        # Set legend properties
-        mpl.rc('legend', fancybox=True)
-        mpl.rc('legend', fontsize='small')
-        mpl.rc('legend', numpoints=1)
-        mpl.rc('legend', markerscale=0.8)
+    # Set legend properties
+    mpl.rc('legend', fancybox=True)
+    mpl.rc('legend', fontsize='small')
+    mpl.rc('legend', numpoints=1)
+    mpl.rc('legend', markerscale=0.8)
+
+    if not color_theme in ['k', 'black']:
+        mpl.rc('legend', framealpha=0.1)
+
+    # Set colors
+    mpl.rc('axes', labelcolor=color_theme)
+    mpl.rc('axes', edgecolor=color_theme)
+    mpl.rc('xtick', color=color_theme)
+    mpl.rc('ytick', color=color_theme)
+    mpl.rc('text', color=color_theme)
 
 
 def kde(xy, ngrid=50):
