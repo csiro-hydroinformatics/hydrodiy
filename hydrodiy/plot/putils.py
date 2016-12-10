@@ -259,6 +259,9 @@ def set_mpl(color_theme='black'):
     # Ticker line width than default
     mpl.rc('lines', linewidth=2)
 
+    # Set contour line style
+    mpl.rc('contour', negative_linestyle='solid')
+
     # Set legend properties
     mpl.rc('legend', fancybox=True)
     mpl.rc('legend', fontsize='small')
@@ -274,6 +277,9 @@ def set_mpl(color_theme='black'):
     mpl.rc('xtick', color=color_theme)
     mpl.rc('ytick', color=color_theme)
     mpl.rc('text', color=color_theme)
+
+    if color_theme == 'white':
+        mpl.rc('savefig', transparent=True)
 
 
 def kde(xy, ngrid=50):

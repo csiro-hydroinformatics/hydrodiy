@@ -85,8 +85,7 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_set_mpl(self):
 
-
-        def plot(fp, transparent=False):
+        def plot(fp):
             fig, ax = plt.subplots()
             nval = 100
             x = np.arange(nval)
@@ -98,7 +97,7 @@ class UtilsTestCase(unittest.TestCase):
             ax.set_title('Title')
             ax.set_xlabel('X label')
             ax.set_ylabel('Y label')
-            fig.savefig(fp, transparent=transparent)
+            fig.savefig(fp)
 
         putils.set_mpl()
         fp = os.path.join(self.ftest, 'set_mpl1.png')
@@ -106,7 +105,7 @@ class UtilsTestCase(unittest.TestCase):
 
         putils.set_mpl(color_theme='white')
         fp = os.path.join(self.ftest, 'set_mpl2.png')
-        plot(fp, True)
+        plot(fp)
 
 
 
