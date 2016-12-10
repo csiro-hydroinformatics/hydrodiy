@@ -1,0 +1,272 @@
+''' Objects used to download data from  AWAP '''
+
+import re
+import os
+import datetime
+
+import numpy as np
+from scipy.ndimage import gaussian_filter, maximum_filter
+
+from mpl_toolkits.basemap import cm as cm
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+from hydrodiy.data import hywap
+from  hydrodiy.plot import putils
+
+
+VARNAMES =  hywap.VARIABLES.keys() + ['effective-rainfall', \
+    'decile-rain', 'decile-temp', 'evapotranspiration', \
+    'soil-moisture']
+
+
+def get_lim(region):
+    ''' Get lat/lon box for specific regions Australia '''
+
+    if region == 'CAPEYORK':
+        xlim = [137., 148.7]
+        ylim = [-24.4, -10.]
+
+    elif region == 'AUS':
+        xlim = [109., 155]
+        ylim = [-44.4, -9.]
+
+    elif region == 'COASTALNSW':
+        xlim = [147.5, 155.]
+        ylim = [-38.5, -29.9]
+
+    elif region == 'MDB':
+        xlim = [138., 155.]
+        ylim = [-40.6, -23.]
+
+    elif region == 'VIC+TAS':
+        xlim = [136., 151.]
+        ylim = [-44., -33.]
+
+    elif region == 'PERTH':
+        xlim = [107., 126.]
+        ylim = [-44., -37.]
+
+    elif region == 'QLD':
+        xlim = [135., 155.]
+        ylim = [-29., -9.]
+
+    else:
+        raise ValueError('Region {0} not recognised'.format( \
+            region))
+
+    return xlim, ylim
+
+
+def get_config(varname):
+    ''' Generate plotting configuration '''
+
+    cfg = {'cmap':None, \
+            'clevs':None, \
+            'clevs_ticks':None, \
+            'clevs_tick_labels': None, \
+            'norm':None, \
+            'linewidth':1., \
+            'linecolor':'#%02x%02x%02x' % (60, 60, 60)}
+
+    if not varname in VARNAMES:
+        raise ValueError(('Variable {0} not in '+\
+            '{1}').format(varname, '/'.join(VARNAMES)))
+
+    if varname == 'decile-rain':
+        clevs = [0., 0.1, 0.3, 0.7, 0.9, 1.0]
+        clevs_tick_labels = ['', '\nVery Much\nBelow Average', '\nBelow Average', '\nAverage',
+                    '\nAbove Average', '\nVery Much\nAbove Average']
+        cfg['clevs'] = clevs
+        cfg['clevs_ticks'] = clevs
+        cfg['clevs_tick_labels'] = clevs_tick_labels
+
+        cols = {1.:'#%02x%02x%02x' % (102, 102, 255),
+                0.5:'#%02x%02x%02x' % (255, 255, 255),
+                0.:'#%02x%02x%02x' % (255, 102, 102)}
+        cfg['cmap'] = putils.col2cmap(cols)
+        cfg['norm'] = mpl.colors.Normalize(vmin=clevs[0], vmax=clevs[-1])
+
+    if varname == 'decile-temp':
+        cfg = get_config('decile-rain')
+
+    elif varname == 'evapotranspiration':
+        clevs = [0, 10, 50, 80, 100, 120, 160, 200, 250, 300]
+        cfg['clevs'] = clevs
+        cfg['clevs_ticks'] = clevs
+        cfg['clevs_tick_labels'] = clevs
+
+        cols = {0.:'#%02x%02x%02x' % (255, 229, 204),
+                1.:'#%02x%02x%02x' % (153, 76, 0)}
+        cfg['cmap'] = putils.col2cmap(cols)
+        cfg['norm'] = mpl.colors.Normalize(vmin=cfg['clevs'][0], vmax=cfg['clevs'][-1])
+
+    elif varname == 'soil-moisture':
+        clevs = np.arange(0, 1.05, 0.05)
+        clevs_ticks = np.arange(0, 1.2, 0.2)
+        cfg['clevs'] = clevs
+        cfg['clevs_ticks'] = clevs_ticks
+        cfg['clevs_tick_labels'] = ['{0:3.0f}%'.format(l*100) \
+                                            for l in clevs_ticks]
+        cfg['cmap'] = plt.cm.Blues,
+        cfg['linewidth'] = 0.
+        cfg['norm'] = mpl.colors.Normalize(vmin=clevs[0], vmax=clevs[-1])
+
+    elif varname == 'effective-rainfall':
+        clevs = [-200, -150, -100, -50, -25, -10, 0,
+            10, 25, 50, 100, 150, 200]
+        cfg['clevs'] = clevs
+        cfg['clevs_ticks'] = clevs
+        cfg['clevs_tick_labels'] = clevs
+
+        cols = {0.:'#994C00', \
+                0.5: '#FFFFFF', \
+                1.:'#006666'}
+        cmap = putils.col2cmap(cols)
+        cfg['cmap'] = cmap
+        cfg['linewidth'] = 0
+        cfg['norm'] = mpl.colors.SymLogNorm(10., vmin=clevs[0], vmax=clevs[-1])
+
+    elif varname == 'rainfall':
+        clevs = [0, 1, 5, 10, 25, 50, 100, 200, 300, 400, 600, 800]
+        cfg['clevs'] = clevs
+        cfg['clevs_ticks'] = clevs
+        cfg['clevs_tick_labels'] = clevs
+
+        cfg['cmap'] = 'RdBu'
+        cfg['linewidth'] = 0
+        cfg['norm'] = mpl.colors.SymLogNorm(10., vmin=clevs[0], vmax=clevs[-1])
+
+    elif varname == 'temperature':
+        clevs = range(-9, 51, 3)
+        cfg['clevs'] = clevs
+        cfg['clevs_ticks'] = clevs
+        cfg['clevs_tick_labels'] = clevs
+
+        cfg['cmap'] = plt.get_cmap('gist_rainbow_r')
+        cfg['linewidth'] = 0
+        cfg['norm'] = mpl.colors.SymLogNorm(10., vmin=clevs[0], vmax=clevs[-1])
+
+    elif varname == 'vprp':
+        cfg = get_config('temperature')
+        clevs = range(0, 40, 2)
+        cfg['clevs'] = clevs
+        cfg['clevs_ticks'] = clevs
+        cfg['clevs_tick_labels'] = clevs
+
+    elif varname == 'solar':
+        cfg = get_config('temperature')
+        clevs = range(0, 40, 3)
+        cfg['clevs'] = clevs
+        cfg['clevs_ticks'] = clevs
+        cfg['clevs_tick_labels'] = clevs
+
+    return cfg
+
+
+def smooth(grid, mask, sigma=5., minval = 0.):
+    ''' Smooth gridded value to improve look of map '''
+
+    smooth = grid.clone()
+    z = smooth.data
+
+    # Gap fill data
+    ixm, iym = np.where(np.isnan(z) | (z<minval))
+    ixnm, iynm = np.where(~np.isnan(z) & (z>=minval))
+    z0 = np.array(z)
+    z0[ixm, iym] = -np.inf
+    z1 = maximum_filter(z0, size=50, mode='nearest')
+    z1[ixnm, iynm] = z[ixnm, iynm]
+
+    # Expand boundaries
+    ixm, iym = np.where(mask.data < 1.)
+    ixnm, iynm = np.where(mask.data > 0.)
+
+    z2 = z1
+    z2[ixm, iym] = -np.inf
+    z3 = maximum_filter(z2, size=50, mode='nearest')
+
+    z3[ixnm, iynm] = 0.0
+    z2[ixm, iym] = 0.0
+
+    z4 = z2 + z3
+
+    # Smooth
+    z5 = gaussian_filter(z4, sigma=sigma, mode='nearest')
+    z5[ixm, iym] = np.nan
+
+    smooth.data = z5
+
+    return smooth
+
+
+
+def plot(grid, basemap_object, config):
+    ''' Plot gridded data '''
+
+    # Get cell coordinates
+    ncells = grid.nrows*grid.ncols
+    xycoords = grid.cell2coord(np.arange(ncells))
+    llongs = xycoords[:, 0]
+    llats = xycoords[:, 1]
+
+    # Project to basemap
+    bmap = basemap_object
+    xcoord, ycoord = bmap(llongs, llats)
+    zval = grid.data.copy()
+
+    xcoord = xcoord.reshape(zval.shape)
+    ycoord = ycoord.reshape(zval.shape)
+
+    # Filter data
+    clevs = config['clevs']
+    idx_x, idx_y = np.where(zval < clevs[0])
+    zval[idx_x, idx_y] = np.nan
+
+    idx_x, idx_y = np.where(zval > clevs[-1])
+    zval[idx_x, idx_y] = np.nan
+
+    # Refine levels
+    if np.nanmax(zval) < np.max(clevs):
+        idx_z = np.min(np.where(np.nanmax(zval) < np.sort(clevs))[0])
+        clevs = clevs[:idx_z+1]
+
+    # draw contour
+    contf = bmap.contourf(xcoord, ycoord, zval, config['clevs'], \
+                cmap=config['cmap'], \
+                norm=config['norm'])
+
+    if config['linewidth'] > 0.:
+        bmap.contour(xcoord, ycoord, zval, config['clevs'], \
+                linewidths=config['linewidth'], \
+                colors=config['linecolor'])
+
+    return contf
+
+
+def plot_colorbar(fig, ax, cfg, contf, \
+    vertical_alignment='center', aspect='auto', \
+    legend=None):
+    ''' Add color bar to plot '''
+
+    # Create colorbar axe
+    div = make_axes_locatable(ax)
+    cbar_ax = div.append_axes('right', size='4%', pad=0.)
+    cbar_ax.set_aspect(aspect)
+    colorb = fig.colorbar(contf, cax=cbar_ax)
+
+    # Ticks and tick labels
+    clevs_ticks = cfg['clevs_ticks']
+    clevs_tick_labels = cfg['clevs_tick_labels']
+    colorb.set_ticks(clevs_ticks)
+    colorb.ax.set_yticklabels(clevs_tick_labels, fontsize=8, \
+        va=vertical_aligmnent)
+
+    # Legend text
+    if not legend is None:
+        cb.ax.text(0.0, 1.07, legend,
+                size=12, fontsize=8)
+    return cb
+
+
