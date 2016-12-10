@@ -376,11 +376,23 @@ class Grid(object):
             Cells are counted from the top left corner, row by row
             starting from 0.
 
-            Example for a 4x4 grid:
-            0  1  2  3
-            4  5  6  7
-            8  9 10 11
-           12 13 14 15
+        Example for a 4x4 grid:
+         0  1  2  3
+         4  5  6  7
+         8  9 10 11
+        12 13 14 15
+
+        Parameters
+        -----------
+        xycoords : numpy.ndarray
+            2D array with x coords in first column and
+            y coords in second column.
+
+        Returns
+        -----------
+        idxcell : numpy.ndarray
+            1D array containing cell numbers
+
         '''
         xll, yll, csz, nrows, ncols = self._getsize()
 
@@ -400,11 +412,23 @@ class Grid(object):
             Cells are counted from the top left corner, row by row
             starting from 0.
 
-            Example for a 4x4 grid with (xll,yll)=(0,0):
-            0  1  2  3        (0, 3)  (1, 3) (2, 3) (3, 3)
-            4  5  6  7   ->   (0, 2)  (1, 2) (2, 2) (3, 2)
-            8  9 10 11        (0, 1)  (1, 1) (2, 1) (3, 1)
-           12 13 14 15        (0, 0)  (1, 0) (2, 0) (3, 0)
+        Example for a 4x4 grid with (xll,yll)=(0,0):
+         0  1  2  3        (0, 3)  (1, 3) (2, 3) (3, 3)
+         4  5  6  7   ->   (0, 2)  (1, 2) (2, 2) (3, 2)
+         8  9 10 11        (0, 1)  (1, 1) (2, 1) (3, 1)
+        12 13 14 15        (0, 0)  (1, 0) (2, 0) (3, 0)
+
+        Parameters
+        -----------
+        idxcell : numpy.ndarray
+            1D array containing cell numbers
+
+        Returns
+        -----------
+        xycoords : numpy.ndarray
+            2D array with x coords in first column and
+            y coords in second column.
+
         '''
         xll, yll, csz, nrows, ncols = self._getsize()
 
@@ -425,6 +449,17 @@ class Grid(object):
             0 1 2
             3 X 4 -> [n(0), n(1), ..., n(7)]
             5 6 7
+
+        Parameters
+        -----------
+        idxcell : int
+            cell number
+
+        Returns
+        -----------
+        neighbour : numpy.ndarray
+            1D array containing the 9 neighbouring cell number
+
         '''
         _, _, _, nrows, ncols = self._getsize()
 
@@ -440,8 +475,19 @@ class Grid(object):
 
 
     def slice(self, xyslice):
-        ''' Extract a profile from the grid '''
+        ''' Extract a profile from the grid
 
+        Parameters
+        -----------
+        xyslice : numpy.ndarray
+            2D array with x coords in first column and
+            y coords in second column.
+
+        Returns
+        -----------
+        zslice : numpy.ndarray
+            1D array containing sliced values from gridded data
+        '''
         xll, yll, csz, _, _ = self._getsize()
 
         xyslice = np.ascontiguousarray(np.atleast_2d(xyslice),
@@ -457,7 +503,16 @@ class Grid(object):
 
 
     def plot(self, ax, *args, **kwargs):
-        ''' Plot the grid using imshow '''
+        ''' Plot the grid using imshow. This is a basic plotting
+        function. For more advanced plots, use
+        hydrodiy.plot.gridplot
+
+        Parameters
+        -----------
+        ax : matplotlib.axes
+            Axe to draw the grid on
+
+        '''
 
         xll, yll, csz, nr, nc = self._getsize()
         extent = [xll, xll+csz*nc, yll, yll+csz*nr]
@@ -466,7 +521,19 @@ class Grid(object):
 
 
     def clone(self, dtype=None):
-        ''' Clone the current grid object and change dtype if needed '''
+        ''' Clone the current grid object and change dtype if needed
+
+        Parameters
+        -----------
+        dtype : numpy.dtype
+            Variable type of the cloned grid
+
+        Returns
+        -----------
+        clone : hydrodiy.gis.grid.Grid
+            Cloned grid
+        '''
+
         grid = copy.deepcopy(self)
 
         if not dtype is None:
@@ -847,7 +914,6 @@ class Catchment(object):
         return dic
 
 
-
     def load(self, filename):
         ''' Load data from a JSON file '''
 
@@ -941,7 +1007,7 @@ def voronoi(catchment, xypoints):
 
     Parameters
     -----------
-    catchment : hydrodiy.grid.Catchment
+    catchment : hydrodiy.gis.grid.Catchment
         Catchment of interest. Catchment area must be delineated (via
         catchment.delineate_area)
     xypoints : numpy.ndarray
@@ -989,7 +1055,7 @@ def get_ref_grid(name):
 
     Returns
     -----------
-    gr : hydrodiy.grid.Grid
+    gr : hydrodiy.gis.grid.Grid
         Mask grid containing 1 for cells within the grid
         and 0 for cells outside the grid
 
