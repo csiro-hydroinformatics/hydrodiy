@@ -7,6 +7,7 @@ import zipfile
 
 from hydrodiy.gis.grid import Grid, Catchment
 from hydrodiy.gis.grid import accumulate, voronoi, delineate_river
+from hydrodiy.gis.grid import get_ref_grid
 
 from hydrodiy.io import csv
 
@@ -69,6 +70,16 @@ class GridTestCase(unittest.TestCase):
 
         idx = [0, 2, 5]
         val = gr[idx]
+        self.assertTrue(np.allclose(val, gr.data.flat[idx]))
+
+
+    def test_setitem(self):
+        gr = Grid(**self.config)
+        gr.data = np.random.uniform(10, 11, (gr.nrows, gr.ncols))
+
+        idx = [0, 2, 5]
+        val = np.arange(len(idx))
+        gr[idx] = val
         self.assertTrue(np.allclose(val, gr.data.flat[idx]))
 
 
@@ -597,5 +608,52 @@ class CatchmentTestCase(unittest.TestCase):
             fig.tight_layout()
             fp = re.sub('\\.hdr', '_plot.png', filename)
             fig.savefig(fp)
+
+
+class RefGridsTestCase(unittest.TestCase):
+
+    def setUp(self):
+        print('\t=> RefGridsTestCase')
+
+        source_file = os.path.abspath(__file__)
+        self.ftest = os.path.dirname(source_file)
+
+
+    def test_awral(self):
+        gr = get_ref_grid('AWRAL')
+        self.assertEqual(gr.nrows, 681)
+        self.assertEqual(gr.ncols, 841)
+        self.assertEqual(gr.xllcorner, 111.975)
+        self.assertEqual(gr.yllcorner, -44.025)
+        self.assertEqual(np.sum(gr.data), 281655)
+
+    def test_awap(self):
+
+        # Generate the AWAP grid from AWRAL grid
+        #mask = Grid('AWAP', 886, 691, 0.05, \
+        #    112., -44.5, np.int32, comment='Grid used in AWAP products')
+
+        #awral = get_ref_grid('AWRAL')
+        #cells_awral = np.where(awral.data.ravel() == 1)[0]
+        #xy_awral = awral.cell2coord(cells_awral)
+        #xy = [xy_awral.copy()]
+        #for dx in [-0.01, 0.01]:
+        #    for dy in [-0.01, 0.01]:
+        #        dxy = xy_awral.copy()
+        #        dxy[:, 0] += dx
+        #        dxy[:, 1] += dy
+        #        xy.append(dxy)
+        #xy = np.concatenate(xy, axis=0)
+        #cells_awap = mask.coord2cell(xy)
+        #mask[cells_awap] = 1
+        #fmask = os.path.join(self.ftest, '..', 'data', 'AWAP_GRID.bil')
+        #mask.save(fmask)
+
+        gr = get_ref_grid('AWAP')
+        self.assertEqual(gr.nrows, 691)
+        self.assertEqual(gr.ncols, 886)
+        self.assertEqual(gr.xllcorner, 112.)
+        self.assertEqual(gr.yllcorner, -44.5)
+        self.assertEqual(np.sum(gr.data), 284547)
 
 

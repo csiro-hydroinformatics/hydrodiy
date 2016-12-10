@@ -16,14 +16,14 @@ except ImportError:
 
 
 # Decompress australia shoreline shapefile
-FDATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
-fshp_coastoz = os.path.join(FDATA, 'australia_coastline_simplified.shp')
-fshp_drainageoz = os.path.join(FDATA, 'drainage_divisions_lines_simplified.shp')
+F_HYGIS_DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+fshp_coastoz = os.path.join(F_HYGIS_DATA, 'australia_coastline_simplified.shp')
+fshp_drainageoz = os.path.join(F_HYGIS_DATA, 'drainage_divisions_lines_simplified.shp')
 
 if not os.path.exists(fshp_coastoz):
     tar = tarfile.open(re.sub('shp', 'tar.gz', fshp_coastoz))
     for item in tar:
-        tar.extract(item, FDATA)
+        tar.extract(item, F_HYGIS_DATA)
 
 
 class Oz:

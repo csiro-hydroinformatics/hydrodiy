@@ -1,6 +1,9 @@
+''' Module containing grid utilities '''
+
 import re, os
 import math
 import copy
+import zipfile
 
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
@@ -22,6 +25,9 @@ import c_hydrodiy_gis
 FLOWDIRCODE = np.array([[32, 64, 128],
                             [16, 0, 1],
                             [8, 4, 2]]).astype(np.int64)
+
+# Path to hygis data
+F_HYGIS_DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
 
 
 class Grid(object):
@@ -62,6 +68,12 @@ class Grid(object):
         nrows = self.nrows
         ncols = self.ncols
         return xll, yll, csz, nrows, ncols
+
+
+    def __setitem__(self, index, value):
+        ''' Set cell values '''
+        index =  np.int64(index)
+        self._data.flat[index] = np.array(value).astype(self.dtype)
 
 
     def __getitem__(self, index):
@@ -963,14 +975,40 @@ def voronoi(catchment, xypoints):
     return weights
 
 
-# AWAP grid - Bureau of Meteorology
-AWAP_GRID = Grid('awap', nrows=691, ncols=886,
-        xllcorner=112., yllcorner=-44.5,
-        cellsize=0.05, nodata_value=99999.9)
 
-# AWRA grid - Bureau of Meteorology
-AWRA_GRID = Grid('awra', nrows=681, ncols=841,
-        xllcorner=111.975, yllcorner=-44.025,
-        cellsize=0.05, nodata_value=99999.9)
+def get_ref_grid(name):
+    ''' Get reference gridss defined in
+    Bureau of meteorology products
 
+    Parameters
+    -----------
+    name : str
+        Name of grid :
+        - AWRAL : Grid used in AWRAL products
+        - AWRAP : Grid used in AWAP products
 
+    Returns
+    -----------
+    gr : hydrodiy.grid.Grid
+        Mask grid containing 1 for cells within the grid
+        and 0 for cells outside the grid
+
+    '''
+
+    if not name in ['AWRAL', 'AWAP']:
+        raise ValueError('Name {0} not recognised'.format(name))
+
+    fbase = '{0}_GRID'.format(name)
+    fzip = os.path.join(F_HYGIS_DATA, '{0}.zip'.format(fbase))
+    fdata = os.path.join(F_HYGIS_DATA, '{0}.bil'.format(fbase))
+
+    # Extract data from zipfile if it does not exist
+    if not os.path.exists(fdata):
+        with zipfile.ZipFile(fzip, 'r') as zipf:
+            zipf.extract('{0}.bil'.format(fbase), F_HYGIS_DATA)
+            zipf.extract('{0}.hdr'.format(fbase), F_HYGIS_DATA)
+
+    # Reads data
+    gr = Grid.from_header(fdata)
+
+    return gr
