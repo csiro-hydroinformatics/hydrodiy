@@ -7,13 +7,7 @@ from matplotlib.patches import Polygon
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import PathPatch
 
-try:
-    from mpl_toolkits import basemap
-    has_basemap = True
-
-except ImportError:
-    has_basemap = False
-
+from mpl_toolkits import basemap
 
 # Decompress australia shoreline shapefile
 F_HYGIS_DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
@@ -24,6 +18,62 @@ if not os.path.exists(fshp_coastoz):
     tar = tarfile.open(re.sub('shp', 'tar.gz', fshp_coastoz))
     for item in tar:
         tar.extract(item, F_HYGIS_DATA)
+
+REGIONS = ['CAPEYORK', 'AUS', 'COASTALNSW', \
+                    'MDB', 'VIC+TAS', 'PERTH', 'QLD']
+
+def get_lim(region):
+    ''' Get lat/lon box for specific regions in Australia
+
+    Parameters
+    -----------
+    region : str
+        Region name. See hydrodiy.gis.oz.REGIONS
+
+    Returns
+    -----------
+    xlim : list
+        Xmin/Xmax bounds
+
+    ylim : list
+        Ymin/Ymax bounds
+    '''
+
+    if region == 'CAPEYORK':
+        xlim = [137., 148.7]
+        ylim = [-24.4, -10.]
+
+    elif region == 'AUS':
+        xlim = [109., 155]
+        ylim = [-44.4, -9.]
+
+    elif region == 'COASTALNSW':
+        xlim = [147.5, 155.]
+        ylim = [-38.5, -29.9]
+
+    elif region == 'MDB':
+        xlim = [138., 155.]
+        ylim = [-40.6, -23.]
+
+    elif region == 'VIC+TAS':
+        xlim = [136., 151.]
+        ylim = [-44., -33.]
+
+    elif region == 'PERTH':
+        xlim = [107., 126.]
+        ylim = [-44., -37.]
+
+    elif region == 'QLD':
+        xlim = [135., 155.]
+        ylim = [-29., -9.]
+
+    else:
+        raise ValueError(('Region {0} not recognised, ' + \
+                'should be in {1}').format(region, \
+                '/'.join(REGIONS)))
+
+    return xlim, ylim
+
 
 
 class Oz:
@@ -81,25 +131,25 @@ class Oz:
         else:
             self.ax = ax
 
-        if has_basemap:
-            self.map = basemap.Basemap(self.llon, self.llat, self.rlon, self.ulat,
-                lat_0=24.75, lon_0=134.0, lat_1=-10, lat_2=-40,
-                rsphere=(6378137.00,6356752.3142),
-                projection='lcc', resolution=resolution,
-                area_thresh=1000, suppress_ticks=True, ax = self.ax)
-        else:
-            raise ImportError('matplotlib - basemap is not available')
+        self.map = basemap.Basemap(self.llon, self.llat, self.rlon, self.ulat,
+            lat_0=24.75, lon_0=134.0, lat_1=-10, lat_2=-40,
+            rsphere=(6378137.00,6356752.3142),
+            projection='lcc', resolution=resolution,
+            area_thresh=1000, suppress_ticks=True, ax = self.ax)
 
         if remove_axis:
             self.ax.axis('off')
 
+
     def get_map(self):
         return self.map
+
 
     def get_range(self):
         ''' Get x/y range for the map '''
 
         return (self.llon, self.rlon, self.ulat, self.llat)
+
 
     def set_axrange(self):
         ''' Get nice x/y range for Australian coastline '''

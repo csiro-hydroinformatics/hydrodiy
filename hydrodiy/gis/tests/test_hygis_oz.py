@@ -7,7 +7,7 @@ import pandas as pd
 from shapely.geometry import Polygon
 
 from matplotlib import pyplot as plt
-from hydrodiy.gis.oz import Oz
+from hydrodiy.gis.oz import Oz, get_lim, REGIONS
 from hydrodiy.plot import putils
 
 class OzTestCase(unittest.TestCase):
@@ -15,6 +15,17 @@ class OzTestCase(unittest.TestCase):
         print('\t=> OzTestCase')
         source_file = os.path.abspath(__file__)
         self.ftest = os.path.dirname(source_file)
+
+    def test_get_lim(self):
+        for region in REGIONS:
+            xlim, ylim = get_lim(region)
+
+        try:
+            get_lim('XXX')
+        except ValueError as err:
+            pass
+        self.assertTrue(str(err).startswith('Region XXX'))
+
 
     def test_oz0(self):
         plt.close('all')
