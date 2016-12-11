@@ -1,7 +1,5 @@
-import os
-import math
+import os, re, math
 import unittest
-
 from  datetime import datetime
 
 import numpy as np
@@ -13,8 +11,8 @@ from hydrodiy.plot import putils
 from hydrodiy.gis.grid import get_ref_grid
 from hydrodiy.gis.oz import Oz
 
-from hydrodiy.plot.gridplot import get_lim, get_config, plot, smooth
-from hydrodiy.plot.gridplot import VARNAMES, plot_colorbar
+from hydrodiy.plot.gridplot import get_gconfig, gplot, gsmooth
+from hydrodiy.plot.gridplot import VARNAMES, gplot_colorbar
 
 class GridplotTestCase(unittest.TestCase):
 
@@ -32,23 +30,9 @@ class GridplotTestCase(unittest.TestCase):
 
         self.mask = get_ref_grid('AWAP')
 
-    def test_get_lim(self):
-        regions = ['CAPEYORK', 'AUS', 'COASTALNSW', \
-                    'MDB', 'VIC+TAS', 'PERTH', 'QLD']
-
-        for region in regions:
-            xlim, ylim = get_lim(region)
-
-        try:
-            get_lim('XXX')
-        except ValueError as err:
-            pass
-        self.assertTrue(str(err).startswith('Region XXX'))
-
-
-    def test_get_config(self):
+    def test_get_gconfig(self):
         for varname in VARNAMES:
-            cfg = get_config(varname)
+            cfg = get_gconfig(varname)
 
             k1 = np.sort(cfg.keys())
             k2 = np.array(['clevs', 'clevs_tick_labels', 'clevs_ticks', \
@@ -58,37 +42,53 @@ class GridplotTestCase(unittest.TestCase):
             self.assertTrue(ck)
 
 
-    def test_smooth(self):
+    def test_gsmooth(self):
         plt.close('all')
-        fig, axs = plt.subplots(ncols=3)
-        self.grd.plot(axs[0], cmap='Blues')
+        fig, axs = plt.subplots(ncols=3, nrows=2)
 
-        sm = smooth(self.grd, self.mask)
-        sm.plot(axs[1], cmap='Blues')
+        self.grd.plot(axs[0, 0], cmap='Blues')
 
-        sm = smooth(self.grd, self.mask, sigma=1.)
-        sm.plot(axs[2], cmap='Blues')
+        sm = gsmooth(self.grd, self.mask, sigma=1e-5)
+        sm.plot(axs[1, 0], cmap='Blues')
 
-        fig.set_size_inches((18, 6))
+        sm = gsmooth(self.grd)
+        sm.plot(axs[0, 1], cmap='Blues')
+
+        sm = gsmooth(self.grd, self.mask)
+        sm.plot(axs[1, 1], cmap='Blues')
+
+        sm = gsmooth(self.grd, sigma=50.)
+        sm.plot(axs[0, 2], cmap='Blues')
+
+        sm = gsmooth(self.grd, self.mask, sigma=50.)
+        sm.plot(axs[1, 2], cmap='Blues')
+
+        fig.set_size_inches((18, 12))
         fig.tight_layout()
-        fp = os.path.join(self.ftest, 'smooth.png')
+        fp = os.path.join(self.ftest, 'gsmooth.png')
         fig.savefig(fp)
 
 
-    def test_plot(self):
+    def test_gplot(self):
         plt.close('all')
         putils.set_mpl('white')
 
-        sm = smooth(self.grd, self.mask)
+        sm = gsmooth(self.grd, self.mask)
 
         for varname in VARNAMES:
-            cfg = get_config(varname)
+            cfg = get_gconfig(varname)
             fig, ax = plt.subplots()
 
             om = Oz(ax=ax)
             bm = om.get_map()
 
-            plot(sm, bm, cfg)
+            sm2 = sm
+            if re.search('decile|moisture', varname):
+                sm2 = sm.clone()
+                dt = sm2.data
+                sm2.data = dt/np.nanmax(dt)
+
+            gplot(sm2, bm, cfg)
 
             fig.tight_layout()
             fp = os.path.join(self.ftest, 'gridplot_{0}.png'.format(varname))

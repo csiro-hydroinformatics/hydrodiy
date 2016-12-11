@@ -21,54 +21,16 @@ VARNAMES =  hywap.VARIABLES.keys() + ['effective-rainfall', \
     'soil-moisture']
 
 
-def get_lim(region):
-    ''' Get lat/lon box for specific regions Australia '''
-
-    if region == 'CAPEYORK':
-        xlim = [137., 148.7]
-        ylim = [-24.4, -10.]
-
-    elif region == 'AUS':
-        xlim = [109., 155]
-        ylim = [-44.4, -9.]
-
-    elif region == 'COASTALNSW':
-        xlim = [147.5, 155.]
-        ylim = [-38.5, -29.9]
-
-    elif region == 'MDB':
-        xlim = [138., 155.]
-        ylim = [-40.6, -23.]
-
-    elif region == 'VIC+TAS':
-        xlim = [136., 151.]
-        ylim = [-44., -33.]
-
-    elif region == 'PERTH':
-        xlim = [107., 126.]
-        ylim = [-44., -37.]
-
-    elif region == 'QLD':
-        xlim = [135., 155.]
-        ylim = [-29., -9.]
-
-    else:
-        raise ValueError('Region {0} not recognised'.format( \
-            region))
-
-    return xlim, ylim
-
-
-def get_config(varname):
-    ''' Generate plotting configuration '''
+def get_gconfig(varname):
+    ''' Generate grid plotting configuration '''
 
     cfg = {'cmap':None, \
             'clevs':None, \
             'clevs_ticks':None, \
             'clevs_tick_labels': None, \
             'norm':None, \
-            'linewidth':1., \
-            'linecolor':'#%02x%02x%02x' % (60, 60, 60)}
+            'linewidth':0.8, \
+            'linecolor':'#%02x%02x%02x' % (150, 150, 150)}
 
     if not varname in VARNAMES:
         raise ValueError(('Variable {0} not in '+\
@@ -89,7 +51,12 @@ def get_config(varname):
         cfg['norm'] = mpl.colors.Normalize(vmin=clevs[0], vmax=clevs[-1])
 
     if varname == 'decile-temp':
-        cfg = get_config('decile-rain')
+        cfg = get_gconfig('decile-rain')
+
+        cols = {1.:'#%02x%02x%02x' % (255, 153, 0),
+                0.5:'#%02x%02x%02x' % (255, 255, 255),
+                0.:'#%02x%02x%02x' % (0, 153, 204)}
+        cfg['cmap'] = putils.col2cmap(cols)
 
     elif varname == 'evapotranspiration':
         clevs = [0, 10, 50, 80, 100, 120, 160, 200, 250, 300]
@@ -109,7 +76,7 @@ def get_config(varname):
         cfg['clevs_ticks'] = clevs_ticks
         cfg['clevs_tick_labels'] = ['{0:3.0f}%'.format(l*100) \
                                             for l in clevs_ticks]
-        cfg['cmap'] = plt.cm.Blues,
+        cfg['cmap'] = plt.cm.Blues
         cfg['linewidth'] = 0.
         cfg['norm'] = mpl.colors.Normalize(vmin=clevs[0], vmax=clevs[-1])
 
@@ -149,14 +116,14 @@ def get_config(varname):
         cfg['norm'] = mpl.colors.SymLogNorm(10., vmin=clevs[0], vmax=clevs[-1])
 
     elif varname == 'vprp':
-        cfg = get_config('temperature')
+        cfg = get_gconfig('temperature')
         clevs = range(0, 40, 2)
         cfg['clevs'] = clevs
         cfg['clevs_ticks'] = clevs
         cfg['clevs_tick_labels'] = clevs
 
     elif varname == 'solar':
-        cfg = get_config('temperature')
+        cfg = get_gconfig('temperature')
         clevs = range(0, 40, 3)
         cfg['clevs'] = clevs
         cfg['clevs_ticks'] = clevs
@@ -165,44 +132,48 @@ def get_config(varname):
     return cfg
 
 
-def smooth(grid, mask, sigma=5., minval = 0.):
+def gsmooth(grid, mask=None, sigma=5., minval=-np.inf, eps=1e-6):
     ''' Smooth gridded value to improve look of map '''
 
-    smooth = grid.clone()
-    z = smooth.data
+    smooth = grid.clone(dtype=np.float64)
+    z0 = smooth.data
 
-    # Gap fill data
-    ixm, iym = np.where(np.isnan(z) | (z<minval))
-    ixnm, iynm = np.where(~np.isnan(z) & (z>=minval))
-    z0 = np.array(z)
+    # Gapfill with nearest neighbour
+    ixm, iym = np.where(np.isnan(z0) | (z0<minval-eps))
+    ixnm, iynm = np.where(~np.isnan(z0) & (z0>=minval-eps))
     z0[ixm, iym] = -np.inf
     z1 = maximum_filter(z0, size=50, mode='nearest')
-    z1[ixnm, iynm] = z[ixnm, iynm]
-
-    # Expand boundaries
-    ixm, iym = np.where(mask.data < 1.)
-    ixnm, iynm = np.where(mask.data > 0.)
-
-    z2 = z1
-    z2[ixm, iym] = -np.inf
-    z3 = maximum_filter(z2, size=50, mode='nearest')
-
-    z3[ixnm, iynm] = 0.0
-    z2[ixm, iym] = 0.0
-
-    z4 = z2 + z3
+    z1[ixnm, iynm] = z0[ixnm, iynm]
 
     # Smooth
-    z5 = gaussian_filter(z4, sigma=sigma, mode='nearest')
-    z5[ixm, iym] = np.nan
+    z2 = gaussian_filter(z1, sigma=sigma, mode='nearest')
 
-    smooth.data = z5
+    # Cut mask
+    if not mask is None:
+        # Check grid and mas have the same geometry
+        if not grid.same_geometry(mask):
+            raise ValueError('Mask does not have the same '+
+                'geometry than input grid')
+
+        ixm, iym = np.where(mask.data == 0)
+        z2[ixm, iym] = np.nan
+        #ixnm, iynm = np.where(mask.data == 1)
+
+        #z2[ixm, iym] = -np.inf
+        #z3 = maximum_filter(z2, size=50, mode='nearest')
+
+        #z3[ixnm, iynm] = 0.0
+        #z2[ixm, iym] = 0.0
+
+        #z4 = z2 + z3
+
+    smooth.data = z2
 
     return smooth
 
 
 
-def plot(grid, basemap_object, config):
+def gplot(grid, basemap_object, config):
     ''' Plot gridded data '''
 
     # Get cell coordinates
@@ -245,7 +216,7 @@ def plot(grid, basemap_object, config):
     return contf
 
 
-def plot_colorbar(fig, ax, cfg, contf, \
+def gplot_colorbar(fig, ax, cfg, contf, \
     vertical_alignment='center', aspect='auto', \
     legend=None):
     ''' Add color bar to plot '''
