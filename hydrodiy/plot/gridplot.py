@@ -81,15 +81,15 @@ def get_gconfig(varname):
         cfg['norm'] = mpl.colors.Normalize(vmin=clevs[0], vmax=clevs[-1])
 
     elif varname == 'effective-rainfall':
-        clevs = [-200, -150, -100, -50, -25, -10, 0,
-            10, 25, 50, 100, 150, 200]
+        clevs = [-100, -75, -50, -25, -10, -5, 0, \
+            5, 10, 25, 50, 75, 100]
         cfg['clevs'] = clevs
         cfg['clevs_ticks'] = clevs
         cfg['clevs_tick_labels'] = clevs
 
-        cols = {0.:'#994C00', \
-                0.5: '#FFFFFF', \
-                1.:'#006666'}
+        cols = {0.:'#%02x%02x%02x' % (255, 76, 0), \
+                0.5:'#%02x%02x%02x' % (255, 255, 255), \
+                1.:'#%02x%02x%02x' % (40, 178, 157)}
         cmap = putils.col2cmap(cols)
         cfg['cmap'] = cmap
         cfg['linewidth'] = 0
