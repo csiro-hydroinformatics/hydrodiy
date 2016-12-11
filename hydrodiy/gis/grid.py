@@ -260,6 +260,29 @@ class Grid(object):
         self._dtype = value
         self._data = self._data.astype(value)
 
+    def same_geometry(self, grd):
+        ''' Check another grid has the same geometry
+
+        Parameters
+        -----------
+        grd : hydrodiy.gis.grid.Grid
+            External grid
+
+        Returns
+        -----------
+        identical : bool
+            Same geometry True/False
+        '''
+
+        identical = grd.ncols == self.ncols
+        identical = identical & (grd.nrows == self.nrows)
+        identical = identical & np.allclose(grd.xllcorner, self.xllcorner)
+        identical = identical & np.allclose(grd.yllcorner, self.yllcorner)
+        identical = identical & np.allclose(grd.cellsize, self.cellsize)
+
+        return identical
+
+
 
     def load(self, filename):
         ''' Load data from file

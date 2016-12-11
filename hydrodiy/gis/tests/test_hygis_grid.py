@@ -64,6 +64,16 @@ class GridTestCase(unittest.TestCase):
         self.assertTrue(ck)
 
 
+    def test_same_geometry(self):
+        gr = Grid(**self.config)
+
+        grc = gr.clone(np.int32)
+        self.assertTrue(gr.same_geometry(grc))
+
+        grc = Grid('test', ncols=10)
+        self.assertTrue(~gr.same_geometry(grc))
+
+
     def test_getitem(self):
         gr = Grid(**self.config)
         gr.data = np.random.uniform(0, 1, (gr.nrows, gr.ncols))
