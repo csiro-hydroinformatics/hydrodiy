@@ -21,115 +21,160 @@ VARNAMES =  hywap.VARIABLES.keys() + ['effective-rainfall', \
     'soil-moisture']
 
 
-def get_gconfig(varname):
-    ''' Generate grid plotting configuration '''
+class GridplotConfig:
+    ''' Class containing gridplot configuration data '''
 
-    cfg = {'cmap':None, \
-            'clevs':None, \
-            'clevs_ticks':None, \
-            'clevs_tick_labels': None, \
-            'norm':None, \
-            'linewidth':0.8, \
-            'linecolor':'#%02x%02x%02x' % (150, 150, 150)}
+    def __init__(self, varname=None):
+        # Set default values
+        self.cmap = plt.cm.RdBu
+        self._clevs = None
+        self._clevs_ticks = None
+        self._clevs_tick_labels = None
+        self.norm = None
+        self.linewidth = 0.8
+        self.linecolor = '#%02x%02x%02x' % (150, 150, 150)
+        self.varname = varname
 
-    if not varname in VARNAMES:
-        raise ValueError(('Variable {0} not in '+\
-            '{1}').format(varname, '/'.join(VARNAMES)))
+        # Refine default values based on variable name
+        self._default_values(varname)
 
-    if varname == 'decile-rain':
-        clevs = [0., 0.1, 0.3, 0.7, 0.9, 1.0]
-        clevs_tick_labels = ['', '\nVery Much\nBelow Average', '\nBelow Average', '\nAverage',
-                    '\nAbove Average', '\nVery Much\nAbove Average']
-        cfg['clevs'] = clevs
-        cfg['clevs_ticks'] = clevs
-        cfg['clevs_tick_labels'] = clevs_tick_labels
 
-        cols = {1.:'#%02x%02x%02x' % (102, 102, 255),
-                0.5:'#%02x%02x%02x' % (255, 255, 255),
-                0.:'#%02x%02x%02x' % (255, 102, 102)}
-        cfg['cmap'] = putils.col2cmap(cols)
-        cfg['norm'] = mpl.colors.Normalize(vmin=clevs[0], vmax=clevs[-1])
+    @property
+    def clevs(self):
+        return self._clevs
 
-    if varname == 'decile-temp':
-        cfg = get_gconfig('decile-rain')
+    @clevs.setter
+    def clevs(self, value):
+        self._clevs = np.atleast_1d(value).astype(np.float64)
+        self.clevs_ticks = self._clevs
 
-        cols = {1.:'#%02x%02x%02x' % (255, 153, 0),
-                0.5:'#%02x%02x%02x' % (255, 255, 255),
-                0.:'#%02x%02x%02x' % (0, 153, 204)}
-        cfg['cmap'] = putils.col2cmap(cols)
 
-    elif varname == 'evapotranspiration':
-        clevs = [0, 10, 50, 80, 100, 120, 160, 200, 250, 300]
-        cfg['clevs'] = clevs
-        cfg['clevs_ticks'] = clevs
-        cfg['clevs_tick_labels'] = clevs
+    @property
+    def clevs_ticks(self):
+        return self._clevs_ticks
 
-        cols = {0.:'#%02x%02x%02x' % (255, 229, 204),
-                1.:'#%02x%02x%02x' % (153, 76, 0)}
-        cfg['cmap'] = putils.col2cmap(cols)
-        cfg['norm'] = mpl.colors.Normalize(vmin=cfg['clevs'][0], vmax=cfg['clevs'][-1])
+    @clevs_ticks.setter
+    def clevs_ticks(self, value):
+        self._clevs_ticks = np.atleast_1d(value).astype(np.float64)
+        self.clevs_tick_labels = self._clevs_ticks
 
-    elif varname == 'soil-moisture':
-        clevs = np.arange(0, 1.05, 0.05)
-        clevs_ticks = np.arange(0, 1.2, 0.2)
-        cfg['clevs'] = clevs
-        cfg['clevs_ticks'] = clevs_ticks
-        cfg['clevs_tick_labels'] = ['{0:3.0f}%'.format(l*100) \
-                                            for l in clevs_ticks]
-        cfg['cmap'] = plt.cm.Blues
-        cfg['linewidth'] = 0.
-        cfg['norm'] = mpl.colors.Normalize(vmin=clevs[0], vmax=clevs[-1])
 
-    elif varname == 'effective-rainfall':
-        clevs = [-100, -75, -50, -25, -10, -5, 0, \
-            5, 10, 25, 50, 75, 100]
-        cfg['clevs'] = clevs
-        cfg['clevs_ticks'] = clevs
-        cfg['clevs_tick_labels'] = clevs
+    @property
+    def clevs_tick_labels(self):
+        return self._clevs_tick_labels
 
-        cols = {0.:'#%02x%02x%02x' % (255, 76, 0), \
-                0.5:'#%02x%02x%02x' % (255, 255, 255), \
-                1.:'#%02x%02x%02x' % (40, 178, 157)}
-        cmap = putils.col2cmap(cols)
-        cfg['cmap'] = cmap
-        cfg['linewidth'] = 0
-        cfg['norm'] = mpl.colors.SymLogNorm(10., vmin=clevs[0], vmax=clevs[-1])
+    @clevs_tick_labels.setter
+    def clevs_tick_labels(self, value):
+        labels = np.atleast_1d(value)
+        if not len(labels) == len(self._clevs_ticks):
+            raise ValueError(('Number of labels({0}) different ' + \
+                'from number of ticks ({1})').format(len(labels), \
+                    len(self._clevs_ticks)))
 
-    elif varname == 'rainfall':
-        clevs = [0, 1, 5, 10, 25, 50, 100, 200, 300, 400, 600, 800]
-        cfg['clevs'] = clevs
-        cfg['clevs_ticks'] = clevs
-        cfg['clevs_tick_labels'] = clevs
+        self._clevs_tick_labels = labels
 
-        cfg['cmap'] = 'RdBu'
-        cfg['linewidth'] = 0
-        cfg['norm'] = mpl.colors.SymLogNorm(10., vmin=clevs[0], vmax=clevs[-1])
 
-    elif varname == 'temperature':
-        clevs = range(-9, 51, 3)
-        cfg['clevs'] = clevs
-        cfg['clevs_ticks'] = clevs
-        cfg['clevs_tick_labels'] = clevs
+    def is_valid(self):
+        ''' Check configuration is properly set '''
+        if self._clevs is None or \
+            self._clevs_ticks is None or \
+            self._clevs_tick_labels is None:
+            raise ValueError('clevs, or clevs_ticks or clevs_tick_labels is None')
 
-        cfg['cmap'] = plt.get_cmap('gist_rainbow_r')
-        cfg['linewidth'] = 0
-        cfg['norm'] = mpl.colors.SymLogNorm(10., vmin=clevs[0], vmax=clevs[-1])
+        if len(self.clevs_tick_labels) != len(self.clevs_ticks):
+            raise ValueError('Not the same number of tick levels and tick' + \
+                    ' labels')
 
-    elif varname == 'vprp':
-        cfg = get_gconfig('temperature')
-        clevs = range(0, 40, 2)
-        cfg['clevs'] = clevs
-        cfg['clevs_ticks'] = clevs
-        cfg['clevs_tick_labels'] = clevs
+    def _default_values(self, varname):
 
-    elif varname == 'solar':
-        cfg = get_gconfig('temperature')
-        clevs = range(0, 40, 3)
-        cfg['clevs'] = clevs
-        cfg['clevs_ticks'] = clevs
-        cfg['clevs_tick_labels'] = clevs
+        if varname is None:
+            return
 
-    return cfg
+        if not varname in VARNAMES:
+            raise ValueError(('Variable {0} not in '+\
+                '{1}').format(varname, '/'.join(VARNAMES)))
+
+        if varname == 'decile-rain':
+            self.clevs = [0., 0.1, 0.3, 0.7, 0.9, 1.0]
+            self.clevs_ticks = [0.05, 0.2, 0.5, 0.8, 0.95]
+            self.clevs_tick_labels = ['Very Much\nBelow Average', 'Below Average', 'Average',
+                        'Above Average', 'Very Much\nAbove Average']
+
+            cols = {1.:'#%02x%02x%02x' % (102, 102, 255),
+                    0.5:'#%02x%02x%02x' % (255, 255, 255),
+                    0.:'#%02x%02x%02x' % (255, 102, 102)}
+            self.cmap = putils.col2cmap(cols)
+            self.norm = mpl.colors.Normalize(vmin=self.clevs[0], vmax=self.clevs[-1])
+
+        if varname == 'decile-temp':
+            self._default_values('decile-rain')
+
+            cols = {1.:'#%02x%02x%02x' % (255, 153, 0),
+                    0.5:'#%02x%02x%02x' % (255, 255, 255),
+                    0.:'#%02x%02x%02x' % (0, 153, 204)}
+            self.cmap = putils.col2cmap(cols)
+
+        elif varname == 'evapotranspiration':
+            clevs = [0, 10, 50, 80, 100, 120, 160, 200, 250, 300, 350]
+            self.clevs = clevs
+            self.clevs_tick_labels = clevs[:-1] + ['']
+
+            cols = {0.:'#%02x%02x%02x' % (255, 229, 204),
+                    1.:'#%02x%02x%02x' % (153, 76, 0)}
+            self.cmap = putils.col2cmap(cols)
+            self.norm = mpl.colors.Normalize(vmin=clevs[0], vmax=clevs[-1])
+
+        elif varname == 'soil-moisture':
+            self.clevs = np.arange(0, 1.05, 0.05)
+            self.clevs_ticks = np.arange(0, 1.2, 0.2)
+            self.clevs_tick_labels = ['{0:3.0f}%'.format(l*100) \
+                                                for l in self.clevs_ticks]
+            self.cmap = plt.cm.Blues
+            self.linewidth = 0.
+            self.norm = mpl.colors.Normalize(vmin=self.clevs[0], vmax=self.clevs[-1])
+
+        elif varname == 'effective-rainfall':
+            clevs = [-200, -100, -75, -50, -25, -10, -5, 0, \
+                5, 10, 25, 50, 75, 100, 200]
+            self.clevs = clevs
+            self.clevs_tick_labels = [''] + clevs[1:-1] + ['']
+
+            cols = {0.:'#%02x%02x%02x' % (255, 76, 0), \
+                    0.5:'#%02x%02x%02x' % (255, 255, 255), \
+                    1.:'#%02x%02x%02x' % (40, 178, 157)}
+            self.cmap = putils.col2cmap(cols)
+            self.linewidth = 0
+            self.norm = mpl.colors.SymLogNorm(10., vmin=clevs[0], vmax=clevs[-1])
+
+        elif varname == 'rainfall':
+            clevs = [0, 1, 5, 10, 25, 50, 100, 200, 300, 400, 600, 800, 1000]
+            self.clevs = clevs
+            self.clevs_tick_labels = clevs[:-1] + ['']
+
+            self.linewidth = 0
+            self.norm = mpl.colors.SymLogNorm(10., vmin=clevs[0], vmax=clevs[-1])
+
+        elif varname == 'temperature':
+            clevs = [-20] + range(-9, 51, 3) + [60]
+            self.clevs = clevs
+            self.clevs_tick_labels = clevs[:-1] + ['']
+
+            self.linewidth = 0
+            self.cmap = plt.get_cmap('gist_rainbow_r')
+            self.norm = mpl.colors.Normalize(vmin=clevs[0], vmax=clevs[-1])
+
+        elif varname == 'vprp':
+            self._default_values('temperature')
+            clevs = range(0, 42, 2)
+            self.clevs = clevs
+            self.clevs_tick_labels = clevs[:-1] + ['']
+
+        elif varname == 'solar':
+            self._default_values('temperature')
+            clevs = range(0, 43, 3)
+            self.clevs = clevs
+            self.clevs_tick_labels = clevs[:-1] + ['']
+
 
 
 def gsmooth(grid, mask=None, sigma=5., minval=-np.inf, eps=1e-6):
@@ -150,22 +195,13 @@ def gsmooth(grid, mask=None, sigma=5., minval=-np.inf, eps=1e-6):
 
     # Cut mask
     if not mask is None:
-        # Check grid and mas have the same geometry
+        # Check grid and mask have the same geometry
         if not grid.same_geometry(mask):
             raise ValueError('Mask does not have the same '+
                 'geometry than input grid')
 
         ixm, iym = np.where(mask.data == 0)
         z2[ixm, iym] = np.nan
-        #ixnm, iynm = np.where(mask.data == 1)
-
-        #z2[ixm, iym] = -np.inf
-        #z3 = maximum_filter(z2, size=50, mode='nearest')
-
-        #z3[ixnm, iynm] = 0.0
-        #z2[ixm, iym] = 0.0
-
-        #z4 = z2 + z3
 
     smooth.data = z2
 
@@ -175,6 +211,9 @@ def gsmooth(grid, mask=None, sigma=5., minval=-np.inf, eps=1e-6):
 
 def gplot(grid, basemap_object, config):
     ''' Plot gridded data '''
+
+    # Check config is proper
+    config.is_valid()
 
     # Get cell coordinates
     ncells = grid.nrows*grid.ncols
@@ -190,36 +229,30 @@ def gplot(grid, basemap_object, config):
     xcoord = xcoord.reshape(zval.shape)
     ycoord = ycoord.reshape(zval.shape)
 
-    # Filter data
+    # Clip data to level range
     clevs = config['clevs']
-    idx_x, idx_y = np.where(zval < clevs[0])
-    zval[idx_x, idx_y] = np.nan
-
-    idx_x, idx_y = np.where(zval > clevs[-1])
-    zval[idx_x, idx_y] = np.nan
-
-    # Refine levels
-    if np.nanmax(zval) < np.max(clevs):
-        idx_z = np.min(np.where(np.nanmax(zval) < np.sort(clevs))[0])
-        clevs = clevs[:idx_z+1]
+    zval = np.clip(zval,clevs[0], clevs[-1])
 
     # draw contour
-    contf = bmap.contourf(xcoord, ycoord, zval, config['clevs'], \
-                cmap=config['cmap'], \
-                norm=config['norm'])
+    contf = bmap.contourf(xcoord, ycoord, zval, config.clevs, \
+                cmap=config.cmap, \
+                norm=config.norm)
 
-    if config['linewidth'] > 0.:
-        bmap.contour(xcoord, ycoord, zval, config['clevs'], \
-                linewidths=config['linewidth'], \
-                colors=config['linecolor'])
+    if config.linewidth > 0.:
+        bmap.contour(xcoord, ycoord, zval, config.clevs, \
+                linewidths=config.linewidth, \
+                colors=config.linecolor)
 
     return contf
 
 
-def gplot_colorbar(fig, ax, cfg, contf, \
+def gbar(fig, ax, config, contf, \
     vertical_alignment='center', aspect='auto', \
     legend=None):
     ''' Add color bar to plot '''
+
+    # Check config is proper
+    config.is_valid()
 
     # Create colorbar axe
     div = make_axes_locatable(ax)
@@ -228,16 +261,16 @@ def gplot_colorbar(fig, ax, cfg, contf, \
     colorb = fig.colorbar(contf, cax=cbar_ax)
 
     # Ticks and tick labels
-    clevs_ticks = cfg['clevs_ticks']
-    clevs_tick_labels = cfg['clevs_tick_labels']
-    colorb.set_ticks(clevs_ticks)
-    colorb.ax.set_yticklabels(clevs_tick_labels, fontsize=8, \
-        va=vertical_aligmnent)
+    colorb.set_ticks(config.clevs_ticks)
+    colorb.ax.set_yticklabels(config.clevs_tick_labels, \
+        fontsize=8, \
+        va=vertical_alignment)
 
     # Legend text
     if not legend is None:
-        cb.ax.text(0.0, 1.07, legend,
+        colorb.ax.text(0.0, 1.07, legend,
                 size=12, fontsize=8)
-    return cb
+
+    return colorb
 
 

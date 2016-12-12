@@ -11,8 +11,8 @@ from hydrodiy.plot import putils
 from hydrodiy.gis.grid import get_ref_grid
 from hydrodiy.gis.oz import Oz
 
-from hydrodiy.plot.gridplot import get_gconfig, gplot, gsmooth
-from hydrodiy.plot.gridplot import VARNAMES, gplot_colorbar
+from hydrodiy.plot.gridplot import GridplotConfig, gplot, gsmooth
+from hydrodiy.plot.gridplot import VARNAMES, gbar
 
 class GridplotTestCase(unittest.TestCase):
 
@@ -32,14 +32,8 @@ class GridplotTestCase(unittest.TestCase):
 
     def test_get_gconfig(self):
         for varname in VARNAMES:
-            cfg = get_gconfig(varname)
-
-            k1 = np.sort(cfg.keys())
-            k2 = np.array(['clevs', 'clevs_tick_labels', 'clevs_ticks', \
-                    'cmap', 'linecolor', \
-                    'linewidth', 'norm'])
-            ck = np.all([k1[i] == k2[i] for i in range(len(k1))])
-            self.assertTrue(ck)
+            cfg = GridplotConfig(varname)
+            cfg.is_valid()
 
 
     def test_gsmooth(self):
@@ -70,29 +64,55 @@ class GridplotTestCase(unittest.TestCase):
 
 
     def test_gplot(self):
+        return
         plt.close('all')
         putils.set_mpl('white')
 
         sm = gsmooth(self.grd, self.mask)
 
         for varname in VARNAMES:
-            cfg = get_gconfig(varname)
+            cfg = GridplotConfig(varname)
             fig, ax = plt.subplots()
 
             om = Oz(ax=ax)
             bm = om.get_map()
 
-            sm2 = sm
+            sm2 = sm.clone()
             if re.search('decile|moisture', varname):
-                sm2 = sm.clone()
                 dt = sm2.data
                 sm2.data = dt/np.nanmax(dt)
+            elif re.search('effective', varname):
+                sm2.data = sm2.data - 50
 
             gplot(sm2, bm, cfg)
 
             fig.tight_layout()
             fp = os.path.join(self.ftest, 'gridplot_{0}.png'.format(varname))
             fig.savefig(fp)
+
+
+    def test_gbar(self):
+        plt.close('all')
+        putils.set_mpl('black')
+
+        grd = self.grd
+        grd.data = grd.data - 20
+        sm = gsmooth(grd, self.mask)
+
+        varname = 'effective-rainfall'
+        fig, ax = plt.subplots()
+
+        om = Oz(ax=ax)
+
+        cfg = GridplotConfig(varname)
+        import pdb; pdb.set_trace()
+        contf = gplot(sm, om.get_map(), cfg)
+        gbar(fig, ax, cfg, contf)
+
+        fig.tight_layout()
+        fp = os.path.join(self.ftest, 'gridplot_colorbar_{0}.png'.format(varname))
+        fig.savefig(fp)
+
 
 
 if __name__ == "__main__":
