@@ -18,7 +18,7 @@ from  hydrodiy.plot import putils
 
 VARNAMES =  hywap.VARIABLES.keys() + ['effective-rainfall', \
     'decile-rainfall', 'decile-temperature', 'evapotranspiration', \
-    'soil-moisture']
+    'decile-effective-rainfall', 'soil-moisture']
 
 
 class GridplotConfig(object):
@@ -127,6 +127,16 @@ class GridplotConfig(object):
                     0.:'#%02x%02x%02x' % (0, 153, 204)}
             self.cmap = putils.col2cmap(cols)
             self.legend = 'Temperature deciles'
+
+        if varname == 'decile-effective-rainfall':
+            self._default_values('decile-rainfall')
+
+            cols = {1.:'#%02x%02x%02x' % (1, 126, 123),
+                    0.5:'#%02x%02x%02x' % (254, 254, 228),
+                    0.:'#%02x%02x%02x' % (254, 118, 37)}
+            self.cmap = putils.col2cmap(cols)
+            self.legend = 'Temperature deciles'
+
 
         elif varname == 'evapotranspiration':
             clevs = [0, 10, 50, 80, 100, 120, 160, 200, 250, 300, 350]

@@ -9,7 +9,7 @@ from matplotlib.gridspec import GridSpec
 
 from hydrodiy.data.hywap import get_data
 from hydrodiy.plot import putils
-from hydrodiy.gis.grid import get_ref_grid
+from hydrodiy.gis.grid import get_mask
 from hydrodiy.gis.oz import Oz
 
 from hydrodiy.plot.gridplot import GridplotConfig, gplot, gsmooth
@@ -28,7 +28,7 @@ class GridplotTestCase(unittest.TestCase):
         dt = datetime(2015, 1, 1)
         self.grd = get_data(varname, vartype, timestep, dt)
 
-        self.mask = get_ref_grid('AWAP')
+        self.mask = get_mask('AWAP')
 
     def test_get_gconfig(self):
         for varname in VARNAMES:
@@ -69,11 +69,13 @@ class GridplotTestCase(unittest.TestCase):
 
         sm = gsmooth(self.grd, self.mask)
 
-        for varname in ['decile-rainfall']: #VARNAMES:
+        for varname in VARNAMES:
             fig = plt.figure()
-            gs = GridSpec(nrows=3, ncols=10, height_ratios=[1, 4, 1])
+            gs = GridSpec(nrows=3, ncols=3, \
+                height_ratios=[1, 4, 1], \
+                width_ratios=[6, 1, 1])
 
-            ax = plt.subplot(gs[:,:8])
+            ax = plt.subplot(gs[:,0])
             om = Oz(ax=ax)
             bm = om.get_map()
 
@@ -87,7 +89,7 @@ class GridplotTestCase(unittest.TestCase):
             cfg = GridplotConfig(varname)
             contf = gplot(sm, om.get_map(), cfg)
 
-            cbar_ax = plt.subplot(gs[1, 9])
+            cbar_ax = plt.subplot(gs[1, 2])
             gbar(cbar_ax, cfg, contf)
 
             fig.tight_layout()
