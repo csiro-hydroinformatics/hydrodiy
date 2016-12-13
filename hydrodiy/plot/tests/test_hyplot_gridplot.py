@@ -5,6 +5,7 @@ from  datetime import datetime
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
 
 from hydrodiy.data.hywap import get_data
 from hydrodiy.plot import putils
@@ -25,8 +26,7 @@ class GridplotTestCase(unittest.TestCase):
         vartype = 'totals'
         timestep = 'month'
         dt = datetime(2015, 1, 1)
-        self.grd = get_data(varname, vartype,
-                                            timestep, dt)
+        self.grd = get_data(varname, vartype, timestep, dt)
 
         self.mask = get_ref_grid('AWAP')
 
@@ -64,16 +64,16 @@ class GridplotTestCase(unittest.TestCase):
 
 
     def test_gplot(self):
-        return
         plt.close('all')
         putils.set_mpl('white')
 
         sm = gsmooth(self.grd, self.mask)
 
-        for varname in VARNAMES:
-            cfg = GridplotConfig(varname)
-            fig, ax = plt.subplots()
+        for varname in ['decile-rainfall']: #VARNAMES:
+            fig = plt.figure()
+            gs = GridSpec(nrows=3, ncols=10, height_ratios=[1, 4, 1])
 
+            ax = plt.subplot(gs[:,:8])
             om = Oz(ax=ax)
             bm = om.get_map()
 
@@ -84,35 +84,15 @@ class GridplotTestCase(unittest.TestCase):
             elif re.search('effective', varname):
                 sm2.data = sm2.data - 50
 
-            gplot(sm2, bm, cfg)
+            cfg = GridplotConfig(varname)
+            contf = gplot(sm, om.get_map(), cfg)
+
+            cbar_ax = plt.subplot(gs[1, 9])
+            gbar(cbar_ax, cfg, contf)
 
             fig.tight_layout()
             fp = os.path.join(self.ftest, 'gridplot_{0}.png'.format(varname))
             fig.savefig(fp)
-
-
-    def test_gbar(self):
-        plt.close('all')
-        putils.set_mpl('black')
-
-        grd = self.grd
-        grd.data = grd.data - 20
-        sm = gsmooth(grd, self.mask)
-
-        varname = 'effective-rainfall'
-        fig, ax = plt.subplots()
-
-        om = Oz(ax=ax)
-
-        cfg = GridplotConfig(varname)
-        import pdb; pdb.set_trace()
-        contf = gplot(sm, om.get_map(), cfg)
-        gbar(fig, ax, cfg, contf)
-
-        fig.tight_layout()
-        fp = os.path.join(self.ftest, 'gridplot_colorbar_{0}.png'.format(varname))
-        fig.savefig(fp)
-
 
 
 if __name__ == "__main__":

@@ -17,11 +17,11 @@ from  hydrodiy.plot import putils
 
 
 VARNAMES =  hywap.VARIABLES.keys() + ['effective-rainfall', \
-    'decile-rain', 'decile-temp', 'evapotranspiration', \
+    'decile-rainfall', 'decile-temperature', 'evapotranspiration', \
     'soil-moisture']
 
 
-class GridplotConfig:
+class GridplotConfig(object):
     ''' Class containing gridplot configuration data '''
 
     def __init__(self, varname=None):
@@ -34,13 +34,18 @@ class GridplotConfig:
         self.linewidth = 0.8
         self.linecolor = '#%02x%02x%02x' % (150, 150, 150)
         self.varname = varname
+        self.show_ticks = True
+        self.legend = ''
 
         # Refine default values based on variable name
         self._default_values(varname)
 
-
+    # setters and getters so that
+    # if one defines clevs, clevs_ticks and clevs_tick_labels
+    # are defined automatically
     @property
     def clevs(self):
+        self.is_valid()
         return self._clevs
 
     @clevs.setter
@@ -51,6 +56,7 @@ class GridplotConfig:
 
     @property
     def clevs_ticks(self):
+        self.is_valid()
         return self._clevs_ticks
 
     @clevs_ticks.setter
@@ -61,6 +67,7 @@ class GridplotConfig:
 
     @property
     def clevs_tick_labels(self):
+        self.is_valid()
         return self._clevs_tick_labels
 
     @clevs_tick_labels.setter
@@ -81,11 +88,12 @@ class GridplotConfig:
             self._clevs_tick_labels is None:
             raise ValueError('clevs, or clevs_ticks or clevs_tick_labels is None')
 
-        if len(self.clevs_tick_labels) != len(self.clevs_ticks):
+        if len(self._clevs_tick_labels) != len(self._clevs_ticks):
             raise ValueError('Not the same number of tick levels and tick' + \
                     ' labels')
 
     def _default_values(self, varname):
+        ''' Set default configuration values for specific variables '''
 
         if varname is None:
             return
@@ -94,25 +102,31 @@ class GridplotConfig:
             raise ValueError(('Variable {0} not in '+\
                 '{1}').format(varname, '/'.join(VARNAMES)))
 
-        if varname == 'decile-rain':
-            self.clevs = [0., 0.1, 0.3, 0.7, 0.9, 1.0]
-            self.clevs_ticks = [0.05, 0.2, 0.5, 0.8, 0.95]
-            self.clevs_tick_labels = ['Very Much\nBelow Average', 'Below Average', 'Average',
-                        'Above Average', 'Very Much\nAbove Average']
+        if varname == 'decile-rainfall':
+            self.clevs = [0., 0.01, 0.1, 0.3, 0.7, 0.9, 0.99, 1.0]
+            self.clevs_ticks = [0.005, 0.05, 0.2, 0.5, 0.8, 0.95, 0.995]
+            self.clevs_tick_labels = ['Lowest\non record', \
+                'Very Much\nBelow Average', \
+                'Below Average', 'Average', \
+                'Above Average', 'Very Much\nAbove Average', \
+                'Highest\non record']
 
-            cols = {1.:'#%02x%02x%02x' % (102, 102, 255),
+            cols = {1.:'#%02x%02x%02x' % (0, 0, 255),
                     0.5:'#%02x%02x%02x' % (255, 255, 255),
-                    0.:'#%02x%02x%02x' % (255, 102, 102)}
+                    0.:'#%02x%02x%02x' % (255, 25, 25)}
             self.cmap = putils.col2cmap(cols)
             self.norm = mpl.colors.Normalize(vmin=self.clevs[0], vmax=self.clevs[-1])
+            self.legend = 'Rainfall deciles'
+            self.show_ticks = False
 
-        if varname == 'decile-temp':
-            self._default_values('decile-rain')
+        if varname == 'decile-temperature':
+            self._default_values('decile-rainfall')
 
             cols = {1.:'#%02x%02x%02x' % (255, 153, 0),
                     0.5:'#%02x%02x%02x' % (255, 255, 255),
                     0.:'#%02x%02x%02x' % (0, 153, 204)}
             self.cmap = putils.col2cmap(cols)
+            self.legend = 'Temperature deciles'
 
         elif varname == 'evapotranspiration':
             clevs = [0, 10, 50, 80, 100, 120, 160, 200, 250, 300, 350]
@@ -123,6 +137,7 @@ class GridplotConfig:
                     1.:'#%02x%02x%02x' % (153, 76, 0)}
             self.cmap = putils.col2cmap(cols)
             self.norm = mpl.colors.Normalize(vmin=clevs[0], vmax=clevs[-1])
+            self.legend = 'Evapotranspiration'
 
         elif varname == 'soil-moisture':
             self.clevs = np.arange(0, 1.05, 0.05)
@@ -132,6 +147,7 @@ class GridplotConfig:
             self.cmap = plt.cm.Blues
             self.linewidth = 0.
             self.norm = mpl.colors.Normalize(vmin=self.clevs[0], vmax=self.clevs[-1])
+            self.legend = 'Soil Moisture'
 
         elif varname == 'effective-rainfall':
             clevs = [-200, -100, -75, -50, -25, -10, -5, 0, \
@@ -145,6 +161,7 @@ class GridplotConfig:
             self.cmap = putils.col2cmap(cols)
             self.linewidth = 0
             self.norm = mpl.colors.SymLogNorm(10., vmin=clevs[0], vmax=clevs[-1])
+            self.legend = 'Effective Rainfall'
 
         elif varname == 'rainfall':
             clevs = [0, 1, 5, 10, 25, 50, 100, 200, 300, 400, 600, 800, 1000]
@@ -153,6 +170,7 @@ class GridplotConfig:
 
             self.linewidth = 0
             self.norm = mpl.colors.SymLogNorm(10., vmin=clevs[0], vmax=clevs[-1])
+            self.legend = 'Rainfall Totals'
 
         elif varname == 'temperature':
             clevs = [-20] + range(-9, 51, 3) + [60]
@@ -162,18 +180,21 @@ class GridplotConfig:
             self.linewidth = 0
             self.cmap = plt.get_cmap('gist_rainbow_r')
             self.norm = mpl.colors.Normalize(vmin=clevs[0], vmax=clevs[-1])
+            self.legend = 'Temperature'
 
         elif varname == 'vprp':
             self._default_values('temperature')
             clevs = range(0, 42, 2)
             self.clevs = clevs
             self.clevs_tick_labels = clevs[:-1] + ['']
+            self.legend = 'Vapour Pressure'
 
         elif varname == 'solar':
             self._default_values('temperature')
             clevs = range(0, 43, 3)
             self.clevs = clevs
             self.clevs_tick_labels = clevs[:-1] + ['']
+            self.legend = 'Solar Radiation'
 
 
 
@@ -212,9 +233,6 @@ def gsmooth(grid, mask=None, sigma=5., minval=-np.inf, eps=1e-6):
 def gplot(grid, basemap_object, config):
     ''' Plot gridded data '''
 
-    # Check config is proper
-    config.is_valid()
-
     # Get cell coordinates
     ncells = grid.nrows*grid.ncols
     xycoords = grid.cell2coord(np.arange(ncells))
@@ -230,11 +248,10 @@ def gplot(grid, basemap_object, config):
     ycoord = ycoord.reshape(zval.shape)
 
     # Clip data to level range
-    clevs = config['clevs']
-    zval = np.clip(zval,clevs[0], clevs[-1])
+    zval = np.clip(zval, config.clevs[0], config.clevs[-1])
 
     # draw contour
-    contf = bmap.contourf(xcoord, ycoord, zval, config.clevs, \
+    contour_grid = bmap.contourf(xcoord, ycoord, zval, config.clevs, \
                 cmap=config.cmap, \
                 norm=config.norm)
 
@@ -243,32 +260,30 @@ def gplot(grid, basemap_object, config):
                 linewidths=config.linewidth, \
                 colors=config.linecolor)
 
-    return contf
+    return contour_grid
 
 
-def gbar(fig, ax, config, contf, \
-    vertical_alignment='center', aspect='auto', \
-    legend=None):
-    ''' Add color bar to plot '''
-
-    # Check config is proper
-    config.is_valid()
+def gbar(cbar_ax, config, contour_grid, legend=None):
+    ''' Draw a color bar to plot '''
 
     # Create colorbar axe
-    div = make_axes_locatable(ax)
-    cbar_ax = div.append_axes('right', size='4%', pad=0.)
-    cbar_ax.set_aspect(aspect)
-    colorb = fig.colorbar(contf, cax=cbar_ax)
+    colorb = plt.colorbar(contour_grid, cax=cbar_ax)
 
     # Ticks and tick labels
     colorb.set_ticks(config.clevs_ticks)
     colorb.ax.set_yticklabels(config.clevs_tick_labels, \
         fontsize=8, \
-        va=vertical_alignment)
+        va='center')
+
+    # Remove tick marks if needed
+    if not config.show_ticks:
+        colorb.ax.tick_params(axis='y', which='both', length=0)
 
     # Legend text
-    if not legend is None:
-        colorb.ax.text(0.0, 1.07, legend,
+    if legend is None:
+        legend = config.legend
+
+    colorb.ax.text(0.0, 1.07, legend,
                 size=12, fontsize=8)
 
     return colorb
