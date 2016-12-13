@@ -7,7 +7,7 @@ import pandas as pd
 from shapely.geometry import Polygon
 
 from matplotlib import pyplot as plt
-from hydrodiy.gis.oz import Oz, get_lim, REGIONS
+from hydrodiy.gis.oz import Oz, REGIONS
 from hydrodiy.plot import putils
 
 class OzTestCase(unittest.TestCase):
@@ -16,28 +16,48 @@ class OzTestCase(unittest.TestCase):
         source_file = os.path.abspath(__file__)
         self.ftest = os.path.dirname(source_file)
 
-    def test_get_lim(self):
-        for region in REGIONS:
-            xlim, ylim = get_lim(region)
-
-        try:
-            get_lim('XXX')
-        except ValueError as err:
-            pass
-        self.assertTrue(str(err).startswith('Region XXX'))
-
-
-    def test_oz0(self):
+    def test_set_lim_region(self):
         plt.close('all')
-
-        om = Oz()
-        om.drawcoastoz()
+        fig, ax = plt.subplots()
+        om = Oz(ax=ax)
+        om.drawcoast()
         om.drawstates()
+        for reg in REGIONS:
+            om.set_lim_region(reg)
 
-        fp = os.path.join(self.ftest, 'oz_plot0.png')
+        # Add points
+        xlim = [147.5, 155.]
+        ylim = [-38.5, -29.9]
+        x = np.random.uniform(xlim[0], xlim[1], 100)
+        y = np.random.uniform(ylim[0], ylim[1], 100)
+        om.plot(x, y, 'o')
+
+        om.set_lim_region('COASTALNSW')
+
+        fp = os.path.join(self.ftest, 'oz_region.png')
         plt.savefig(fp)
 
-    def test_oz1(self):
+
+    def test_set_lim(self):
+        plt.close('all')
+        fig, ax = plt.subplots()
+        om = Oz(ax=ax)
+        om.drawcoast()
+        om.drawstates()
+        om.set_lim([130, 140], [-20, -10])
+        fp = os.path.join(self.ftest, 'oz_set_lim.png')
+        plt.savefig(fp)
+
+
+    def test_oz_coast_hires(self):
+        plt.close('all')
+        om = Oz()
+        om.drawcoast(hires=True, color='k')
+        fp = os.path.join(self.ftest, 'oz_coast_hires.png')
+        plt.savefig(fp)
+
+
+    def test_oz_(self):
         plt.close('all')
         fig, ax = plt.subplots()
 
@@ -50,30 +70,19 @@ class OzTestCase(unittest.TestCase):
         y = np.random.normal(loc=-25, scale=20, size=npt)
         om.plot(x, y, 'ro')
 
-        fp = os.path.join(self.ftest, 'oz_plot1.png')
+        fp = os.path.join(self.ftest, 'oz_plot.png')
         fig.savefig(fp)
 
-    def test_oz2(self):
+
+    def test_oz_relief(self):
         plt.close('all')
 
         om = Oz()
         om.drawrelief()
-        om.drawcoastoz(color='blue')
+        om.drawcoast(color='blue')
         om.drawstates(color='red', linestyle='--')
 
-        fp = os.path.join(self.ftest, 'oz_plot2.png')
-        plt.savefig(fp)
-
-    def test_oz3(self):
-        plt.close('all')
-
-        om = Oz()
-        om.drawcoast()
-        om.drawstates()
-
-        om.set_lim([135, 157],[-24, -39])
-
-        fp = os.path.join(self.ftest, 'oz_plot3.png')
+        fp = os.path.join(self.ftest, 'oz_relief.png')
         plt.savefig(fp)
 
     #def test_oz4(self):
@@ -102,29 +111,25 @@ class OzTestCase(unittest.TestCase):
     #    om.drawpolygons(fshp, edgecolor='red', facecolor='none')
 
 
-    #    fp = '%s/oz_plot4.png'%self.ftest
+    #    fp = '%s/oz_4.png'%self.ftest
     #    plt.savefig(fp)
 
 
-    def test_oz5(self):
+    def test_oz_coast_style(self):
         plt.close('all')
-
         om = Oz()
-        om.drawcoastoz('k-')
+        om.drawcoast(linestyle='-.', color='b')
         om.drawstates()
-
-        fp = os.path.join(self.ftest, 'oz_plot5.png')
+        fp = os.path.join(self.ftest, 'oz_coast_style.png')
         plt.savefig(fp)
 
 
-    def test_oz6(self):
+    def test_oz_drainage_style(self):
         plt.close('all')
-
         om = Oz()
         om.drawcoast()
-        om.drawdrainageoz('k--')
-
-        fp = os.path.join(self.ftest, 'oz_plot6.png')
+        om.drawdrainage(linestyle='--', color='r')
+        fp = os.path.join(self.ftest, 'oz_drainage_style.png')
         plt.savefig(fp)
 
 

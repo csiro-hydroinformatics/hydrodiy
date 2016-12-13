@@ -11,69 +11,16 @@ from mpl_toolkits import basemap
 
 # Decompress australia shoreline shapefile
 F_HYGIS_DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
-fshp_coastoz = os.path.join(F_HYGIS_DATA, 'australia_coastline_simplified.shp')
-fshp_drainageoz = os.path.join(F_HYGIS_DATA, 'drainage_divisions_lines_simplified.shp')
+FSHP_COAST = os.path.join(F_HYGIS_DATA, 'australia_coastline_simplified.shp')
+FSHP_DRAINAGE = os.path.join(F_HYGIS_DATA, 'drainage_divisions_lines_simplified.shp')
 
-if not os.path.exists(fshp_coastoz):
-    tar = tarfile.open(re.sub('shp', 'tar.gz', fshp_coastoz))
+if not os.path.exists(FSHP_COAST):
+    tar = tarfile.open(re.sub('shp', 'tar.gz', FSHP_COAST))
     for item in tar:
         tar.extract(item, F_HYGIS_DATA)
 
 REGIONS = ['CAPEYORK', 'AUS', 'COASTALNSW', \
                     'MDB', 'VIC+TAS', 'PERTH', 'QLD']
-
-def get_lim(region):
-    ''' Get lat/lon box for specific regions in Australia
-
-    Parameters
-    -----------
-    region : str
-        Region name. See hydrodiy.gis.oz.REGIONS
-
-    Returns
-    -----------
-    xlim : list
-        Xmin/Xmax bounds
-
-    ylim : list
-        Ymin/Ymax bounds
-    '''
-
-    if region == 'CAPEYORK':
-        xlim = [137., 148.7]
-        ylim = [-24.4, -10.]
-
-    elif region == 'AUS':
-        xlim = [109., 155]
-        ylim = [-44.4, -9.]
-
-    elif region == 'COASTALNSW':
-        xlim = [147.5, 155.]
-        ylim = [-38.5, -29.9]
-
-    elif region == 'MDB':
-        xlim = [138., 155.]
-        ylim = [-40.6, -23.]
-
-    elif region == 'VIC+TAS':
-        xlim = [136., 151.]
-        ylim = [-44., -33.]
-
-    elif region == 'PERTH':
-        xlim = [107., 126.]
-        ylim = [-44., -37.]
-
-    elif region == 'QLD':
-        xlim = [135., 155.]
-        ylim = [-29., -9.]
-
-    else:
-        raise ValueError(('Region {0} not recognised, ' + \
-                'should be in {1}').format(region, \
-                '/'.join(REGIONS)))
-
-    return xlim, ylim
-
 
 
 class Oz:
@@ -157,18 +104,12 @@ class Oz:
         self.ax.set_ylim((self.ulat, self.llat))
 
 
-    def drawcoastoz(self, *args, **kwargs):
-        ''' plot coast line for Australia only'''
-
-        self.drawpolygons(re.sub('.shp', '', fshp_coastoz), *args, **kwargs)
-
-
-    def drawdrainageoz(self, *args, **kwargs):
-        ''' plot drainage divisions for Australia only'''
+    def drawdrainage(self, *args, **kwargs):
+        ''' plot drainage divisions for Australia only '''
 
         # Read shape
         nm = 'drainage'
-        self.map.readshapefile(re.sub('\\.shp$', '', fshp_drainageoz),
+        self.map.readshapefile(re.sub('\\.shp$', '', FSHP_DRAINAGE),
                         nm, drawbounds=False)
 
         # Loop through shapes
@@ -178,9 +119,24 @@ class Oz:
             self.map.plot(x, y, marker=None, *args, **kwargs)
 
 
-    def drawcoast(self, *args, **kwargs):
-        ''' plot coast line '''
-        self.map.drawcoastlines(*args, **kwargs)
+    def drawcoast(self, hires=False, *args, **kwargs):
+        ''' plot coast line
+
+            Parameters
+            -----------
+            hires : bool
+                Use high resolution  boundary shapfile
+                FEATURE DISABLED AT THE MOMENT
+        '''
+
+        # Avoids confusion between hires and other arguments
+        if not isinstance(hires, bool):
+            raise ValueError('hires is not a boolean')
+
+        if hires:
+            self.drawpolygons(re.sub('.shp', '', FSHP_COAST), *args, **kwargs)
+        else:
+            self.map.drawcoastlines(*args, **kwargs)
 
 
     def drawrelief(self, *args, **kwargs):
@@ -218,11 +174,64 @@ class Oz:
 
 
     def set_lim(self, xlim, ylim):
-        ''' Set xlim and ylim '''
+        ''' Set a lat/lon box range '''
 
+        # Set lim to map
         xxlim, yylim = self.map(np.sort(xlim),np.sort(ylim))
 
         self.ax.set_xlim(np.sort(xxlim))
         self.ax.set_ylim(np.sort(yylim))
 
+
+    def set_lim_region(self, region):
+        ''' Set lat/lon box for specific regions in Australia
+
+        Parameters
+        -----------
+        region : str
+            Region name. See hydrodiy.gis.oz.REGIONS
+
+        Returns
+        -----------
+        xlim : list
+            Xmin/Xmax bounds
+
+        ylim : list
+            Ymin/Ymax bounds
+        '''
+
+        if region == 'CAPEYORK':
+            xlim = [137., 148.7]
+            ylim = [-24.4, -10.]
+
+        elif region == 'AUS':
+            xlim = [109., 155]
+            ylim = [-44.4, -9.]
+
+        elif region == 'COASTALNSW':
+            xlim = [147.5, 155.]
+            ylim = [-38.5, -29.9]
+
+        elif region == 'MDB':
+            xlim = [138., 155.]
+            ylim = [-40.6, -23.]
+
+        elif region == 'VIC+TAS':
+            xlim = [136., 151.]
+            ylim = [-44., -33.]
+
+        elif region == 'PERTH':
+            xlim = [107., 126.]
+            ylim = [-44., -37.]
+
+        elif region == 'QLD':
+            xlim = [135., 155.]
+            ylim = [-29., -9.]
+
+        else:
+            raise ValueError(('Region {0} not recognised, ' + \
+                    'should be in {1}').format(region, \
+                    '/'.join(REGIONS)))
+
+        self.set_lim(xlim, ylim)
 
