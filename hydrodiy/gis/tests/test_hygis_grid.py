@@ -7,7 +7,7 @@ import zipfile
 
 from hydrodiy.gis.grid import Grid, Catchment
 from hydrodiy.gis.grid import accumulate, voronoi, delineate_river
-from hydrodiy.gis.grid import get_ref_grid
+from hydrodiy.gis.grid import get_mask
 
 from hydrodiy.io import csv
 
@@ -630,7 +630,7 @@ class RefGridsTestCase(unittest.TestCase):
 
 
     def test_awral(self):
-        gr = get_ref_grid('AWRAL')
+        gr = get_mask('AWRAL')
         self.assertEqual(gr.nrows, 681)
         self.assertEqual(gr.ncols, 841)
         self.assertEqual(gr.xllcorner, 111.975)
@@ -643,7 +643,7 @@ class RefGridsTestCase(unittest.TestCase):
         #mask = Grid('AWAP', 886, 691, 0.05, \
         #    112., -44.5, np.int32, comment='Grid used in AWAP products')
 
-        #awral = get_ref_grid('AWRAL')
+        #awral = get_mask('AWRAL')
         #cells_awral = np.where(awral.data.ravel() == 1)[0]
         #xy_awral = awral.cell2coord(cells_awral)
         #xy = [xy_awral.copy()]
@@ -659,7 +659,7 @@ class RefGridsTestCase(unittest.TestCase):
         #fmask = os.path.join(self.ftest, '..', 'data', 'AWAP_GRID.bil')
         #mask.save(fmask)
 
-        gr = get_ref_grid('AWAP')
+        gr = get_mask('AWAP')
         self.assertEqual(gr.nrows, 691)
         self.assertEqual(gr.ncols, 886)
         self.assertEqual(gr.xllcorner, 112.)

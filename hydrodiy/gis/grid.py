@@ -1065,7 +1065,7 @@ def voronoi(catchment, xypoints):
 
 
 
-def get_ref_grid(name):
+def get_mask(name):
     ''' Get reference gridss defined in
     Bureau of meteorology products
 
