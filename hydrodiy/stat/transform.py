@@ -7,16 +7,15 @@ __all__ = ['Identity', 'Logit', 'Log', 'BoxCox', 'YeoJohnson', \
 EPS = 1e-10
 
 
-class Transform(object):
+class Parameterised(object):
     ''' Simple interface to common transform functions '''
 
     def __init__(self, name,
             nparams=0,  \
             params_default=None, \
             params_mins=None, \
-            params_maxs=None, \
-            constants=None):
-        ''' Initialise transform object with number of
+            params_maxs=None):
+        ''' Initialise object with number of
         parameters (nparams) and name.
         Number of constants is set to 0 by default.
         '''
@@ -105,6 +104,22 @@ class Transform(object):
     def reset(self):
         ''' Reset parameter values to default '''
         self.params = self.params_default
+
+
+
+class Transform(Parameterised):
+    ''' Transform base class '''
+
+    def __init__(self, name,
+        nparams=0,  \
+        params_default=None, \
+        params_mins=None, \
+        params_maxs=None):
+
+        Parameterised.__init__(self, name, nparams, \
+            params_default, params_mins, \
+            params_maxs)
+
 
     def forward(self, x):
         ''' Returns the forward transform of x '''
