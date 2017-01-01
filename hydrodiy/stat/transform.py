@@ -1,127 +1,66 @@
 import math
 import numpy as np
 
+__all__ = ['Identity', 'Logit', 'Log', 'BoxCox', 'YeoJohnson', \
+                'LogSinh']
+
 EPS = 1e-10
-
-
-def inf2bound(a, amin, amax):
-    ''' Convert inf2bound variable to non-bounded via logit '''
-    bnd = 1-1./(1+math.exp(a))
-    bnd = bnd*(amax-amin) + amin
-    return bnd
-
-def bound2inf(bnd, amin, amax):
-    ''' Convert non-bounded variable to inf2bound via logit '''
-    value = min(1-EPS, max(EPS, (bnd-amin)/(amax-amin)))
-    if value < EPS:
-        return amin
-    elif value > 1.-EPS:
-        return amax
-    else:
-        value = math.log(1./(1-value)-1)
-    return value
-
-
-def get_transform(name):
-    ''' Returns an instance of a particular transform '''
-
-    if name == 'Identity':
-        return IdentityTransform
-
-    if name == 'Bound':
-        return BoundTransform
-
-    if name == 'Log':
-        return LogTransform
-
-    elif name == 'BoxCox':
-        return BoxCoxTransform
-
-    elif name == 'YeoJohnson':
-        return YeoJTransform
-
-    elif name == 'LogSinh':
-        return LogSinhTransform
-
-    else:
-        raise ValueError('Cannot recognised transform ' + name)
-
-    return trans
-
 
 
 class Transform(object):
     ''' Simple interface to common transform functions '''
 
-    def __init__(self, name, ntparams,
-            nrparams=None,  \
-            nconstants=0, \
-            rparams_mins=None, \
-            rparams_maxs=None, \
+    def __init__(self, name,
+            nparams=0,  \
+            params_default=None, \
+            params_mins=None, \
+            params_maxs=None, \
             constants=None):
-        ''' Initialise transform object with number of transformed
-        parameters (ntparams) and _name. Number of raw parameters
-        is optional, will be set to ntparams by default.
+        ''' Initialise transform object with number of
+        parameters (nparams) and name.
         Number of constants is set to 0 by default.
         '''
         self._name = name
 
-        # Value added to avoid nan around 0.
-        self._eps = EPS
+        # Initialise params
+        self._nparams = nparams
+        self._params = np.repeat(np.nan, nparams)
 
-        # Initialise trans params
-        self._ntparams = ntparams
-        if ntparams > 0:
-            self._tparams = np.nan * np.ones(ntparams)
-        else:
-            self._tparams = None
+        # Set default params
+        if params_default is None:
+            params_default = np.zeros(nparams)
 
-        # Initialise raw params
-        if nrparams is None:
-            nrparams = ntparams
+        self._params_default = np.atleast_1d(params_default).astype(np.float64)
+        if len(self._params_default) != nparams:
+            raise ValueError(('Expected params_default of length' + \
+                ' {0}, got {1}').format(nparams, \
+                    self._params_default.shape[0]))
 
-        self._nrparams = nrparams
-        self._rparams = np.nan * np.ones(nrparams)
+        # Set min params
+        if params_mins is None:
+            params_mins = np.repeat(-np.inf, nparams)
 
-        if rparams_mins is None:
-            rparams_mins = [-np.inf] * nrparams
+        self._params_mins = np.atleast_1d(params_mins).astype(np.float64)
+        if len(self._params_mins) != nparams:
+            raise ValueError(('Expected params_mins of length' + \
+                ' {0}, got {1}').format(nparams, \
+                    self._params_mins.shape[0]))
 
-        self._rparams_mins = np.atleast_1d(rparams_mins)
-        if len(self._rparams_mins) != nrparams:
-            raise ValueError('Wrong length of mins')
+        # Set max params
+        if params_maxs is None:
+            params_maxs = np.repeat(np.inf, nparams)
 
-        if rparams_maxs is None:
-            rparams_maxs = [np.inf] * nrparams
-
-        self._rparams_maxs = np.atleast_1d(rparams_maxs)
-        if len(self._rparams_maxs) != nrparams:
-            raise ValueError('Wrong length of maxs')
-
-        # Initialise constants
-        if nconstants == 0:
-            self._constants = None
-        else:
-            constants = np.atleast_1d(constants).astype(float)
-
-            if constants.shape[0] != nconstants:
-                raise ValueError(('Expected constants of length' + \
-                    ' {0}, got {1}').format(nconstants, \
-                        constants.shape[0]))
-
-            self._constants = constants
-
+        self._params_maxs = np.atleast_1d(params_maxs).astype(np.float64)
+        if len(self._params_maxs) != nparams:
+            raise ValueError(('Expected params_maxs of length' + \
+                ' {0}, got {1}').format(nparams, \
+                    self._params_maxs.shape[0]))
 
     def __str__(self):
         s = '\n{0} transform\n'.format(self._name)
-        if not self._constants is None :
-            s += '  Constants = [' + ', '.join(['{0:3.3e}'.format(cst) \
-                for cst in  self._constants]) + ']'
-        if self._nrparams > 0:
-            s += '  Raw params = [' + ', '.join(['{0:3.3e}'.format(rp) \
-                for rp in  self._rparams]) + ']'
-        if self._ntparams > 0:
-            s += '  Trans params = [' + ', '.join(['{0:3.3e}'.format(rt) \
-                for rt in  self._tparams]) + ']'
+        if self._nparams > 0:
+            s += '  Params = [' + ', '.join(['{0:3.3e}'.format(p) \
+                for p in  self._params]) + ']'
         s += '\n'
         return s
 
@@ -130,70 +69,42 @@ class Transform(object):
     def name(self):
         return self._name
 
+    @property
+    def nparams(self):
+        return self._nparams
 
     @property
-    def ntparams(self):
-        return self._ntparams
-
-
-    @property
-    def nrparams(self):
-        return self._nrparams
-
+    def params_default(self):
+        return self._params_default
 
     @property
-    def rparams(self):
-        return self._rparams
+    def params_mins(self):
+        return self._params_mins
 
-    @rparams.setter
-    def rparams(self, value):
-        if self.nrparams == 0:
+    @property
+    def params_maxs(self):
+        return self._params_maxs
+
+    @property
+    def params(self):
+        return self._params
+
+    @params.setter
+    def params(self, value):
+        if self.nparams == 0:
             return
 
         value = np.atleast_1d(value).astype(np.float64)
-        if len(value) != self._nrparams:
-            raise ValueError('Wrong number of raw parameters' + \
-                ' ({0}), should be {1}'.format(len(value),
-                    self._nrparams))
-        self._rparams = np.clip(value, self._rparams_mins, self._rparams_maxs)
-        self._raw2trans()
+        if len(value) != self._nparams:
+            raise ValueError(('Expected params of length' + \
+                ' {0}, got {1}').format(self.nparams, \
+                    value.shape[0]))
+        self._params = np.clip(value, self._params_mins, self._params_maxs)
 
 
-    @property
-    def constants(self):
-        return self._constants
-
-
-    @property
-    def tparams(self):
-        return self._tparams
-
-    @tparams.setter
-    def tparams(self, value):
-        if self.ntparams == 0:
-            return
-
-        value = np.atleast_1d(value).astype(np.float64)
-        if len(value) != self._ntparams:
-            raise ValueError('Wrong number of trans parameters' + \
-                ' ({0}), should be {1}'.format(len(value),
-                    self._ntparams))
-        self._tparams = value
-        self._trans2raw()
-
-
-    def _trans2raw(self):
-        ''' Converts transformed parameters into raw parameters
-            Does nothing by default.
-        '''
-        self._rparams = self._tparams.copy()
-
-    def _raw2trans(self):
-        ''' Converts raw parameters into transformed parameters
-            Does nothing by default.
-        '''
-        self._tparams = self._rparams.copy()
-
+    def reset(self):
+        ''' Reset parameter values to default '''
+        self.params = self.params_default
 
     def forward(self, x):
         ''' Returns the forward transform of x '''
@@ -209,12 +120,11 @@ class Transform(object):
 
 
 
-class IdentityTransform(Transform):
+class Identity(Transform):
 
     def __init__(self, constants=None):
         Transform.__init__(self, 'Identity', \
-                ntparams=0, \
-                nconstants=0)
+                nparams=0)
 
     def forward(self, x):
         return x
@@ -227,156 +137,119 @@ class IdentityTransform(Transform):
 
 
 
-class BoundTransform(Transform):
+class Logit(Transform):
 
-    def __init__(self, constants=[-10., 10.]):
-
-        Transform.__init__(self, 'Bound', \
-                ntparams=0, \
-                nconstants=2, \
-                constants=constants)
+    def __init__(self):
+        Transform.__init__(self, 'Logit', \
+                nparams=2,
+                params_default=[0, 1])
 
     def forward(self, x):
-        lower, upper = self._constants
+        lower, upper = self._params
         value = (x-lower)/(upper-lower)
-        y = np.log(1./(1-value)-1)
-        return y
+        return np.log(1./(1-value)-1)
 
     def backward(self, y):
-        lower, upper = self._constants
+        lower, upper = self._params
         bnd = 1-1./(1+np.exp(y))
-        x = bnd*(upper-lower) + lower
-        return x
+        return bnd*(upper-lower) + lower
 
     def jacobian_det(self, x):
-        lower, upper = self._constants
+        lower, upper = self._params
         value = (x-lower)/(upper-lower)
-        j = 1./(upper-lower) / value / (1-value)
-        j[value<EPS] = np.nan
-        j[value>1-EPS] = np.nan
-        return j
+        return  np.where((x>lower+EPS) & (x<upper-EPS), \
+                    1./(upper-lower)/value/(1-value), np.nan)
 
 
 
-class LogTransform(Transform):
+class Log(Transform):
 
-    def __init__(self, constants=1e-3):
-
+    def __init__(self):
         Transform.__init__(self, 'Log', \
-                ntparams=0, \
-                nconstants=1, \
-                constants=constants)
+                nparams=1, \
+                params_default=1., \
+                params_mins=[EPS])
 
     def forward(self, x):
-        cst = self._constants[0]
-        y = np.log(x+cst)
-        y[x<0] = np.nan
-        return y
+        loc = self._params[0]
+        return np.log(x+loc)
 
     def backward(self, y):
-        cst = self._constants[0]
-        x =  np.exp(y)-cst
-        return x
+        loc = self._params[0]
+        return np.exp(y)-loc
 
     def jacobian_det(self, x):
-        cst = self._constants[0]
-        j = 1./(x+cst)
-        j[x<0] = np.nan
-        return j
+        loc = self._params[0]
+        return np.where(x+loc>EPS, 1./(x+loc), np.nan)
 
 
 
-class BoxCoxTransform(Transform):
+class BoxCox(Transform):
 
-    def __init__(self, constants=1e-3):
-
+    def __init__(self):
         Transform.__init__(self, 'BoxCox',
-            ntparams=1,
-            nconstants=1, \
-            constants=constants, \
-            rparams_mins=1e-5, \
-            rparams_maxs=3.)
-
-    def _trans2raw(self):
-        self._rparams[0] = inf2bound(self._tparams[0], 1e-2, 3.)
-
-    def _raw2trans(self):
-        self._tparams[0] = bound2inf(self._rparams[0], 1e-2, 3.)
+            nparams=2,
+            params_default=[0., 1.], \
+            params_mins=[-np.inf, -1.], \
+            params_maxs=[np.inf, 3.])
 
     def forward(self, x):
-        cst = self._constants[0]
-        lam = self._rparams[0]
-        y = (np.power(x+cst, lam)-cst**lam)/lam
-        return y
+        loc, lam = self._params
+        return (np.power(x+loc, lam)-loc**lam)/lam
 
     def backward(self, y):
-        cst = self._constants[0]
-        lam = self._rparams[0]
-        x =  np.power(lam*y+cst**lam, 1./lam)-cst
-        return x
+        loc, lam = self._params
+        u = lam*y+loc**lam
+        return np.power(u, 1./lam)-loc
 
     def jacobian_det(self, x):
-        cst = self._constants[0]
-        lam = self._rparams[0]
-        j = np.power(x+cst,lam-1.)
-        return j
+        loc, lam = self._params
+        return np.where(x+loc>EPS, np.power(x+loc, lam-1.), np.nan)
 
 
 
-class YeoJTransform(Transform):
+class YeoJohnson(Transform):
 
-    def __init__(self, constants=None):
-
+    def __init__(self):
         Transform.__init__(self, 'YeoJohnson',
-            ntparams=3, \
-            nconstants=0, \
-            constants=constants, \
-            rparams_mins=[-np.inf, 0., -1.], \
-            rparams_maxs=[np.inf, np.inf, 3.])
-
-    def _trans2raw(self):
-        self._rparams[0] = self._tparams[0]
-        self._rparams[1] = math.exp(self._tparams[1])
-        self._rparams[2] = inf2bound(self._tparams[2], -1., 3.)
-
-    def _raw2trans(self):
-        self._tparams[0] = self._rparams[0]
-        self._tparams[1] = math.log(self._rparams[1])
-        self._tparams[2] = bound2inf(self._rparams[2], -1., 3.)
+            nparams=3, \
+            params_default=[0., 1., 1.], \
+            params_mins=[-np.inf, 1e-5, -1.], \
+            params_maxs=[np.inf, np.inf, 3.])
 
     def forward(self, x):
-        loc, scale, expon = self._rparams
+        loc, scale, lam = self._params
         y = x*np.nan
         w = loc+x*scale
-        ipos = w >= 0
+        ipos = w>=EPS
 
-        if not np.isclose(expon, 0.0):
-            y[ipos] = (np.power(w[ipos]+1, expon)-1)/expon
+        if not np.isclose(lam, 0.0):
+            y[ipos] = (np.power(w[ipos]+1, lam)-1)/lam
 
-        if np.isclose(expon, 0.0):
+        if np.isclose(lam, 0.0):
             y[ipos] = np.log(w[ipos]+1)
 
-        if not np.isclose(expon, 2.0):
-            y[~ipos] = -(np.power(-w[~ipos]+1, 2-expon)-1)/(2-expon)
+        if not np.isclose(lam, 2.0):
+            y[~ipos] = -(np.power(-w[~ipos]+1, 2-lam)-1)/(2-lam)
 
-        if np.isclose(expon, 2.0):
+        if np.isclose(lam, 2.0):
             y[~ipos] = -np.log(-w[~ipos]+1)
 
         return y
 
 
     def backward(self, y):
-        loc, scale, expon = self._rparams
+        loc, scale, lam = self._params
         x = y*np.nan
-        ipos = y >= 0
+        ipos = y>=EPS
 
-        if not np.isclose(expon, 0.0):
-            x[ipos] = np.power(expon*y[ipos]+1, 1./expon)-1
+        if not np.isclose(lam, 0.0):
+            x[ipos] = np.power(lam*y[ipos]+1, 1./lam)-1
         else:
             x[ipos] = np.exp(y[ipos])-1
 
-        if not np.isclose(expon, 2.0):
-            x[~ipos] = -np.power(-(2-expon)*y[~ipos]+1, 1./(2-expon))+1
+        if not np.isclose(lam, 2.0):
+            x[~ipos] = -np.power(-(2-lam)*y[~ipos]+1, 1./(2-lam))+1
         else:
             x[~ipos] = -np.exp(-y[~ipos])+1
 
@@ -384,81 +257,47 @@ class YeoJTransform(Transform):
 
 
     def jacobian_det(self, x):
-        loc, scale, expon = self._rparams
+        loc, scale, lam = self._params
         j = x*np.nan
         w = loc+x*scale
-        ipos = w >=0
+        ipos = w>=EPS
 
-        if not np.isclose(expon, 0.0):
-            j[ipos] = (w[ipos]+1)**(expon-1)
+        if not np.isclose(lam, 0.0):
+            j[ipos] = (w[ipos]+1)**(lam-1)
 
-        if np.isclose(expon, 0.0):
+        if np.isclose(lam, 0.0):
             j[ipos] = 1/(w[ipos]+1)
 
-        if not np.isclose(expon, 2.0):
-            j[~ipos] = (-w[~ipos]+1)**(1-expon)
+        if not np.isclose(lam, 2.0):
+            j[~ipos] = (-w[~ipos]+1)**(1-lam)
 
-        if np.isclose(expon, 2.0):
+        if np.isclose(lam, 2.0):
             j[~ipos] = 1/(-w[~ipos]+1)
 
         return j*scale
 
 
-def logsinh_ab(eps):
-    A = math.sqrt(4788.*eps*eps-8467.2*eps+3969.)
-    nu = math.sqrt((210.*eps-157.5+2.5*A)/(14.-15.*eps))
+class LogSinh(Transform):
 
-    c_constant = 1e-2
-    a = nu/(1+5./c_constant)
-    b = a/c_constant
-
-    return a, b
-
-
-class LogSinhTransform(Transform):
-
-    def __init__(self, constants=10.):
-
+    def __init__(self):
         Transform.__init__(self, 'LogSinh', \
-            ntparams=1, \
-            nconstants=1, \
-            constants=constants, \
-            rparams_mins=1e-5, \
-            rparams_maxs=0.93)
-
-    def _trans2raw(self):
-        self._rparams[0] = inf2bound(self._tparams[0], 0.3, 0.93)
-
-    def _raw2trans(self):
-        self._tparams[0] = bound2inf(self._rparams[0], 0.3, 0.93)
+            nparams=2, \
+            params_default=[0., 1.], \
+            params_mins=[-np.inf, EPS])
 
     def forward(self, x):
-        a, b = logsinh_ab(self._rparams[0])
-        xmax = self._constants[0]
-        u = 5.*x/xmax
-        w = a + b*u
-        y = np.where(x>0, (w+np.log((1.-np.exp(-2.*w))/2.))/b, np.nan)
-
-        return y
+        a, b = self._params
+        w = a + b*x
+        return np.where(x>-a/b+EPS, (w+np.log((1.-np.exp(-2.*w))/2.))/b, np.nan)
 
     def backward(self, y):
-        a, b = logsinh_ab(self._rparams[0])
-        xmax = self._constants[0]
+        a, b = self._params
         w = b*y
-        output = y*np.nan
-        u = y + (np.log(1.+np.sqrt(1.+np.exp(-2.*w)))-a)/b
-        x = xmax*u/5
-
-        return x
-
+        return y + (np.log(1.+np.sqrt(1.+np.exp(-2.*w)))-a)/b
 
     def jacobian_det(self, x):
-        a, b = logsinh_ab(self._rparams[0])
-        xmax = self._constants[0]
-        u = 5.*x/xmax
-        w = a + b*u
-        jac = np.where(x>0, 5./xmax/np.tanh(w), np.nan)
-
-        return jac
+        a, b = self._params
+        w = a + b*x
+        return np.where(x>-a/b+EPS, 1./np.tanh(w), np.nan)
 
 

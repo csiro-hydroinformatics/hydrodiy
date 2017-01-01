@@ -9,8 +9,7 @@ import matplotlib.pyplot as plt
 import warnings
 #warnings.filterwarnings('error')
 
-TRANS_NAMES = ['Log', 'BoxCox', 'Bound', \
-                'YeoJohnson', 'LogSinh', 'Identity']
+np.random.seed(0)
 
 
 class TransformTestCase(unittest.TestCase):
@@ -25,24 +24,13 @@ class TransformTestCase(unittest.TestCase):
         ''' Test the class transform '''
 
         trans = transform.Transform('test', 1)
-
         self.assertEqual(trans.name, 'test')
 
-        value = 1
-        trans.rparams = value
+        value = 10
+        trans.params = value
         exp = np.array([value], dtype=np.float64)
-        self.assertTrue(np.allclose(trans._rparams, exp))
-        self.assertTrue(np.allclose(trans.rparams, exp))
-        self.assertTrue(np.allclose(trans._tparams, exp))
-        self.assertTrue(np.allclose(trans.tparams, exp))
-
-        value = 2
-        trans.tparams = value
-        exp = np.array([value], dtype=np.float64)
-        self.assertTrue(np.allclose(trans._tparams, exp))
-        self.assertTrue(np.allclose(trans.tparams, exp))
-        self.assertTrue(np.allclose(trans._rparams, exp))
-        self.assertTrue(np.allclose(trans.rparams, exp))
+        self.assertTrue(np.allclose(trans._params, exp))
+        self.assertTrue(np.allclose(trans.params, exp))
 
         x = np.linspace(0, 1, 10)
         try:
@@ -65,70 +53,29 @@ class TransformTestCase(unittest.TestCase):
 
 
     def test_print(self):
-        ''' Test printing for all transforms '''
-
-        for nm in TRANS_NAMES:
-
-            T = transform.get_transform(nm)
-            trans = T()
-
-            ntparams = trans.ntparams
-            trans.tparams = np.random.uniform(-5, 5, size=ntparams)
+        for nm in transform.__all__:
+            trans = getattr(transform, nm)()
+            nparams = trans.nparams
+            trans.params = np.random.uniform(-5, 5, size=nparams)
             str(trans)
 
 
-    def test_set_params(self):
-        ''' Test setting parameters for all transforms '''
-
-        for nm in TRANS_NAMES:
-
-            T = transform.get_transform(nm)
-            trans = T()
-
-            ntparams = trans.ntparams
-            if ntparams == 0:
-                continue
-
-            for isample in range(100):
-                trans.tparams = np.random.uniform(-5, 5, size=ntparams)
-
-                # Check tparams -> rparams -> tparams works
-                tp = trans.tparams.copy()
-                rp = trans.rparams.copy()
-                trans.rparams = rp
-                ck = np.allclose(tp, trans.tparams)
-                self.assertTrue(ck)
-
-                trans.tparams = tp
-                ck = np.allclose(rp, trans.rparams)
-                if not ck:
-                    print('Transform {0} failing the parameter'.format(trans.name))
-                self.assertTrue(ck)
-
-
     def test_forward_backward(self):
-        ''' Test all transforms backward/forward '''
-
-        for nm in TRANS_NAMES:
-
-            T = transform.get_transform(nm)
-            if nm == 'LogSinh':
-                trans = T(5.)
-            else:
-                trans = T()
+        for nm in transform.__all__:
+            trans = getattr(transform, nm)()
+            nparams = trans.nparams
 
             for sample in range(100):
-
-                x = np.random.normal(size=1000, loc=5, scale=20)
+                x = np.random.normal(size=100, loc=5, scale=20)
+                trans.params = np.random.uniform(-5, 5, size=nparams)
 
                 if nm == 'Log':
-                    x = np.clip(x, -5, np.inf)
-
-                if nm == 'Bound':
-                    trans = T([np.min(x)-1, np.max(x)+1])
-
-                ntparams = trans.ntparams
-                trans.tparams = np.random.uniform(-5, 5, size=ntparams)
+                    x = np.exp(x)
+                elif nm == 'Logit':
+                    x = np.random.uniform(0., 1., size=100)
+                    trans.reset()
+                elif nm == 'LogSinh':
+                    trans._params += 0.1
 
                 # Check x -> forward(x) -> backward(y) is stable
                 y = trans.forward(x)
@@ -138,38 +85,33 @@ class TransformTestCase(unittest.TestCase):
                 idx = ~np.isnan(xx)
                 ck = np.allclose(x[idx], xx[idx])
                 if not ck:
+                    import pdb; pdb.set_trace()
                     print('Transform {0} failing the forward/backward test'.format(trans.name))
 
                 self.assertTrue(ck)
 
 
     def test_jacobian(self):
-        ''' Test all transforms jacobians '''
-
         delta = 1e-5
-
-        for nm in TRANS_NAMES:
-
-            T = transform.get_transform(nm)
-            if nm == 'LogSinh':
-                trans = T(5.)
-            else:
-                trans = T()
+        for nm in transform.__all__:
+            trans = getattr(transform, nm)()
+            nparams = trans.nparams
 
             for sample in range(100):
-
-                x = np.random.normal(size=1000, loc=5, scale=20)
+                x = np.random.normal(size=100, loc=5, scale=20)
+                trans.params = np.random.uniform(-5, 5, size=nparams)
 
                 if nm in ['Log', 'BoxCox']:
                     x = np.clip(x, -1, np.inf)
                     # Avoid regions of infinite gradient
                     x = x[np.abs(x)>1e-1]
 
-                if nm == 'Bound':
-                    trans = T([np.min(x)-1, np.max(x)+1])
+                elif nm == 'Logit':
+                    x = np.random.uniform(1e-2, 1.-1e-2, size=100)
+                    trans.reset()
 
-                ntparams = trans.ntparams
-                trans.tparams = np.random.uniform(-5, 5, size=ntparams)
+                elif nm == 'LogSinh':
+                    trans._params += 0.1
 
                 # Check x -> forward(x) -> backward(y) is stable
                 y = trans.forward(x)
@@ -181,11 +123,11 @@ class TransformTestCase(unittest.TestCase):
                 idx = ~np.isnan(jac)
                 ck = np.all(jac[idx]>0.)
                 if not ck:
-                    print('Transform {0} failing the positive Jacobian test'.format(trans.name))
+                    print('Transform {0} not having Jacobian strictly positive'.format(trans.name))
                 self.assertTrue(ck)
 
-                # Check jacobian are equal
-                idx = idx & (jac>0.)
+                # Check jacobian is equal to numerical derivation
+                idx = idx & (jac>0.) & (jac<5e3)
                 crit = np.abs(jac-jacn)/(1+jac+jacn)
                 idx = idx & ~np.isnan(crit)
                 ck = np.all(crit[idx]<5e-4)
@@ -195,29 +137,22 @@ class TransformTestCase(unittest.TestCase):
                 self.assertTrue(ck)
 
 
-    def test_all_transform_plot(self):
-
+    def test_transform_plot(self):
         ftest = self.ftest
+        x = np.linspace(-3, 10, 200)
 
-        for nm in TRANS_NAMES:
-
-            T = transform.get_transform(nm)
-            if nm == 'LogSinh':
-                trans = T(5.)
-            else:
-                trans = T()
-
-            x = np.linspace(-3, 10, 200)
-
-            ntparams = trans.ntparams
+        for nm in transform.__all__:
+            trans = getattr(transform, nm)()
+            nparams = trans.nparams
 
             plt.close('all')
             fig, ax = plt.subplots()
-            for pp in [-5, 0, 2]:
-                trans.tparams = [pp] * ntparams
+            for pp in [-20., 0, 20.]:
+                trans.reset()
+                trans.params = trans.params_default * (1.+pp/100)
                 y = trans.forward(x)
-                ax.plot(x, y, label='tparams = {0} (rp={1})'.format(pp,
-                                        trans.rparams))
+                ax.plot(x, y, label='params = default {0}% (rp={1})'.format(pp,
+                                        trans.params))
             ax.legend(loc=4)
             ax.set_title(nm)
             fig.savefig(os.path.join(ftest, 'transform_'+nm+'.png'))
