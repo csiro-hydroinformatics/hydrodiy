@@ -110,7 +110,6 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_lhs(self):
-
         nparams = 10
         nsamples = 50
         pmin = 1
@@ -120,102 +119,13 @@ class UtilsTestCase(unittest.TestCase):
 
         for i in range(nparams):
             u = (np.sort(samples[:,i])-pmin)/(pmax-pmin)
-            ff = (np.arange(1, nsamples+1)-0.3)/(nsamples+0.4)
+            ff = sutils.empfreq(nsamples)
 
             # Perform two sided KS test on results
             D = np.max(np.abs(u-ff))
             p = kolmogorov(D*math.sqrt(nsamples))
 
             self.assertTrue(p>0.95)
-
-    def test_schaakeshuffle1(self):
-        # Test from Clark et al. 2004
-
-        obs = np.array([
-            [10.7, 10.9, 13.5],
-            [9.3, 9.1, 13.7],
-            [6.8, 7.2, 9.3],
-            [11.3, 10.7, 15.6],
-            [12.2, 13.1, 17.8],
-            [13.6, 14.2, 19.3],
-            [8.9, 9.4, 12.1],
-            [9.9, 9.2, 11.8],
-            [11.8, 11.9, 15.2],
-            [12.9, 12.5, 16.9]
-        ])
-
-        forc1 = np.array([
-            [15.3, 9.3, 17.6],
-            [11.2, 6.3, 15.6],
-            [8.8, 7.9, 13.5],
-            [11.9, 7.5, 14.2],
-            [7.5, 13.5, 18.3],
-            [9.7, 11.8, 15.9],
-            [8.3, 8.6, 14.5],
-            [12.5, 17.7, 23.9],
-            [10.3, 7.2, 12.4],
-            [10.1, 12.2, 16.3],
-        ])
-
-
-        expected1 = np.array([
-            [10.1, 9.3, 14.5],
-            [8.8, 7.2, 15.6],
-            [7.5, 6.3, 12.4],
-            [10.3, 8.6, 16.3],
-            [11.9, 13.5, 18.3],
-            [15.3, 17.7, 23.9],
-            [8.3, 7.9, 14.2],
-            [9.7, 7.5, 13.5],
-            [11.2, 11.8, 15.9],
-            [12.5, 12.2, 17.6]
-        ])
-
-        forc1_re = sutils.schaakeshuffle(obs, forc1)
-        self.assertTrue(np.allclose(forc1_re, expected1))
-
-        forc2 = np.concatenate([forc1, forc1, forc1], axis=0)
-        forc2_re = sutils.schaakeshuffle(obs, forc2)
-
-        expected2 = np.zeros((forc1.shape[0]*3, forc1.shape[1]))
-        for i in range(expected2.shape[0]):
-            k = int(i * float(forc1.shape[0])/expected2.shape[0])
-            expected2[i,:] = expected1[k,:]
-
-        self.assertTrue(np.allclose(forc2_re, expected2))
-
-
-    def test_schaakeshuffle2(self):
-        m1 = 0
-        s1 = 10
-
-        m2 = 20
-        s2 = 20
-
-        rho = 0.9
-
-        nensA = 100
-        nensB = 500
-
-        # Generate first ensemble from multivariate
-        # normal with high correlation
-        cov = rho * math.sqrt(s1 * s2)
-        ensA = np.random.multivariate_normal([m1, m2], [[s1, cov], [cov, s2]],
-                size=nensA)
-
-        # Generate second ensemble from two
-        # independent normal variables
-        # then reshuffled them
-        ens1 = np.random.normal(m1, s1, size=nensB)
-        ens2 = np.random.normal(m2, s2, size=nensB)
-        ensB = np.array([ens1, ens2]).T
-        sutils.schaakeshuffle(ensA, ensB, copy=False)
-
-        # Check we are preserving rank correlation
-        rA, pA = spearmanr(ensA[:,0], ensA[:,1])
-        rB, pB = spearmanr(ensB[:,0], ensB[:,1])
-
-        self.assertTrue(abs(rA-rB)<1e-4)
 
 
 if __name__ == "__main__":

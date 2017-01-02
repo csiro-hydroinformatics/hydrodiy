@@ -262,7 +262,7 @@ def pit(obs, forc):
     return pit
 
 
-def lhs(nparams, nsample, pmin, pmax, seed=0):
+def lhs(nparams, nsample, pmin, pmax):
     ''' Latin hypercube sampling
 
     Parameters
@@ -275,8 +275,6 @@ def lhs(nparams, nsample, pmin, pmax, seed=0):
         Lower bounds of parameters
     pmax : list
         Upper bounds of parameters
-    seed : int
-        Random seed
 
     Returns
     -----------
@@ -285,21 +283,34 @@ def lhs(nparams, nsample, pmin, pmax, seed=0):
 
     Example
     -----------
-    >>> import numpy as np
-    >>> from hystat import sutils
     >>> nparams = 5; nsamples = 3
     >>> sutils.lhs(nparams, nsamples)
 
     '''
 
-    if not isinstance(pmin, list):
-        pmin = [pmin] * nparams
+    # Process pmin and pmax
+    pmin = np.atleast_1d(pmin)
+    if pmin.shape[0] == 1:
+        pmin = np.repeat(pmin, nparams)
 
-    if not isinstance(pmax, list):
-        pmax = [pmax] * nparams
+    if len(pmin) != nparams:
+        raise ValueError(('Expected pmin of length' + \
+            ' {0}, got {1}').format(nparams, \
+                len(pmin)))
 
+    pmax = np.atleast_1d(pmax)
+    if pmax.shape[0] == 1:
+        pmax = np.repeat(pmax, nparams)
+
+    if len(pmax) != nparams:
+        raise ValueError(('Expected pmax of length' + \
+            ' {0}, got {1}').format(nparams, \
+                len(pmax)))
+
+    # Initialise
     samples = np.zeros((nsample, nparams))
 
+    # Sample
     for i in range(nparams):
         du = float(pmax[i]-pmin[i])/nsample
         u = np.linspace(pmin[i]+du/2, pmax[i]-du/2, nsample)
@@ -310,92 +321,4 @@ def lhs(nparams, nsample, pmin, pmax, seed=0):
         samples[:, i] = s
 
     return samples
-
-def schaakeshuffle(obs, forc_input, eps=1e-30, copy=True):
-    ''' Apply the Schaake shuffle technique to ensemble forecasts
-    The function does not returns a value.
-    It only reshuffles the forc array.
-
-    Parameters
-    -----------
-    obs : numpy.ndarray
-        Observation data with
-        N rows representing N concomittant occurence of data
-        P columns representing P variables
-    forc : numpy.ndarray
-        Ensemble forecast with
-        M rows representing M ensemble members
-        P columns representing P variables
-    eps : float
-        Small quantity added to observed data in case where N < M
-    copy: bool
-        Creates a copy of the forecast input
-        If set to false, then the forc_input array gets reshuffled in place
-
-    Returns
-    -----------
-    forc : numpy.ndarray
-        Reshuffled forecasts. Array NxP
-
-    Example
-    -----------
-    >>> import numpy as np
-    >>> import schaakeshuffle
-    >>> # Correlated observations
-    >>> nobs = 30
-    >>> mu = [10, 30]
-    >>> sig = [[25, 45], [45, 100]]
-    >>> obs = np.random.multivariate_normal(mu, sig, nobs)
-    >>> # Uncorrelated forecasts
-    >>> nens = 1000
-    >>> sig = [[25, 0], [0, 100]]
-    >>> forc = np.random.multivariate_normal(mu, sig, nens)
-    >>> forc2 = schaakeshuffle.schaakeshuffle(obs, forc)
-
-    '''
-
-    if copy:
-        forc = forc_input.copy()
-    else:
-        forc = forc_input
-
-    if len(obs.shape) != 2:
-        raise ValueError('if len(obs.shape)({0}) != 2'.format(len(obs.shape)))
-
-    if len(forc.shape) != 2:
-        raise ValueError('if len(forc.shape)({0}) != 2'.format(len(forc.shape)))
-
-    if obs.shape[1] != forc.shape[1]:
-        raise ValueError('obs.shape[1]({0}) != forc.shape[1]({1})'.format(
-            obs.shape[1], forc.shape[1]))
-
-    if obs.shape[0] > forc.shape[0]:
-        raise ValueError('obs.shape[0]({0}) > forc.shape[0]({1}'.format(
-            obs.shape[0], forc.shape[0]))
-
-    # Get dimensions
-    nvar = obs.shape[1]
-    nobs = obs.shape[0]
-    nens = forc.shape[0]
-
-    # Resample obs if nobs < nens
-    obs2 = obs
-
-    if nens > nobs:
-        obs2 = np.zeros_like(forc)
-
-        for i in range(nens):
-            k = (i * nobs)/nens
-            obs2[i,:] = obs[k,:]
-
-        obs2 += np.random.uniform(0, eps, size=(nens,1))
-
-    # Shuffle ensembles
-    for j in range(nvar):
-        k = np.argsort(obs2[:, j])
-        forc[k, j] = np.sort(forc[:, j])
-
-
-    return forc
-
 
