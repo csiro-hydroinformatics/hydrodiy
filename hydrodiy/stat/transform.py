@@ -14,12 +14,13 @@ class Parameterised(object):
             nparams=0,  \
             params_default=None, \
             params_mins=None, \
-            params_maxs=None):
-        ''' Initialise object with number of
-        parameters (nparams) and name.
-        Number of constants is set to 0 by default.
+            params_maxs=None,
+            object_type_name='Object'):
+        ''' Initialise object with name, number of parameters (nparams),
+        default, min and max value for parameters, and object name.
         '''
         self._name = name
+        self._object_type_name = object_type_name
 
         # Initialise params
         self._nparams = nparams
@@ -56,7 +57,7 @@ class Parameterised(object):
                     self._params_maxs.shape[0]))
 
     def __str__(self):
-        s = '\n{0} transform\n'.format(self._name)
+        s = '\n{0} {1}\n'.format(self._name, self._object_type_name)
         if self._nparams > 0:
             s += '  Params = [' + ', '.join(['{0:3.3e}'.format(p) \
                 for p in  self._params]) + ']'
@@ -118,7 +119,7 @@ class Transform(Parameterised):
 
         Parameterised.__init__(self, name, nparams, \
             params_default, params_mins, \
-            params_maxs)
+            params_maxs, 'Transform')
 
 
     def forward(self, x):
