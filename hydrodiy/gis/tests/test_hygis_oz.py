@@ -84,7 +84,13 @@ class OzTestCase(unittest.TestCase):
         plt.close('all')
 
         om = Oz()
-        om.drawrelief()
+
+        # Skip if decoder jpeg is not available
+        try:
+            om.drawrelief()
+        except IOError as err:
+            self.assertTrue(str(err) == 'decoder jpeg not available')
+
         om.drawcoast(color='blue')
         om.drawstates(color='red', linestyle='--')
 
