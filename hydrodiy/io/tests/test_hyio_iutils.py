@@ -48,7 +48,8 @@ class UtilsTestCase(unittest.TestCase):
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
         stdout, stderr = pipe.communicate()
-        self.assertTrue(stdout != '')
+        if stderr != '':
+            print(stderr)
         self.assertTrue(stderr == '')
         os.remove(fs)
 
@@ -66,7 +67,8 @@ class UtilsTestCase(unittest.TestCase):
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
         stdout, stderr = pipe.communicate()
-        self.assertTrue(stdout != '')
+        if stderr != '':
+            print(stderr)
         self.assertTrue(stderr == '')
         os.remove(fs)
 
@@ -77,6 +79,8 @@ class UtilsTestCase(unittest.TestCase):
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
         stdout, stderr = pipe.communicate()
+        if stderr != '':
+            print(stderr)
         self.assertTrue(stderr == '')
         os.remove(fs)
 
@@ -97,8 +101,8 @@ class UtilsTestCase(unittest.TestCase):
         source2 = iutils.dict2str(data2)
         self.assertTrue(prefix2 == '')
         self.assertTrue(data == data2)
-        self.assertTrue(re.sub('\\.csv', '', os.path.basename(source)) == source2)
-
+        self.assertTrue(re.sub('\\.csv', '', \
+            os.path.basename(source)) == source2)
 
         data = {'name':'bob', 'phone':'2010'}
         source = iutils.dict2str(data, prefix=prefix)
