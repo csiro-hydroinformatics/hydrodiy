@@ -1074,7 +1074,7 @@ def get_mask(name):
     name : str
         Name of grid :
         - AWRAL : Grid used in AWRAL products
-        - AWRAP : Grid used in AWAP products
+        - AWAP : Grid used in AWAP products
 
     Returns
     -----------
