@@ -13,20 +13,21 @@ from hydrodiy.io import csv, iutils
 #----------------------------------------------------------------------
 # Config
 #----------------------------------------------------------------------
-source_file = os.path.abspath(__file__)
-froot = os.path.dirname(source_file)
 
-# Define config options
-basename = re.sub('\\.py.*', '', os.path.basename(source_file))
-LOGGER = iutils.get_logger(basename)
 
 #----------------------------------------------------------------------
 # Folders
 #----------------------------------------------------------------------
-fdata = froot #os.path.join('data')
+source_file = os.path.abspath(__file__)
+froot = os.path.dirname(source_file)
 
-fout = os.path.join('outputs')
+fdata = froot #os.path.join(froot, 'data')
+
+fout = froot # os.path.join(froot, 'outputs')
 if not os.path.exists(fout): os.mkdir(fout)
+
+basename = re.sub('\\.py.*', '', os.path.basename(source_file))
+LOGGER = iutils.get_logger(basename)
 
 #----------------------------------------------------------------------
 # Get data
@@ -42,7 +43,6 @@ for i, (siteid, row) in enumerate(sites.iterrows()):
 
     LOGGER.info('dealing with {0} ({1}/{2})'.format( \
         siteid, i, len(sites)))
-
 
 
 
