@@ -3,8 +3,14 @@ import unittest
 
 import numpy as np
 import pandas as pd
-#import geopandas as gpd
-from shapely.geometry import Polygon
+
+# Check availability of shapely
+has_shapely = False
+try:
+    from shapely.geometry import Polygon
+    has_shapely = True
+except ImportError:
+    pass
 
 from matplotlib import pyplot as plt
 from hydrodiy.gis.oz import Oz, REGIONS
