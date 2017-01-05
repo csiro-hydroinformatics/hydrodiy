@@ -1,13 +1,22 @@
 import re, os, sys
 import datetime
 
+from calendar import month_abbr as months
+
 import json
 
-# Import of StringIO depends on python version
-if sys.version_info[0] < 3:
-    from StringIO import StringIO
-else:
+# Deal with Python 2 and 3 related to StringIO
+try:
+    from cStringIO import cStringIO
+except ImportError:
     from io import StringIO
+
+# Deal with Python 2 and 3 related to UNICODE
+try:
+    UNICODE = unicode
+except NameError:
+    UNICODE = str
+
 
 import urllib2
 
@@ -69,30 +78,28 @@ def get_data(index):
 
     if index in ['nao', 'pdo', 'pna', 'ao']:
         data = json.loads(''.join(txt))
-        data = pd.Series(
-                {pd.to_datetime(k, format='%Y%m'):
+        series = pd.Series({pd.to_datetime(k, format='%Y%m'):
                     data['data'][k] for k in data['data']})
 
     else:
         # Convert to dataframe (tried read_csv but failed)
-        iotxt = StringIO(unicode(txt))
+        iotxt = StringIO(UNICODE(txt))
         data = pd.read_csv(iotxt, skiprows=11, sep='   ', engine='python')
 
         # Build time series
-        cn = data.columns[0]
-        data = pd.melt(data, id_vars=cn)
-        data = data[pd.notnull(data['value'])]
+        data.columns = ['year'] + [months[i] for i in range(1, 13)]
+        series = pd.melt(data, id_vars='year')
+        series = series[pd.notnull(series['value'])]
 
         def fun(x):
-            return '1 {0} {1}'.format(x['variable'], x[cn])
+            return '1 {0} {1}'.format(x['variable'], x['year'])
 
-        data['month'] = pd.to_datetime(
-                        data[[cn, 'variable']].apply(fun, axis=1))
+        series['month'] = pd.to_datetime(
+                            series[['year', 'variable']].apply(fun, axis=1))
+        series = series.sort_values(by='month')
+        series = series.set_index('month')
+        series = series['value']
+        series.name = '{0}[{1}]'.format(index, url)
 
-        data = data.sort_values(by='month')
-        data = data.set_index('month')
-        data = data['value']
-        data.index = '%s[%s]' % (index, url)
-
-    return data, url
+    return series, url
 
