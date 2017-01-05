@@ -5,28 +5,33 @@ from datetime import datetime
 import gzip
 import zipfile
 import tarfile
+import pandas as pd
+import numpy as np
 
-# Deal with change of import syntax Python 2 and 3
+
+# Deal with Python 2 and 3 related to StringIO
 try:
     from cStringIO import cStringIO
 except ImportError:
     from io import StringIO
 
+# Deal with Python 2 and 3 related to unicode
+try:
+    UNICODE = unicode
+except NameError:
+    UNICODE = str
 
+# Check distutils available for python folders
 has_distutils = False
 try:
     from distutils.sysconfig import get_python_inc
     from distutils.sysconfig import get_python_lib
     has_distutils = True
-
 except ImportError:
     pass
 
-import pandas as pd
-import numpy as np
-
 # Max length of comment keys
-key_length_max = 30
+KEY_LENGTH_MAX = 30
 
 
 def _header2comment(header):
@@ -42,7 +47,7 @@ def _header2comment(header):
             val = s[len(k)+1:].strip()
             k = re.sub(' +', '_', k.strip().lower())
 
-            if not bool(re.search('\:', s[:key_length_max])):
+            if not bool(re.search('\:', s[:KEY_LENGTH_MAX])):
                 k = 'comment_{0:02d}'.format(i)
                 val = s
                 i += 1
@@ -161,7 +166,7 @@ def _write2zip(archive, arcname, txt):
     zinfo.date_time = (now.year, now.month, now.day, \
                             now.hour, now.minute, now.second)
     # File permission
-    zinfo.external_attr = 0777 << 16
+    zinfo.external_attr = 33488896 # 0777 << 16
 
     # Write to archive with header
     archive.writestr(zinfo, txt, \
@@ -309,7 +314,7 @@ def read_csv(filename, has_colnames=True, archive=None, \
                 # assumes that file is stored at base level
                 with zipfile.ZipFile(filename_full, 'r') as archive:
                     fbase = re.sub('zip$', 'csv', os.path.basename(filename))
-                    uni = unicode(archive.read(fbase), encoding=encoding)
+                    uni = UNICODE(archive.read(fbase), encoding=encoding)
                     fobj = StringIO(uni)
 
             else:
@@ -324,7 +329,7 @@ def read_csv(filename, has_colnames=True, archive=None, \
 
     else:
         # Use the archive mode
-        uni = unicode(archive.read(filename), encoding=encoding)
+        uni = UNICODE(archive.read(filename), encoding=encoding)
         fobj = StringIO(uni)
 
     # Reads content
@@ -353,7 +358,7 @@ def read_csv(filename, has_colnames=True, archive=None, \
                 cn2 = re.sub(', *','-',cn2)
                 linecols = re.sub(re.escape(cn), cn2, linecols)
 
-        cns = string.strip(linecols).split(',')
+        cns = linecols.strip().split(',')
 
         # Reads data with proper column names
         data = pd.read_csv(fobj, names=cns, \

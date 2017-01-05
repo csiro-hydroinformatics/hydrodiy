@@ -14,8 +14,8 @@ class UtilsTestCase(unittest.TestCase):
 
     def setUp(self):
         print('\t=> UtilsTestCase (hyio)')
-        source_file = os.path.abspath(__file__)
-        self.ftest = os.path.dirname(source_file)
+        self.source_file = os.path.abspath(__file__)
+        self.ftest = os.path.dirname(self.source_file)
 
     def test_find_files(self):
         # Recursive
@@ -39,7 +39,7 @@ class UtilsTestCase(unittest.TestCase):
         sites = pd.DataFrame({'siteid':[1, 2, 3, 4], \
                     'id':['a', 'b', 'c', 'd']})
         fs = os.path.join(self.ftest, 'sites.csv')
-        csv.write_csv(sites, fs, 'site list', __file__)
+        csv.write_csv(sites, fs, 'site list', self.source_file)
 
         # Run defaut script file template
         fs = os.path.join(self.ftest, 'script_test1.pytest')
