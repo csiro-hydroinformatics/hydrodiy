@@ -1,0 +1,21 @@
+[run]
+branch = True
+omit = venv/*
+       env/*
+       /opt/*
+       **/template/*
+       **/_version.py
+
+[report]
+omit = **/test*
+       venv/*
+       env/*
+       /opt/*
+       **/template/*
+       **/_version.py
+       *.xml
+
+exclude_lines =
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
