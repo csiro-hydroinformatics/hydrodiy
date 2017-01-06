@@ -1,4 +1,4 @@
-import os
+import os, re
 import unittest
 import numpy as np
 import pandas as pd
@@ -106,6 +106,9 @@ class CsvTestCase(unittest.TestCase):
         self.assertTrue(np.allclose(np.round(df1.values, 3), df1exp))
         self.assertTrue(np.allclose(df1, df2exp))
 
+        os.remove(re.sub('csv', 'zip', fcsv1))
+        os.remove(re.sub('csv', 'zip', fcsv2))
+
 
     def test_write_csv2(self):
         nval = 100
@@ -128,6 +131,8 @@ class CsvTestCase(unittest.TestCase):
         self.assertTrue('toto' == comment2['author'])
         self.assertTrue(os.path.abspath(__file__) == comment2['source_file'])
 
+        os.remove(re.sub('csv', 'zip', fcsv))
+
 
     def test_write_csv3(self):
         nval = 100
@@ -144,6 +149,8 @@ class CsvTestCase(unittest.TestCase):
         ds1exp = ds1exp.squeeze()
 
         self.assertTrue(np.allclose(ds1.round(3), ds1exp))
+
+        os.remove(re.sub('csv', 'zip', fcsv1))
 
 
     def test_read_write_zip(self):
@@ -171,6 +178,7 @@ class CsvTestCase(unittest.TestCase):
                 df2, _ = csv.read_csv(k, archive=arc)
                 self.assertTrue(np.allclose(df[k].values, df2.values))
 
+        os.remove(farc)
 
 if __name__ == "__main__":
     unittest.main()
