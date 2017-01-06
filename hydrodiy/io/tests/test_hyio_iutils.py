@@ -41,48 +41,52 @@ class UtilsTestCase(unittest.TestCase):
         fs = os.path.join(self.ftest, 'sites.csv')
         csv.write_csv(sites, fs, 'site list', self.source_file)
 
+        def test_script(fs, stype='python'):
+            ''' Run script and check there are no errors in stderr '''
+
+            # Run system command
+            pipe = subprocess.Popen([fs],
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
+
+            # Get outputs
+            stdout, stderr = pipe.communicate()
+            if stderr != '':
+                print('STDERR not null in {0}:\n\t{1}'.format(fs, stderr))
+
+            # detect errors
+            hasError = bool(re.search('Error', stderr))
+
+            # If no problem, then remove script
+            if not hasError:
+                os.remove(fs)
+
+            return stderr, hasError
+
+
         # Run defaut script file template
         fs = os.path.join(self.ftest, 'script_test1.pytest')
         iutils.script_template(fs, 'test')
-        pipe = subprocess.Popen(['python', fs],
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
-        stdout, stderr = pipe.communicate()
-        if stderr != '':
-            print(stderr)
-        self.assertTrue(stderr == '')
-        os.remove(fs)
+        stderr, hasError = test_script(fs)
+        self.assertFalse(hasError)
 
         # Run plot script file template
         fs = os.path.join(self.ftest, 'script_test2.pytest')
         iutils.script_template(fs, 'test', stype='plot')
-        # (cannot use Popen because matplotlib is throwing warnings)
-        subprocess.check_call('python '+fs, shell=True)
-        os.remove(fs)
+        stderr, hasError = test_script(fs)
+        self.assertFalse(hasError)
 
         # Run console script file template
         fs = os.path.join(self.ftest, 'script_test3.pytest')
         iutils.script_template(fs, 'test', stype='console')
-        pipe = subprocess.Popen(['python', fs],
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
-        stdout, stderr = pipe.communicate()
-        if stderr != '':
-            print(stderr)
-        self.assertTrue(stderr == '')
-        os.remove(fs)
+        stderr, hasError = test_script(fs)
+        self.assertFalse(hasError)
 
         # Run bash script file template
         fs = os.path.join(self.ftest, 'script_test4.sh')
         iutils.script_template(fs, 'test', stype='bash')
-        pipe = subprocess.Popen(fs, shell=True,
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
-        stdout, stderr = pipe.communicate()
-        if stderr != '':
-            print(stderr)
-        self.assertTrue(stderr == '')
-        os.remove(fs)
+        stderr, hasError = test_script(fs, stype='bash')
+        self.assertFalse(hasError)
 
 
     def test_str2dict(self):
@@ -178,6 +182,9 @@ class UtilsTestCase(unittest.TestCase):
             txt = fl.readlines()
         self.assertEqual(mess, [t.strip() for t in txt])
 
+        os.remove(flog1)
+        os.remove(flog2)
+
 
     def test_get_ibatch(self):
         idx = iutils.get_ibatch(20, 2, 1)
@@ -191,7 +198,6 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_download(self):
-
         # File download
         url = 'https://www.google.com'
         fn = os.path.join(self.ftest, 'google.html')

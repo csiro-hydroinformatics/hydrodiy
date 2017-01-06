@@ -1,6 +1,7 @@
 import sys, os, re
 from datetime import datetime
 import logging
+import stat
 
 try:
     from StringIO import StringIO
@@ -196,8 +197,9 @@ def script_template(filename, comment,
     with open(filename, 'w') as fs:
         fs.writelines(txt)
 
-    if stype == 'bash':
-        os.chmod(filename, 0o777)
+    # Make it executable for the user
+    st = os.stat(filename)
+    os.chmod(filename, st.st_mode | stat.S_IEXEC)
 
 
 def get_logger(name, level='INFO', \
