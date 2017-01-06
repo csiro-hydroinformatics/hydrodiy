@@ -64,14 +64,22 @@ class CsvTestCase(unittest.TestCase):
     def test_read_csv_latin(self):
         fcsv = '%s/latin_1.zip'%self.ftest
         try:
-            data, comment = csv.read_csv(fcsv,
-                    comment='#')
+            data, comment = csv.read_csv(fcsv)
         except UnicodeDecodeError as err:
             pass
 
         data, comment = csv.read_csv(fcsv,
-                comment='#', encoding='latin_1')
+                encoding='latin_1')
         self.assertTrue(np.allclose(data.iloc[:, 1:4].values, -99))
+
+
+    def test_read_csv_error(self):
+        fcsv = '%s/latin_2.zip'%self.ftest
+        try:
+            data, comment = csv.read_csv(fcsv)
+        except ValueError as err:
+            pass
+        self.assertTrue(str(err).startswith('File object is not readable'))
 
 
     def test_write_csv1(self):

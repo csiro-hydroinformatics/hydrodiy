@@ -332,6 +332,10 @@ def read_csv(filename, has_colnames=True, archive=None, \
         uni = UNICODE(archive.read(filename), encoding=encoding)
         fobj = StringIO(uni)
 
+    # Check fobj is readable
+    if not hasattr(fobj, 'readline'):
+        raise ValueError('File object is not readable')
+
     # Reads content
     header = []
     comment = {}
