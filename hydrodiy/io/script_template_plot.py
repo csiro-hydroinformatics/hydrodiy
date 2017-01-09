@@ -12,6 +12,7 @@ from calendar import month_abbr as months
 import numpy as np
 import pandas as pd
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 #from matplotlib.backends.backend_pdf import PdfPages
@@ -25,6 +26,9 @@ from hydrodiy.gis.oz import Oz
 # Config
 #----------------------------------------------------------------------
 
+# Image file extension
+imgext = 'pdf'
+
 # Plot dimensions
 fnrows = 2
 fncols = 2
@@ -33,6 +37,7 @@ awidth = 1000
 aheight = 1000
 
 # Set matplotlib options
+#mpl.rcdefaults() # to reset
 putils.set_mpl()
 
 #----------------------------------------------------------------------
@@ -119,7 +124,7 @@ fig.set_size_inches(float(fncols * awidth)/fdpi,
 
 gs.tight_layout(fig)
 
-fp = os.path.join(fimg, 'image.png')
+fp = os.path.join(fimg, 'image.{0}'.format(imgext))
 fig.savefig(fp, dpi=fdpi)
 
 # To save to pdf

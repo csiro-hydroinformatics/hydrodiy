@@ -236,7 +236,7 @@ def equation(tex, filename, \
     mpl.rc('text', usetex=usetex)
 
 
-def set_mpl(color_theme='black'):
+def set_mpl(color_theme='black', font_size=18):
     ''' Set convenient default matplotlib parameters
 
     Parameters
@@ -244,6 +244,9 @@ def set_mpl(color_theme='black'):
     color_theme : str
         Color for text, axes and ticks
     '''
+
+    # Font size
+    mpl.rc('font', size=font_size)
 
     # Set color cycle - depends on matplotlib version
     if 'axes.color_cycle' in mpl.rcParams:

@@ -107,6 +107,10 @@ class UtilsTestCase(unittest.TestCase):
         fp = os.path.join(self.ftest, 'set_mpl2.png')
         plot(fp)
 
+        putils.set_mpl(font_size=25)
+        fp = os.path.join(self.ftest, 'set_mpl3.png')
+        plot(fp)
+
 
 
     def test_kde(self):
