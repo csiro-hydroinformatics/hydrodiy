@@ -103,7 +103,7 @@ class BoxplotTestCase(unittest.TestCase):
 
     def test_width_by_count(self):
         fig, ax = plt.subplots()
-        cat = self.data['cat']
+        cat = self.data['cat'].copy()
         cat.loc[cat<3] = 0
         bx = Boxplot(ax=ax, data=self.data['data1'], by=cat,
                                 width_from_count=True)
@@ -120,7 +120,7 @@ class BoxplotTestCase(unittest.TestCase):
 
     def test_coverage_by(self):
         fig, ax = plt.subplots()
-        cat = self.data['cat']
+        cat = self.data['cat'].copy()
         cat.loc[cat<3] = 0
         bx = Boxplot(ax=ax, data=self.data['data1'], by=cat,
                     whiskers_coverage=60)

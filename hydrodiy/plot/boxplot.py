@@ -16,7 +16,7 @@ PROPS_VALUES = ['linestyle', 'linewidth', 'linecolor', 'va', 'ha', 'fontcolor', 
 def whiskers_percentiles(coverage):
     ''' Compute whiskers percentiles from coverage '''
     qq1 = float(100-coverage)/2
-    qq2 = 100-qq1
+    qq2 = 100.-qq1
     return qq1, qq2
 
 
@@ -27,7 +27,9 @@ def boxplot_stats(data, coverage):
     qq1, qq2 = whiskers_percentiles(coverage)
 
     if idx.shape[0]>3:
-        prc = sutils.percentiles(data[idx], [qq1, 25, 50, 75, qq2])
+        qq = [qq1, 25, 50, 75, qq2]
+        prc = pd.Series(np.percentile(data[idx], qq), \
+                        index=['{0:0.1f}%'.format(qqq) for qqq in qq])
         prc['count'] = np.sum(idx)
         prc['mean'] = data[idx].mean()
         prc['max'] = data[idx].max()
@@ -255,7 +257,7 @@ class Boxplot(object):
                 elif props['ha'] == 'center':
                     xshift = 0
 
-                for value in stats.loc[['25.0%', '75.0%'], cn].values:
+                for value in [stats.loc[qq, cn] for qq in ['25.0%', '75.0%']]:
                     valuetext = formatter % value
                     ax.text(i+xshift, value, valuetext, fontsize=props['fontsize'], \
                         color=props['fontcolor'], \
