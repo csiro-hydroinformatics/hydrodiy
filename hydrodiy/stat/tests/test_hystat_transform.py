@@ -113,7 +113,7 @@ class TransformTestCase(unittest.TestCase):
                 # Check x -> forward(x) -> backward(y) is stable
                 y = trans.forward(x)
                 yp = trans.forward(x+delta)
-                jacn = (yp-y)/delta
+                jacn = np.abs(yp-y)/delta
                 jac = trans.jacobian_det(x)
 
                 # Check jacobian are positive

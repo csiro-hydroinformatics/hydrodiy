@@ -2,7 +2,7 @@ import math
 import numpy as np
 
 __all__ = ['Identity', 'Logit', 'Log', 'BoxCox', 'YeoJohnson', \
-                'LogSinh']
+                'LogSinh', 'Reciprocal']
 
 EPS = 1e-10
 
@@ -161,17 +161,17 @@ class Logit(Transform):
                 params_default=[0, 1])
 
     def forward(self, x):
-        lower, upper = self._params
+        lower, upper = self.params
         value = (x-lower)/(upper-lower)
         return np.log(1./(1-value)-1)
 
     def backward(self, y):
-        lower, upper = self._params
+        lower, upper = self.params
         bnd = 1-1./(1+np.exp(y))
         return bnd*(upper-lower) + lower
 
     def jacobian_det(self, x):
-        lower, upper = self._params
+        lower, upper = self.params
         value = (x-lower)/(upper-lower)
         return  np.where((x>lower+EPS) & (x<upper-EPS), \
                     1./(upper-lower)/value/(1-value), np.nan)
@@ -187,15 +187,15 @@ class Log(Transform):
                 params_mins=[EPS])
 
     def forward(self, x):
-        loc = self._params[0]
+        loc = self.params[0]
         return np.log(x+loc)
 
     def backward(self, y):
-        loc = self._params[0]
+        loc = self.params[0]
         return np.exp(y)-loc
 
     def jacobian_det(self, x):
-        loc = self._params[0]
+        loc = self.params[0]
         return np.where(x+loc>EPS, 1./(x+loc), np.nan)
 
 
@@ -210,16 +210,16 @@ class BoxCox(Transform):
             params_maxs=[np.inf, 3.])
 
     def forward(self, x):
-        loc, lam = self._params
+        loc, lam = self.params
         return (np.power(x+loc, lam)-loc**lam)/lam
 
     def backward(self, y):
-        loc, lam = self._params
+        loc, lam = self.params
         u = lam*y+loc**lam
         return np.power(u, 1./lam)-loc
 
     def jacobian_det(self, x):
-        loc, lam = self._params
+        loc, lam = self.params
         return np.where(x+loc>EPS, np.power(x+loc, lam-1.), np.nan)
 
 
@@ -234,7 +234,7 @@ class YeoJohnson(Transform):
             params_maxs=[np.inf, np.inf, 3.])
 
     def forward(self, x):
-        loc, scale, lam = self._params
+        loc, scale, lam = self.params
         y = x*np.nan
         w = loc+x*scale
         ipos = w>=EPS
@@ -255,7 +255,7 @@ class YeoJohnson(Transform):
 
 
     def backward(self, y):
-        loc, scale, lam = self._params
+        loc, scale, lam = self.params
         x = y*np.nan
         ipos = y>=EPS
 
@@ -273,7 +273,7 @@ class YeoJohnson(Transform):
 
 
     def jacobian_det(self, x):
-        loc, scale, lam = self._params
+        loc, scale, lam = self.params
         j = x*np.nan
         w = loc+x*scale
         ipos = w>=EPS
@@ -302,18 +302,39 @@ class LogSinh(Transform):
             params_mins=[-np.inf, EPS])
 
     def forward(self, x):
-        a, b = self._params
+        a, b = self.params
         w = a + b*x
         return np.where(x>-a/b+EPS, (w+np.log((1.-np.exp(-2.*w))/2.))/b, np.nan)
 
     def backward(self, y):
-        a, b = self._params
+        a, b = self.params
         w = b*y
         return y + (np.log(1.+np.sqrt(1.+np.exp(-2.*w)))-a)/b
 
     def jacobian_det(self, x):
-        a, b = self._params
+        a, b = self.params
         w = a + b*x
         return np.where(x>-a/b+EPS, 1./np.tanh(w), np.nan)
+
+
+class Reciprocal(Transform):
+
+    def __init__(self):
+        Transform.__init__(self, 'Reciprocal', \
+            nparams=1, \
+            params_default=[1.], \
+            params_mins=[EPS])
+
+    def forward(self, x):
+        shift = self.params
+        return np.where(x>-shift, 1./(shift+x), np.nan)
+
+    def backward(self, y):
+        shift = self.params
+        return np.where(y>EPS, 1./y-shift, np.nan)
+
+    def jacobian_det(self, x):
+        shift = self.params
+        return np.where(x>-shift, 1./(shift+x)**2, np.nan)
 
 
