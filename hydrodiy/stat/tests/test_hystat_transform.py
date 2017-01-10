@@ -67,7 +67,7 @@ class TransformTestCase(unittest.TestCase):
 
             for sample in range(100):
                 x = np.random.normal(size=100, loc=5, scale=20)
-                trans.params = np.random.uniform(-5, 5, size=nparams)
+                trans.params = trans._params_mins+np.random.uniform(0., 2, size=nparams)
 
                 if nm == 'Log':
                     x = np.exp(x)
@@ -85,7 +85,6 @@ class TransformTestCase(unittest.TestCase):
                 idx = ~np.isnan(xx)
                 ck = np.allclose(x[idx], xx[idx])
                 if not ck:
-                    import pdb; pdb.set_trace()
                     print('Transform {0} failing the forward/backward test'.format(trans.name))
 
                 self.assertTrue(ck)
@@ -99,24 +98,22 @@ class TransformTestCase(unittest.TestCase):
 
             for sample in range(100):
                 x = np.random.normal(size=100, loc=5, scale=20)
-                trans.params = np.random.uniform(-5, 5, size=nparams)
+                trans.params = trans._params_mins+np.random.uniform(0., 2, size=nparams)
 
                 if nm in ['Log', 'BoxCox']:
-                    x = np.clip(x, -1, np.inf)
-                    # Avoid regions of infinite gradient
-                    x = x[np.abs(x)>1e-1]
+                    x = np.clip(x, 1e-1, np.inf)
 
                 elif nm == 'Logit':
                     x = np.random.uniform(1e-2, 1.-1e-2, size=100)
                     trans.reset()
 
-                elif nm == 'LogSinh':
-                    trans._params += 0.1
+                #elif nm == 'LogSinh':
+                #    trans._params += 0.1
 
                 # Check x -> forward(x) -> backward(y) is stable
                 y = trans.forward(x)
                 yp = trans.forward(x+delta)
-                jacn =  (yp-y)/delta
+                jacn = (yp-y)/delta
                 jac = trans.jacobian_det(x)
 
                 # Check jacobian are positive

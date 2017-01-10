@@ -206,7 +206,7 @@ class BoxCox(Transform):
         Transform.__init__(self, 'BoxCox',
             nparams=2,
             params_default=[0., 1.], \
-            params_mins=[-np.inf, -1.], \
+            params_mins=[EPS, EPS], \
             params_maxs=[np.inf, 3.])
 
     def forward(self, x):
