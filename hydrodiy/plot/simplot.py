@@ -186,7 +186,7 @@ class Simplot(object):
         data = self.data
         idx = self.idx_all
         nval = np.sum(idx)
-        ff = sutils.empfreq(nval)
+        ff = sutils.ppos(nval)
 
         icol = 0
         for cn in data.columns:
