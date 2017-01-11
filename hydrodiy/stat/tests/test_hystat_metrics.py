@@ -3,9 +3,15 @@ import unittest
 import numpy as np
 import pandas as pd
 
+from scipy.stats import norm
+
 from hydrodiy.stat import metrics
+from hydrodiy.stat import transform, sutils
+
+np.random.seed(0)
 
 class MetricsTestCase(unittest.TestCase):
+
     def setUp(self):
         print('\t=> MetricsTestCase')
         source_file = os.path.abspath(__file__)
@@ -27,7 +33,7 @@ class MetricsTestCase(unittest.TestCase):
             'reliability':c1[1],
             'resolution':c1[2],
             'uncertainty':c1[3],
-            'crps_potential':c1[4]
+            'potential':c1[4]
         }
 
 
@@ -47,7 +53,7 @@ class MetricsTestCase(unittest.TestCase):
             'reliability':c2[1],
             'resolution':c2[2],
             'uncertainty':c2[3],
-            'crps_potential':c2[4]
+            'potential':c2[4]
         }
 
 
@@ -76,102 +82,49 @@ class MetricsTestCase(unittest.TestCase):
             self.assertTrue(ck)
 
     def test_iqr(self):
+        nforc = 100
+        nens = 200
+
+        ts = np.repeat(np.random.uniform(10, 20, nforc)[:, None], nens, 1)
+        qq = sutils.ppos(nens)
+        spread = 2*norm.ppf(qq)[None,:]
+
+        ens = ts + spread
+        # Double the spread. This should lead to iqr skill score of 33%
+        # sk = (2*iqr-iqr)/(2*iqr+iqr) = 1./3
+        ref = ts + spread*2
+
+        iqr = metrics.iqr(ens, ref)
+        expected = np.array([100./3, 2.67607, 5.35215])
+        self.assertTrue(np.allclose(iqr, expected, atol=1e-4))
+
+
+    def test_bias(self):
         obs = np.arange(0, 200)
-        sim = np.dot(np.arange(0, 100).reshape((100,1)), np.ones((1, 200))).T
-        ref = np.array([obs]*200)
-        iqr = metrics.iqr_scores(obs, sim, ref)
-        expected = np.array([33.2446808, 50.2, 100.2])
-        self.assertTrue(np.allclose(iqr, expected, atol=1e-2))
 
-    def test_median_contingency(self):
-        nens = 50
-        obs = np.linspace(0.9, 1.1, 300)
-        ref = np.array([obs]*len(obs))
-        sim = np.vstack([np.random.uniform(1.1, 2., size=(100, nens)),
-            np.random.uniform(0., 0.9, size=(200, nens))])
+        for name in ['Identity', 'Log', 'Reciprocal']:
+            trans = metrics.get_transform(name)
+            tobs = trans.forward(obs)
+            tsim = tobs + 2
+            sim = trans.backward(tsim)
+            bias = metrics.bias(obs, sim, name)
 
-        cont, hit, miss, medians = metrics.median_contingency(obs, sim, ref)
+            expected = 2./np.mean(tobs)
+            self.assertTrue(np.allclose(bias, expected))
 
-        # check balance of cont table
-        returned = (np.sum(cont[0,:]) - np.sum(cont[1,:]))/np.sum(cont)
-        expected = 0.
-        self.assertTrue(np.allclose(returned, expected, atol=1e-2))
 
-        # Check hit and miss
-        returned = np.array([hit, miss])
-        expected = np.array([1./6, 0.75])
-        self.assertTrue(np.allclose(returned, expected, atol=1e-7))
+    def test_nse(self):
+        obs = np.arange(0, 200)
 
-    def test_tercile_contingency(self):
-        nens = 50
-        obs = np.arange(0, 301)
-        ref = np.array([obs]*len(obs))
-        sim = np.vstack([np.random.uniform(1., 99., size=(200, nens)),
-            np.random.uniform(200., 300., size=(101, nens))])
+        for name in ['Identity', 'Log', 'Reciprocal']:
+            trans = metrics.get_transform(name)
+            tobs = trans.forward(obs)
+            tsim = tobs + 2
+            sim = trans.backward(tsim)
+            nse = metrics.nse(obs, sim, name)
 
-        cont, hit, miss, hitlow, hithigh, terciles = metrics.tercile_contingency(obs, sim, ref)
-
-        # check balance of cont table
-        returned = (abs(np.sum(cont[0,:]) - np.sum(cont[1,:])) + abs(np.sum(cont[0,:]) - np.sum(cont[2,:])))/np.sum(cont)
-        expected = 0.
-        self.assertTrue(np.allclose(returned, expected, atol=1e-2))
-
-        # Check hit / miss
-        returned = np.array([hit, miss, hitlow, hithigh])
-        expected = np.array([2./3, 0.5, 0.5, 1.])
-        self.assertTrue(np.allclose(returned, expected, atol=1e-2))
-
-    def test_ens_metrics(self):
-        nval = 100
-        nens = 50
-        obs = pd.Series(np.random.normal(size=nval))
-        ref = np.array([np.random.choice(obs.values, nens+10)]*nval)
-        sim = pd.DataFrame(np.random.normal(size=(nval,nens)))
-        sc, idx, rt, cont_med, cont_terc = metrics.ens_metrics(obs, sim, ref)
-        #import pdb; pdb.set_trace()
-
-    def test_det_metrics(self):
-        nval = 100
-        nens = 1
-        obs = pd.Series(np.random.normal(size=nval))
-        sim = pd.DataFrame(np.random.normal(size=(nval,nens)))
-        sc = metrics.det_metrics(obs, sim)
-        sc, idx = metrics.det_metrics(obs, sim, True)
-
-    def test_cut(self):
-        nval = 10
-        cats = np.array([-0.5, 0, 0.5])
-        ysim1 = pd.Series(np.random.choice([-1, 0, 1], nval))
-
-        returned = metrics.cut(ysim1, cats)
-
-        expected = np.zeros((nval, 4))
-        expected[ysim1.values==-1,0] = 1
-        expected[ysim1.values==0,1] = 1
-        expected[ysim1.values==1,3] = 1
-
-        self.assertTrue(np.allclose(returned.values, expected, atol=1e-2))
-
-        nens = 100
-        cats = [0.5]
-        ysim2 = pd.DataFrame(np.random.choice([0, 1], nval*nens).reshape((nval, nens)))
-        returned = metrics.cut(ysim2, cats)
-        m = ysim2.mean(axis=1)
-        cc = returned.columns
-        expected = pd.DataFrame({cc[0]:1-m, cc[1]:m})
-        self.assertTrue(np.allclose(returned.values, expected, atol=1e-2))
-
-    def test_drps(self):
-        nval = 5
-        nens = 20
-        cats = np.ones((nval,1)) * 0.5
-        yobs = pd.Series(np.random.choice([0, 1], nval))
-        ysim = pd.DataFrame(np.random.choice([0, 1], nval*nens).reshape((nval, nens)))
-        returned, drps_all = metrics.drps(yobs, ysim, cats)
-
-        m = ysim.mean(axis=1)
-        expected = (2*(m-yobs)**2).mean()
-        self.assertTrue(np.allclose(returned, expected, atol=1e-4))
+            expected = 1-4.*len(obs)/np.sum((tobs-np.mean(tobs))**2)
+            self.assertTrue(np.allclose(nse, expected))
 
 
 if __name__ == "__main__":
