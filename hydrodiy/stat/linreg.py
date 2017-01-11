@@ -32,7 +32,6 @@ def data2vect(data):
     ''' Squeeze vectors to 1d  '''
 
     vect = np.atleast_1d(data)
-
     if vect.ndim == 2:
         vect = np.squeeze(vect)
 
@@ -252,8 +251,10 @@ class Linreg:
 
             # compute boostrap confidence intervals
             if hasattr(self, 'params_boot'):
+                qq = [2.5, 97.5]
+                qqtxt = ['2.5%', '97.5%']
                 boot_ci = self.params_boot.apply(lambda x:
-                    sutils.percentiles(x, [2.5, 97.5]))
+                    pd.Series(np.percentile(x, qq), index=qqtxt))
 
             str += '\tParameters:\n'
             for idx, row in self.params.iterrows():
@@ -550,7 +551,6 @@ class Linreg:
             return yvect_hat, predint
 
         if not boot:
-
             # Regular confidence intervales based on probability assumptions
 
             if self.regtype == 'ols':
@@ -575,7 +575,7 @@ class Linreg:
 
         else:
             if not hasattr(self, 'params_boot'):
-                raise ValueError('No bootstrap results, please run boot')
+                raise ValueError('No bootstrap results, please run Linreg.boot')
 
             # Computed predicted values with all bootstrap parameters
             pboot = self.params_boot
@@ -591,16 +591,13 @@ class Linreg:
 
             for cov in coverage:
                 proba = (100.-cov)/2
+                qq = [proba, 100.-proba]
+                qqtxt = ['{0:0.1f}%'.format(qqq) for qqq in qq]
 
-                c1 = '{0:0.1f}%'.format(proba)
-                tmp = yvect_boot.apply(sutils.percentiles,
-                    args=([proba], ), axis=1)
-                predint[c1] = data2vect(tmp)
-
-                c2 = '{0:0.1f}%'.format(100-proba)
-                tmp = yvect_boot.apply(sutils.percentiles,
-                    args=([100.-proba], ), axis=1)
-                predint[c2] = data2vect(tmp)
+                tmp = yvect_boot.apply(lambda x: \
+                        pd.Series(np.percentile(x, qq), qqtxt), axis=1)
+                for qq in qqtxt:
+                    predint[qq] = tmp[qq]
 
         # Reformat predint to dataframe
         if not predint is None:
@@ -676,121 +673,4 @@ class Linreg:
 
         LOGGER.info('Completed bootstrap')
 
-
-    def scatterplot(self, ax=None,
-        y=None, x=None,
-        boot=False,
-        coverage=95,
-        set_square_bounds=False):
-        '''
-        Scattre plot of predicted versus observed dta with
-        confidence prediction intervals
-
-        Parameters
-        -----------
-        ax :
-            Matplotlib axe to draw the plot
-        x : numpy.ndarray
-            Predictors
-        y : numpy.ndarray
-            Observed data
-        boot : bool
-            Use bootstrap  condifence intervals
-        coverage : float
-            Prediction intervals coverage (>0 and <100)
-            Do not show intervals if coverage is None
-        set_square_bounds : bool
-            Set same bounds for x and y axis
-        '''
-
-        if not hasattr(self, 'params'):
-            raise ValueError('No params, please run fit')
-
-        if (x is None and not y is None) or \
-            (not x is None and y is None):
-            raise ValueError('Both x and y should be None or not None')
-
-        # Build input data
-        if y is None:
-            yvect = data2vect(self.yvect)
-        else:
-            yvect = data2vect(yvect)
-
-
-        if x is None:
-            x = self.x
-
-        # Generate prediction data
-        yvect_hat, predint = self.predict(x=x, boot=boot,
-                                coverage=[coverage])
-
-        # Check dimensions
-        if len(yvect_hat) != len(yvect):
-            raise ValueError('Inconsistent length between' + \
-                ' yvect({0}) and yvect_hat({1})'.format( \
-                    len(yvect), len(yvect_hat)))
-
-        # Grab current axe is none provided
-        if ax is None:
-            ax = plt.gca()
-
-        # sort data
-        kk = np.argsort(yvect_hat)
-
-        # Draw scatter
-        color = '#1f77b4'
-        ax.plot(yvect_hat[kk], yvect[kk], 'o', \
-            mfc=color, mec=color, alpha=0.9,
-            label='fit')
-
-        # Set axes boundaries to get a square plot
-        xlim = ax.get_xlim()
-        ylim = ax.get_ylim()
-        lim = [min(xlim[0], ylim[0]), max(xlim[1], ylim[1])]
-
-        # Draw predicton intervals
-        if not predint is None:
-            color = '#1f77b4'
-            label = '{0}% confidence intervals'.format(coverage)
-            ax.plot(yvect_hat[kk], predint.iloc[kk, 0], '-', \
-                color=color,label=label)
-
-            ax.plot(yvect_hat[kk], predint.iloc[kk, 1], '-', \
-                color=color)
-
-        # Show the 1:1 line
-        ax.plot(lim, lim, '-', color='grey')
-
-        # Show high leverage points
-        if self.regtype == 'ols' and y is None:
-            leverages, cook, stud_res = self.leverages()
-            idx =  np.abs(cook[kk])>1
-            ncook = np.sum(idx)
-            color = '#d62728'
-            ax.plot(yvect_hat[kk][idx], yvect[kk][idx], 'o', \
-                mfc=color, mec=color, alpha=0.9,
-                label='Cook D>1 ({0} points)'.format(ncook))
-
-        # Set axe bounds
-        if set_square_bounds:
-            ax.set_xlim(lim)
-            ax.set_ylim(lim)
-        else:
-            ax.set_xlim(xlim)
-            ax.set_ylim(ylim)
-
-        # Axis labels
-        ax.set_xlabel(r'$\hat{Y}$')
-        ax.set_ylabel(r'$Y$')
-
-        # legend
-        leg = ax.legend(loc=4, numpoints=1,
-            fancybox=True, fontsize='small')
-        leg.get_frame().set_alpha(0.7)
-
-        # R2
-        if hasattr(self, 'diagnostic'):
-            ax.annotate(r'$R^2$ = %0.2f' % self.diagnostic['R2'],
-                va='top', ha='left',
-                xy=(0.05, 0.95), xycoords='axes fraction')
 

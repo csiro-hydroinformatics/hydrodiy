@@ -8,7 +8,6 @@ warnings.filterwarnings('error')
 
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 
 from hydrodiy.io import csv
 from hydrodiy.stat import linreg
@@ -125,30 +124,6 @@ class LinregTestCase(unittest.TestCase):
                         'upr':pint['97.5%']})
         ck = np.allclose(pred, pred_R[['fit', 'lwr', 'upr']])
         self.assertTrue(ck)
-
-
-    def test_ols_scatterplot(self):
-
-        # data set from R - see linreg.r
-        fd = '%s/data/olslinreg2_data.csv'%self.ftest
-        data, comment = csv.read_csv(fd)
-
-        # Fit model
-        lm = linreg.Linreg(data['x1'], data['y'], polyorder=3)
-        lm.fit(use_logger=False)
-
-        # Plot
-        fig, ax = plt.subplots()
-        lm.scatterplot(ax=ax)
-        fp = os.path.join(self.ftest, 'olslinreg2_scatter.png')
-        fig.savefig(fp)
-
-        # Plot
-        lm.boot()
-        fig, ax = plt.subplots()
-        lm.scatterplot(ax=ax, boot=True)
-        fp = os.path.join(self.ftest, 'olslinreg2_scatter_boot.png')
-        fig.savefig(fp)
 
 
     def test_gls_rcran(self):
