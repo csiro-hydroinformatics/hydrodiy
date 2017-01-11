@@ -187,16 +187,16 @@ class Log(Transform):
                 params_mins=[EPS])
 
     def forward(self, x):
-        loc = self.params[0]
-        return np.log(x+loc)
+        shift = self.params[0]
+        return np.log(x+shift)
 
     def backward(self, y):
-        loc = self.params[0]
-        return np.exp(y)-loc
+        shift = self.params[0]
+        return np.exp(y)-shift
 
     def jacobian_det(self, x):
-        loc = self.params[0]
-        return np.where(x+loc>EPS, 1./(x+loc), np.nan)
+        shift = self.params[0]
+        return np.where(x+shift>EPS, 1./(x+shift), np.nan)
 
 
 
@@ -210,17 +210,17 @@ class BoxCox(Transform):
             params_maxs=[np.inf, 3.])
 
     def forward(self, x):
-        loc, lam = self.params
-        return (np.power(x+loc, lam)-loc**lam)/lam
+        shift, lam = self.params
+        return (np.power(x+shift, lam)-shift**lam)/lam
 
     def backward(self, y):
-        loc, lam = self.params
-        u = lam*y+loc**lam
-        return np.power(u, 1./lam)-loc
+        shift, lam = self.params
+        u = lam*y+shift**lam
+        return np.power(u, 1./lam)-shift
 
     def jacobian_det(self, x):
-        loc, lam = self.params
-        return np.where(x+loc>EPS, np.power(x+loc, lam-1.), np.nan)
+        shift, lam = self.params
+        return np.where(x+shift>EPS, np.power(x+shift, lam-1.), np.nan)
 
 
 
@@ -234,9 +234,9 @@ class YeoJohnson(Transform):
             params_maxs=[np.inf, np.inf, 3.])
 
     def forward(self, x):
-        loc, scale, lam = self.params
+        shift, scale, lam = self.params
         y = x*np.nan
-        w = loc+x*scale
+        w = shift+x*scale
         ipos = w>=EPS
 
         if not np.isclose(lam, 0.0):
@@ -255,7 +255,7 @@ class YeoJohnson(Transform):
 
 
     def backward(self, y):
-        loc, scale, lam = self.params
+        shift, scale, lam = self.params
         x = y*np.nan
         ipos = y>=EPS
 
@@ -269,13 +269,13 @@ class YeoJohnson(Transform):
         else:
             x[~ipos] = -np.exp(-y[~ipos])+1
 
-        return (x-loc)/scale
+        return (x-shift)/scale
 
 
     def jacobian_det(self, x):
-        loc, scale, lam = self.params
+        shift, scale, lam = self.params
         j = x*np.nan
-        w = loc+x*scale
+        w = shift+x*scale
         ipos = w>=EPS
 
         if not np.isclose(lam, 0.0):
