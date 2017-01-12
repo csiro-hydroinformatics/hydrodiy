@@ -145,7 +145,8 @@ class LinregTestCase(unittest.TestCase):
             params = lm.params['estimate'].values
             expected = estimate['Estimate'].values
 
-            ck = np.allclose(params, expected, atol=6e-2)
+            # Skip test of intercept
+            ck = np.allclose(params[1:], expected[1:], atol=3e-2)
             self.assertTrue(ck)
 
             # Correct for intercept
