@@ -33,15 +33,22 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_ar1(self):
-        nval = 10
-        innov0 = np.random.normal(size=nval)
+        nval = 100
 
-        params = np.array([0.9, 10])
-        y = sutils.ar1innov(params, innov0)
+        # Check 1d and 2d config
+        for ncol in [0, 10]:
+            if ncol == 0:
+                innov0 = np.random.normal(size=nval)
+            else:
+                innov0 = np.random.normal(size=(nval, ncol))
 
-        innov = sutils.ar1inverse(params, y)
-        y2 = sutils.ar1innov(params, innov)
-        self.assertTrue(np.allclose(y, y2))
+            params = np.array([0.9, 10])
+            y = sutils.ar1innov(params, innov0)
+            self.assertEqual(innov0.shape, y.shape)
+
+            innov = sutils.ar1inverse(params, y)
+            y2 = sutils.ar1innov(params, innov)
+            self.assertTrue(np.allclose(y, y2))
 
 
     def test_lhs(self):

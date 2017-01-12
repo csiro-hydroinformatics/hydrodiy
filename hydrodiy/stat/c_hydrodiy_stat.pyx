@@ -4,11 +4,11 @@ cimport numpy as np
 np.import_array()
 
 cdef extern from 'c_ar1.h':
-    int c_ar1innov(int nval, double *params,
+    int c_ar1innov(int nval, int ncol, double *params,
             double * innov, double* output)
 
 cdef extern from 'c_ar1.h':
-    int c_ar1inverse(int nval, double *params,
+    int c_ar1inverse(int nval, int ncol, double *params,
             double* output, double * innov)
 
 cdef extern from 'c_crps.h':
@@ -50,37 +50,39 @@ def olsleverage(np.ndarray[double, ndim=2, mode='c'] predictors not None,
 
 
 def ar1innov(np.ndarray[double, ndim=1, mode='c'] params not None,
-        np.ndarray[double, ndim=1, mode='c'] input not None,
-        np.ndarray[double, ndim=1, mode='c'] output not None):
+        np.ndarray[double, ndim=2, mode='c'] inputs not None,
+        np.ndarray[double, ndim=2, mode='c'] outputs not None):
 
     cdef int ierr
 
     # check dimensions
     assert params.shape[0] == 2
-    assert input.shape[0] == output.shape[0]
+    assert inputs.shape[0] == outputs.shape[0]
+    assert inputs.shape[1] == outputs.shape[1]
 
-    ierr = c_ar1innov(input.shape[0],
+    ierr = c_ar1innov(inputs.shape[0], inputs.shape[1],
             <double*> np.PyArray_DATA(params),
-            <double*> np.PyArray_DATA(input),
-            <double*> np.PyArray_DATA(output))
+            <double*> np.PyArray_DATA(inputs),
+            <double*> np.PyArray_DATA(outputs))
 
     return ierr
 
 
 
 def ar1inverse(np.ndarray[double, ndim=1, mode='c'] params not None,
-        np.ndarray[double, ndim=1, mode='c'] input not None,
-        np.ndarray[double, ndim=1, mode='c'] innov not None):
+        np.ndarray[double, ndim=2, mode='c'] inputs not None,
+        np.ndarray[double, ndim=2, mode='c'] innov not None):
 
     cdef int ierr
 
     # check dimensions
     assert params.shape[0] == 2
-    assert input.shape[0] == innov.shape[0]
+    assert inputs.shape[0] == innov.shape[0]
+    assert inputs.shape[1] == innov.shape[1]
 
-    ierr = c_ar1inverse(input.shape[0],
+    ierr = c_ar1inverse(inputs.shape[0], inputs.shape[1],
             <double*> np.PyArray_DATA(params),
-            <double*> np.PyArray_DATA(input),
+            <double*> np.PyArray_DATA(inputs),
             <double*> np.PyArray_DATA(innov))
 
     return ierr

@@ -29,16 +29,19 @@ def ar1innov(params, innov):
     Parameters
     -----------
     params : list
-        Parameter vector with
-        params[0] ar1 coefficient
-        params[1] Initial value of the innovation
+        Parameter vector with. [2] array:
+        - params[0] ar1 coefficient
+        - params[1] Initial value of the innovation
     innov : numpy.ndarray
-        Innovation time series
+        Innovation time series. [n, p] array:
+        - n is the number of time steps
+        - p is the number of time series to process
 
     Returns
     -----------
-    data : numpy.ndarray
-        Time series of innovations
+    outputs : numpy.ndarray
+        Time series of AR1 simulations. [n, p] or [n] array
+        if p=1
 
     Example
     -----------
@@ -52,33 +55,39 @@ def ar1innov(params, innov):
     True
 
     '''
-    innov = innov.reshape((np.prod(innov.shape),))
-    data = np.zeros(innov.shape[0], float)
+    shape = innov.shape
+    innov = np.atleast_2d(innov).astype(np.float64)
+    if not innov.flags['C_CONTIGUOUS']:
+        innov = np.ascontiguousarray(innov)
 
-    p = np.array(params).reshape((len(params),))
-    ierr = c_hydrodiy_stat.ar1innov(p, innov, data)
+    outputs = np.zeros(innov.shape, np.float64)
+
+    params = np.atleast_1d(params).astype(np.float64)
+    ierr = c_hydrodiy_stat.ar1innov(params, innov, outputs)
     if ierr!=0:
         raise ValueError('ar1innov returns %d'%ierr)
 
-    return data
+    return np.reshape(outputs, shape)
 
 
-def ar1inverse(params, data):
+def ar1inverse(params, inputs):
     ''' Compute innovations from an AR1 time series
 
     Parameters
     -----------
     params : list
-        Parameter vector with
-        params[0] ar1 coefficient
-        params[1] Initial value of the innovation
-    data : numpy.ndarray
-        Time series of ar1 data
+        Parameter vector with. [2] array:
+        - params[0] ar1 coefficient
+        - params[1] Initial value of the innovation
+    inputs : numpy.ndarray
+        AR1 time series. [n, p] array
+        - n is the number of time steps
+        - p is the number of time series to process
 
     Returns
     -----------
     innov : numpy.ndarray
-        Time series of innovations
+        Time series of innovations. [n, p] array
 
     Example
     -----------
@@ -92,13 +101,19 @@ def ar1inverse(params, data):
     True
 
     '''
-    innov = np.zeros(data.shape[0], float)
-    p = np.array(params).reshape((len(params),))
-    ierr = c_hydrodiy_stat.ar1inverse(p, data, innov)
+    shape = inputs.shape
+    inputs = np.atleast_2d(inputs).astype(np.float64)
+    if not inputs.flags['C_CONTIGUOUS']:
+        inputs = np.ascontiguousarray(inputs)
+
+    innov = np.zeros(inputs.shape, np.float64)
+
+    params = np.atleast_1d(params).astype(np.float64)
+    ierr = c_hydrodiy_stat.ar1inverse(params, inputs, innov)
     if ierr!=0:
         raise ValueError('c_hystat.ar1inverse returns %d'%ierr)
 
-    return innov
+    return np.reshape(innov, shape)
 
 
 def lhs(nparams, nsample, pmin, pmax):
