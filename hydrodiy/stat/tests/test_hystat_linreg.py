@@ -41,7 +41,6 @@ class LinregTestCase(unittest.TestCase):
         lm = linreg.Linreg(x, y)
         lm.fit()
 
-
     def test_ols_johnston(self):
         # data set from Johnston and Di Nardo, page 75
         # Econometrics Methods, 1993
@@ -67,9 +66,7 @@ class LinregTestCase(unittest.TestCase):
         y0, pint = lm.predict(np.array([10, 10]).reshape((1,2)))
         self.assertTrue(np.allclose(y0[0],14))
 
-
     def test_ols_rcran1(self):
-
         # data set from R - see linreg.r
         fd = '%s/data/olslinreg1_data.csv'%self.ftest
         data, comment = csv.read_csv(fd)
@@ -98,7 +95,6 @@ class LinregTestCase(unittest.TestCase):
 
 
     def test_ols_rcran2(self):
-
         # data set from R - see linreg.r
         fd = '%s/data/olslinreg2_data.csv'%self.ftest
         data, comment = csv.read_csv(fd)
@@ -127,10 +123,8 @@ class LinregTestCase(unittest.TestCase):
 
 
     def test_gls_rcran(self):
-
         # data set from R - see linreg_gls.r
         for itest in range(1, 3):
-
             fd = '%s/data/glslinreg%d_data.csv' % (self.ftest, itest)
             data, comment = csv.read_csv(fd)
 
@@ -148,20 +142,15 @@ class LinregTestCase(unittest.TestCase):
             lm.fit(False)
 
             # Test estimates
-            params = lm.params['estimate']
-            estimate = estimate['Estimate']
+            params = lm.params['estimate'].values
+            expected = estimate['Estimate'].values
 
-            ck1 = np.allclose(params[1:], estimate[1:], atol=6e-2)
-            self.assertTrue(ck1)
-
-            # Do not test intercept
-            # TODO : check this
-            #ck2 = np.allclose(params[0], estimate[0], atol=2e-1)
-            #self.assertTrue(ck2)
+            ck = np.allclose(params, expected, atol=6e-2)
+            self.assertTrue(ck)
 
             # Correct for intercept
             # (not well determined in gls ar1 regressions)
-            lm.params.loc['intercept', 'estimate'] = estimate[0]
+            lm.params.loc['intercept', 'estimate'] = expected[0]
 
             # Test predictions
             y0, pint = lm.predict(pred_R[['x1', 'x2']])
@@ -170,7 +159,6 @@ class LinregTestCase(unittest.TestCase):
 
 
     def test_gls_elasticity(self):
-
         fd = '%s/data/elasticity_data.csv' % self.ftest
         data, comment = csv.read_csv(fd)
 
@@ -185,7 +173,6 @@ class LinregTestCase(unittest.TestCase):
 
     def test_boot_ols(self):
         ''' Test bootstrap on OLS regression '''
-
         # data set from R - see linreg.r
         #fd = '%s/data/olslinreg1_data.csv'%self.ftest
         #data, comment = csv.read_csv(fd)

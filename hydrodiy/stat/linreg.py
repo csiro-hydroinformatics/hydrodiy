@@ -292,12 +292,12 @@ class Linreg:
             str += '\t  Ratio Var = %6.3f\n' % self.diagnostic['ratio_variance']
 
             str += '\n\tTest on normality of residuals (Shapiro):\n'
-            shap = self.diagnostic['shapiro_residuals_pvalue']
+            shap = self.diagnostic['shapiro_pvalue']
             mess = '(<0.05 : failing normality at 5% level)'
             str += '\t  P value = %6.3f %s\n' % (shap, mess)
 
             str += '\n\tTest on independence of residuals (Durbin-Watson):\n'
-            durbwat = self.diagnostic['durbinwatson_residuals_stat']
+            durbwat = self.diagnostic['durbinwatson_stat']
             mess = '(<1 : residuals may not be independent)'
             str += '\t  Statistic = %6.3f %s\n' % (durbwat, mess)
 
@@ -385,7 +385,20 @@ class Linreg:
 
 
     def compute_diagnostic(self, yvect, yvect_hat):
-        ''' perform tests on regression assumptions '''
+        ''' perform tests on regression assumptions
+
+        Parameters
+        -----------
+        yvect : numpy.ndarray
+            Observed data
+        yvect_hat : numpy.ndarray
+            Predicted data
+
+        Returns
+        -----------
+        diag : dict
+            Set of performance metrics
+        '''
 
         residuals = get_residuals(yvect, yvect_hat,
                     self.regtype, self.phi)
@@ -423,9 +436,9 @@ class Linreg:
             'mean_error':merr,
             'coef_determination':coefdet,
             'ratio_variance':ratio_std,
-            'shapiro_residuals_stat': shap[0],
-            'shapiro_residuals_pvalue':shap[1],
-            'durbinwatson_residuals_stat': durbwat,
+            'shapiro_stat': shap[0],
+            'shapiro_pvalue':shap[1],
+            'durbinwatson_stat': durbwat,
             'R2': rsquared
         }
 
@@ -433,7 +446,15 @@ class Linreg:
 
 
     def fit(self, use_logger=True, run_diagnostic=True):
-        ''' Run parameter estimation and compute diagnostics '''
+        ''' Run parameter estimation and compute diagnostics
+
+        Parameters
+        -----------
+        use_logger : bool
+            Log entry to linreg.logger
+        run_diagnostic : bool
+            Compute diagnostic metrics
+        '''
 
         # Fit
         if self.regtype == 'ols':
@@ -613,8 +634,18 @@ class Linreg:
 
     def boot(self, nsample=500, run_diagnostic=False,
                 nboot_print=10):
-        ''' Bootstrap the regression fitting process '''
+        ''' Bootstrap the regression fitting process
 
+        Parameters
+        -----------
+        nsamples : int
+            Number of bootstrap replicates
+        run_diagnostic : bool
+            Compute diagnostic metrics or not
+        nboot_print : int
+            Frequency of message logging during bootstrap
+            process
+        '''
         # Performs first fit
         self.fit()
         yvect_hat, _ = self.predict(coverage=None)
