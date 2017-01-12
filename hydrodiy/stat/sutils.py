@@ -57,6 +57,12 @@ def ar1innov(params, innov):
     '''
     shape = innov.shape
     innov = np.atleast_2d(innov).astype(np.float64)
+
+    # Transpose 1d array
+    if innov.shape[0] == 1:
+        innov = innov.T
+
+    # set the array contiguous to work with C
     if not innov.flags['C_CONTIGUOUS']:
         innov = np.ascontiguousarray(innov)
 
@@ -103,6 +109,12 @@ def ar1inverse(params, inputs):
     '''
     shape = inputs.shape
     inputs = np.atleast_2d(inputs).astype(np.float64)
+
+    # Transpose 1d array
+    if inputs.shape[0] == 1:
+        inputs = inputs.T
+
+    # set the array contiguous to work with C
     if not inputs.flags['C_CONTIGUOUS']:
         inputs = np.ascontiguousarray(inputs)
 

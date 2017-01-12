@@ -18,6 +18,7 @@ int c_ar1innov(int nval, int ncol, double * params,
 	int i, j;
     double alpha, y0;
 
+
     /* ar1 coefficient */
     alpha = params[0];
 
