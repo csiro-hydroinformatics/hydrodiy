@@ -95,10 +95,18 @@ class Parameterised(object):
             return
 
         value = np.atleast_1d(value).astype(np.float64)
+
+        # Check values
         if len(value) != self._nparams:
             raise ValueError(('Expected params of length' + \
                 ' {0}, got {1}').format(self.nparams, \
                     value.shape[0]))
+
+        if np.any(np.isnan(value)):
+            raise ValueError('Cannot set parameters with a nan value ({0})'.format(\
+                value))
+
+        # Allocate parameters
         self._params = np.clip(value, self._params_mins, self._params_maxs)
 
 

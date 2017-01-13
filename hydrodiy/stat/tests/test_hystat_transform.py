@@ -32,6 +32,12 @@ class TransformTestCase(unittest.TestCase):
         self.assertTrue(np.allclose(trans._params, exp))
         self.assertTrue(np.allclose(trans.params, exp))
 
+        try:
+            trans.params = np.nan
+        except ValueError as err:
+            pass
+        self.assertTrue(str(err).startswith('Cannot set'))
+
         x = np.linspace(0, 1, 10)
         try:
             trans.forward(x)
