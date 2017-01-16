@@ -34,6 +34,20 @@ class UtilsTestCase(unittest.TestCase):
         self.assertTrue(np.allclose(pp, np.arange(1., nval+1.)/(nval+1)))
 
 
+    def test_acf(self):
+        nval = 100000
+        rho = 0.8
+        sig = 2
+        innov = np.random.normal(size=nval, scale=sig*math.sqrt(1-rho**2))
+        x = sutils.ar1innov([rho, 0.], innov)
+
+        maxlag = 10
+        acf = sutils.acf(x, maxlag)
+        # Theoretical ACF for AR1 process
+        expected = rho**np.arange(1, maxlag+1)
+        self.assertTrue(np.allclose(acf, expected, atol=1e-2))
+
+
     def test_ar1_forward(self):
         nval = 10
         params = np.array([0.9, 10])

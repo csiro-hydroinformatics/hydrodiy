@@ -1,7 +1,8 @@
 import re
-from math import sqrt
+import math
 import numpy as np
 import pandas as pd
+
 import c_hydrodiy_stat
 
 
@@ -21,6 +22,37 @@ def ppos(nval, cst=0.3):
         Plotting postion
     '''
     return (np.arange(1, nval+1)-cst)/(nval+1-2*cst)
+
+
+def acf(data, maxlag):
+    ''' Sample auto-correlation function. The function computes the mean
+    and standard deviation of lagged vectors independently.
+
+    Parameters
+    -----------
+    data : numpy.ndarray
+        Input data vector. [n] array.
+    maxlag : int
+        Maximum lag
+
+    Returns
+    -----------
+    acf_values : numpy.ndarray
+        Autocorrelation function. [h] array.
+    '''
+
+    acf_values = np.zeros(maxlag)
+
+    for k in range(maxlag):
+        v1 = data[k+1:]
+        v1 = v1-np.nanmean(v1)
+
+        v2 = data[:-k-1]
+        v2 = v2-np.nanmean(v2)
+
+        acf_values[k] = np.nanmean(v1*v2)/math.sqrt(np.nanmean(v1**2)*np.nanmean(v2**2))
+
+    return acf_values
 
 
 def ar1innov(params, innov):
