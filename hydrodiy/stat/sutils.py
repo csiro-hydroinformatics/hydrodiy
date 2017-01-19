@@ -24,7 +24,7 @@ def ppos(nval, cst=0.3):
     return (np.arange(1, nval+1)-cst)/(nval+1-2*cst)
 
 
-def acf(data, maxlag):
+def acf(data, maxlag, biased=True, minval=None):
     ''' Sample auto-correlation function. The function computes the mean
     and standard deviation of lagged vectors independently.
 
@@ -34,6 +34,12 @@ def acf(data, maxlag):
         Input data vector. [n] array.
     maxlag : int
         Maximum lag
+    biased : bool
+        Compute biased (using n as normalising constant)
+        or unbiased (using n-k) estimator
+    minval : float
+        Minimum threshold below which acf is not
+        computed
 
     Returns
     -----------
@@ -41,16 +47,35 @@ def acf(data, maxlag):
         Autocorrelation function. [h] array.
     '''
 
+    nval = len(data)
     acf_values = np.zeros(maxlag)
 
-    for k in range(maxlag):
-        v1 = data[k+1:]
-        v1 = v1-np.nanmean(v1)
+    cov = np.zeros(maxlag+1)
 
-        v2 = data[:-k-1]
-        v2 = v2-np.nanmean(v2)
+    for k in range(maxlag+1):
+        # Lagged vectors
+        d1 = data[k:]
 
-        acf_values[k] = np.nanmean(v1*v2)/math.sqrt(np.nanmean(v1**2)*np.nanmean(v2**2))
+        if k>0:
+            d2 = data[:-k]
+        else:
+            d2 = d1
+
+        # Value filter
+        if not minval is None:
+            idx = (d1>minval) & (d2>minval)
+            d1 = d1[idx]
+            d2 = d2[idx]
+
+        # Sample mean
+        if k == 0:
+            mean = np.mean(d1)
+
+        # Covariance
+        cov[k] = np.nansum((d1-mean)*(d2-mean))/(nval-k*(not biased))
+
+    # ACF function
+    acf_values = cov[1:]/cov[0]
 
     return acf_values
 

@@ -5,19 +5,25 @@ runtest <- function(data, fbase){
     
     fdata = sprintf("%s_data.csv", fbase)
     write.csv(data, fdata, quote=FALSE, row.names=FALSE)
+
     fres = sprintf("%s_result.csv", fbase)
     write.csv(data.frame(lag=res1$lag, acf=res1$acf, covar=res2$acf), 
               fres, quote=FALSE, row.names=FALSE)
 }
 
 
-folder = "/home/magpie/Dropbox/code/pypackage/hydrodiy/hystat/tests"
-
 # simple dataset
 data = as.double(c(rep(1,5), rep(0,5), rep(1,5)))
-runtest(data, sprintf('%s/acf1', folder))
+runtest(data, 'data/acf1')
 
-# ?acf dataset
+# acf dataset
 data = lh
-runtest(data, sprintf('%s/acf2', folder))
+runtest(data, 'data/acf2')
+
+data = arima.sim(n=200, list(ar=0.8), sd=1)
+runtest(data, 'data/acf3')
+
+data = arima.sim(n=500, list(ar=0.8), sd=1)
+runtest(data, 'data/acf4')
+
 

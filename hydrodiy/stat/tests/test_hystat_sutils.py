@@ -5,8 +5,6 @@ import numpy as np
 
 from scipy.special import kolmogorov
 
-from scipy.stats import spearmanr
-
 import matplotlib.pyplot as plt
 
 from hydrodiy.io import csv
@@ -34,7 +32,7 @@ class UtilsTestCase(unittest.TestCase):
         self.assertTrue(np.allclose(pp, np.arange(1., nval+1.)/(nval+1)))
 
 
-    def test_acf(self):
+    def test_acf_all(self):
         nval = 100000
         rho = 0.8
         sig = 2
@@ -43,9 +41,45 @@ class UtilsTestCase(unittest.TestCase):
 
         maxlag = 10
         acf = sutils.acf(x, maxlag)
+
         # Theoretical ACF for AR1 process
         expected = rho**np.arange(1, maxlag+1)
-        self.assertTrue(np.allclose(acf, expected, atol=1e-2))
+        self.assertTrue(np.allclose(acf, expected, atol=2e-2))
+
+
+    def test_acf_r(self):
+        for i in range(1, 5):
+            fd = os.path.join(self.ftest, 'data', 'acf{0}_data.csv'.format(i))
+            data, _ = csv.read_csv(fd)
+            data = np.squeeze(data.values)
+
+            fr = os.path.join(self.ftest, 'data', 'acf{0}_result.csv'.format(i))
+            expected, _ = csv.read_csv(fr)
+            expected = expected['acf'].values[1:]
+
+            acf = sutils.acf(data, expected.shape[0])
+
+            ck = np.allclose(expected, acf)
+            self.assertTrue(ck)
+
+
+    def test_acf_minval(self):
+        nval = 5000
+        sig = 2
+        rho1 = 0.7
+        innov = np.random.normal(size=nval/2, scale=sig*math.sqrt(1-rho1**2))
+        x1 = 10*sig + sutils.ar1innov([rho1, 0.], innov)
+
+        rho2 = 0.1
+        innov = np.random.normal(size=nval/2, scale=sig*math.sqrt(1-rho2**2))
+        x2 = -10*sig + sutils.ar1innov([rho2, 0.], innov)
+
+        data = np.concatenate([x1, x2])
+
+        acf1 = sutils.acf(data, 1, minval=0)
+        acf2 = sutils.acf(-data, 1, minval=0)
+        self.assertTrue(np.allclose([acf1[0], acf2[0]], [rho1, rho2], \
+                            atol=1e-2))
 
 
     def test_ar1_forward(self):
