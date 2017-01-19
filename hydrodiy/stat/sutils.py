@@ -62,10 +62,13 @@ def acf(data, maxlag, biased=True, minval=None):
             d2 = d1
 
         # Value filter
+        idx = ~np.isnan(d1) & ~np.isnan(d2)
+
         if not minval is None:
-            idx = (d1>minval) & (d2>minval)
-            d1 = d1[idx]
-            d2 = d2[idx]
+            idx = idx & (d1>minval) & (d2>minval)
+
+        d1 = d1[idx]
+        d2 = d2[idx]
 
         # Sample mean
         if k == 0:
