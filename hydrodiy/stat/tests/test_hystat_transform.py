@@ -41,6 +41,19 @@ class TransformTestCase(unittest.TestCase):
         self.assertTrue(isinstance(trans['a'], float))
 
         try:
+            trans['a'] = [10, 10]
+        except TypeError as err:
+            pass
+        self.assertTrue(str(err).startswith('float'))
+
+
+        try:
+            trans['a'] = np.nan
+        except ValueError as err:
+            pass
+        self.assertTrue(str(err).startswith('Cannot set'))
+
+        try:
             trans.params = np.nan
         except ValueError as err:
             pass

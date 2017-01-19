@@ -79,6 +79,9 @@ class Parameterised(object):
         return s
 
     def __setitem__(self, key, item):
+        item = float(item)
+        if np.isnan(item):
+            raise ValueError('Cannot set parameter with nan')
         self._params[self.params_names == key] = item
 
     def __getitem__(self, key):
