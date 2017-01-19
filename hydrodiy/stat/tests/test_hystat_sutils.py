@@ -163,6 +163,21 @@ class UtilsTestCase(unittest.TestCase):
             self.assertTrue(np.allclose(y, y2))
 
 
+    def test_ar1_nan(self):
+        nval = 20
+        innov = np.random.normal(size=nval)
+        innov[5:10] = np.nan
+
+        # AR1 keeps last value before nans
+        y = sutils.ar1innov([0.9, 10], innov)
+        y2 = sutils.ar1innov([0.9, y[4]], innov[10:])
+        self.assertTrue(np.allclose(y[10:], y2))
+
+        innov = sutils.ar1inverse([0.9, 10.], y)
+        innov2 = sutils.ar1inverse([0.9, innov[4]], y[10:])
+        self.assertTrue(np.allclose(innov[11:], innov2[1:]))
+
+
     def test_lhs(self):
         nparams = 10
         nsamples = 50
