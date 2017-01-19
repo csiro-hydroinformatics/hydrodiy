@@ -27,15 +27,18 @@ class TransformTestCase(unittest.TestCase):
         self.assertEqual(trans.name, 'test')
         self.assertEqual(trans.params_names, ['a'])
 
+        # test set and get parameters
         value = 10
         trans.params = value
         exp = np.array([value], dtype=np.float64)
         self.assertTrue(np.allclose(trans._params, exp))
         self.assertTrue(np.allclose(trans.params, exp))
 
+        # test setitem/getitem
         trans['a'] = 20
         self.assertTrue(np.allclose(trans.params, [20]))
         self.assertTrue(np.allclose(trans['a'], 20))
+        self.assertTrue(isinstance(trans['a'], float))
 
         try:
             trans.params = np.nan

@@ -82,7 +82,7 @@ class Parameterised(object):
         self._params[self.params_names == key] = item
 
     def __getitem__(self, key):
-        return self._params[self.params_names == key]
+        return self._params[self.params_names == key][0]
 
     @property
     def name(self):
