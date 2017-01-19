@@ -11,7 +11,7 @@ class Parameterised(object):
     ''' Simple interface to common transform functions '''
 
     def __init__(self, name,
-            nparams=0,  \
+            params_names=None, \
             params_default=None, \
             params_mins=None, \
             params_maxs=None,
@@ -22,8 +22,22 @@ class Parameterised(object):
         self._name = name
         self._object_type_name = object_type_name
 
-        # Initialise params
+        # Param names and number of params
+        if params_names is None:
+            nparams = 0
+            params_names = np.array([])
+        else:
+            params_names = np.atleast_1d(params_names).astype(str)
+            nparams = len(params_names)
+
+            if nparams != len(np.unique(params_names)):
+                raise ValueError('Non unique parameter names {0}'.format(\
+                    params_names))
+
         self._nparams = nparams
+        self._params_names = params_names
+
+        # Initialise params
         self._params = np.repeat(np.nan, nparams)
 
         # Set default params
@@ -59,11 +73,16 @@ class Parameterised(object):
     def __str__(self):
         s = '\n{0} {1}\n'.format(self._name, self._object_type_name)
         if self._nparams > 0:
-            s += '  Params = [' + ', '.join(['{0:3.3e}'.format(p) \
-                for p in  self._params]) + ']'
+            s += '  Params = [' + ', '.join(['{0}:{1:3.3e}'.format(nm, p) \
+                for nm, p in  zip(self._params_names, self._params)]) + ']'
         s += '\n'
         return s
 
+    def __setitem__(self, key, item):
+        self._params[self.params_names == key] = item
+
+    def __getitem__(self, key):
+        return self._params[self.params_names == key]
 
     @property
     def name(self):
@@ -72,6 +91,10 @@ class Parameterised(object):
     @property
     def nparams(self):
         return self._nparams
+
+    @property
+    def params_names(self):
+        return self._params_names
 
     @property
     def params_default(self):
@@ -120,12 +143,12 @@ class Transform(Parameterised):
     ''' Transform base class '''
 
     def __init__(self, name,
-        nparams=0,  \
+        params_names=None, \
         params_default=None, \
         params_mins=None, \
         params_maxs=None):
 
-        Parameterised.__init__(self, name, nparams, \
+        Parameterised.__init__(self, name, params_names, \
             params_default, params_mins, \
             params_maxs, 'Transform')
 
@@ -146,9 +169,8 @@ class Transform(Parameterised):
 
 class Identity(Transform):
 
-    def __init__(self, constants=None):
-        Transform.__init__(self, 'Identity', \
-                nparams=0)
+    def __init__(self):
+        Transform.__init__(self, 'Identity')
 
     def forward(self, x):
         return x
@@ -165,7 +187,7 @@ class Logit(Transform):
 
     def __init__(self):
         Transform.__init__(self, 'Logit', \
-                nparams=2,
+                params_names=['lower', 'upper'],
                 params_default=[0, 1])
 
     def forward(self, x):
@@ -190,7 +212,7 @@ class Log(Transform):
 
     def __init__(self):
         Transform.__init__(self, 'Log', \
-                nparams=1, \
+                params_names=['shift'],
                 params_default=1., \
                 params_mins=[EPS])
 
@@ -212,7 +234,7 @@ class BoxCox(Transform):
 
     def __init__(self):
         Transform.__init__(self, 'BoxCox',
-            nparams=2,
+            params_names=['shift', 'lambda'],
             params_default=[0., 1.], \
             params_mins=[EPS, EPS], \
             params_maxs=[np.inf, 3.])
@@ -236,7 +258,7 @@ class YeoJohnson(Transform):
 
     def __init__(self):
         Transform.__init__(self, 'YeoJohnson',
-            nparams=3, \
+            params_names=['shift', 'scale', 'lambda'],
             params_default=[0., 1., 1.], \
             params_mins=[-np.inf, 1e-5, -1.], \
             params_maxs=[np.inf, np.inf, 3.])
@@ -305,7 +327,7 @@ class LogSinh(Transform):
 
     def __init__(self):
         Transform.__init__(self, 'LogSinh', \
-            nparams=2, \
+            params_names=['a', 'b'], \
             params_default=[0., 1.], \
             params_mins=[-np.inf, EPS])
 
@@ -329,7 +351,7 @@ class Reciprocal(Transform):
 
     def __init__(self):
         Transform.__init__(self, 'Reciprocal', \
-            nparams=1, \
+            params_names=['shift'], \
             params_default=[1.], \
             params_mins=[EPS])
 

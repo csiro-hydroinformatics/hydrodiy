@@ -23,14 +23,19 @@ class TransformTestCase(unittest.TestCase):
     def test_transform_class(self):
         ''' Test the class transform '''
 
-        trans = transform.Transform('test', 1)
+        trans = transform.Transform('test', 'a')
         self.assertEqual(trans.name, 'test')
+        self.assertEqual(trans.params_names, ['a'])
 
         value = 10
         trans.params = value
         exp = np.array([value], dtype=np.float64)
         self.assertTrue(np.allclose(trans._params, exp))
         self.assertTrue(np.allclose(trans.params, exp))
+
+        trans['a'] = 20
+        self.assertTrue(np.allclose(trans.params, [20]))
+        self.assertTrue(np.allclose(trans['a'], 20))
 
         try:
             trans.params = np.nan
@@ -56,6 +61,12 @@ class TransformTestCase(unittest.TestCase):
         except NotImplementedError as err:
             pass
         self.assertTrue(str(err).startswith('Method jacobian_det'))
+
+        try:
+            trans = transform.Transform('test', ['a', 'a'])
+        except ValueError as err:
+            pass
+        self.assertTrue(str(err).startswith('Non unique'))
 
 
     def test_print(self):
