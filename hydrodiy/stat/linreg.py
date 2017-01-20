@@ -125,7 +125,7 @@ def get_residuals(yvect, yvect_hat, regtype, phi):
                 'Cannot compute GLS AR1 residuals')
 
         # Extract innovation from AR1 if GLS AR1
-        residuals = sutils.ar1inverse([phi, 0.], residuals)
+        residuals = sutils.ar1inverse(phi, residuals, 0.)
 
     return residuals
 
@@ -152,7 +152,7 @@ def ar1_loglikelihood(theta, xmat, yvect):
 
     nval = yvect_hat.shape[0]
     resid = np.array(yvect-yvect_hat).reshape((nval, ))
-    innov = sutils.ar1inverse([phi, 0.], resid)
+    innov = sutils.ar1inverse(phi, resid, 0.)
     sse = np.sum(innov[1:]**2)
     sse += innov[0]**2 * (1-phi**2)
 
@@ -673,7 +673,7 @@ class Linreg:
             # Reconstruct autocorrelated signal in case of GLS_AR1
             # Resample only the 2, 3, ..., n values. The first value remains the same
             if self.regtype == 'gls_ar1':
-                residuals_boot = sutils.ar1innov([self.phi, 0.], residuals_boot)
+                residuals_boot = sutils.ar1innov(self.phi, residuals_boot, 0.)
 
             # Create a new set of observations
             y_boot = yvect_hat + residuals_boot
