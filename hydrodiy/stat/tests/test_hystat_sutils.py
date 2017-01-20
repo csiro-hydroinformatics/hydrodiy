@@ -32,12 +32,21 @@ class UtilsTestCase(unittest.TestCase):
         self.assertTrue(np.allclose(pp, np.arange(1., nval+1.)/(nval+1)))
 
 
+    def test_acf_error(self):
+        data = np.random.uniform(size=20)
+        try:
+            acf = sutils.acf(data, idx=(data>0.5)[2:])
+        except ValueError as err:
+            pass
+        self.assertTrue(str(err).startswith('Expected idx'))
+
+
     def test_acf_all(self):
         nval = 100000
         rho = 0.8
         sig = 2
         innov = np.random.normal(size=nval, scale=sig*math.sqrt(1-rho**2))
-        x = sutils.ar1innov([rho, 0.], innov)
+        x = sutils.ar1innov(rho, innov)
 
         maxlag = 10
         acf = sutils.acf(x, maxlag)
@@ -63,28 +72,29 @@ class UtilsTestCase(unittest.TestCase):
             self.assertTrue(ck)
 
 
-    def test_acf_minval(self):
+    def test_acf_idx(self):
         nval = 5000
         sig = 2
         rho1 = 0.7
         innov = np.random.normal(size=nval/2, scale=sig*math.sqrt(1-rho1**2))
-        x1 = 10*sig + sutils.ar1innov([rho1, 0.], innov)
+        x1 = 10*sig + sutils.ar1innov(rho1, innov)
 
         rho2 = 0.1
         innov = np.random.normal(size=nval/2, scale=sig*math.sqrt(1-rho2**2))
-        x2 = -10*sig + sutils.ar1innov([rho2, 0.], innov)
+        x2 = -10*sig + sutils.ar1innov(rho2, innov)
 
         data = np.concatenate([x1, x2])
 
-        acf1 = sutils.acf(data, 1, minval=0)
-        acf2 = sutils.acf(-data, 1, minval=0)
+        acf1 = sutils.acf(data, idx=data>=0)
+        acf2 = sutils.acf(data, idx=data<=0)
         self.assertTrue(np.allclose([acf1[0], acf2[0]], [rho1, rho2], \
                             atol=1e-2))
 
 
     def test_ar1_forward(self):
         nval = 10
-        params = np.array([0.9, 10])
+        alpha = 0.9
+        yini = 10
 
         # Check 1d and 2d config
         for ncol in [1, 4]:
@@ -93,9 +103,9 @@ class UtilsTestCase(unittest.TestCase):
             else:
                 innov = np.random.normal(size=(nval, ncol))
 
-            outputs = sutils.ar1innov(params, innov)
+            outputs = sutils.ar1innov(alpha, innov, yini)
             for j in range(ncol):
-                alpha, y0 = params
+                y0 = yini
                 expected = np.zeros(nval)
                 for i in range(nval):
                     if ncol == 1:
@@ -113,7 +123,8 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_ar1_backward(self):
         nval = 10
-        params = np.array([0.9, 10])
+        alpha = 0.9
+        yini = 10
 
         # Check 1d and 2d config
         for ncol in [1, 4]:
@@ -122,12 +133,11 @@ class UtilsTestCase(unittest.TestCase):
             else:
                 innov = np.random.normal(size=(nval, ncol))
 
-            outputs = sutils.ar1innov(params, innov)
-            innov2 = sutils.ar1inverse(params, outputs)
+            outputs = sutils.ar1innov(alpha, innov, yini)
+            innov2 = sutils.ar1inverse(alpha, outputs, yini)
 
             for j in range(ncol):
-                alpha, y0 = params
-
+                y0 = yini
                 expected = np.zeros(nval)
                 for i in range(nval):
                     if ncol == 1:
@@ -146,6 +156,8 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_ar1_forward_backward(self):
         nval = 100
+        alpha = 0.9
+        yini = 10
 
         # Check 1d and 2d config
         for ncol in [1, 10]:
@@ -154,12 +166,11 @@ class UtilsTestCase(unittest.TestCase):
             else:
                 innov0 = np.random.normal(size=(nval, ncol))
 
-            params = np.array([0.9, 10])
-            y = sutils.ar1innov(params, innov0)
+            y = sutils.ar1innov(alpha, innov0, yini)
             self.assertEqual(innov0.shape, y.shape)
 
-            innov = sutils.ar1inverse(params, y)
-            y2 = sutils.ar1innov(params, innov)
+            innov = sutils.ar1inverse(alpha, y, yini)
+            y2 = sutils.ar1innov(alpha, innov, yini)
             self.assertTrue(np.allclose(y, y2))
 
 
@@ -167,15 +178,39 @@ class UtilsTestCase(unittest.TestCase):
         nval = 20
         innov = np.random.normal(size=nval)
         innov[5:10] = np.nan
+        alpha = 0.9
+        yini = 10
 
         # AR1 keeps last value before nans
-        y = sutils.ar1innov([0.9, 10], innov)
-        y2 = sutils.ar1innov([0.9, y[4]], innov[10:])
+        y = sutils.ar1innov(alpha, innov, yini)
+        y2 = sutils.ar1innov(alpha, innov[10:], y[4])
         self.assertTrue(np.allclose(y[10:], y2))
 
-        innov = sutils.ar1inverse([0.9, 10.], y)
-        innov2 = sutils.ar1inverse([0.9, innov[4]], y[10:])
+        innov = sutils.ar1inverse(alpha, y, yini)
+        innov2 = sutils.ar1inverse(alpha, y[10:], innov[4])
         self.assertTrue(np.allclose(innov[11:], innov2[1:]))
+
+    def test_ar1_variable(self):
+
+        nval = 500000
+        innov = np.random.normal(size=nval)
+        alpha = np.ones(nval)
+        alpha[:nval/2] = 0.9
+        alpha[nval/2:] = 0.2
+
+        try:
+            y = sutils.ar1innov(alpha[:100], innov)
+        except ValueError as err:
+            pass
+        self.assertTrue(str(err).startswith('Expected alpha'))
+
+        y = sutils.ar1innov(alpha, innov)
+
+        acf1 = sutils.acf(y[:nval/2])
+        acf2 = sutils.acf(y[nval/2:])
+
+        ck = np.allclose([acf1[0], acf2[0]], [0.9, 0.2], atol=1e-2)
+        self.assertTrue(ck)
 
 
     def test_lhs(self):

@@ -4,12 +4,12 @@ cimport numpy as np
 np.import_array()
 
 cdef extern from 'c_ar1.h':
-    int c_ar1innov(int nval, int ncol, double *params,
-            double * innov, double* output)
+    int c_ar1innov(int nval, int ncol, double yini, double * alpha,
+            double * innov, double* outputs);
 
 cdef extern from 'c_ar1.h':
-    int c_ar1inverse(int nval, int ncol, double *params,
-            double* output, double * innov)
+    int c_ar1inverse(int nval, int ncol, double yini, double * alpha,
+            double * inputs, double* innov);
 
 cdef extern from 'c_crps.h':
     int c_crps(int nval,int ncol,
@@ -49,39 +49,40 @@ def olsleverage(np.ndarray[double, ndim=2, mode='c'] predictors not None,
     return ierr
 
 
-def ar1innov(np.ndarray[double, ndim=1, mode='c'] params not None,
+def ar1innov(double  yini,
+        np.ndarray[double, ndim=1, mode='c'] alpha not None,
         np.ndarray[double, ndim=2, mode='c'] inputs not None,
         np.ndarray[double, ndim=2, mode='c'] outputs not None):
 
     cdef int ierr
 
     # check dimensions
-    assert params.shape[0] == 2
+    assert alpha.shape[0] == outputs.shape[0]
     assert inputs.shape[0] == outputs.shape[0]
     assert inputs.shape[1] == outputs.shape[1]
 
-    ierr = c_ar1innov(inputs.shape[0], inputs.shape[1],
-            <double*> np.PyArray_DATA(params),
+    ierr = c_ar1innov(inputs.shape[0], inputs.shape[1], yini,
+            <double*> np.PyArray_DATA(alpha),
             <double*> np.PyArray_DATA(inputs),
             <double*> np.PyArray_DATA(outputs))
 
     return ierr
 
 
-
-def ar1inverse(np.ndarray[double, ndim=1, mode='c'] params not None,
+def ar1inverse(double yini,
+        np.ndarray[double, ndim=1, mode='c'] alpha not None,
         np.ndarray[double, ndim=2, mode='c'] inputs not None,
         np.ndarray[double, ndim=2, mode='c'] innov not None):
 
     cdef int ierr
 
     # check dimensions
-    assert params.shape[0] == 2
+    assert alpha.shape[0] == innov.shape[0]
     assert inputs.shape[0] == innov.shape[0]
     assert inputs.shape[1] == innov.shape[1]
 
-    ierr = c_ar1inverse(inputs.shape[0], inputs.shape[1],
-            <double*> np.PyArray_DATA(params),
+    ierr = c_ar1inverse(inputs.shape[0], inputs.shape[1], yini,
+            <double*> np.PyArray_DATA(alpha),
             <double*> np.PyArray_DATA(inputs),
             <double*> np.PyArray_DATA(innov))
 

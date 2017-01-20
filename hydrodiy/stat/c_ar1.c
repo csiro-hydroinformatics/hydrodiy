@@ -12,27 +12,39 @@
 * outputs = model output
 *
 ************************************************/
-int c_ar1innov(int nval, int ncol, double * params,
+int c_ar1innov(int nval, int ncol, double yini, double * alpha,
         double * innov, double* outputs)
 {
 	int i, j;
-    double alpha, y0;
+    double value, y0, y1, nan;
 
-
-    /* ar1 coefficient */
-    alpha = params[0];
+    /* nan value if not defined */
+    nan = 0./0.;
 
     /* loop across columns */
     for(j=0; j<ncol; j++)
     {
         /* Initialise AR1 */
-        y0 = params[1];
+        y0 = yini;
+        y1 = y0;
 
         /* loop through values */
         for(i=0; i<nval; i++)
         {
-            y0 = alpha*y0 + innov[ncol*i+j];
-            outputs[ncol*i+j] = y0;
+            value = innov[ncol*i+j];
+
+            /* Process nan values */
+            if(isnan(value))
+            {
+                y1 = nan;
+            }
+            else
+            {
+                y0 = alpha[i]*y0 + value;
+                y1 = y0;
+            }
+
+            outputs[ncol*i+j] = y1;
         }
     }
 
@@ -51,26 +63,37 @@ int c_ar1innov(int nval, int ncol, double * params,
 * innov = innovation series e[i]
 *
 ************************************************/
-int c_ar1inverse(int nval, int ncol, double * params,
+int c_ar1inverse(int nval, int ncol, double yini, double * alpha,
         double * inputs, double* innov)
 {
 	int i, j;
-    double alpha, y0, value;
+    double y0, y1, nan, value;
 
-    /* Get AR1 coefficient */
-    alpha = params[0];
+    /* nan value if not defined */
+    nan = 0./0.;
 
     /* Loop across columns */
     for(j=0; j<ncol; j++)
     {
-        y0 = params[1];
+        y0 = yini;
 
         /* loop through data */
         for(i=0; i<nval; i++)
         {
             value = inputs[ncol*i+j];
-            innov[ncol*i+j] = value-alpha*y0;
-            y0 = value;
+
+            /* Process nan values */
+            if(isnan(value))
+            {
+                y1 = nan;
+            }
+            else
+            {
+                y1 = value-alpha[i]*y0;
+                y0 = value;
+            }
+
+            innov[ncol*i+j] = y1;
         }
     }
 
