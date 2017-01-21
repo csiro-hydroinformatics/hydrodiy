@@ -213,16 +213,29 @@ class UtilsTestCase(unittest.TestCase):
         self.assertTrue(ck)
 
 
+    def test_lhs_error(self):
+        nparams = 10
+        nsamples = 50
+        pmin = np.ones(nparams)
+        pmax = 10.*np.ones(nparams)
+
+        try:
+            samples = sutils.lhs(nsamples, pmin, pmax[:2])
+        except ValueError as err:
+            pass
+        self.assertTrue(str(err).startswith('Expected pmax'))
+
+
     def test_lhs(self):
         nparams = 10
         nsamples = 50
-        pmin = 1
-        pmax = 10
+        pmin = np.ones(nparams)
+        pmax = 10.*np.ones(nparams)
 
-        samples = sutils.lhs(nparams, nsamples, pmin, pmax)
+        samples = sutils.lhs(nsamples, pmin, pmax)
 
         for i in range(nparams):
-            u = (np.sort(samples[:,i])-pmin)/(pmax-pmin)
+            u = (np.sort(samples[:,i])-pmin[i])/(pmax[i]-pmin[i])
             ff = sutils.ppos(nsamples)
 
             # Perform two sided KS test on results

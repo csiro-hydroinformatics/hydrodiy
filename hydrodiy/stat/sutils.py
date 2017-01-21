@@ -220,14 +220,12 @@ def ar1inverse(alpha, inputs, yini=0):
     return np.reshape(innov, shape)
 
 
-def lhs(nparams, nsample, pmin, pmax):
+def lhs(nsamples, pmin, pmax):
     ''' Latin hypercube sampling
 
     Parameters
     -----------
-    nparams : int
-        Number of parameters
-    nsample : int
+    nsamples : int
         Number of sample to draw
     pmin : list
         Lower bounds of parameters
@@ -242,18 +240,14 @@ def lhs(nparams, nsample, pmin, pmax):
     Example
     -----------
     >>> nparams = 5; nsamples = 3
-    >>> sutils.lhs(nparams, nsamples)
+    >>> sutils.lhs(nsamples, np.zeros(nparams), np.ones(nparams))
 
     '''
-    # Process pmin and pmax
-    pmin = np.atleast_1d(pmin)
-    if pmin.shape[0] == 1:
-        pmin = np.repeat(pmin, nparams)
+    nsamples = int(nsamples)
 
-    if len(pmin) != nparams:
-        raise ValueError(('Expected pmin of length' + \
-            ' {0}, got {1}').format(nparams, \
-                len(pmin)))
+    # Process pmin and pmax
+    pmin = np.atleast_1d(pmin).astype(np.float64)
+    nparams = pmin.shape[0]
 
     pmax = np.atleast_1d(pmax)
     if pmax.shape[0] == 1:
@@ -263,17 +257,20 @@ def lhs(nparams, nsample, pmin, pmax):
         raise ValueError(('Expected pmax of length' + \
             ' {0}, got {1}').format(nparams, \
                 len(pmax)))
+    if np.any(pmax-pmin<=0):
+        raise ValueError(('Expected pmax>pmin got' +\
+            ' pmin={0} and pmax={1}').format(pmin, pmax))
 
     # Initialise
-    samples = np.zeros((nsample, nparams))
+    samples = np.zeros((nsamples, nparams))
 
     # Sample
     for i in range(nparams):
-        du = float(pmax[i]-pmin[i])/nsample
-        u = np.linspace(pmin[i]+du/2, pmax[i]-du/2, nsample)
+        du = float(pmax[i]-pmin[i])/nsamples
+        u = np.linspace(pmin[i]+du/2, pmax[i]-du/2, nsamples)
 
-        kk = np.random.permutation(nsample)
-        s = u[kk] + np.random.uniform(-du/2, du/2, size=nsample)
+        kk = np.random.permutation(nsamples)
+        s = u[kk] + np.random.uniform(-du/2, du/2, size=nsamples)
 
         samples[:, i] = s
 
