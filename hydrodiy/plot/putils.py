@@ -1,9 +1,7 @@
-import os
-import re
+import os, math, re
 from datetime import datetime
-import datetime
 
-from scipy.stats import gaussian_kde
+from scipy.stats import gaussian_kde, chi2
 
 has_cycler = False
 try:
@@ -18,6 +16,7 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 
 from matplotlib.path import Path
+from matplotlib.patches import Ellipse
 
 from matplotlib import colors
 from matplotlib.colors import hex2color
@@ -319,5 +318,48 @@ def kde(xy, ngrid=50):
 
     return xx, yy, zz
 
+
+def cov_ellipse(mu, cov, pvalue=0.95, *args, **kwargs):
+    ''' Draw ellipse contour of 2d bi-variate normal distribution
+
+    Parameters
+    -----------
+    mu : numpy.ndarray
+        Bi-variate mean, [2] array.
+    cov : numpy.ndarray
+        Bi-variate covariance matrix, [2, 2] array.
+    pvalue : float
+        Pvalue used to draw contour
+    args, kwargs
+        Argument sent to matplotlib.Patches.Ellipse
+    '''
+    # Check parameters
+    mu = np.atleast_1d(mu)
+    cov = np.atleast_2d(cov)
+
+    if mu.shape != (2,):
+        raise ValueError('Expected a [2] array for mu, got {0}'.format(\
+            mu.shape))
+
+    if cov.shape != (2,2):
+        raise ValueError('Expected a [2, 2] array for cov, got {0}'.format(\
+            cov.shape))
+
+    # Compute chi square corresponding to the sum of
+    # two normally distributed variables with zero means
+    # unit variances
+    fact = chi2.ppf(pvalue, 2)
+
+    # Ellipse parameters
+    eig, vect = np.linalg.eig(cov)
+    v1 = 2*math.sqrt(fact*eig[0])
+    v2 = 2*math.sqrt(fact*eig[1])
+    alpha = np.rad2deg(math.acos(vect[0, 0]))
+
+    # Draw ellipse
+    ellipse = Ellipse(xy=mu, width=v1, height=v2, angle=alpha, \
+            *args, **kwargs)
+
+    return ellipse
 
 

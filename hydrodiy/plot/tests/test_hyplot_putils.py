@@ -17,7 +17,6 @@ class UtilsTestCase(unittest.TestCase):
         self.ftest = os.path.dirname(source_file)
 
     def test_col2cmap(self):
-
         colors = {1:'#004C99', 0:'#FF9933', 0.3:'#FF99FF'}
         cmap = putils.col2cmap(colors)
 
@@ -29,7 +28,6 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_line(self):
-
         fig, ax = plt.subplots()
 
         nval = 100
@@ -48,7 +46,6 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_line_dates(self):
-
         fig, ax = plt.subplots()
 
         nval = 100
@@ -112,9 +109,7 @@ class UtilsTestCase(unittest.TestCase):
         plot(fp)
 
 
-
     def test_kde(self):
-
         xy = np.random.multivariate_normal( \
             [1, 2], [[1, 0.9], [0.9, 1]], \
             size=1000)
@@ -127,6 +122,27 @@ class UtilsTestCase(unittest.TestCase):
         ax.plot(xy[:, 0], xy[:, 1], '.', alpha=0.2, mfc='grey', mec='none')
         fp = os.path.join(self.ftest, 'kde.png')
         fig.savefig(fp)
+
+
+    def test_ellipse(self):
+        mu = [1, 2]
+        cov = [[1, 0.9], [0.9, 1]]
+        xy = np.random.multivariate_normal(mu, cov, size=1000)
+
+        fig, ax = plt.subplots()
+        ax.plot(xy[:, 0], xy[:, 1], '.', alpha=0.2, mfc='grey', mec='none')
+
+        colors = putils.get_colors(10, 'Reds')
+
+        for i, pvalue in enumerate([0.5, 0.8, 0.9, 0.95, 0.99]):
+            el = putils.cov_ellipse(mu, cov, pvalue, facecolor='none', \
+                        edgecolor=colors[i])
+            ax.add_patch(el)
+
+        fp = os.path.join(self.ftest, 'ellipse.png')
+        fig.savefig(fp)
+
+
 
 
 
