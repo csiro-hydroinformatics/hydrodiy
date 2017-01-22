@@ -42,6 +42,7 @@ def __get_censors(censors, nvar):
 
     return censors
 
+
 def toeplitz_cov(sig, rho):
     ''' Generate a toeplitz covariance matrix (analogous to AR1)
 
@@ -65,6 +66,22 @@ def toeplitz_cov(sig, rho):
     cov = np.dot(sig, np.dot(toeplitz(rho**np.arange(nvar)), sig))
 
     return cov
+
+
+def __compute_log_cdf(cdf):
+    ''' Function to avoid computing log for
+    extremely low values of cdf causing floating point errors
+    '''
+    # initialise log_cdf to 0
+    log_cdf = 0.*cdf
+
+    # compute log(cdf) for strictly positive values only
+    idx_cdf_pos = cdf>0.
+    if np.sum(idx_cdf_pos)>0:
+        log_cdf[idx_cdf_pos] = np.log(cdf[idx_cdf_pos])
+
+    return log_cdf
+
 
 
 def logpdf(x, mu, cov, censors=0):
@@ -124,13 +141,13 @@ def logpdf(x, mu, cov, censors=0):
         ncensored = np.sum(censvars)
 
         # Check case exists in the sample
-        idx = cases == icase
-        if np.sum(idx)>0:
+        idx_case = cases == icase
+        if np.sum(idx_case)>0:
 
             if icase == 0:
                 # No variables are censorsed
                 # standard multivariate normal pdf
-                logpdf_values[idx] = mvt.logpdf(x[idx], mean=mu, cov=cov)
+                logpdf_values[idx_case] = mvt.logpdf(x[idx_case], mean=mu, cov=cov)
 
             elif icase == 2**nvar-1:
                 # All variables are censorsed
@@ -138,21 +155,27 @@ def logpdf(x, mu, cov, censors=0):
                 # Get parameters
                 sig, correl = __get_sig_corr(cov)
 
-                # all censorsed
-                lower = np.zeros(nvar) # Does not matter here
-                upper = (censors-mu)/sig * np.ones(nvar)
-                infin = np.zeros(nvar)
-                    # <0=[-inf, +inf]
-                    # 0=[-inf, upper]
-                    # 1=[lower, +inf]
-                    # 2=[lower, upper]
-                err, cdf, info = mvn.mvndst(lower, upper, infin, correl)
+                if nvar > 1:
+                    # all censorsed
+                    lower = np.zeros(nvar) # Does not matter here
+                    upper = (censors-mu)/sig * np.ones(nvar)
+                    infin = np.zeros(nvar)
+                        # <0=[-inf, +inf]
+                        # 0=[-inf, upper]
+                        # 1=[lower, +inf]
+                        # 2=[lower, upper]
 
-                logpdf_values[idx] = math.log(cdf)
+                    err, cdf, info = mvn.mvndst(lower, upper, infin, correl)
+                else:
+                    cdf = norm.cdf(censors, loc=mu, scale=sig)
 
+                log_cdf = 0.
+                if cdf > 0:
+                    log_cdf = math.log(cdf)
+                logpdf_values[idx_case] = log_cdf
 
             else:
-                # Some variables censorsed, but not all of them
+                # Some variables censored, but not all
 
                 # Parameter for non-censorsed
                 mu1 = mu[~censvars]
@@ -165,42 +188,52 @@ def logpdf(x, mu, cov, censors=0):
                 # Remaining covariance matrix
                 cov12 = cov[~censvars][:, censvars]
 
-                # More than 2d censorsing
+                # Conditional parameters to compute p(x_c|x_nc)
+                # see
+                # https://en.wikipedia.org/w/index.php?title=Multivariate_normal_distribution&section=18#Conditional_distributions
+
+                values = x[idx_case][:, ~censvars]-mu1
+                if nvar-ncensored > 1:
+                    mu3 = mu2 + np.dot(cov12.T, np.dot(np.linalg.inv(cov11), \
+                                                            values.T))
+                    mu3 = mu3.T
+
+                    cov3 = cov22 - np.dot(cov12.T, \
+                            np.dot(np.linalg.inv(cov11), cov12))
+                else:
+                    mu3 = mu2 + cov12/cov11*values
+                    cov3 = cov22 - cov12**2/cov11
+
+                # More than 2d censoring
                 if ncensored>1:
                     # Get parameters
-                    sig22, correl22 = __get_sig_corr(cov22)
+                    sig3, correl3 = __get_sig_corr(cov3)
 
-                    # log pdf of censorsed part
+                    # Compute
+                    # int[p(x_c=y|x_nc), y, -inf, censor]
                     lower = np.zeros(ncensored) # Does not matter here
-                    upper = (censors[censvars]-mu[censvars])/sig22 * np.ones(ncensored)
+                    upper = (censors[censvars]-mu3)/sig3 * np.ones(ncensored)
                     infin = np.zeros(ncensored)
                         # <0=[-inf, +inf]
                         # 0=[-inf, upper]
                         # 1=[lower, +inf]
                         # 2=[lower, upper]
-                    err, cdf, info = mvn.mvndst(lower, upper, infin, correl22)
+
+                    # Compute cdf for each point
+                    # Very slow - to be improved
+                    cdf = np.zeros(np.sum(idx_case))
+                    for k in range(len(upper)):
+                        err, cdf[k], info = mvn.mvndst(lower, upper[k], infin, correl3)
+
                 else:
-                    cdf = norm.cdf(censors[censvars], loc=mu2, scale=cov22)
-
-                # To avoid extremely low values of cdf causing floating point
-                # problem
-                log_cdf = 0.
-                if cdf>0.:
-                    log_cdf = math.log(cdf)
-
-                # This is the conditional likelihood p(x_nc|x_c)
-                # see
-                # https://en.wikipedia.org/w/index.php?title=Multivariate_normal_distribution&section=18#Conditional_distributions
-                #
-                mu3 = mu1 + np.dot(cov12, \
-                        np.dot(np.linalg.inv(cov22), censors[censvars]-mu2))
-                cov3 = cov11 - np.dot(cov12, \
-                        np.dot(np.linalg.inv(cov22), cov12.T))
+                    # Compute
+                    # int[p(x_c=y|x_nc), y, -inf, censor]
+                    cdf = norm.cdf(censors[censvars], loc=mu3, scale=cov3)
 
                 # Finally, computing log pdf
-                # p(x_nc, x_c) = p(x_nc|x_c)*p(x_c)
-                logpdf_values[idx] = mvt.logpdf(x[idx][:, ~censvars], \
-                                mean=mu3, cov=cov3)+log_cdf
+                # int[p(x_nc, x_c=y), y, -inf, censor] = p(x_nc) int[p(x_c=y|x_nc), y, -inf, censor]
+                logpdf_values[idx_case] = mvt.logpdf(x[idx_case][:, ~censvars], \
+                                mean=mu1, cov=cov11)+ __compute_log_cdf(cdf)
 
     return logpdf_values
 
