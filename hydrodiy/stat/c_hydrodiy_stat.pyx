@@ -5,11 +5,11 @@ np.import_array()
 
 cdef extern from 'c_ar1.h':
     int c_ar1innov(int nval, int ncol, double yini, double * alpha,
-            double * innov, double* outputs);
+            double * innov, double* outputs)
 
 cdef extern from 'c_ar1.h':
     int c_ar1inverse(int nval, int ncol, double yini, double * alpha,
-            double * inputs, double* innov);
+            double * inputs, double* innov)
 
 cdef extern from 'c_crps.h':
     int c_crps(int nval,int ncol,
