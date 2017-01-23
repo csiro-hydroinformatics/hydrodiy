@@ -155,5 +155,15 @@ class BoxplotTestCase(unittest.TestCase):
         fig.savefig(os.path.join(self.ftest, 'bx13_center.png'))
 
 
+    def test_nan(self):
+        df = self.data
+        df.loc[:, 'data2'] = np.nan
+        fig, ax = plt.subplots()
+        bx = Boxplot(ax=ax, data=df)
+        bx.draw()
+        bx.count()
+        fig.savefig(os.path.join(self.ftest, 'bx14_nan.png'))
+
+
 if __name__ == "__main__":
     unittest.main()

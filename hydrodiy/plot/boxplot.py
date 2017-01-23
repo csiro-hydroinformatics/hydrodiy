@@ -23,19 +23,20 @@ def whiskers_percentiles(coverage):
 def boxplot_stats(data, coverage):
     ''' Compute boxplot stats '''
 
-    idx = pd.notnull(data)
+    idx = (~np.isnan(data)) & (~np.isinf(data))
     qq1, qq2 = whiskers_percentiles(coverage)
+    nok = np.sum(idx)
 
-    if idx.shape[0]>3:
+    if nok>3:
         qq = [qq1, 25, 50, 75, qq2]
-        prc = pd.Series(np.percentile(data[idx], qq), \
+        prc = pd.Series(np.nanpercentile(data[idx], qq), \
                         index=['{0:0.1f}%'.format(qqq) for qqq in qq])
-        prc['count'] = np.sum(idx)
+        prc['count'] = nok
         prc['mean'] = data[idx].mean()
         prc['max'] = data[idx].max()
         prc['min'] = data[idx].min()
     else:
-        prc = pd.Series({'count': idx.shape[0]})
+        prc = pd.Series({'count': nok})
         pnames = ['{0:0.1f}%'.format(qq1), '25.0%', \
                 '50.0%', '75.0%', '{0:0.1f}%'.format(qq2), \
                 'min', 'max', 'mean']
