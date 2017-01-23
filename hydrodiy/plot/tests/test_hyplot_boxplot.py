@@ -136,6 +136,16 @@ class BoxplotTestCase(unittest.TestCase):
         fig.savefig(os.path.join(self.ftest, 'bx12_set_all.png'))
 
 
+    def test_set_all_error(self):
+        fig, ax = plt.subplots()
+        bx = Boxplot(ax=ax, data=self.data)
+        try:
+            bx.set_all('text_format', '%0.4f')
+        except ValueError as err:
+            pass
+        self.assertTrue(str(err).startswith('Property text_format'))
+
+
     def test_center(self):
         fig, ax = plt.subplots()
         bx = Boxplot(ax=ax, data=self.data)

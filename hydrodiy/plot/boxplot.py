@@ -156,8 +156,17 @@ class Boxplot(object):
     def set_all(self, propname, value):
         ''' Set the a particular property (e.g. textformat) for all items '''
 
+        # Check how many properties are actually set
+        is_set = 0
+
         for key, item in self._props.iteritems():
-            item[propname] = value
+            if propname in item:
+                item[propname] = value
+                is_set += 1
+
+        # Check property exists
+        if is_set == 0:
+            raise ValueError('Property {0} was never set'.format(propname))
 
 
     def draw(self, logscale=False):
