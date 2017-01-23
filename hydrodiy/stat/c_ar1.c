@@ -36,7 +36,11 @@ int c_ar1innov(int nval, int ncol, double yini, double * alpha,
             /* Process nan values */
             if(isnan(value))
             {
+                /* Set output to nan */
                 y1 = nan;
+
+                /* Decrease states towards zero */
+                y0 *= alpha[i];
             }
             else
             {
@@ -85,7 +89,11 @@ int c_ar1inverse(int nval, int ncol, double yini, double * alpha,
             /* Process nan values */
             if(isnan(value))
             {
+                /* Set output to nan */
                 y1 = nan;
+
+                /* Decrease states towards zero */
+                y0 *= alpha[i];
             }
             else
             {

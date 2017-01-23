@@ -183,11 +183,11 @@ class UtilsTestCase(unittest.TestCase):
 
         # AR1 keeps last value before nans
         y = sutils.ar1innov(alpha, innov, yini)
-        y2 = sutils.ar1innov(alpha, innov[10:], y[4])
+        y2 = sutils.ar1innov(alpha, innov[10:], y[4]*alpha**5)
         self.assertTrue(np.allclose(y[10:], y2))
 
         innov = sutils.ar1inverse(alpha, y, yini)
-        innov2 = sutils.ar1inverse(alpha, y[10:], innov[4])
+        innov2 = sutils.ar1inverse(alpha, y[10:], innov[4]*alpha**5)
         self.assertTrue(np.allclose(innov[11:], innov2[1:]))
 
     def test_ar1_variable(self):

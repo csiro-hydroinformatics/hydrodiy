@@ -97,6 +97,8 @@ def acf(data, maxlag=1, biased=True, idx=None):
 
 def ar1innov(alpha, innov, yini=0.):
     ''' Compute AR1 time series from innovation
+    If there are nan in innov, the function produces nan, but
+    the internal states a kept in memory.
 
     Parameters
     -----------
@@ -161,6 +163,8 @@ def ar1innov(alpha, innov, yini=0.):
 
 def ar1inverse(alpha, inputs, yini=0):
     ''' Compute innovations from an AR1 time series
+    If there are nan in inputs, the function produces nan, but
+    the internal states a kept in memory.
 
     Parameters
     -----------
