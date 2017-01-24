@@ -23,22 +23,42 @@ class TransformTestCase(unittest.TestCase):
     def test_transform_class(self):
         ''' Test the class transform '''
 
-        trans = transform.Transform('test', 'a')
+        trans = transform.Transform('test', 'a', \
+                    params_mins=[0], \
+                    params_maxs=[1])
+
         self.assertEqual(trans.name, 'test')
         self.assertEqual(trans.params_names, ['a'])
 
         # test set and get parameters
-        value = 10
+        value = 0.5
         trans.params = value
         exp = np.array([value], dtype=np.float64)
         self.assertTrue(np.allclose(trans._params, exp))
         self.assertTrue(np.allclose(trans.params, exp))
 
+        # test set and get parameters
+        trans.params = -1
+        exp = np.array([trans.params_mins[0]], dtype=np.float64)
+        self.assertTrue(np.allclose(trans._params, exp))
+        self.assertTrue(np.allclose(trans.params, exp))
+
+        trans.params = 2
+        exp = np.array([trans.params_maxs[0]], dtype=np.float64)
+        self.assertTrue(np.allclose(trans._params, exp))
+        self.assertTrue(np.allclose(trans.params, exp))
+
         # test setitem/getitem
-        trans['a'] = 20
-        self.assertTrue(np.allclose(trans.params, [20]))
-        self.assertTrue(np.allclose(trans['a'], 20))
+        trans['a'] = 0.5
+        self.assertTrue(np.allclose(trans.params, [0.5]))
+        self.assertTrue(np.allclose(trans['a'], 0.5))
         self.assertTrue(isinstance(trans['a'], float))
+
+        trans['a'] = 2.
+        self.assertTrue(np.allclose(trans.params, trans.params_maxs))
+
+        trans['a'] = -1
+        self.assertTrue(np.allclose(trans.params, trans.params_mins))
 
         try:
             trans['a'] = [10, 10]

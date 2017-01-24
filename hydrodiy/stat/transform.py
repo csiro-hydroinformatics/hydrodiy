@@ -82,7 +82,11 @@ class Parameterised(object):
         item = float(item)
         if np.isnan(item):
             raise ValueError('Cannot set parameter with nan')
-        self._params[self.params_names == key] = item
+
+        idx = self.params_names == key
+        mini = self.params_mins[idx]
+        maxi = self.params_maxs[idx]
+        self._params[idx] = np.clip(item, mini, maxi)
 
     def __getitem__(self, key):
         return self._params[self.params_names == key][0]
@@ -133,7 +137,7 @@ class Parameterised(object):
                 value))
 
         # Allocate parameters
-        self._params = np.clip(value, self._params_mins, self._params_maxs)
+        self._params = np.clip(value, self.params_mins, self.params_maxs)
 
 
     def reset(self):
