@@ -57,6 +57,17 @@ class MetricsTestCase(unittest.TestCase):
         }
 
 
+    def test_alpha(self):
+        nval = 100
+        nens = 500
+        obs = np.linspace(0, 10, nval)
+        sim = np.repeat(np.linspace(0, 10, nens)[:, None], \
+                    nval, 1).T
+
+        a, _ = metrics.alpha(obs, sim)
+        self.assertTrue(np.allclose(a, 1.))
+
+
     def test_crps_reliability_table1(self):
         cr, rt = metrics.crps(self.obs1, self.sim1)
         for i in range(rt.shape[1]):

@@ -4,8 +4,7 @@ import re
 import numpy as np
 import pandas as pd
 
-from scipy.special import kolmogorov
-from scipy.stats import kendalltau
+from scipy.stats import kstest
 
 from hydrodiy.stat import transform
 from hydrodiy.stat import sutils
@@ -152,17 +151,10 @@ def alpha(obs, ens, cst=0.3):
             nforc, ens.shape[0]))
 
     # Compute pit
-    pt = [pit(o, s, has_ties=True, cst=cst)
-                    for o,s in zip(obs, ens)]
-
-    # Distance between cumulative distribution of pit and 1:1
-    unif_dist = sutils.ppos(len(ys_sort), cst)
-    distances = np.sort(pt)-unif_dist
-    max_dist = np.max(np.abs(distances))
+    pt = [pit(o, s, cst=cst) for o,s in zip(obs, ens)]
 
     # KS statistic
-    kstat = np.sqrt(nval)*max_dist
-    pvalue = 100*kolmogorov(np.sqrt(nval)*max_dist)
+    kstat, pvalue = kstest(pt, 'uniform')
 
     return pvalue, kstat
 
