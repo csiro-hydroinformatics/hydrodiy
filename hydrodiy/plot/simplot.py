@@ -123,33 +123,59 @@ class Simplot(object):
 
 
     def draw(self):
-        ''' Draw all plots '''
+        ''' Draw all simulations plots
+
+        Returns
+        -----------
+        axb : matplotlib.axes.Axes
+            Axes showing water balance data
+
+        axa : matplotlib.axes.Axes
+            Axes showing annual time series
+
+        axfd : matplotlib.axes.Axes
+            Axes showing flow duration curve in log-flow space (low flow)
+
+        axfdl : matplotlib.axes.Axes
+            Axes showing flow duration curve in log-frequency space (high flow)
+
+        axs : matplotlib.axes.Axes
+            Axes showing mean monthly averages (seasonal patterns)
+
+        axf : list
+            List containing the axes showing flood simulations
+
+        '''
         # Draw water balance
-        ax = plt.subplot(self.gs[0, 0])
-        self.draw_balance(ax)
+        axb = plt.subplot(self.gs[0, 0])
+        self.draw_balance(axb)
 
         # Draw annual time series
-        ax = plt.subplot(self.gs[0, 1:])
-        self.draw_annual(ax)
+        axa = plt.subplot(self.gs[0, 1:])
+        self.draw_annual(axa)
 
         # Draw flow duration curves
-        ax = plt.subplot(self.gs[1, 0])
-        self.draw_fdc(ax)
+        axfd = plt.subplot(self.gs[1, 0])
+        self.draw_fdc(axfd)
 
-        ax = plt.subplot(self.gs[1, 1])
-        self.draw_fdc(ax, 'd', xlog=True, ylog=False)
+        axfdl = plt.subplot(self.gs[1, 1])
+        self.draw_fdc(axfdl, 'd', xlog=True, ylog=False)
 
         # Draw seasonal residuals
-        ax = plt.subplot(self.gs[1, 2])
-        self.draw_monthlyres(ax, 'e')
+        axs = plt.subplot(self.gs[1, 2])
+        self.draw_monthlyres(axs, 'e')
 
 
         # Draw flood events
+        axf = []
         for iflood in range(self.nfloods):
             ix = 2 + iflood/3
             iy = iflood%3
             ax = plt.subplot(self.gs[ix, iy])
             self.draw_floods(ax, iflood, letters[5+iflood])
+            axf.append(ax)
+
+        return axb, axa, axfd, axfdl, axs, axf
 
 
     def draw_monthlyres(self, ax, ax_letter='d'):
