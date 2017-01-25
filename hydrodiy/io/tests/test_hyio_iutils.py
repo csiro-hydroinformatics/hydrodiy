@@ -2,6 +2,8 @@ import os, re, json
 
 import unittest
 
+from string import ascii_letters as letters
+
 import pandas as pd
 import subprocess
 import numpy as np
@@ -139,6 +141,38 @@ class UtilsTestCase(unittest.TestCase):
         self.assertTrue(data == data2)
         self.assertTrue(prefix2 == '')
         self.assertTrue(source == source2)
+
+
+    def test_str2dict_random_order(self):
+        # Generate random keys
+        nkeys = 10
+        lkeys = 20
+
+        l = [letters[k] for k in range(len(letters))]
+        n = ['{0}'.format(k) for k in range(10)]
+        l = l+n
+
+        d1 = {}
+        for i in range(nkeys):
+            key = ''.join(np.random.choice(l, lkeys))
+            value = ''.join(np.random.choice(l, lkeys))
+            d1[key] = value
+        st1 = iutils.dict2str(d1)
+
+        # Select random order of keys
+        nrepeat = 100
+        for i in range(nrepeat):
+            d2 = {}
+            keys = np.random.choice(d1.keys(), len(d1), replace=False)
+            for key in keys:
+                d2[key] = d1[key]
+
+            # Generate string and compare with original one
+            # This test checks that random perturbation of keys
+            # does not affect the string
+            st2 = iutils.dict2str(d2)
+            self.assertTrue(st1==st2)
+
 
 
     def test_get_logger(self):

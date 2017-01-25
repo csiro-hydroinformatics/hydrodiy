@@ -78,9 +78,12 @@ def dict2str(data, prefix=None):
     '''
     out = []
 
+    # Sort keys
+    keys = np.sort(data.keys())
+
     # Add items
-    for k, v in data.iteritems():
-        out.append('{0}[{1}]'.format(k, v))
+    for k in keys:
+        out.append('{0}[{1}]'.format(k, data[k]))
 
     out = '_'.join(out)
 
