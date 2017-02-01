@@ -8,8 +8,6 @@ from scipy.stats import shapiro
 
 from scipy.optimize import fmin_powell as fmin
 
-import matplotlib.pyplot as plt
-
 from hydrodiy.stat import sutils
 import c_hydrodiy_stat
 
