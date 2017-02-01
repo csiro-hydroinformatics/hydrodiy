@@ -5,15 +5,16 @@ import time
 
 import numpy as np
 
-import matplotlib.pyplot as plt
-from matplotlib.patches import Ellipse
 
 from scipy.optimize import fmin_powell as fmin
-from scipy.stats import norm, ks_2samp
+from scipy.stats import norm, ks_2samp, kstest
+from scipy.stats import ttest_1samp
 from scipy.stats import t as student
 
 from hydrodiy.stat import mvnc, sutils
-from hydrodiy.plot import putils
+
+#import matplotlib.pyplot as plt
+#from hydrodiy.plot import putils
 
 np.random.seed(0)
 
@@ -70,40 +71,84 @@ class MVNCTestCase(unittest.TestCase):
         self.assertTrue(np.allclose(cov, cov.T))
 
 
+    def test_get_icase2censvars(self):
+        for nvar in range(1, 10):
+            maxcase = 2**nvar
+            censvars = np.zeros((maxcase, nvar)).astype(bool)
+            for icase in range(maxcase):
+                censvars[icase] = mvnc.icase2censvars(icase, nvar)
+
+            for k in range(2, nvar):
+                cs = censvars[:, k]
+
+                expected = np.repeat(np.repeat([False, True], 2**k)[:,None], \
+                                        2**(nvar-k-1), 1)
+                expected = expected.T.flatten()
+                self.assertTrue(np.allclose(cs, expected))
+
+            try:
+                censvars = mvnc.icase2censvars(maxcase, nvar)
+            except ValueError as err:
+                pass
+            self.assertTrue(str(err).startswith('Expected'))
+
+
+    def test_censoring_cases(self):
+        for nvar in range(1, 10):
+            maxcase = 2**nvar
+            x = np.ones((maxcase, nvar))
+
+            for icase in range(maxcase):
+                censvars = mvnc.icase2censvars(icase, nvar)
+                x[icase][censvars] = -1
+
+            cases = mvnc.get_censoring_cases(x, censors=0)
+            self.assertTrue(np.allclose(cases, np.arange(maxcase)))
+
+
     def test_sample(self):
-        nsamples = 50
+        nsamples = 500
         nvar = 6
+        nrepeat = 500
 
         censors = np.linspace(-1, 1, nvar)
         eps = mvnc.EPS
         mu, cov, sig = get_mu_cov(nvar)
 
-        # Sample with censoring
-        samples1 = mvnc.sample(nsamples, mu, cov, censors)
+        pvalues = np.zeros((nrepeat, nvar))
 
-        # Same sample without censoring
-        samples2 = mvnc.sample(nsamples, mu, cov, [-np.inf]*nvar)
+        for i in range(nrepeat):
+            # Sample with censoring
+            samples1 = mvnc.sample(nsamples, mu, cov, censors)
 
-        for k in range(nvar):
-            s1 = np.sort(samples1[:, k])
-            s2 = np.sort(samples2[:, k])
+            # Same sample without censoring
+            samples2 = mvnc.sample(nsamples, mu, cov, [-np.inf]*nvar)
 
-            # Censoring works ok
-            self.assertTrue(np.all(s1>=censors[k]))
+            for k in range(nvar):
+                s1 = np.sort(samples1[:, k])
+                s2 = np.sort(samples2[:, k])
 
-            # Compare distributions before and after
-            s1 = s1[s1>censors[k]]
-            s2 = s2[s2>censors[k]]
+                # Censoring works ok
+                self.assertTrue(np.all(s1>=censors[k]))
 
-            # KS test
-            pvalue, D = ks_2samp(s1, s2)
-            ck = pvalue>0.05
-            self.assertTrue(ck)
+                # Compare distributions before and after
+                s1 = s1[s1>censors[k]]
+                s2 = s2[s2>censors[k]]
+
+                # KS test
+                D, pvalues[i, k] = ks_2samp(s1, s2)
+
+        # Test pvalues are uniformly distributed
+        pv = np.array([kstest(pvalues[:, k], 'uniform')[0] \
+                    for k in range(nvar)])
+        ck = np.all(pv>1e-3)
+        self.assertTrue(ck)
 
 
     def test_logpdf_fit(self):
-        nsamples = 1000
-        nrepeat = 100
+        nsamples = 500
+        nfit = 50
+        nrepeat = 10
 
         # Function to simplify parameterisation
         def p2m(params):
@@ -113,8 +158,11 @@ class MVNCTestCase(unittest.TestCase):
             return mu, cov
 
         # Fitting function
-        def fit(params, data):
+        def fitfun(params, data, cases):
             # Check params bounds
+            if params[1]<1e-3:
+                return np.inf
+
             if (params[2]<0.01) or (params[2]>0.99):
                 return np.inf
 
@@ -122,77 +170,89 @@ class MVNCTestCase(unittest.TestCase):
             mu, cov = p2m(params)
 
             # compute log pdf
-            lp = mvnc.logpdf(data, mu, cov, censors)
+            lp = mvnc.logpdf(data, cases, mu, cov, censors)
 
             return -np.sum(lp)
 
+        # True parameter set
+        truep = np.array([1, 1.5, 0.7])
+
         # Loop over number of variables
-        for nvar in range(1, 5):
+        for nvar in [2]: #range(1, 6):
 
             # Loop over number of censored variables
-            for ncensors in range(nvar+1):
+            for ncensors in [1]: #range(nvar+1):
 
                 # Censor values
                 censors = -np.inf * np.ones(nvar)
-                censors[:ncensors] = np.linspace(0, 0.5, nvar)[:ncensors]
+                censors[:ncensors] = np.linspace(-0.5, -0.2, nvar)[:ncensors]
 
-                # True parameter set
-                truep = np.array([1, 1.5, 0.7])
+                # Generate true mu and cov
                 mu, cov = p2m(truep)
 
-                # Iterate through random samples
-                optp = np.zeros((nrepeat, len(truep)))
-                for i in range(nrepeat):
-                    if i%10 == 0:
-                        print('testing fit, nvar {3} ncensors {2} - iteration {0}/{1}'.format(\
-                                    i, nrepeat, ncensors, nvar))
+                # Repeat the fitting process
+                pvalues = np.zeros((nrepeat, 3))
+                optp_means = np.zeros(nrepeat)
 
-                    # Generate random data
-                    samples = mvnc.sample(nsamples, mu, cov, censors)
+                for irepeat in range(nrepeat):
 
-                    # Start slightly of the true parameters then Fit,
-                    # we should find truep back
-                    startp = truep + 1e-2
-                    optp[i,:] = fmin(fit, startp, args=(samples, ), \
-                                        disp=False)
+                    print('nvar {0} ncensors {1}: repeat {2}'.format(\
+                                nvar, ncensors, irepeat))
 
-                    #mu, cov = p2m(optp[i, :])
-                    #plt.close('all')
-                    #fig, axs = plt.subplots(ncols=2, nrows=2)
-                    #axs[0, 0].hist(samples[:, 0])
-                    #axs[0, 1].hist(samples[:, 0])
-                    #axs[1, 0].plot(samples[:, 0], samples[:, 1], 'o')
-                    #for pvalue in [0.5, 0.95]:
-                    #    el = putils.cov_ellipse(mu, cov, facecolor='none')
-                    #    axs[1, 0].add_patch(el)
-                    #axs[1, 0].add_patch(el)
+                    # Iterate through random samples
+                    optp = np.zeros((nfit, len(truep)))
+                    optp2 = np.zeros((nfit, 2))
 
-                    #plt.show()
+                    for i in range(nfit):
+                        if i%10 == 0:
+                            print('\t fit {0}/{1}'.format(i, nfit))
 
-                # True parameters should be close to mean
-                # within uncertainty (assuming normal distribution, hence t stats)
-                mup = np.mean(optp, axis=0)
-                stdp = np.std(optp, axis=0)
-                ci1 = mup + stdp*student.ppf(0.05, nrepeat-1)
-                ci2 = mup + stdp*student.ppf(0.95, nrepeat-1)
+                        # Generate random data
+                        samples = mvnc.sample(nsamples, mu, cov, censors)
+                        cases = mvnc.get_censoring_cases(samples, censors)
 
-                # Remove last parameter if nvar == 1
-                ck = np.all(((truep>ci1) & (truep<ci2))[:nvar-(nvar==1)])
-                mess = 'GOOD'
-                if not ck:
-                    mess = 'ERROR'
-                    plt.close('all')
-                    fig, axs = plt.subplots(ncols=3)
-                    for k in range(3):
-                        ax = axs[k]
-                        ax.hist(optp[:, k])
-                        putils.line(ax, 0, 1, truep[k], 0., 'r-', lw=2)
-                    plt.show()
+                        # Add offset to true parameters then Fit,
+                        # we should find truep back
+                        startp = truep + np.random.uniform(-1e-2, 1e-2, \
+                                                len(truep))
+                        optp[i,:] = fmin(fitfun, startp, args=(samples, cases, ), \
+                                            disp=False)
 
-                print('{4}\n\ttrue = {0}\n\tci1 = {1}\n\tci2 = {2}\n\tmean = {3}\n'.format( \
-                        truep, ci1, ci2, mup, mess))
+                    # T test on parameter mean
+                    tstat, pv  = ttest_1samp(optp, truep)
+                    pvalues[irepeat, :] = pv
+                    optp_means[irepeat] = np.mean(optp, 0)[0]
 
-                self.assertTrue(ck)
+                # Compute KS test pvalues
+                # Takes too long ...
+                #pv = [kstest(pvalues[:, k], 'uniform')[1] for k in range(3-(nvar==1))]
+                #ck = np.all(pv>0.1)
+
+                # Test passes if more than 20% of the repeats pass the t test
+                # with pvalue of 5%
+                # (a more accurate test would check that only 5% fail the t
+                # test)
+                cc = range(3-(nvar==1))
+                thresh = int(nrepeat * 0.2)
+                count = np.sum(pvalues[:, cc] < 0.05, 0)
+                ck = np.all(count<=thresh)
+
+                if ck:
+                    mess = 'GOOD'
+                else:
+                    mess = 'FAILED'
+
+                print(('nvar {0} - ncensors {1} - nrepeat {10}: {2} :' + \
+                    'count pv<5% = {3} <= {4}?\n' + \
+                    '\ttrue               = {5}\n' + \
+                    '\tmean (last repeat) = {6}\n' +\
+                    '\tstd  (last repeat) = {7}\n' + \
+                    '\tTstat(last repeat) = {8}\n'+\
+                    '\tTpval(last repeat) = {9}').format(nvar, ncensors, \
+                    mess, count, thresh, truep+1e-8, np.mean(optp, 0),\
+                    np.std(optp, 0), tstat, pv, nrepeat))
+
+                #self.assertTrue(ck)
 
 
 if __name__ == "__main__":

@@ -83,8 +83,79 @@ def __compute_log_cdf(cdf):
     return log_cdf
 
 
+def icase2censvars(icase, nvar):
+    ''' Compute list of censored variables from a censoring case
 
-def logpdf(x, mu, cov, censors=0):
+    Parameters
+    -----------
+    icase : int
+        Censoring case:
+        0         = all variables are censored
+        1         = Variable 1 is censored only
+        2         = Variable 1 and 2 are censored only
+        ...
+        2**nvar-1 = All variables are censored
+    nvar : int
+        Number of variables
+
+    Returns
+    -----------
+    censvars : numpy.ndarray
+        Boolean array of size [nvar] indicating which variables are censored
+    '''
+    # Check inputs
+    maxcase = 2**nvar
+    if icase >= maxcase:
+        raise ValueError('Expected icase ({0}) < {1}'.format(icase, \
+                maxcase))
+
+    if nvar <= 0 :
+        raise ValueError('Expected nvar ({0}) > 0'.format(nvar))
+
+    # Using bitwise operations
+    #censvars = np.array([bool(icase & 2**n) for n in range(nvar)])
+    censvars = (icase & np.power(2, np.arange(nvar))).astype(bool)
+
+    return censvars
+
+
+def get_censoring_cases(x, censors=0):
+    ''' Compute the censoring case indexes from data
+
+    Parameters
+    -----------
+    x : np.ndarray
+        Samples. [n, p] array:
+        - n is the number of samples
+        - p is the number of variables
+    censors : np.ndarray
+        Left censoring thresholds. [1] or [p] array.
+        If [1] array, the threshold is replicated p times.
+
+    Returns
+    -----------
+    cases : numpy.ndarray
+        Censoring cases for each sample in dataset x:
+        0         = all variables are censored
+        1         = Variable 1 is censored only
+        2         = Variable 1 and 2 are censored only
+        ...
+        2**nvar-1 = All variables are censored
+    '''
+    # Get nvar
+    x = np.atleast_2d(x)
+    nvar = x.shape[1]
+
+    # Check censors
+    censors = __get_censors(censors, nvar)
+
+    # Define the censorsing cases
+    cases = np.sum((x-censors < EPS).astype(int) * 2**np.arange(nvar), axis=1)
+
+    return cases
+
+
+def logpdf(x, cases, mu, cov, censors=0):
     ''' Compute the log pdf of a left censored multivariate normal
 
     Parameters
@@ -105,6 +176,8 @@ def logpdf(x, mu, cov, censors=0):
     -----------
     logpdf_values : numpy.ndarray
         Log likelihood for each sample
+    cases : numpy.ndarray
+        Censoring cases
     '''
 
     # Check inputs
@@ -114,6 +187,10 @@ def logpdf(x, mu, cov, censors=0):
 
     nval, nvar = x.shape
 
+    if cases.shape[0] != nval:
+        raise ValueError('Expected cases of length {0}, but got {1}'.format(\
+            nval, cases.shape[0]))
+
     if mu.shape[0] != nvar:
         raise ValueError('Expected mu of length {0}, but got {1}'.format(\
             nvar, mu.shape[0]))
@@ -122,22 +199,14 @@ def logpdf(x, mu, cov, censors=0):
         raise ValueError('Expected cov of dim {0}, but got {1}'.format(\
             (nvar, nvar), cov.shape))
 
-    censors = __get_censors(censors, nvar)
-
-    # Define the censorsing cases
-    # 0 => all < censors
-    # 1 => x[0] > censors and rest < censors
-    # ...
-    cases = np.sum((x-censors < EPS).astype(int) * 2**np.arange(nvar), axis=1)
-
     # Initialise
     logpdf_values = np.zeros(nval)
 
     # Loop through cases
     for icase in range(cases.max()+1):
 
-        # Define which variables are censorsed using bitwise operations
-        censvars = np.array([bool(icase & 2**n) for n in range(nvar)])
+        # Define which variables are censorsed
+        censvars = icase2censvars(icase, nvar)
         ncensored = np.sum(censvars)
 
         # Check case exists in the sample
@@ -177,36 +246,45 @@ def logpdf(x, mu, cov, censors=0):
             else:
                 # Some variables censored, but not all
 
-                # Parameter for non-censorsed
+                # Parameter for non-censorsed variables
                 mu1 = mu[~censvars]
                 cov11 = cov[~censvars][:, ~censvars]
 
-                # Parameter for censorsed
+                # Parameter for censorsed variables
                 mu2 = mu[censvars]
                 cov22 = cov[censvars][:, censvars]
 
-                # Remaining covariance matrix
+                # Censored/Non censored covariance matrix
                 cov12 = cov[~censvars][:, censvars]
 
-                # Conditional parameters to compute p(x_c|x_nc)
-                # see
-                # https://en.wikipedia.org/w/index.php?title=Multivariate_normal_distribution&section=18#Conditional_distributions
-
+                # Non censored samples
                 values = x[idx_case][:, ~censvars]-mu1
+
+                # More than 1 variable non censored
                 if nvar-ncensored > 1:
-                    mu3 = mu2 + np.dot(cov12.T, np.dot(np.linalg.inv(cov11), \
-                                                            values.T))
-                    mu3 = mu3.T
+                    # Multivariate normal distribution parameters for the case
+                    # where the non-censored variables are known (conditional
+                    # distribution), i.e. p(x_c|x_nc)
+                    #
+                    # The analytical form is given in
+                    # https://en.wikipedia.org/w/index.php?title=Multivariate_normal_distribution&section=18#Conditional_distributions
+                    #
+                    update = np.dot(cov12.T, np.dot(np.linalg.inv(cov11), values.T))
+                    mu3 = (mu2[None, :].T + update).T
 
                     cov3 = cov22 - np.dot(cov12.T, \
                             np.dot(np.linalg.inv(cov11), cov12))
+
+                # Only 1 variable non-censored
                 else:
+                    # 1d parameter update
                     mu3 = mu2 + cov12/cov11*values
                     cov3 = cov22 - cov12**2/cov11
 
-                # More than 2d censoring
-                if ncensored>1:
-                    # Get parameters
+
+                # More than 2 variables censored
+                if ncensored > 1:
+                    # Reformat parameters for mvt routine
                     sig3, correl3 = __get_sig_corr(cov3)
 
                     # Compute
@@ -220,11 +298,12 @@ def logpdf(x, mu, cov, censors=0):
                         # 2=[lower, upper]
 
                     # Compute cdf for each point
-                    # Very slow - to be improved
+                    # very slow
                     cdf = np.zeros(np.sum(idx_case))
                     for k in range(len(upper)):
                         err, cdf[k], info = mvn.mvndst(lower, upper[k], infin, correl3)
 
+                # Only 1 variable censored
                 else:
                     # Compute
                     # int[p(x_c=y|x_nc), y, -inf, censor]
