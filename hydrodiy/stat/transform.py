@@ -248,11 +248,11 @@ class BoxCox(Transform):
 
     def forward(self, x):
         shift, lam = self.params
-        return (np.power(x+shift, lam)-shift**lam)/lam
+        return (np.power(x+shift, lam)-1)/lam
 
     def backward(self, y):
         shift, lam = self.params
-        u = lam*y+shift**lam
+        u = lam*y+1
         return np.power(u, 1./lam)-shift
 
     def jacobian_det(self, x):
