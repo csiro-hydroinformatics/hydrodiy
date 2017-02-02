@@ -43,6 +43,23 @@ def __get_censors(censors, nvar):
     return censors
 
 
+def check_cov(nvar, cov, check_semidefinite=True):
+    ''' Check validity of covariance function '''
+    cov = np.atleast_2d(cov)
+
+    if cov.shape != (nvar, nvar):
+        raise ValueError('Expected cov of dim {0}, but got {1}'.format(\
+            (nvar, nvar), cov.shape))
+
+    if not np.allclose(cov, cov.T):
+        raise ValueError('cov matrix is not symetric')
+
+    if check_semidefinite:
+        eig = np.linalg.eig(cov)[0]
+        if np.any(eig<1e-10):
+            raise ValueError('cov matrix is not semi-definite positive')
+
+
 def toeplitz_cov(sig, rho):
     ''' Generate a toeplitz covariance matrix (analogous to AR1)
 
@@ -81,6 +98,77 @@ def __compute_log_cdf(cdf):
         log_cdf[idx_cdf_pos] = np.log(cdf[idx_cdf_pos])
 
     return log_cdf
+
+
+def conditional(mu, cov, idxvars, cond):
+    ''' Compute multivaraite normal conditional parameter
+    given conditioning values. See
+    https://en.wikipedia.org/w/index.php?title=Multivariate_normal_distribution&section=18#Conditional_distributions
+
+    Parameters
+    -----------
+    mu : np.ndarray
+        Location parameters. [p] array.
+    cov : np.ndarray
+        Covariance matrix. [p, p] array.
+    idxvars : np.ndarray
+        Index of conditioning variables. [q] boolean array with q<p
+        (otherwise there is no conditining possible)
+    cond : np.ndarray
+        Conditioning data. [n, q] array
+        The function can be used if there are multiple conditioning
+        data (n>1)
+
+    Returns
+    -----------
+    mu_cond : np.ndarray
+        Location parameters. [n, p-q] array.
+    cov_cond : np.ndarray
+        Covariance matrix. [p-q, p-q] array.
+    '''
+    # Check inputs
+    mu = np.atleast_1d(mu)
+    idxvars = np.atleast_1d(idxvars).astype(bool)
+    cov = np.atleast_2d(cov)
+    cond = np.atleast_2d(cond)
+
+    nval, ncond = cond.shape
+    nvar = mu.shape[0]
+
+    if not idxvars.shape[0] == nvar:
+        raise ValueError('Expected idxvars of length {0}, got {1}'.format(\
+            nvar, idxvars.shape[0]))
+
+    if not np.sum(idxvars) == ncond:
+        raise ValueError('Expected sum(idxvars) equal to {0}, got {1}'.format(\
+            ncond, np.sum(idxvars)))
+
+    check_cov(nvar, cov)
+
+    if nvar-ncond < 1:
+        raise ValueError('Expected p({0})-q({1}) >=1, got {2}'.format(\
+            nvar, ncond, nvar-ncond))
+
+    # Parameter for non-censored variables
+    mu1 = mu[idxvars]
+    cov11 = cov[idxvars][:, idxvars]
+
+    # Parameter for censored variables
+    mu2 = mu[~idxvars]
+    cov22 = cov[~idxvars][:, ~idxvars]
+
+    # Censored/Non censored covariance matrix
+    cov12 = cov[idxvars][:, ~idxvars]
+
+    # Compute conditioning
+    values = cond-mu1
+    update = np.dot(cov12.T, np.dot(np.linalg.inv(cov11), values.T))
+    mu_cond = (mu2[None, :].T + update).T
+
+    cov_cond = cov22 - np.dot(cov12.T, \
+            np.dot(np.linalg.inv(cov11), cov12))
+
+    return mu_cond, cov_cond
 
 
 def icase2censvars(icase, nvar):
@@ -195,9 +283,7 @@ def logpdf(x, cases, mu, cov, censors=0):
         raise ValueError('Expected mu of length {0}, but got {1}'.format(\
             nvar, mu.shape[0]))
 
-    if cov.shape != (nvar, nvar):
-        raise ValueError('Expected cov of dim {0}, but got {1}'.format(\
-            (nvar, nvar), cov.shape))
+    check_cov(nvar, cov, False)
 
     # Initialise
     logpdf_values = np.zeros(nval)
@@ -205,7 +291,7 @@ def logpdf(x, cases, mu, cov, censors=0):
     # Loop through cases
     for icase in range(cases.max()+1):
 
-        # Define which variables are censorsed
+        # Define which variables are censored
         censvars = icase2censvars(icase, nvar)
         ncensored = np.sum(censvars)
 
@@ -214,18 +300,18 @@ def logpdf(x, cases, mu, cov, censors=0):
         if np.sum(idx_case)>0:
 
             if icase == 0:
-                # No variables are censorsed
+                # No variables are censored
                 # standard multivariate normal pdf
                 logpdf_values[idx_case] = mvt.logpdf(x[idx_case], mean=mu, cov=cov)
 
             elif icase == 2**nvar-1:
-                # All variables are censorsed
+                # All variables are censored
 
                 # Get parameters
                 sig, correl = __get_sig_corr(cov)
 
                 if nvar > 1:
-                    # all censorsed
+                    # all censored
                     lower = np.zeros(nvar) # Does not matter here
                     upper = (censors-mu)/sig * np.ones(nvar)
                     infin = np.zeros(nvar)
@@ -246,11 +332,11 @@ def logpdf(x, cases, mu, cov, censors=0):
             else:
                 # Some variables censored, but not all
 
-                # Parameter for non-censorsed variables
+                # Parameter for non-censored variables
                 mu1 = mu[~censvars]
                 cov11 = cov[~censvars][:, ~censvars]
 
-                # Parameter for censorsed variables
+                # Parameter for censored variables
                 mu2 = mu[censvars]
                 cov22 = cov[censvars][:, censvars]
 
@@ -318,7 +404,7 @@ def logpdf(x, cases, mu, cov, censors=0):
 
 
 def sample(nsamples, mu, cov, censors=0):
-    ''' Sample form a left censorsed multivariate normal
+    ''' Sample form a left censored multivariate normal
 
     Parameters
     -----------
@@ -342,9 +428,7 @@ def sample(nsamples, mu, cov, censors=0):
     cov = np.atleast_2d(cov)
 
     nvar = mu.shape[0]
-    if cov.shape != (nvar, nvar):
-        raise ValueError('Expected dimensions of cov to be {0}, but got {1}'.format(\
-            (nvar, nvar), cov.shape))
+    check_cov(nvar, cov, True)
 
     censors = __get_censors(censors, nvar)
 

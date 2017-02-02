@@ -71,6 +71,35 @@ class MVNCTestCase(unittest.TestCase):
         self.assertTrue(np.allclose(cov, cov.T))
 
 
+    def test_check_cov(self):
+        nvar = 6
+        mu, cov, sig = get_mu_cov(nvar)
+        mvnc.check_cov(nvar, cov, check_semidefinite=True)
+
+        try:
+            mvnc.check_cov(nvar-1, cov, check_semidefinite=True)
+        except ValueError as err:
+            pass
+        self.assertTrue(str(err).startswith('Expected cov of dim'))
+
+        try:
+            covb = np.random.uniform(size=(nvar, nvar))
+            mvnc.check_cov(nvar, covb, check_semidefinite=True)
+        except ValueError as err:
+            pass
+        self.assertTrue(str(err).startswith('cov matrix is not symetric'))
+
+        try:
+            covb = np.random.uniform(size=(nvar, nvar))
+            dg = np.ones(nvar)
+            dg[0] = -1
+            covb = np.dot(covb.T, np.dot(np.diag(dg), covb))
+            mvnc.check_cov(nvar, covb, check_semidefinite=True)
+        except ValueError as err:
+            pass
+        self.assertTrue(str(err).startswith('cov matrix is not semi'))
+
+
     def test_get_icase2censvars(self):
         for nvar in range(1, 10):
             maxcase = 2**nvar
@@ -90,7 +119,47 @@ class MVNCTestCase(unittest.TestCase):
                 censvars = mvnc.icase2censvars(maxcase, nvar)
             except ValueError as err:
                 pass
-            self.assertTrue(str(err).startswith('Expected'))
+            self.assertTrue(str(err).startswith('Expected icase'))
+
+
+    def test_conditional_error(self):
+        nvar = 6
+        mu, cov, sig = get_mu_cov(nvar)
+        mu = np.arange(nvar)
+
+        # Test errors
+        try:
+            cond = mu*0
+            idxvars = [True]*nvar
+            mu_cond, cov_cond = mvnc.conditional(mu, cov, idxvars, cond)
+        except ValueError as err:
+            pass
+        self.assertTrue(str(err).startswith('Expected p'))
+
+
+    def test_conditional_invariance(self):
+        nvar = 6
+        mu = np.arange(nvar)
+
+        mat = np.random.uniform(-1, 1, size=(nvar, nvar))
+        cov = np.dot(mat, mat.T)
+
+        # test invariance if cond == mu
+        idxvars = np.array([True]*(nvar-2) + [False]*2)
+        cond = np.repeat(mu[idxvars][None, :], 10, 0)
+        mu_cond, cov_cond = mvnc.conditional(mu, cov, idxvars, cond)
+
+        ck = np.allclose(mu_cond, np.repeat(mu[~idxvars][None, :], 10, 0))
+        self.assertTrue(ck)
+
+        # test invariance if cov is diagonal
+        cond = cond+2
+        cov = np.diag(np.diag(cov))
+        mu_cond, cov_cond = mvnc.conditional(mu, cov, idxvars, cond)
+        ck = np.allclose(mu_cond, np.repeat(mu[~idxvars][None, :], 10, 0))
+        ck = ck & np.allclose(cov_cond, cov[~idxvars][:, ~idxvars])
+        self.assertTrue(ck)
+
 
 
     def test_censoring_cases(self):
@@ -146,6 +215,8 @@ class MVNCTestCase(unittest.TestCase):
 
 
     def test_logpdf_fit(self):
+        return
+
         nsamples = 500
         nfit = 50
         nrepeat = 10
