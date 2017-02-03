@@ -16,6 +16,7 @@ class MetricsTestCase(unittest.TestCase):
         print('\t=> MetricsTestCase')
         source_file = os.path.abspath(__file__)
         ftest = os.path.dirname(source_file)
+        self.ftest = ftest
 
         fd1 = os.path.join(ftest, 'data', 'crps_testdata_01.txt')
         data = np.loadtxt(fd1)
@@ -74,11 +75,13 @@ class MetricsTestCase(unittest.TestCase):
             self.assertTrue(np.allclose(rt.iloc[:, i], \
                 self.crps_reliabtab1[:,i], atol=1e-5))
 
+
     def test_crps_reliability_table2(self):
         cr, rt = metrics.crps(self.obs2, self.sim2)
         for i in range(rt.shape[1]):
             self.assertTrue(np.allclose(rt.iloc[:, i], \
                 self.crps_reliabtab2[:,i], atol=1e-5))
+
 
     def test_crps_value1(self):
         cr, rt = metrics.crps(self.obs1, self.sim1)
@@ -86,11 +89,63 @@ class MetricsTestCase(unittest.TestCase):
             ck = np.allclose(cr[nm], self.crps_value1[nm], atol=1e-5)
             self.assertTrue(ck)
 
+
     def test_crps_value2(self):
         cr, rt = metrics.crps(self.obs2, self.sim2)
         for nm in cr.keys():
             ck = np.allclose(cr[nm], self.crps_value2[nm], atol=1e-5)
             self.assertTrue(ck)
+
+
+    def test_pit(self):
+        nforc = 100
+        nens = 200
+
+        obs = np.linspace(0, 1, nforc)
+        ens = np.repeat(np.linspace(0, 1, nens)[None, :], nforc, 0)
+
+        p = metrics.pit(obs, ens)
+        self.assertTrue(np.all(np.abs(obs-p)<5e-3))
+
+
+    def test_cramer_von_mises(self):
+
+        fd = os.path.join(self.ftest, 'data','cramer_von_mises_test_data.csv')
+        data = pd.read_csv(fd, skiprows=15).values
+
+        fe = os.path.join(self.ftest, \
+                        'data','cramer_von_mises_test_data_expected.csv')
+        expected = pd.read_csv(fe, skiprows=15)
+
+        for nval in expected['nval'].unique():
+            # Select data for nval
+            exp = expected.loc[expected['nval'] == nval, :]
+
+            for i in range(exp.shape[0]):
+                x = data[i, :nval]
+
+                st1 = exp['stat1'].iloc[i]
+                pv1 = exp['pvalue1'].iloc[i]
+
+                st2, pv2 = metrics.cramer_von_mises_test(x)
+
+                ck1 = abs(st1-st2)<5e-3
+                ck2 = abs(pv1-pv2)<1e-2
+
+                self.assertTrue(ck1 and ck2)
+
+
+    def test_alpha(self):
+        nforc = 100
+        nens = 200
+
+        obs = np.linspace(0, 1, nforc)
+        ens = np.repeat(np.linspace(0, 1, nens)[None, :], nforc, 0)
+
+        kst, kpv, cst, cpv = metrics.alpha(obs, ens)
+        self.assertTrue(kpv>1.-1e-4)
+        self.assertTrue(cpv>1.-1e-4)
+
 
     def test_iqr(self):
         nforc = 100

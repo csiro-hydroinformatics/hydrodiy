@@ -58,7 +58,7 @@ setup(
     author_email = 'julien.lerat@gmail.com',
     url = 'https://bitbucket.org/jlerat/hydrodiy',
     package_data = {
-        "hydrodiy": ["gis/data/*.gz"],
+        "hydrodiy": ["gis/data/*.gz", "stat/data/*.zip"],
     },
     requires= [
         "pandas (>=0.14.0)",

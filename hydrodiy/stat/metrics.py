@@ -1,5 +1,5 @@
 
-import re
+import re, os
 
 import numpy as np
 import pandas as pd
@@ -8,10 +8,20 @@ from scipy.stats import kstest
 
 from hydrodiy.stat import transform
 from hydrodiy.stat import sutils
+from hydrodiy.io import csv
 
 import c_hydrodiy_stat
 
 EPS = 1e-10
+
+# Reads Cramer-Von Mises table
+CVPATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), \
+            'data', 'cramer_von_mises_test_pvalues.zip')
+CVTABLE, _ = csv.read_csv(CVPATH, index_col=0)
+CVNSAMPLE  = CVTABLE.columns.values.astype(int)
+CVQQ = CVTABLE.index.values
+CVTABLE = CVTABLE.values
+
 
 def get_transform(name):
     ''' Get transfrom by name from transform library '''
@@ -33,7 +43,22 @@ def get_transform(name):
     return trans
 
 
-def pit(obs, sim, cst=0.3):
+def __check_ensemble_data(obs, ens):
+    ''' Check dimensions of obs and ens data '''
+
+    obs = np.atleast_1d(obs).astype(np.float64)
+    ens = np.atleast_2d(ens).astype(np.float64)
+
+    nforc = obs.shape[0]
+    nens = ens.shape[1]
+    if ens.shape[0]!=nforc:
+        raise ValueError('Expected ens with first dim equal to {0}, got {1}'.format( \
+            nforc, ens.shape[0]))
+
+    return obs, ens, nforc, nens
+
+
+def pit(obs, ens, cst=0.3):
     """
     Compute probability integral transformed (PIT) values
     for a single forecast
@@ -41,30 +66,40 @@ def pit(obs, sim, cst=0.3):
     Parameters
     -----------
     obs : numpy.ndarray
-        observed  data, [n] or [n,1] array
-    sim : numpy.ndarray
-        simulated data, [n] or [n,1] array
+        obs data, [n] or [n,1] array
+    ens : numpy.ndarray
+        ensemble forecast data, [n,p] array
     cst : float
         Constant used to compute plotting positions
 
     Returns
     -----------
-    prob_obs : float
+    pits : numpy.ndarray
         PIT value
     """
+    # Check data
+    obs, ens, nforc, nens = __check_ensemble_data(obs, ens)
 
-    rnd = np.random.uniform(0, EPS, size=sim.shape)
-    ys_sort = np.sort(sim+rnd)
-    prob_obs = 0.0
+    # Initialise outputs
+    pits = np.zeros(nforc)
+    unif_dist = sutils.ppos(nens, cst)
 
-    if obs>= ys_sort[-1]:
-        prob_obs = 1.0
+    # Loop through forecasts
+    for i in range(nforc):
+        rnd = np.random.uniform(0, EPS, size=nens)
+        ys_sort = np.sort(ens[i, :]+rnd)
 
-    elif obs>= ys_sort[0]:
-        unif_dist = sutils.ppos(len(ys_sort), cst)
-        prob_obs = np.interp(obs, ys_sort, unif_dist)
+        # Compute PIT
+        prob_obs = 0.0
+        if obs[i]>= ys_sort[-1]:
+            prob_obs = 1.0
 
-    return prob_obs
+        elif obs[i]>= ys_sort[0]:
+            prob_obs = np.interp(obs[i], ys_sort, unif_dist)
+
+        pits[i] = prob_obs
+
+    return pits
 
 
 def crps(obs, ens):
@@ -87,16 +122,8 @@ def crps(obs, ens):
         - Equation 30 for g
         - Equation 36 for reliability
     '''
-
     # Check data
-    obs = np.atleast_1d(obs)
-    ens = np.atleast_2d(ens)
-
-    nforc = obs.shape[0]
-    nens = ens.shape[1]
-    if ens.shape[0]!=nforc:
-        raise ValueError('Expected ens with first dim equal to {0}, got{1}'.format( \
-            nforc, ens.shape[0]))
+    obs, ens, nforc, nens = __check_ensemble_data(obs, ens)
 
     # set weights to zero and switch off use of weights
     weights = np.zeros(nforc)
@@ -120,8 +147,42 @@ def crps(obs, ens):
     return decompos, table
 
 
+def cramer_von_mises_test(data):
+    ''' Perform the Cramer-Von Mises test using a uniform
+    distribution as a null hypothesis. The pvalue are computed
+    from table prepared with the R package goftest (function pCvM)
+
+    Parameters
+    -----------
+    data : numpy.ndarray
+        1d data vector
+
+    Returns
+    -----------
+    pvalue : float
+        CV test pvalue
+    cvstat : float
+        CV test statistic
+    '''
+
+    # Compute Cramer-Von Mises statistic
+    nsample = data.shape[0]
+    unif = (2*np.arange(1, nsample+1)-1).astype(float)/2/nsample
+    cvstat = 1./12/nsample + np.sum((unif-np.sort(data))**2)
+
+    # Find closest sample population
+    idx = np.argmin(np.abs(nsample-CVNSAMPLE))
+    cdf = CVTABLE[:, idx]
+
+    # Interpolate pvalue
+    pvalue = np.interp(cvstat, CVQQ, cdf)
+
+    return cvstat, pvalue
+
+
 def alpha(obs, ens, cst=0.3):
     ''' Score computing the Pvalue of the Kolmogorov-Smirnov test
+    and Cramer-Von Mises test
 
     Parameters
     -----------
@@ -134,29 +195,28 @@ def alpha(obs, ens, cst=0.3):
 
     Returns
     -----------
-    pvalue : float
-        KS test pvalue
     kstat : float
         KS test statistic
+    kpvalue : float
+        KS test pvalue
+    cstat : float
+        Cramer Von Mises test statistic
+    cpvalue : float
+        Cramer Von Mises test pvalue
     '''
-
     # Check data
-    obs = np.atleast_1d(obs)
-    ens = np.atleast_2d(ens)
-
-    nforc = obs.shape[0]
-    nens = ens.shape[1]
-    if ens.shape[0]!=nforc:
-        raise ValueError('Expected ens with first dim equal to {0}, got{1}'.format( \
-            nforc, ens.shape[0]))
+    obs, ens, nforc, nens = __check_ensemble_data(obs, ens)
 
     # Compute pit
-    pt = [pit(o, s, cst=cst) for o,s in zip(obs, ens)]
+    pits = pit(obs, ens)
 
-    # KS statistic
-    kstat, pvalue = kstest(pt, 'uniform')
+    # KS test
+    kstat, kpvalue = kstest(pits, 'uniform')
 
-    return pvalue, kstat
+    # Cramer Von-Mises test
+    cstat, cpvalue = cramer_von_mises_test(pits)
+
+    return kstat, kpvalue, cstat, cpvalue
 
 
 def iqr(ens, ref, coverage=50.):
