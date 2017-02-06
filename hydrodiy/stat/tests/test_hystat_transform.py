@@ -24,28 +24,24 @@ class TransformTestCase(unittest.TestCase):
         ''' Test the class transform '''
 
         trans = transform.Transform('test', 'a', \
-                    params_mins=[0], \
-                    params_maxs=[1])
+                    mins=[0], defaults=[0.5], maxs=[1])
 
-        self.assertEqual(trans.name, 'test')
-        self.assertEqual(trans.params_names, ['a'])
+        self.assertEqual(trans.transform_name, 'test')
+        self.assertEqual(trans.names, ['a'])
 
         # test set and get parameters
         value = 0.5
         trans.params = value
         exp = np.array([value], dtype=np.float64)
-        self.assertTrue(np.allclose(trans._params, exp))
         self.assertTrue(np.allclose(trans.params, exp))
 
         # test set and get parameters
         trans.params = -1
-        exp = np.array([trans.params_mins[0]], dtype=np.float64)
-        self.assertTrue(np.allclose(trans._params, exp))
+        exp = np.array([trans.mins[0]], dtype=np.float64)
         self.assertTrue(np.allclose(trans.params, exp))
 
         trans.params = 2
-        exp = np.array([trans.params_maxs[0]], dtype=np.float64)
-        self.assertTrue(np.allclose(trans._params, exp))
+        exp = np.array([trans.maxs[0]], dtype=np.float64)
         self.assertTrue(np.allclose(trans.params, exp))
 
         # test setitem/getitem
@@ -55,16 +51,16 @@ class TransformTestCase(unittest.TestCase):
         self.assertTrue(isinstance(trans['a'], float))
 
         trans['a'] = 2.
-        self.assertTrue(np.allclose(trans.params, trans.params_maxs))
+        self.assertTrue(np.allclose(trans.params, trans.maxs))
 
         trans['a'] = -1
-        self.assertTrue(np.allclose(trans.params, trans.params_mins))
+        self.assertTrue(np.allclose(trans.params, trans.mins))
 
         try:
             trans['a'] = [10, 10]
-        except TypeError as err:
+        except ValueError as err:
             pass
-        self.assertTrue(str(err).startswith('float'))
+        self.assertTrue(str(err).startswith('The truth value of'))
 
 
         try:
@@ -74,10 +70,10 @@ class TransformTestCase(unittest.TestCase):
         self.assertTrue(str(err).startswith('Cannot set'))
 
         try:
-            trans.params = np.nan
+            trans.params = [np.nan] * trans.nparams
         except ValueError as err:
             pass
-        self.assertTrue(str(err).startswith('Cannot set'))
+        self.assertTrue(str(err).startswith('Cannot process'))
 
         x = np.linspace(0, 1, 10)
         try:
@@ -102,7 +98,7 @@ class TransformTestCase(unittest.TestCase):
             trans = transform.Transform('test', ['a', 'a'])
         except ValueError as err:
             pass
-        self.assertTrue(str(err).startswith('Non unique'))
+        self.assertTrue(str(err).startswith('Names are not unique'))
 
 
     def test_print(self):
@@ -120,7 +116,7 @@ class TransformTestCase(unittest.TestCase):
 
             for sample in range(100):
                 x = np.random.normal(size=100, loc=5, scale=20)
-                trans.params = trans._params_mins+np.random.uniform(0., 2, size=nparams)
+                trans.params = trans.mins+np.random.uniform(0., 2, size=nparams)
 
                 if nm == 'Log':
                     x = np.exp(x)
@@ -128,7 +124,7 @@ class TransformTestCase(unittest.TestCase):
                     x = np.random.uniform(0., 1., size=100)
                     trans.reset()
                 elif nm == 'LogSinh':
-                    trans._params += 0.1
+                    trans._params.values += 0.1
 
                 # Check x -> forward(x) -> backward(y) is stable
                 y = trans.forward(x)
@@ -151,7 +147,7 @@ class TransformTestCase(unittest.TestCase):
 
             for sample in range(100):
                 x = np.random.normal(size=100, loc=5, scale=20)
-                trans.params = trans._params_mins+np.random.uniform(0., 2, size=nparams)
+                trans.params = trans.mins+np.random.uniform(0., 2, size=nparams)
 
                 if nm in ['Log', 'BoxCox']:
                     x = np.clip(x, 1e-1, np.inf)
@@ -199,7 +195,7 @@ class TransformTestCase(unittest.TestCase):
             fig, ax = plt.subplots()
             for pp in [-20., 0, 20.]:
                 trans.reset()
-                trans.params = trans.params_default * (1.+pp/100)
+                trans.params = trans.defaults * (1.+pp/100)
                 y = trans.forward(x)
                 ax.plot(x, y, label='params = default {0}% (rp={1})'.format(pp,
                                         trans.params))

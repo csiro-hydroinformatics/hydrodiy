@@ -2,6 +2,7 @@
 
 import numpy as np
 
+EPS = 1e-10
 
 
 class Vector(object):
@@ -100,7 +101,7 @@ class Vector(object):
 
         hit = False
         if hitbounds:
-            hit = np.any((val < self._mins) | (val > self._maxs))
+            hit = np.any((val < self._mins-EPS) | (val > self._maxs+EPS))
 
         val = np.clip(val, self._mins, self._maxs)
 
