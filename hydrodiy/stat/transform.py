@@ -17,7 +17,25 @@ class Transform(object):
         mins=None, \
         maxs=None,
         constants=[]):
+        """
+        Create instance of a data transform object
 
+        Parameters
+        -----------
+        transform_name : str
+            Name of transformation
+        names : list
+            Names of transform parameters
+        defaults : list
+            Defaults values for parameters
+        mins : list
+            Minum values for parameters
+        maxs : list
+            Maximum values for parameters
+        constants : list
+            Name of constants
+
+        """
         self.transform_name = transform_name
         self._params = Vector(names, defaults, mins, maxs)
         self._constants = Vector(constants)
