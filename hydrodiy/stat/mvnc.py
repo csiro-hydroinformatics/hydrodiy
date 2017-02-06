@@ -1,3 +1,6 @@
+''' Module to perform modelling using the censored multivariate normal
+distribution '''
+
 import math
 import numpy as np
 
@@ -37,8 +40,8 @@ def __get_censors(censors, nvar):
             'its dimensions are {0}').format(censors.shape))
 
     if not censors.shape[0] == nvar:
-        raise ValueError('Expected length of censors to be {0}, but got {1}'.format(\
-            nvar, censors.shape[0]))
+        raise ValueError(('Expected length of censors to be {0},' +\
+            ' but got {1}').format(nvar, censors.shape[0]))
 
     return censors
 
@@ -56,7 +59,7 @@ def check_cov(nvar, cov, check_semidefinite=True):
 
     if check_semidefinite:
         eig = np.linalg.eig(cov)[0]
-        if np.any(eig<1e-10):
+        if np.any(eig < 1e-10):
             raise ValueError('cov matrix is not semi-definite positive')
 
 
@@ -93,8 +96,8 @@ def __compute_log_cdf(cdf):
     log_cdf = 0.*cdf
 
     # compute log(cdf) for strictly positive values only
-    idx_cdf_pos = cdf>0.
-    if np.sum(idx_cdf_pos)>0:
+    idx_cdf_pos = cdf > 0.
+    if np.sum(idx_cdf_pos) > 0:
         log_cdf[idx_cdf_pos] = np.log(cdf[idx_cdf_pos])
 
     return log_cdf
@@ -132,7 +135,7 @@ def conditional(mu, cov, idxvars, cond):
     cov = np.atleast_2d(cov)
     cond = np.atleast_2d(cond)
 
-    nval, ncond = cond.shape
+    _, ncond = cond.shape
     nvar = mu.shape[0]
 
     if not idxvars.shape[0] == nvar:
@@ -197,7 +200,7 @@ def icase2censvars(icase, nvar):
         raise ValueError('Expected icase ({0}) < {1}'.format(icase, \
                 maxcase))
 
-    if nvar <= 0 :
+    if nvar <= 0:
         raise ValueError('Expected nvar ({0}) > 0'.format(nvar))
 
     # Using bitwise operations
@@ -207,12 +210,12 @@ def icase2censvars(icase, nvar):
     return censvars
 
 
-def get_censoring_cases(x, censors=0):
+def get_censoring_cases(data, censors=0):
     ''' Compute the censoring case indexes from data
 
     Parameters
     -----------
-    x : np.ndarray
+    data : np.ndarray
         Samples. [n, p] array:
         - n is the number of samples
         - p is the number of variables
@@ -231,24 +234,24 @@ def get_censoring_cases(x, censors=0):
         2**nvar-1 = All variables are censored
     '''
     # Get nvar
-    x = np.atleast_2d(x)
-    nvar = x.shape[1]
+    data = np.atleast_2d(data)
+    nvar = data.shape[1]
 
     # Check censors
     censors = __get_censors(censors, nvar)
 
     # Define the censorsing cases
-    cases = np.sum((x-censors < EPS).astype(int) * 2**np.arange(nvar), axis=1)
+    cases = np.sum((data-censors < EPS).astype(int) * 2**np.arange(nvar), axis=1)
 
     return cases
 
 
-def logpdf(x, cases, mu, cov, censors=0):
+def logpdf(data, cases, mu, cov, censors=0):
     ''' Compute the log pdf of a left censored multivariate normal
 
     Parameters
     -----------
-    x : np.ndarray
+    data : np.ndarray
         Samples. [n, p] array:
         - n is the number of samples
         - p is the number of variables
@@ -269,11 +272,11 @@ def logpdf(x, cases, mu, cov, censors=0):
     '''
 
     # Check inputs
-    x = np.atleast_2d(x)
+    data = np.atleast_2d(data)
     mu = np.atleast_1d(mu)
     cov = np.atleast_2d(cov)
 
-    nval, nvar = x.shape
+    nval, nvar = data.shape
 
     if cases.shape[0] != nval:
         raise ValueError('Expected cases of length {0}, but got {1}'.format(\
@@ -297,12 +300,13 @@ def logpdf(x, cases, mu, cov, censors=0):
 
         # Check case exists in the sample
         idx_case = cases == icase
-        if np.sum(idx_case)>0:
+        if np.sum(idx_case) > 0:
 
             if icase == 0:
                 # No variables are censored
                 # standard multivariate normal pdf
-                logpdf_values[idx_case] = mvt.logpdf(x[idx_case], mean=mu, cov=cov)
+                logpdf_values[idx_case] = mvt.logpdf(data[idx_case], \
+                                                mean=mu, cov=cov)
 
             elif icase == 2**nvar-1:
                 # All variables are censored
@@ -344,7 +348,7 @@ def logpdf(x, cases, mu, cov, censors=0):
                 cov12 = cov[~censvars][:, censvars]
 
                 # Non censored samples
-                values = x[idx_case][:, ~censvars]-mu1
+                values = data[idx_case][:, ~censvars]-mu1
 
                 # More than 1 variable non censored
                 if nvar-ncensored > 1:
@@ -355,7 +359,8 @@ def logpdf(x, cases, mu, cov, censors=0):
                     # The analytical form is given in
                     # https://en.wikipedia.org/w/index.php?title=Multivariate_normal_distribution&section=18#Conditional_distributions
                     #
-                    update = np.dot(cov12.T, np.dot(np.linalg.inv(cov11), values.T))
+                    update = np.dot(cov12.T, \
+                                    np.dot(np.linalg.inv(cov11), values.T))
                     mu3 = (mu2[None, :].T + update).T
 
                     cov3 = cov22 - np.dot(cov12.T, \
@@ -387,7 +392,8 @@ def logpdf(x, cases, mu, cov, censors=0):
                     # very slow
                     cdf = np.zeros(np.sum(idx_case))
                     for k in range(len(upper)):
-                        err, cdf[k], info = mvn.mvndst(lower, upper[k], infin, correl3)
+                        err, cdf[k], info = mvn.mvndst(lower, \
+                                                upper[k], infin, correl3)
 
                 # Only 1 variable censored
                 else:
@@ -396,8 +402,9 @@ def logpdf(x, cases, mu, cov, censors=0):
                     cdf = norm.cdf(censors[censvars], loc=mu3, scale=cov3)
 
                 # Finally, computing log pdf
-                # int[p(x_nc, x_c=y), y, -inf, censor] = p(x_nc) int[p(x_c=y|x_nc), y, -inf, censor]
-                logpdf_values[idx_case] = mvt.logpdf(x[idx_case][:, ~censvars], \
+                # int[p(x_nc, x_c=y), y, -inf, censor] =
+                #               p(x_nc) int[p(x_c=y|x_nc), y, -inf, censor]
+                logpdf_values[idx_case] = mvt.logpdf(data[idx_case][:, ~censvars], \
                                 mean=mu1, cov=cov11)+ __compute_log_cdf(cdf)
 
     return logpdf_values
