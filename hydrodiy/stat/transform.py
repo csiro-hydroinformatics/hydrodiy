@@ -16,18 +16,31 @@ class Transform(object):
         defaults=None, \
         mins=None, \
         maxs=None,
-        constants=['C']):
+        constants=[]):
 
         self.transform_name = transform_name
         self._params = Vector(names, defaults, mins, maxs)
-        self.constants = Vector(constants)
+        self._constants = Vector(constants)
 
 
     def __setitem__(self, key, value):
-        self._params[key] = value
+        if self._constants.nval == 0:
+            self._params[key] = value
+        else:
+            if key in self._params.names:
+                self._params[key] = value
+            else:
+                self._constants[key] = value
+
 
     def __getitem__(self, key):
-        return self._params[key]
+        if self._constants.nval == 0:
+            return self._params[key]
+        else:
+            if key in self._params.names:
+                return self._params[key]
+            else:
+                return self._constants[key]
 
 
     @property

@@ -24,7 +24,8 @@ class TransformTestCase(unittest.TestCase):
         ''' Test the class transform '''
 
         trans = transform.Transform('test', 'a', \
-                    mins=[0], defaults=[0.5], maxs=[1])
+                    mins=[0], defaults=[0.5], maxs=[1],
+                    constants=['C1', 'C2'])
 
         self.assertEqual(trans.transform_name, 'test')
         self.assertEqual(trans.names, ['a'])
@@ -75,6 +76,13 @@ class TransformTestCase(unittest.TestCase):
             pass
         self.assertTrue(str(err).startswith('Cannot process'))
 
+        # Check constants
+        self.assertTrue(np.allclose(trans['C1'], 0.))
+        trans['C1'] = 10.
+        self.assertTrue(np.allclose(trans['C1'], 10.))
+
+
+        # Test not implemented methods
         x = np.linspace(0, 1, 10)
         try:
             trans.forward(x)
