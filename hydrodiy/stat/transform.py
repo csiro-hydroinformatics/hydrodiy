@@ -49,6 +49,11 @@ class Transform(object):
 
 
     @property
+    def hitbounds(self):
+        return self._params.hitbounds
+
+
+    @property
     def names(self):
         ''' Get parameter names '''
         return self._params.names
