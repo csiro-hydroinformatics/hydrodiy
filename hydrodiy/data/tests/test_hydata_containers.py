@@ -32,6 +32,12 @@ class VectorTestCases(unittest.TestCase):
         vect = Vector(['a', 'b'])
 
         try:
+            vect = Vector(['a', 'a'])
+        except ValueError as err:
+            pass
+        self.assertTrue(str(err).startswith(('Names are not')))
+
+        try:
             vect = Vector(['a', 'b'], defaults=1)
         except ValueError as err:
             pass
@@ -50,10 +56,9 @@ class VectorTestCases(unittest.TestCase):
         self.assertTrue(str(err).startswith(('Expected vector of length')))
 
         try:
-            vect = Vector(['a', 'b'], defaults=[1]*2, mins=[0]*2, maxs=[-1]*2)
+            vect = Vector(['a', 'b'], defaults=[1]*2, mins=[0]*2, maxs=[-1, 0.5])
         except ValueError as err:
             pass
-        import pdb; pdb.set_trace()
         self.assertTrue(str(err).startswith(('Expected maxs within')))
 
         try:
@@ -63,33 +68,99 @@ class VectorTestCases(unittest.TestCase):
         self.assertTrue(str(err).startswith(('Expected defaults within')))
 
 
-    def test_fromdict(self):
-        pass
+    def test_tofromdict(self):
+        vect = Vector(['a', 'b'], [0.5]*2, [0]*2, [1]*2)
+        dct = vect.to_dict()
+
+        vect2 = Vector.from_dict(dct)
+        dct2 = vect2.to_dict()
+        self.assertEqual(dct, dct2)
+
 
     def test_string(self):
-        pass
+        vect = Vector(['a', 'b'])
+        vect.values = [1. ,1.]
+        print(vect)
+
 
     def test_set_get(self):
-        pass
+        vect = Vector(['a', 'b', 'c'], [0.5]*3, [0]*3, [1]*3)
+        values = np.linspace(0, 1, 3)
+        expected = np.zeros(3)
+        for i, nm in enumerate(vect.names):
+            vect[nm] = values[i]
+            expected[i] = vect[nm]
+
+        self.assertTrue(np.allclose(values, expected))
+
+        vect['a'] = 10
+        self.assertTrue(np.allclose(vect['a'], 1.))
+
+        vect['a'] = -10
+        self.assertTrue(np.allclose(vect['a'], 0.))
+
+        try:
+            vect['a'] = np.nan
+        except ValueError as err:
+            pass
+        self.assertTrue(str(err).startswith('Cannot set value to nan'))
+
 
     def test_hitbounds(self):
-        pass
+        vect = Vector(['a', 'b'], [0.5]*2, [0]*2, [1]*2)
+        self.assertTrue(~vect.hitbounds)
+
+        vect.values = [2]*2
+        self.assertTrue(vect.hitbounds)
+
 
     def test_values(self):
-        pass
+        try:
+            vect = Vector(['a', 'b'])
+            vect.values = 1
+        except ValueError as err:
+            pass
+        self.assertTrue(str(err).startswith(('Expected vector of length')))
 
-    def test_covar(self):
-        pass
+        try:
+            vect = Vector(['a', 'b'])
+            vect.values = [1., np.nan]
+        except ValueError as err:
+            pass
+        self.assertTrue(str(err).startswith(('Cannot process value')))
 
-    def test_randomise(self):
-        pass
+        vect = Vector(range(4))
+        vect.values = np.arange(4).reshape((2, 2))
+        self.assertTrue(len(vect.values.shape) == 1)
+
+        try:
+            vect.values = ['a']*4
+        except ValueError as err:
+            pass
+        self.assertTrue(str(err).startswith(('could not convert')))
 
 
     def test_clone(self):
-        pass
+        vect = Vector(['a', 'b'], [0.5]*2, [0]*2, [1]*2)
+        vect.values = [0.6]*2
+        dct = vect.to_dict()
 
-    def test_to_dict(self):
-        pass
+        vect2 = vect.clone()
+        dct2 = vect.to_dict()
+        self.assertEqual(dct, dct2)
+
+        vect2['a'] = 1.
+
+
+
+    def test_reset(self):
+        vect = Vector(['a', 'b'], [0.5]*2, [0]*2, [1]*2)
+
+        vect.values = [0.7]*2
+        vect.reset()
+        self.assertTrue(np.allclose(vect.values, vect.defaults))
+
+
 
 if __name__ == '__main__':
     unittest.main()

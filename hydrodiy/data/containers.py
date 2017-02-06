@@ -1,55 +1,48 @@
-import copy
-import re
-from itertools import product
+''' Module providing data containers '''
 
-import math
 import numpy as np
 
 
 
 class Vector(object):
+    ''' Vector data container. Implements min, max and default values. '''
 
     def __init__(self, names, defaults=None, mins=None, maxs=None, \
             hitbounds=False):
 
         # Set parameter names
-        self._names = np.atleast_1d(names).flatten().astype(str)
+        self._names = np.atleast_1d(names).flatten().astype(str).copy()
         nval = self._names.shape[0]
+        if len(np.unique(self._names)) != nval:
+            raise ValueError('Names are not unique')
         self._nval = nval
 
         self._hitbounds = hitbounds
 
-        # Set mins
-        if not mins is None:
-            self._mins, _ = self.__checkvalues__(mins, False, False)
-        else:
-            self._mins = -np.inf * np.ones(nval)
+        # Set mins and maxs
+        self._mins = -np.inf * np.ones(nval)
+        self._maxs = np.inf * np.ones(nval)
 
-        # Set maxs
+        if not mins is None:
+            self._mins, _ = self.__checkvalues__(mins, False)
+
         if not maxs is None:
-            self._maxs = np.inf * np.ones(nval)
-            maxs, hit = self.__checkvalues__(maxs, True, True)
+            maxs2, hit = self.__checkvalues__(maxs, True)
 
             if hit:
                 raise ValueError(('Expected maxs within [{0}, {1}],' +\
                     ' got {2}'.format(self._mins, self._maxs, maxs)))
-            self._maxs = maxs
-
-        else:
-            self._maxs = np.inf * np.ones(nval)
+            self._maxs = maxs2
 
         # Set defaults values
         if not defaults is None:
-            self._defaults, hit = self.__checkvalues__(defaults, True, True)
+            self._defaults, hit = self.__checkvalues__(defaults, True)
 
             if hit:
                 raise ValueError(('Expected defaults within [{0}, {1}],' +\
                     ' got {2}'.format(self._mins, self._maxs, defaults)))
         else:
             self._defaults = np.clip(np.zeros(nval), self._mins, self._maxs)
-
-        # Sampling properties
-        self._cov = np.eye(nval, dtype=np.float64)
 
         # Set values to defaults
         self._values = self._defaults.copy()
@@ -65,46 +58,35 @@ class Vector(object):
         mins = []
         maxs = []
         values = []
-        for i in range(self.nval):
-            names.append(dct['data']['name'])
-            default.append(dct['data']['default'])
-            mins.append(dct['data']['mins'])
-            maxs.append(dct['data']['maxs'])
-            values.append(dct['data']['values'])
+        for i in range(nval):
+            names.append(dct['data'][i]['name'])
+            defaults.append(dct['data'][i]['default'])
+            mins.append(dct['data'][i]['min'])
+            maxs.append(dct['data'][i]['max'])
+            values.append(dct['data'][i]['value'])
 
         vect = Vector(names, defaults, mins, maxs)
         vect.values = values
-
-        cov = np.array(dct['cov']).reshape((nval, nval))
-        vect.cov = cov
-
         vect._hitbounds = bool(dct['hitbounds'])
 
         return vect
 
 
     def __str__(self):
-            return 'vector ['+', '.join(['{0}:{1:3.3e}'.format(key, self[key]) \
+        return 'vector ['+', '.join(['{0}:{1:3.3e}'.format(key, self[key]) \
                                     for key in self.names]) + ']'
 
 
     def __findname__(self, key):
         idx = np.where(self.names == key)[0]
-        if b.shape[0] == 0:
-            raise ValueError(('Expected key {0} in the' +
+        if idx.shape[0] == 0:
+            raise ValueError(('Expected key {0} in the' + \
                 ' list of names {1}').format(key, self.names))
 
-        return idx
+        return idx[0]
 
 
-    def __setitem__(self, key, value):
-        idx = self.__findname__(key)
-        if np.isnan(value):
-            raise ValueError('Cannot set value to nan')
-        self.values[idx] = value
-
-
-    def __checkvalues__(self, val, clip=True, hitbounds=False):
+    def __checkvalues__(self, val, hitbounds=False):
         ''' Check vector is of proper length and contains no nan'''
 
         val = np.atleast_1d(val).flatten().astype(np.float64)
@@ -117,13 +99,22 @@ class Vector(object):
             raise ValueError('Cannot process values with NaN')
 
         hit = False
-        if clip:
-            if hitbounds:
-                hit = np.any((val<self._mins) | (val>self._maxs))
+        if hitbounds:
+            hit = np.any((val < self._mins) | (val > self._maxs))
 
-            val = np.clip(val, self._mins, self._maxs)
+        val = np.clip(val, self._mins, self._maxs)
 
         return val, hit
+
+
+    def __setitem__(self, key, value):
+        idx = self.__findname__(key)
+        value = np.float64(value)
+        if np.isnan(value):
+            raise ValueError('Cannot set value to nan')
+
+        self._hitbounds = np.any((value < self._mins[idx]) | (value > self._maxs[idx]))
+        self.values[idx] = np.clip(value, self.mins[idx], self.maxs[idx])
 
 
     def __getitem__(self, key):
@@ -157,53 +148,25 @@ class Vector(object):
 
 
     @property
+    def defaults(self):
+        return self._defaults
+
+
+    @property
     def values(self):
-        ''' Get data for a given ensemble member set by iens '''
+        ''' Get data '''
         return self._values
 
 
     @values.setter
     def values(self, val):
-        ''' Set data for a given ensemble member set by iens '''
-        self._values, self._hitbounds = self.__checkvalues__(val, True, True)
+        ''' Set data '''
+        self._values, self._hitbounds = self.__checkvalues__(val, True)
 
 
-    @property
-    def cov(self):
-        return self._cov
-
-
-    @cov.setter
-    def cov(self, val):
-        val = np.atleast_2d(val).astype(np.float64)
-
-        nval = self.nval
-        if not val.shape == (nval, nval):
-            raise ValueError(('Expected a coviance matrix '+ \
-                'of size {0}, got {1}').format((nval, nval), val.shape))
-
-        if not np.allclose(val, val.T):
-            raise ValueError('Covariance matrix should be symetric')
-
-        eig, _ = np.linalg.eig(val)
-        if np.any(eig<1e-10):
-            raise ValueError('Covariance matrix should be semi-definite positive')
-
-
-    def randomise(self, distribution='normal'):
-        ''' Randomise vector data '''
-
-        # Sample vector data
-        if distribution == 'normal':
-            self.values = np.random.multivariate_normal(self.defaults,
-                    self.cov, size=1)
-
-        elif distribution == 'uniform':
-            self.values = np.random.uniform(self.min, self.max,
-                    (self.nens, self.nval))
-        else:
-            raise ValueError(('Expected normal or uniform distributoin, ' + \
-                    'got {0}').format(distribution))
+    def reset(self):
+        ''' Reset vector values to defaults '''
+        self.values = self.defaults
 
 
     def clone(self):
@@ -212,7 +175,6 @@ class Vector(object):
                     self.maxs)
 
         clone.values = self.values
-        clone.cov = self.cov
 
         return clone
 
@@ -220,17 +182,17 @@ class Vector(object):
     def to_dict(self):
         ''' Write vector data to json format '''
 
-        js = {'nval': self.nval, 'cov':self.cov.tolist(), \
-                'hitbounds':self.hitbounds, 'data':[]}
+        dct = {'nval': self.nval, 'hitbounds':self.hitbounds, \
+                    'data':[]}
 
         for i in range(self.nval):
-            dd = {'name':self.names[i], \
+            elem = {'name':self.names[i], \
                 'value':self.values[i], \
                 'min':self.mins[i], \
                 'max':self.maxs[i], \
                 'default':self.defaults[i]}
-            js['data'].append(dd)
+            dct['data'].append(elem)
 
-        return js
+        return dct
 
 
