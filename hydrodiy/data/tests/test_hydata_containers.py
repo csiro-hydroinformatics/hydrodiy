@@ -68,6 +68,21 @@ class VectorTestCases(unittest.TestCase):
         self.assertTrue(str(err).startswith(('Expected defaults within')))
 
 
+    def test_empty_vector(self):
+        vect = Vector([])
+
+        self.assertEqual(vect.nval, 0)
+
+        try:
+            vect.values = 0
+        except ValueError as err:
+            pass
+        self.assertTrue(str(err).startswith(('Expected vector of length')))
+
+        dct = vect.to_dict()
+        self.assertEqual(dct, {'hitbounds':False, 'data':[], 'nval':0})
+
+
     def test_tofromdict(self):
         vect = Vector(['a', 'b'], [0.5]*2, [0]*2, [1]*2)
         dct = vect.to_dict()
