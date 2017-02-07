@@ -321,8 +321,9 @@ def read_csv(filename, has_colnames=True, archive=None, \
 
         except TypeError as err:
             import warnings
-            warnings.warns(('Failed to open {0} as a text file. '+\
-                'Will now try to open it as a buffer').format(filename))
+            warnings.warn(('Failed to open {0} as a text file. '+\
+                'Will now try to open it as a buffer').format(filename), \
+                stacklevel=2)
             fobj = filename
 
     else:
