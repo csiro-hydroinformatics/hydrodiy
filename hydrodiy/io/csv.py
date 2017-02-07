@@ -35,7 +35,6 @@ KEY_LENGTH_MAX = 30
 
 
 def _header2comment(header):
-
     comment = {}
     i = 1
 
@@ -321,6 +320,9 @@ def read_csv(filename, has_colnames=True, archive=None, \
                 fobj = open(filename_full, 'r')
 
         except TypeError as err:
+            import warnings
+            warnings.warns(('Failed to open {0} as a text file. '+\
+                'Will now try to open it as a buffer').format(filename))
             fobj = filename
 
     else:
