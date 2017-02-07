@@ -27,8 +27,8 @@ class TransformTestCase(unittest.TestCase):
                     mins=[0], defaults=[0.5], maxs=[1],
                     constants=['C1', 'C2'])
 
-        self.assertEqual(trans.transform_name, 'test')
-        self.assertEqual(trans.names, ['a'])
+        self.assertEqual(trans.name, 'test')
+        self.assertEqual(trans.pnames, ['a'])
 
         # test set and get parameters
         value = 0.5

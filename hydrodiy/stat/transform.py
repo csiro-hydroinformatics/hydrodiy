@@ -11,20 +11,20 @@ EPS = 1e-10
 class Transform(object):
     ''' Transform base class '''
 
-    def __init__(self, transform_name,
-        names=['X'], \
+    def __init__(self, name,
+        pnames=None, \
         defaults=None, \
         mins=None, \
         maxs=None,
-        constants=[]):
+        constants=None):
         """
         Create instance of a data transform object
 
         Parameters
         -----------
-        transform_name : str
+        name : str
             Name of transformation
-        names : list
+        pnames : list
             Names of transform parameters
         defaults : list
             Defaults values for parameters
@@ -36,8 +36,8 @@ class Transform(object):
             Name of constants
 
         """
-        self.transform_name = transform_name
-        self._params = Vector(names, defaults, mins, maxs)
+        self.name = name
+        self._params = Vector(pnames, defaults, mins, maxs)
         self._constants = Vector(constants)
 
 
@@ -72,8 +72,8 @@ class Transform(object):
 
 
     @property
-    def names(self):
-        ''' Get parameter names '''
+    def pnames(self):
+        ''' Get parameter pnames '''
         return self._params.names
 
 
@@ -148,7 +148,7 @@ class Logit(Transform):
 
     def __init__(self):
         Transform.__init__(self, 'Logit', \
-                names=['lower', 'upper'],
+                pnames=['lower', 'upper'],
                 defaults=[0, 1])
 
     def forward(self, x):
@@ -173,7 +173,7 @@ class Log(Transform):
 
     def __init__(self):
         Transform.__init__(self, 'Log', \
-                names=['shift'],
+                pnames=['shift'],
                 defaults=1., \
                 mins=[EPS])
 
@@ -195,7 +195,7 @@ class BoxCox(Transform):
 
     def __init__(self):
         Transform.__init__(self, 'BoxCox',
-            names=['shift', 'lambda'],
+            pnames=['shift', 'lambda'],
             defaults=[0., 1.], \
             mins=[EPS, EPS], \
             maxs=[np.inf, 3.])
@@ -219,7 +219,7 @@ class YeoJohnson(Transform):
 
     def __init__(self):
         Transform.__init__(self, 'YeoJohnson',
-            names=['shift', 'scale', 'lambda'],
+            pnames=['shift', 'scale', 'lambda'],
             defaults=[0., 1., 1.], \
             mins=[-np.inf, 1e-5, -1.], \
             maxs=[np.inf, np.inf, 3.])
@@ -288,7 +288,7 @@ class LogSinh(Transform):
 
     def __init__(self):
         Transform.__init__(self, 'LogSinh', \
-            names=['a', 'b'], \
+            pnames=['a', 'b'], \
             defaults=[0., 1.], \
             mins=[-np.inf, EPS])
 
@@ -312,7 +312,7 @@ class Reciprocal(Transform):
 
     def __init__(self):
         Transform.__init__(self, 'Reciprocal', \
-            names=['shift'], \
+            pnames=['shift'], \
             defaults=[1.], \
             mins=[EPS])
 
