@@ -1,5 +1,6 @@
 
 import re, os
+import pkg_resources
 
 import numpy as np
 import pandas as pd
@@ -15,8 +16,8 @@ import c_hydrodiy_stat
 EPS = 1e-10
 
 # Reads Cramer-Von Mises table
-CVPATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), \
-            'data', 'cramer_von_mises_test_pvalues.zip')
+CVPATH = pkg_resources.resource_filename(__name__, \
+                    os.path.join('data', 'cramer_von_mises_test_pvalues.zip'))
 CVTABLE, _ = csv.read_csv(CVPATH, index_col=0)
 CVNSAMPLE  = CVTABLE.columns.values.astype(int)
 CVQQ = CVTABLE.index.values

@@ -1,4 +1,7 @@
+''' Module to plot data on an Australia map '''
+
 import re, os, tarfile
+import pkg_resources
 
 import numpy as np
 
@@ -10,7 +13,7 @@ from matplotlib.patches import PathPatch
 from mpl_toolkits import basemap
 
 # Decompress australia shoreline shapefile
-F_HYGIS_DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+F_HYGIS_DATA = pkg_resources.resource_filename(__name__, 'data')
 FSHP_COAST = os.path.join(F_HYGIS_DATA, 'australia_coastline_simplified.shp')
 FSHP_DRAINAGE = os.path.join(F_HYGIS_DATA, 'drainage_divisions_lines_simplified.shp')
 
@@ -24,6 +27,7 @@ REGIONS = ['CAPEYORK', 'AUS', 'COASTALNSW', \
 
 
 class Oz:
+    ''' Class to plot data on an Australia map '''
 
     def __init__(self, ax=None,
         ulat=-9., llat=-43., llon=108., rlon=151.5,

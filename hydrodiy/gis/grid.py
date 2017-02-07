@@ -1,6 +1,7 @@
 ''' Module containing grid utilities '''
 
 import re, os
+import pkg_resources
 import math
 import copy
 import zipfile
@@ -27,7 +28,7 @@ FLOWDIRCODE = np.array([[32, 64, 128],
                             [8, 4, 2]]).astype(np.int64)
 
 # Path to hygis data
-F_HYGIS_DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+F_HYGIS_DATA = pkg_resources.resource_filename(__name__, 'data')
 
 
 class Grid(object):
