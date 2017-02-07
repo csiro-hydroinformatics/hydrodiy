@@ -69,18 +69,16 @@ class VectorTestCases(unittest.TestCase):
 
 
     def test_empty_vector(self):
-        vect = Vector([])
+        for vect in [Vector([]), Vector(None)]:
+            self.assertEqual(vect.nval, 0)
+            try:
+                vect.values = 0
+            except ValueError as err:
+                pass
+            self.assertTrue(str(err).startswith(('Expected vector of length')))
 
-        self.assertEqual(vect.nval, 0)
-
-        try:
-            vect.values = 0
-        except ValueError as err:
-            pass
-        self.assertTrue(str(err).startswith(('Expected vector of length')))
-
-        dct = vect.to_dict()
-        self.assertEqual(dct, {'hitbounds':False, 'data':[], 'nval':0})
+            dct = vect.to_dict()
+            self.assertEqual(dct, {'hitbounds':False, 'data':[], 'nval':0})
 
 
     def test_tofromdict(self):

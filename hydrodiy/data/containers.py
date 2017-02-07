@@ -12,6 +12,8 @@ class Vector(object):
             hitbounds=False):
 
         # Set parameter names
+        if names is None:
+            names = []
         self._names = np.atleast_1d(names).flatten().astype(str).copy()
         nval = self._names.shape[0]
         if len(np.unique(self._names)) != nval:
