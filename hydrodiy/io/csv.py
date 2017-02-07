@@ -321,10 +321,6 @@ def read_csv(filename, has_colnames=True, archive=None, \
                 fobj = open(filename_full, 'r')
 
         except TypeError as err:
-            import warnings
-            warnings.warn(('Failed to open {0}, try considering it as ' + \
-                        'a buffer').format(filename), \
-                        stacklevel=2)
             fobj = filename
 
     else:
