@@ -135,8 +135,7 @@ class MVNCTestCase(unittest.TestCase):
         # Test errors
         try:
             cond = mu*0
-            idxvars = [True]*nvar
-            mu_cond, cov_cond = mvnc.conditional(mu, cov, idxvars, cond)
+            mu_cond, cov_cond = mvnc.conditional(mu, cov, cond)
         except ValueError as err:
             pass
         self.assertTrue(str(err).startswith('Expected p'))
@@ -145,29 +144,27 @@ class MVNCTestCase(unittest.TestCase):
     def test_conditional_invariance(self):
         ''' Test invariance in mvnc conditionning '''
         nvar = 6
-        mu = np.arange(nvar)
+        mu = np.arange(nvar, dtype=np.float64)
 
         mat = np.random.uniform(-1, 1, size=(nvar, nvar))
         cov = np.dot(mat, mat.T)
 
         # test invariance if cond == mu
-        idxcond = np.array([True]*(nvar-2) + [False]*2)
-        cond = np.repeat(mu[idxcond][None, :], 10, 0)
-        mu_cond, cov_cond = mvnc.conditional(mu, cov, idxcond, cond)
-
-        ck = np.allclose(mu_cond, np.repeat(mu[~idxcond][None, :], 10, 0))
+        cond = np.repeat(mu[None, :], 10, 0)
+        cond[:, -2:] = np.nan
+        mu_cond, cov_cond, idx_cond = mvnc.conditional(mu, cov, cond)
+        ck = np.allclose(mu_cond, np.repeat(mu[~idx_cond][None, :], 10, 0))
         self.assertTrue(ck)
 
         # test invariance if cov is diagonal
-        cond = cond+2
         cov = np.diag(np.diag(cov))
-        mu_cond, cov_cond = mvnc.conditional(mu, cov, idxcond, cond)
-        ck = np.allclose(mu_cond, np.repeat(mu[~idxcond][None, :], 10, 0))
-        ck = ck & np.allclose(cov_cond, cov[~idxcond][:, ~idxcond])
+        mu_cond, cov_cond, idx_cond = mvnc.conditional(mu, cov, cond)
+        ck = np.allclose(mu_cond, np.repeat(mu[~idx_cond][None, :], 10, 0))
+        ck = ck & np.allclose(cov_cond, cov[~idx_cond][:, ~idx_cond])
         self.assertTrue(ck)
 
-        # test invariance if idxcond = None
-        mu_cond, cov_cond = mvnc.conditional(mu, cov, None, None)
+        # test invariance if idx_cond = None
+        mu_cond, cov_cond, idx_cond = mvnc.conditional(mu, cov, None)
         ck = np.allclose(mu_cond, mu)
         ck = ck & np.allclose(cov_cond, cov)
         self.assertTrue(ck)
@@ -188,7 +185,7 @@ class MVNCTestCase(unittest.TestCase):
 
 
     def test_sample(self):
-        ''' Test mvnc sampling with no conditionning '''
+        ''' Test mvnc sampling with/without conditionning '''
         nsamples = 500
         nvar = 6
         nrepeat = 500
@@ -197,44 +194,45 @@ class MVNCTestCase(unittest.TestCase):
         eps = mvnc.EPS
         mu, cov, sig = get_mu_cov(nvar)
 
-        idxcond = np.zeros(nvar).astype(bool)
-        idxcond[-4:] = True
-        ncond = np.sum(idxcond)
-        cond_nocens = censors[idxcond]+1
-        cond_cens = censors[idxcond]+np.linspace(-1, 1, ncond)
+        cond_nocens = censors+1
+        cond_nocens[:nvar-3] = np.nan
+
+        cond_cens = censors+np.linspace(1, -1, nvar)
+        cond_cens[:nvar-3] = np.nan
 
         pvalues = np.zeros((nrepeat, nvar))
 
         for i in range(nrepeat):
+            if i %50 == 0:
+                print('test sample {0:3d}/{1:3d}'.format(i, nrepeat))
+
             # Sample with censoring
             samples1 = mvnc.sample(nsamples, mu, cov, censors)
 
             # Sample with censoring and non-censored conditionning
             samples2 = mvnc.sample(nsamples, mu, cov, censors, \
-                        idxcond, cond_nocens)
+                            cond_nocens)
 
             # Sample with censoring and censored conditionning
             samples3 = mvnc.sample(nsamples, mu, cov, censors, \
-                        idxcond, cond_cens)
-
-            import pdb; pdb.set_trace()
+                            cond_cens)
 
             # Same sample without censoring
             samples4 = mvnc.sample(nsamples, mu, cov, censors=[-np.inf]*nvar)
 
             for k in range(nvar):
                 s1 = np.sort(samples1[:, k])
-                s2 = np.sort(samples2[:, k])
+                s4 = np.sort(samples4[:, k])
 
                 # Censoring works ok
                 self.assertTrue(np.all(s1>=censors[k]))
 
                 # Compare distributions before and after
                 s1 = s1[s1>censors[k]]
-                s2 = s2[s2>censors[k]]
+                s4 = s4[s4>censors[k]]
 
                 # KS test
-                D, pvalues[i, k] = ks_2samp(s1, s2)
+                D, pvalues[i, k] = ks_2samp(s1, s4)
 
         # Test pvalues are uniformly distributed
         pv = np.array([kstest(pvalues[:, k], 'uniform')[0] \

@@ -46,24 +46,35 @@ def __check_censors(nvar, censors):
     return censors
 
 
-def __check_cond(nvar, cond, idxcond):
+def __check_cond(nval, nvar, cond):
     ''' Check consistency and format of conditonning data '''
+
     if cond is None:
-        return None, 0, None
+        return None, 0, np.zeros(nvar, dtype=bool)
 
     cond = np.atleast_2d(cond)
-    idxcond = np.atleast_1d(idxcond).astype(bool)
-    _, ncond = cond.shape
 
-    if not idxcond.shape[0] == nvar:
-        raise ValueError('Expected idxcond of length {0}, got {1}'.format(\
-            nvar, idxcond.shape[0]))
+    if nval is None:
+        nval = cond.shape[0]
 
-    if not np.sum(idxcond) == ncond:
-        raise ValueError('Expected sum(idxcond) equal to {0}, got {1}'.format(\
-            ncond, np.sum(idxcond)))
+    if cond.shape[0] == 1:
+        cond = np.repeat(cond, nval, 0)
 
-    return cond, ncond, idxcond
+    if cond.shape != (nval, nvar):
+        raise ValueError('Expected cond of dim {0}, but got {1}'.format(\
+            (nval, nvar), cond.shape))
+
+    # Check all variables are conditionned in the same
+    # way
+    cases = np.sum(np.isnan(cond).astype(int) * 2**np.arange(nvar), axis=1)
+    if np.any(cases != cases[0]):
+        raise ValueError('Different conditionning variables in cond')
+
+    # Determines conditionning variables
+    idx_cond = ~np.isnan(cond[0])
+    ncond = np.sum(idx_cond)
+
+    return cond, ncond, idx_cond
 
 
 def check_cov(nvar, cov, check_semidefinite=True):
@@ -79,7 +90,7 @@ def check_cov(nvar, cov, check_semidefinite=True):
 
     if check_semidefinite:
         eig = np.linalg.eig(cov)[0]
-        if np.any(eig < 1e-10):
+        if np.any(eig < 1e-5):
             raise ValueError('cov matrix is not semi-definite positive')
 
     return cov
@@ -125,7 +136,7 @@ def __compute_log_cdf(cdf):
     return log_cdf
 
 
-def conditional(mu, cov, idxcond, cond):
+def conditional(mu, cov, cond=None):
     ''' Compute multivaraite normal conditional parameter
     given conditioning values. See
     https://en.wikipedia.org/w/index.php?title=Multivariate_normal_distribution&section=18#Conditional_distributions
@@ -136,13 +147,11 @@ def conditional(mu, cov, idxcond, cond):
         Location parameters. [p] array.
     cov : np.ndarray
         Covariance matrix. [p, p] array.
-    idxcond : np.ndarray
-        Index of conditioning variables. [q] boolean array with q<p
-        (otherwise there is no conditining possible)
     cond : np.ndarray
         Conditioning data. [n, q] array
+        nan values indicate non-conditionned variables
         The function can be used if there are multiple conditionning
-        data (n>1)
+        vectors (n>1)
 
     Returns
     -----------
@@ -150,11 +159,13 @@ def conditional(mu, cov, idxcond, cond):
         Location parameters. [n, p-q] array.
     cov_cond : np.ndarray
         Covariance matrix. [p-q, p-q] array.
+    idx_cond : np.ndarray
+        Boolean vector locating the conditioned variables. [p] array.
     '''
     # Check inputs
     mu = np.atleast_1d(mu)
     nvar = mu.shape[0]
-    cond, ncond, idxcond = __check_cond(nvar, cond, idxcond)
+    cond, ncond, idx_cond = __check_cond(None, nvar, cond)
     cov = check_cov(nvar, cov)
 
     if nvar-ncond < 1:
@@ -163,28 +174,28 @@ def conditional(mu, cov, idxcond, cond):
 
     # Return mu and cov if no conditionning
     if ncond == 0:
-        return mu, cov
+        return mu, cov, idx_cond
 
     # Parameter for non-conditioned variables
-    mu1 = mu[idxcond]
-    cov11 = cov[idxcond][:, idxcond]
+    mu1 = mu[idx_cond]
+    cov11 = cov[idx_cond][:, idx_cond]
 
     # Parameter for conditioned variables
-    mu2 = mu[~idxcond]
-    cov22 = cov[~idxcond][:, ~idxcond]
+    mu2 = mu[~idx_cond]
+    cov22 = cov[~idx_cond][:, ~idx_cond]
 
     # Censored/Non censored covariance matrix
-    cov12 = cov[idxcond][:, ~idxcond]
+    cov12 = cov[idx_cond][:, ~idx_cond]
 
     # Compute conditioning
-    values = cond-mu1
+    values = cond[:, idx_cond]-mu1
     update = np.dot(cov12.T, np.dot(np.linalg.inv(cov11), values.T))
     mu_cond = (mu2[None, :].T + update).T
 
     cov_cond = cov22 - np.dot(cov12.T, \
             np.dot(np.linalg.inv(cov11), cov12))
 
-    return mu_cond, cov_cond
+    return mu_cond, cov_cond, idx_cond
 
 
 def icase2censvars(icase, nvar):
@@ -425,7 +436,7 @@ def logpdf(data, cases, mu, cov, censors=-np.inf):
     return logpdf_values
 
 
-def sample(nsamples, mu, cov, censors=-np.inf, idxcond=None, cond=None):
+def sample(nsamples, mu, cov, censors=-np.inf, cond=None, nitermax=500):
     ''' Sample form a left censored multivariate normal
 
     Parameters
@@ -439,13 +450,13 @@ def sample(nsamples, mu, cov, censors=-np.inf, idxcond=None, cond=None):
     censors : np.ndarray
         Left censoring thresholds. [1] or [p] array.
         If [1] array, the threshold is replicated p times.
-    idxcond : np.ndarray
-        Index of conditioning variables. [q] boolean array with q<p
-        (otherwise there is no conditining possible)
     cond : np.ndarray
         Conditioning data. [n, q] array
         The function can be used if there are multiple conditioning
         data (n>1)
+    nitermax : int
+        Maximum  number of iterations for resampling censored
+        conditionning variables
 
     Returns
     -----------
@@ -455,63 +466,79 @@ def sample(nsamples, mu, cov, censors=-np.inf, idxcond=None, cond=None):
     # Check inputs
     mu = np.atleast_1d(mu).astype(np.float64)
     nvar = mu.shape[0]
-    cond, ncond, idxcond = __check_cond(nvar, cond, idxcond)
+    cond, ncond, idx_cond = __check_cond(1, nvar, cond)
     cov = check_cov(nvar, cov)
     censors = __check_censors(nvar, censors)
 
     # Resample conditional variable if below censors
     if ncond > 0:
         # Determines which conditionning variable is censored
-        icase = get_censoring_cases(cond, censors[idxcond])[0]
+        cen = cond[0].copy()
+        cen[np.isnan(cen)] = censors[np.isnan(cen)] + 1.
+        icase = get_censoring_cases(cen, censors)[0]
         censvars = icase2censvars(icase, nvar)
         ncens = np.sum(censvars)
 
         if ncens > 0:
             # Get MVN parameters for the conditionning variables
-            mu_resamp = mu[idxcond][censvars]
-            cov_resamp = cov[idxcond][censvars][:, idxcond][:, censvars]
+            mu_resamp = mu[censvars]
+            cov_resamp = cov[censvars][:, censvars]
 
             # Initialise conditionning variable resampling
             # for non censored variables
-            cond_resamp = np.zeros((nsamples, ncond))
-            cond_resamp[:, ~censvars] = np.repeat(cond[~censvars][None, :], \
+            cond_resamp = np.zeros((nsamples, nvar))
+            cond_resamp[:, ~censvars] = np.repeat(cond[:, ~censvars], \
                                             nsamples, axis=0)
 
             # Sample from truncated multivariate normal below censor
             # by repeated resampling
             niter = 0
-            nitermax = 20
             istart = 0
             iend = 0
 
-            while iend<nsamples or niter>=nitermax:
+            while iend<nsamples or niter<nitermax:
                 # Sample nsamples
-                tmp = np.multivariate_normal(mean=mu_resamp, cov=cov_resamp, \
+                tmp = np.random.multivariate_normal(mean=mu_resamp, cov=cov_resamp, \
                         size=nsamples)
                 # Check how many are fully below censor
-                cases = get_censoring_cases(tmp, censors[idxcond])
-                tmp = tmp[cases == ncens]
+                cases = get_censoring_cases(tmp, censors[censvars])
+                tmp = tmp[cases == 2**ncens-1]
 
                 # finalise sample
                 istart = iend
                 iend = min(nsamples, istart + tmp.shape[0])
-                cond_resamp[istart:iend+1, censvars] = tmp
+                cond_resamp[istart:iend, censvars] = tmp[:iend-istart]
+                import pdb; pdb.set_trace()
 
-            cond = cond_resamp[:nsamples]
+                niter += 1
+
+            print('niter = {0}'.format(niter))
+
+            if niter==nitermax and iend<nsamples:
+                import warnings
+                warnings.warn(('Multivariate resampling failed: '+\
+                    ' only {0} samples after {1} iterations. {2} ' +\
+                    'expected. Increase nitermax ({3}). The '+\
+                    'resampled censored conditionned varaibles'+\
+                    'are set to the censors').format( \
+                    iend, niter, nsamples, nitermax))
+
+                cond_resamp[iend:] = np.repeat(censors[censvars][None, :], \
+                                        nsamples-iend, 0)
 
         else:
             # Non censored conditionning variables
-            cond = np.repeat(cond[None, :], nsamples, axis=0)
+            cond = np.repeat(cond, nsamples, axis=0)
 
     # Compute conditional parameters
-    mu_cond, cov_cond = conditional(mu, cov, idxcond, cond)
+    mu_cond, cov_cond, _ = conditional(mu, cov, cond)
 
     # Sampling
-    samples = mu_cond + np.random.multivariate_normal(mean=np.zeros(nvar),\
+    samples = mu_cond + np.random.multivariate_normal(mean=np.zeros(nvar-ncond),\
                     cov=cov_cond, size=nsamples)
 
     # Censoring
-    samples = np.maximum(samples, censors)
+    samples = np.maximum(samples, censors[~idx_cond])
 
     return samples
 
