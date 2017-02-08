@@ -18,6 +18,9 @@ from hydrodiy.stat import mvnc, sutils
 
 np.random.seed(0)
 
+TEST_SAMPLE = True
+TEST_FIT = False
+
 def get_mu_cov(nvar, rho=0.8):
     mu = 2*np.ones(nvar)
     sig = np.ones(nvar)
@@ -186,9 +189,12 @@ class MVNCTestCase(unittest.TestCase):
 
     def test_sample(self):
         ''' Test mvnc sampling with/without conditionning '''
-        nsamples = 500
+        if not TEST_SAMPLE:
+            return
+
+        nsamples = 200
         nvar = 6
-        nrepeat = 500
+        nrepeat = 200
 
         censors = np.linspace(-1, 1, nvar)
         eps = mvnc.EPS
@@ -197,7 +203,8 @@ class MVNCTestCase(unittest.TestCase):
         cond_nocens = censors+1
         cond_nocens[:nvar-3] = np.nan
 
-        cond_cens = censors+np.linspace(1, -1, nvar)
+        cond_cens = censors+1
+        cond_cens[-3:] = censors[-3:]
         cond_cens[:nvar-3] = np.nan
 
         pvalues = np.zeros((nrepeat, nvar))
@@ -243,7 +250,8 @@ class MVNCTestCase(unittest.TestCase):
 
     def test_logpdf_fit(self):
         ''' Test consistency between logpdf and sampling '''
-        return
+        if not TEST_FIT:
+            return
 
         nsamples = 500
         nfit = 50

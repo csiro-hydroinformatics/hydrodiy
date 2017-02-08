@@ -2,6 +2,7 @@
 distribution '''
 
 import math
+import warnings
 import numpy as np
 
 from scipy.stats import mvn, norm
@@ -436,7 +437,7 @@ def logpdf(data, cases, mu, cov, censors=-np.inf):
     return logpdf_values
 
 
-def sample(nsamples, mu, cov, censors=-np.inf, cond=None, nitermax=500):
+def sample(nsamples, mu, cov, censors=-np.inf, cond=None, nitermax=5):
     ''' Sample form a left censored multivariate normal
 
     Parameters
@@ -477,9 +478,9 @@ def sample(nsamples, mu, cov, censors=-np.inf, cond=None, nitermax=500):
         cen[np.isnan(cen)] = censors[np.isnan(cen)] + 1.
         icase = get_censoring_cases(cen, censors)[0]
         censvars = icase2censvars(icase, nvar)
-        ncens = np.sum(censvars)
+        ncensored = np.sum(censvars)
 
-        if ncens > 0:
+        if ncensored > 0:
             # Get MVN parameters for the conditionning variables
             mu_resamp = mu[censvars]
             cov_resamp = cov[censvars][:, censvars]
@@ -490,41 +491,52 @@ def sample(nsamples, mu, cov, censors=-np.inf, cond=None, nitermax=500):
             cond_resamp[:, ~censvars] = np.repeat(cond[:, ~censvars], \
                                             nsamples, axis=0)
 
+            # Compute space of truncaded region below censors
+            sig_resamp, correl_resamp = __get_sig_corr(cov_resamp)
+            lower = np.zeros(ncensored) # Does not matter here
+            upper = (censors[censvars]-mu_resamp)/sig_resamp * np.ones(ncensored)
+            infin = np.zeros(ncensored)
+            err, cdf, info = mvn.mvndst(lower, upper, infin, correl_resamp)
+            nresamp = int(float(nsamples)/cdf)
+
+            if nresamp > 10000000:
+                warnings.warn(('The truncated region has a very small ' +\
+                'volume (cdf={0:3.3e}). Resampling requires a large amount' +\
+                ' of data (nresamp={1})').format(cdf, nresamp))
+
             # Sample from truncated multivariate normal below censor
             # by repeated resampling
             niter = 0
             istart = 0
             iend = 0
 
-            while iend<nsamples or niter<nitermax:
+            for niter in range(nitermax):
                 # Sample nsamples
                 tmp = np.random.multivariate_normal(mean=mu_resamp, cov=cov_resamp, \
-                        size=nsamples)
+                        size=nresamp)
                 # Check how many are fully below censor
                 cases = get_censoring_cases(tmp, censors[censvars])
-                tmp = tmp[cases == 2**ncens-1]
+                tmp = tmp[cases == 2**ncensored-1]
 
                 # finalise sample
                 istart = iend
                 iend = min(nsamples, istart + tmp.shape[0])
                 cond_resamp[istart:iend, censvars] = tmp[:iend-istart]
-                import pdb; pdb.set_trace()
 
-                niter += 1
-
-            print('niter = {0}'.format(niter))
+                if iend == nsamples:
+                    break
 
             if niter==nitermax and iend<nsamples:
-                import warnings
                 warnings.warn(('Multivariate resampling failed: '+\
                     ' only {0} samples after {1} iterations. {2} ' +\
                     'expected. Increase nitermax ({3}). The '+\
-                    'resampled censored conditionned varaibles'+\
-                    'are set to the censors').format( \
+                    'resampled censored conditionned variables'+\
+                    'are resampled from available samples').format( \
                     iend, niter, nsamples, nitermax))
 
-                cond_resamp[iend:] = np.repeat(censors[censvars][None, :], \
-                                        nsamples-iend, 0)
+                nmiss = nsamples-iend
+                kk = np.random.choice(np.arange(iend), nmiss)
+                cond_resamp[iend:] = cond_resamp[kk]
 
         else:
             # Non censored conditionning variables
