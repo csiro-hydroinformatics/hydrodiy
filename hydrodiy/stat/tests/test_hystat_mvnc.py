@@ -36,6 +36,7 @@ class MVNCTestCase(unittest.TestCase):
 
 
     def test_censors_size(self):
+        ''' Test censoring sample size '''
         nsamples = 10000
         nvar = 6
 
@@ -58,6 +59,7 @@ class MVNCTestCase(unittest.TestCase):
 
 
     def test_toeplitz(self):
+        ''' Test generation of toeplitz covariance matrix generation '''
         nvar = 6
         sig = np.ones(nvar)
         cov = mvnc.toeplitz_cov(sig, 1.)
@@ -72,6 +74,7 @@ class MVNCTestCase(unittest.TestCase):
 
 
     def test_check_cov(self):
+        ''' test covariance checking '''
         nvar = 6
         mu, cov, sig = get_mu_cov(nvar)
         mvnc.check_cov(nvar, cov, check_semidefinite=True)
@@ -101,6 +104,7 @@ class MVNCTestCase(unittest.TestCase):
 
 
     def test_get_icase2censvars(self):
+        ''' test conversion of conditionning case to variable indexes '''
         for nvar in range(1, 10):
             maxcase = 2**nvar
             censvars = np.zeros((maxcase, nvar)).astype(bool)
@@ -123,6 +127,7 @@ class MVNCTestCase(unittest.TestCase):
 
 
     def test_conditional_error(self):
+        ''' Test error in mvnc conditionning '''
         nvar = 6
         mu, cov, sig = get_mu_cov(nvar)
         mu = np.arange(nvar)
@@ -138,6 +143,7 @@ class MVNCTestCase(unittest.TestCase):
 
 
     def test_conditional_invariance(self):
+        ''' Test invariance in mvnc conditionning '''
         nvar = 6
         mu = np.arange(nvar)
 
@@ -145,24 +151,30 @@ class MVNCTestCase(unittest.TestCase):
         cov = np.dot(mat, mat.T)
 
         # test invariance if cond == mu
-        idxvars = np.array([True]*(nvar-2) + [False]*2)
-        cond = np.repeat(mu[idxvars][None, :], 10, 0)
-        mu_cond, cov_cond = mvnc.conditional(mu, cov, idxvars, cond)
+        idxcond = np.array([True]*(nvar-2) + [False]*2)
+        cond = np.repeat(mu[idxcond][None, :], 10, 0)
+        mu_cond, cov_cond = mvnc.conditional(mu, cov, idxcond, cond)
 
-        ck = np.allclose(mu_cond, np.repeat(mu[~idxvars][None, :], 10, 0))
+        ck = np.allclose(mu_cond, np.repeat(mu[~idxcond][None, :], 10, 0))
         self.assertTrue(ck)
 
         # test invariance if cov is diagonal
         cond = cond+2
         cov = np.diag(np.diag(cov))
-        mu_cond, cov_cond = mvnc.conditional(mu, cov, idxvars, cond)
-        ck = np.allclose(mu_cond, np.repeat(mu[~idxvars][None, :], 10, 0))
-        ck = ck & np.allclose(cov_cond, cov[~idxvars][:, ~idxvars])
+        mu_cond, cov_cond = mvnc.conditional(mu, cov, idxcond, cond)
+        ck = np.allclose(mu_cond, np.repeat(mu[~idxcond][None, :], 10, 0))
+        ck = ck & np.allclose(cov_cond, cov[~idxcond][:, ~idxcond])
+        self.assertTrue(ck)
+
+        # test invariance if idxcond = None
+        mu_cond, cov_cond = mvnc.conditional(mu, cov, None, None)
+        ck = np.allclose(mu_cond, mu)
+        ck = ck & np.allclose(cov_cond, cov)
         self.assertTrue(ck)
 
 
-
     def test_censoring_cases(self):
+        ''' Test mvnc censoring cases generation '''
         for nvar in range(1, 10):
             maxcase = 2**nvar
             x = np.ones((maxcase, nvar))
@@ -176,6 +188,7 @@ class MVNCTestCase(unittest.TestCase):
 
 
     def test_sample(self):
+        ''' Test mvnc sampling with no conditionning '''
         nsamples = 500
         nvar = 6
         nrepeat = 500
@@ -184,14 +197,30 @@ class MVNCTestCase(unittest.TestCase):
         eps = mvnc.EPS
         mu, cov, sig = get_mu_cov(nvar)
 
+        idxcond = np.zeros(nvar).astype(bool)
+        idxcond[-4:] = True
+        ncond = np.sum(idxcond)
+        cond_nocens = censors[idxcond]+1
+        cond_cens = censors[idxcond]+np.linspace(-1, 1, ncond)
+
         pvalues = np.zeros((nrepeat, nvar))
 
         for i in range(nrepeat):
             # Sample with censoring
             samples1 = mvnc.sample(nsamples, mu, cov, censors)
 
+            # Sample with censoring and non-censored conditionning
+            samples2 = mvnc.sample(nsamples, mu, cov, censors, \
+                        idxcond, cond_nocens)
+
+            # Sample with censoring and censored conditionning
+            samples3 = mvnc.sample(nsamples, mu, cov, censors, \
+                        idxcond, cond_cens)
+
+            import pdb; pdb.set_trace()
+
             # Same sample without censoring
-            samples2 = mvnc.sample(nsamples, mu, cov, [-np.inf]*nvar)
+            samples4 = mvnc.sample(nsamples, mu, cov, censors=[-np.inf]*nvar)
 
             for k in range(nvar):
                 s1 = np.sort(samples1[:, k])
@@ -215,6 +244,7 @@ class MVNCTestCase(unittest.TestCase):
 
 
     def test_logpdf_fit(self):
+        ''' Test consistency between logpdf and sampling '''
         return
 
         nsamples = 500
