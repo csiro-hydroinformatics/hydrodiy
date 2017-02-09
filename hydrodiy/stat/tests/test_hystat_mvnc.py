@@ -18,7 +18,7 @@ from hydrodiy.plot import putils
 
 np.random.seed(0)
 
-TEST_SAMPLE = False
+TEST_SAMPLE = True
 TEST_FIT = False
 
 def get_mu_cov(nvar, rho=0.8):
