@@ -260,12 +260,20 @@ class MVNCTestCase(unittest.TestCase):
         eps = mvnc.EPS
         mu, cov, sig = get_mu_cov(nvar)
 
-        cond_nocens = censors+1
-        cond_nocens[:nvar-3] = np.nan
+        # conditional variables - n dim
+        condn_nocens = censors+1
+        condn_nocens[:nvar-3] = np.nan
 
-        cond_cens = censors+1
-        cond_cens[-3:] = censors[-3:]
-        cond_cens[:nvar-3] = np.nan
+        condn_cens = censors+1
+        condn_cens[-2:] = censors[-2:]
+        condn_cens[:-3] = np.nan
+
+        # conditional variables - 1 dim
+        cond1_nocens = censors+1
+        cond1_nocens[:-1] = np.nan
+
+        cond1_cens = censors + 0.
+        cond1_cens[:-1] = np.nan
 
         pvalues = np.zeros((nrepeat, nvar))
 
@@ -276,30 +284,37 @@ class MVNCTestCase(unittest.TestCase):
             # Sample with censoring
             samples1 = mvnc.sample(nsamples, mu, cov, censors)
 
+            # Same sample without censoring
+            samples2 = mvnc.sample(nsamples, mu, cov, censors=[-np.inf]*nvar)
+
             # Sample with censoring and non-censored conditionning
-            samples2 = mvnc.sample(nsamples, mu, cov, censors, \
-                            cond_nocens)
+            samples3 = mvnc.sample(nsamples, mu, cov, censors, \
+                            condn_nocens)
+
+            samples4 = mvnc.sample(nsamples, mu, cov, censors, \
+                            cond1_nocens)
 
             # Sample with censoring and censored conditionning
-            samples3 = mvnc.sample(nsamples, mu, cov, censors, \
-                            cond_cens)
+            samples5 = mvnc.sample(nsamples, mu, cov, censors, \
+                            condn_cens)
 
-            # Same sample without censoring
-            samples4 = mvnc.sample(nsamples, mu, cov, censors=[-np.inf]*nvar)
+            samples6 = mvnc.sample(nsamples, mu, cov, censors, \
+                            cond1_cens)
 
             for k in range(nvar):
                 s1 = np.sort(samples1[:, k])
-                s4 = np.sort(samples4[:, k])
+                s2 = np.sort(samples2[:, k])
 
                 # Censoring works ok
-                self.assertTrue(np.all(s1>=censors[k]))
+                ck = np.all(s1>=censors[k])
+                self.assertTrue(ck)
 
                 # Compare distributions before and after
                 s1 = s1[s1>censors[k]]
-                s4 = s4[s4>censors[k]]
+                s2 = s2[s2>censors[k]]
 
                 # KS test
-                D, pvalues[i, k] = ks_2samp(s1, s4)
+                D, pvalues[i, k] = ks_2samp(s1, s2)
 
         # Test pvalues are uniformly distributed
         pv = np.array([kstest(pvalues[:, k], 'uniform')[0] \

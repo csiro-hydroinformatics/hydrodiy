@@ -481,7 +481,7 @@ def sample(nsamples, mu, cov, censors=-np.inf, cond=None, nitermax=5):
         ncensored = np.sum(censvars)
 
         if ncensored > 0:
-            # Get MVN parameters for the conditionning variables
+            # Get MVN parameters for the censored conditionning variables
             mu_resamp = mu[censvars]
             cov_resamp = cov[censvars][:, censvars]
 
@@ -492,11 +492,17 @@ def sample(nsamples, mu, cov, censors=-np.inf, cond=None, nitermax=5):
                                             nsamples, axis=0)
 
             # Compute space of truncaded region below censors
-            sig_resamp, correl_resamp = __get_sig_corr(cov_resamp)
-            lower = np.zeros(ncensored) # Does not matter here
-            upper = (censors[censvars]-mu_resamp)/sig_resamp * np.ones(ncensored)
-            infin = np.zeros(ncensored)
-            err, cdf, info = mvn.mvndst(lower, upper, infin, correl_resamp)
+            if ncensored > 1:
+                sig_resamp, correl_resamp = __get_sig_corr(cov_resamp)
+                lower = np.zeros(ncensored) # Does not matter here
+                upper = (censors[censvars]-mu_resamp)/sig_resamp * np.ones(ncensored)
+                infin = np.zeros(ncensored)
+                err, cdf, info = mvn.mvndst(lower, upper, infin, correl_resamp)
+            else:
+                mun = np.squeeze(mu_resamp)
+                sign = np.squeeze(cov_resamp)
+                cdf = norm.cdf(censors[censvars][0], loc=mun, scale=sign)
+
             nresamp = int(float(nsamples)/cdf)
 
             if nresamp > 10000000:
