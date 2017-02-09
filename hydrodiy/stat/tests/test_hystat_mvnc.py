@@ -13,12 +13,12 @@ from scipy.stats import t as student
 
 from hydrodiy.stat import mvnc, sutils
 
-#import matplotlib.pyplot as plt
-#from hydrodiy.plot import putils
+import matplotlib.pyplot as plt
+from hydrodiy.plot import putils
 
 np.random.seed(0)
 
-TEST_SAMPLE = True
+TEST_SAMPLE = False
 TEST_FIT = False
 
 def get_mu_cov(nvar, rho=0.8):
@@ -148,7 +148,6 @@ class MVNCTestCase(unittest.TestCase):
         ''' Test invariance in mvnc conditionning '''
         nvar = 6
         mu = np.arange(nvar, dtype=np.float64)
-
         mat = np.random.uniform(-1, 1, size=(nvar, nvar))
         cov = np.dot(mat, mat.T)
 
@@ -171,6 +170,67 @@ class MVNCTestCase(unittest.TestCase):
         ck = np.allclose(mu_cond, mu)
         ck = ck & np.allclose(cov_cond, cov)
         self.assertTrue(ck)
+
+
+    def test_conditional_2d(self):
+        ''' Test 2d conditionning '''
+        nvar = 2
+        mu = np.arange(nvar, dtype=np.float64)
+        mat = np.random.uniform(-1, 1, size=(nvar, nvar))
+        cov = np.dot(mat, mat.T)
+
+        cond = np.array([np.nan, 2])
+        mu_cond, cov_cond, idx_cond = mvnc.conditional(mu, cov, cond)
+
+
+        # Sig
+        expected = cov[0, 0] - cov[0, 1]**2/cov[1, 1]
+        self.assertTrue(np.allclose(expected, cov_cond))
+
+        # mu
+        expected = mu[0] + cov[0, 1]/cov[1, 1]*(cond[1]-mu[1])
+        self.assertTrue(np.allclose(expected, mu_cond))
+
+        # Test vs OLS
+        nsamples = 100000
+        x = np.random.multivariate_normal(mean=mu, cov=cov, size=nsamples)
+        A = np.concatenate([np.ones((nsamples, 1)), x[:, 1][:, None]], 1)
+        B = x[:, 0][:, None]
+        out = np.linalg.lstsq(A, x[:, 0][:, None])
+        a, b = out[0]
+        sres = out[1]
+        expected = a + b*cond[1]
+        self.assertTrue(np.allclose(expected, mu_cond, atol=1e-2))
+
+        expected = sres/(nsamples-2)
+        self.assertTrue(np.allclose(expected, cov_cond, atol=1e-2))
+
+
+    def test_conditional_2d_vs_nd(self):
+        ''' Test 2d versus multi-dimensional conditionning '''
+        nvar = 10
+        mu = np.arange(nvar, dtype=np.float64)
+        mat = np.random.uniform(-1, 1, size=(nvar, nvar))
+
+        # Correlation only between 1st and 2nd variable
+        cov = np.dot(mat, mat.T)
+        d = np.diag(cov)
+        c1 = cov[0, 1]
+        cov = np.diag(d)
+        cov[0, 1] = c1
+        cov[1, 0] = c1
+
+        # Multi variate conditionning
+        cond = np.nan * np.ones(nvar)
+        cond[1] = 5.
+        mu_cond, cov_cond, _ = mvnc.conditional(mu, cov, cond)
+
+        # 2d conditionning
+        cov_cond2 = cov[0, 0] - cov[0, 1]**2/cov[1, 1]
+        mu_cond2 = mu[0] + cov[0, 1]/cov[1, 1]*(cond[1]-mu[1])
+
+        self.assertTrue(np.allclose(mu_cond2, mu_cond[0][0]))
+        self.assertTrue(np.allclose(cov_cond2, cov_cond[0][0]))
 
 
     def test_censoring_cases(self):
