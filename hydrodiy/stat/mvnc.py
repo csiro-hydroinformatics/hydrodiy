@@ -426,7 +426,9 @@ def logpdf(data, cases, mu, cov, censors=-np.inf):
                 else:
                     # Compute
                     # int[p(x_c=y|x_nc), y, -inf, censor]
-                    cdf = norm.cdf(censors[censvars], loc=mu3, scale=cov3)
+                    cdf = norm.cdf(censors[censvars], \
+                                loc=np.squeeze(mu3), \
+                                scale=np.squeeze(cov3))
 
                 # Finally, computing log pdf
                 # int[p(x_nc, x_c=y), y, -inf, censor] =
