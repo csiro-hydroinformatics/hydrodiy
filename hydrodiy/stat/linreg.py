@@ -557,7 +557,8 @@ class Linreg:
             raise ValueError('No fitted params, please run fit')
 
         if xmat.shape[1] != self.params.shape[0]:
-            raise ValueError('x dimensons is inconsistent with params')
+            raise ValueError('Expected x with {0} columns, got {1}'.format(\
+                self.params.shape[0], xmat.shape[1]))
 
         # Compute prediction
         params = data2matrix(self.params['estimate'])
