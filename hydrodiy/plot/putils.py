@@ -25,6 +25,9 @@ from matplotlib.colors import LinearSegmentedColormap
 import numpy as np
 import pandas as pd
 
+from scipy.stats import norm
+from hydrodiy.stat import sutils, linreg
+
 # Some useful colors
 COLORS1 = '#002745'
 
@@ -361,5 +364,32 @@ def cov_ellipse(mu, cov, pvalue=0.95, *args, **kwargs):
             *args, **kwargs)
 
     return ellipse
+
+
+def qqplot(ax, data, addline=False, *args, **kwargs):
+    ''' Draw a normal qq plot of data
+
+    Parameters
+    -----------
+    ax : matplotlib.axes
+        Axe to draw the line on
+    data : numpy.ndarray
+        Vector data
+    addline : bool
+        Add the line of OLS fit
+    '''
+    freqs = sutils.ppos(len(data))
+    xnorm = norm.ppf(freqs)
+    datas = np.sort(data)
+
+    ax.plot(xnorm, datas, *args, **kwargs)
+
+    if addline:
+        lm = linreg.Linreg(xnorm, datas)
+        lm.fit()
+        a, b = lm.params['estimate']
+        r2 = lm.diagnostic['R2']
+        lab = 'Y = {0:0.2f} + {1:0.2f} X (r2={2:0.2f})'.format(a, b, r2)
+        line(ax, 1, b, 0, a, 'k--', label=lab)
 
 

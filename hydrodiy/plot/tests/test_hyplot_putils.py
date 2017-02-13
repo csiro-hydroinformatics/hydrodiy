@@ -143,6 +143,23 @@ class UtilsTestCase(unittest.TestCase):
         fig.savefig(fp)
 
 
+    def test_qqplot(self):
+        putils.set_mpl()
+        x = np.random.normal(size=200)
+
+        fig, ax = plt.subplots()
+        putils.qqplot(ax, x)
+        fp = os.path.join(self.ftest, 'qpplot1.png')
+        fig.savefig(fp)
+
+        fig, ax = plt.subplots()
+        putils.qqplot(ax, x, True)
+        ax.legend()
+        fp = os.path.join(self.ftest, 'qpplot2.png')
+        fig.savefig(fp)
+
+
+
 
 
 
