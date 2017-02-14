@@ -378,9 +378,10 @@ def qqplot(ax, data, addline=False, *args, **kwargs):
     addline : bool
         Add the line of OLS fit
     '''
-    freqs = sutils.ppos(len(data))
+    datan = data[~np.isnan(data)]
+    freqs = sutils.ppos(len(datan))
     xnorm = norm.ppf(freqs)
-    datas = np.sort(data)
+    datas = np.sort(datan)
 
     ax.plot(xnorm, datas, *args, **kwargs)
 
