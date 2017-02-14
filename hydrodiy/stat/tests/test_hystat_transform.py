@@ -155,7 +155,7 @@ class TransformTestCase(unittest.TestCase):
 
             for sample in range(100):
                 x = np.random.normal(size=100, loc=5, scale=20)
-                trans.params = trans.mins+np.random.uniform(0., 2, size=nparams)
+                trans.params = trans.mins+np.random.uniform(1e-3, 2, size=nparams)
 
                 if nm in ['Log', 'BoxCox']:
                     x = np.clip(x, 1e-1, np.inf)
@@ -184,7 +184,7 @@ class TransformTestCase(unittest.TestCase):
                 idx = idx & (jac>0.) & (jac<5e3)
                 crit = np.abs(jac-jacn)/(1+jac+jacn)
                 idx = idx & ~np.isnan(crit)
-                ck = np.all(crit[idx]<5e-4)
+                ck = np.all(crit[idx]<1e-3)
                 if not ck:
                     print('Transform {0} failing the numerical Jacobian test'.format(trans.name))
 

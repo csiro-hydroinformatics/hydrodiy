@@ -290,7 +290,7 @@ class LogSinh(Transform):
         Transform.__init__(self, 'LogSinh', \
             pnames=['a', 'b'], \
             defaults=[0., 1.], \
-            mins=[-np.inf, EPS])
+            mins=[EPS, EPS])
 
     def forward(self, x):
         a, b = self.params
