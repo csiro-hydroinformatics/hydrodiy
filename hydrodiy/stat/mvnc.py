@@ -102,7 +102,7 @@ def toeplitz_cov(sig, rho):
 
     Parameters
     -----------
-    sig : np.ndarray
+    sig : numpy.ndarray
         Standard deviations of variables. [p] array.
     rho : float
         Correlation
@@ -144,11 +144,11 @@ def conditional(mu, cov, cond=None):
 
     Parameters
     -----------
-    mu : np.ndarray
+    mu : numpy.ndarray
         Location parameters. [p] array.
-    cov : np.ndarray
+    cov : numpy.ndarray
         Covariance matrix. [p, p] array.
-    cond : np.ndarray
+    cond : numpy.ndarray
         Conditioning data. [n, q] array
         nan values indicate non-conditionned variables
         The function can be used if there are multiple conditionning
@@ -156,11 +156,11 @@ def conditional(mu, cov, cond=None):
 
     Returns
     -----------
-    mu_cond : np.ndarray
+    mu_cond : numpy.ndarray
         Location parameters. [n, p-q] array.
-    cov_cond : np.ndarray
+    cov_cond : numpy.ndarray
         Covariance matrix. [p-q, p-q] array.
-    idx_cond : np.ndarray
+    idx_cond : numpy.ndarray
         Boolean vector locating the conditioned variables. [p] array.
     '''
     # Check inputs
@@ -240,11 +240,11 @@ def get_censoring_cases(data, censors=-np.inf):
 
     Parameters
     -----------
-    data : np.ndarray
+    data : numpy.ndarray
         Samples. [n, p] array:
         - n is the number of samples
         - p is the number of variables
-    censors : np.ndarray
+    censors : numpy.ndarray
         Left censoring thresholds. [1] or [p] array.
         If [1] array, the threshold is replicated p times.
 
@@ -276,18 +276,18 @@ def logpdf(data, cases, mu, cov, censors=-np.inf):
 
     Parameters
     -----------
-    data : np.ndarray
+    data : numpy.ndarray
         Samples. [n, p] array:
         - n is the number of samples
         - p is the number of variables
     cases : np.array
         Censoring cases computed with get_censoring_cases
         (integer values)
-    mu : np.ndarray
+    mu : numpy.ndarray
         Location parameters. [p] array.
-    cov : np.ndarray
+    cov : numpy.ndarray
         Covariance matrix. [p, p] array.
-    censors : np.ndarray
+    censors : numpy.ndarray
         Left censoring thresholds. [1] or [p] array.
         If [1] array, the threshold is replicated p times.
 
@@ -446,14 +446,14 @@ def sample(nsamples, mu, cov, censors=-np.inf, cond=None, nitermax=5):
     -----------
     nsamples : in
         Number of samples
-    mu : np.ndarray
+    mu : numpy.ndarray
         Location parameters. [p] array.
-    cov : np.ndarray
+    cov : numpy.ndarray
         Covariance matrix. [p, p] array.
-    censors : np.ndarray
+    censors : numpy.ndarray
         Left censoring thresholds. [1] or [p] array.
         If [1] array, the threshold is replicated p times.
-    cond : np.ndarray
+    cond : numpy.ndarray
         Conditioning data. [n, q] array
         The function can be used if there are multiple conditioning
         data (n>1)
