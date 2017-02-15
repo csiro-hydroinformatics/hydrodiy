@@ -197,21 +197,33 @@ class BoxCox(Transform):
         Transform.__init__(self, 'BoxCox',
             pnames=['shift', 'lambda'],
             defaults=[0., 1.], \
-            mins=[EPS, EPS], \
+            mins=[EPS, -3], \
             maxs=[np.inf, 3.])
 
     def forward(self, x):
         shift, lam = self.params
-        return (np.power(x+shift, lam)-1)/lam
+        if abs(lam)>EPS:
+            return (np.exp(np.log(x+shift)*lam)-1)/lam
+        else:
+            return np.log(x+shift)
 
     def backward(self, y):
         shift, lam = self.params
-        u = lam*y+1
-        return np.power(u, 1./lam)-shift
+
+        if abs(lam)>EPS:
+            u = lam*y+1
+            return np.exp(np.log(u)/lam)-shift
+        else:
+            return np.exp(y)-shift
+
 
     def jacobian_det(self, x):
         shift, lam = self.params
-        return np.where(x+shift>EPS, np.power(x+shift, lam-1.), np.nan)
+
+        if abs(lam)>EPS:
+            return np.where(x+shift>EPS, np.exp(np.log(x+shift)*(lam-1.)), np.nan)
+        else:
+            return np.where(x+shift>EPS, 1./(x+shift), np.nan)
 
 
 

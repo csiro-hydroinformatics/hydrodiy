@@ -122,9 +122,11 @@ class TransformTestCase(unittest.TestCase):
             trans = getattr(transform, nm)()
             nparams = trans.nparams
 
-            for sample in range(100):
+            for sample in range(500):
                 x = np.random.normal(size=100, loc=5, scale=20)
-                trans.params = trans.mins+np.random.uniform(0., 2, size=nparams)
+                params = trans.mins+np.random.uniform(0., 4, size=nparams)
+                params[np.isinf(params)] = 0.
+                trans.params = params
 
                 if nm == 'Log':
                     x = np.exp(x)
