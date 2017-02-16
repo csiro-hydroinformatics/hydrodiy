@@ -366,7 +366,7 @@ def cov_ellipse(mu, cov, pvalue=0.95, *args, **kwargs):
     return ellipse
 
 
-def qqplot(ax, data, addline=False, *args, **kwargs):
+def qqplot(ax, data, addline=False, censor=None, *args, **kwargs):
     ''' Draw a normal qq plot of data
 
     Parameters
@@ -377,20 +377,32 @@ def qqplot(ax, data, addline=False, *args, **kwargs):
         Vector data
     addline : bool
         Add the line of OLS fit
+    censor : float
+        Compute the OLS line above censor threshold
     '''
     datan = data[~np.isnan(data)]
-    freqs = sutils.ppos(len(datan))
+    nval = len(datan)
+    freqs = sutils.ppos(nval)
     xnorm = norm.ppf(freqs)
     datas = np.sort(datan)
 
     ax.plot(xnorm, datas, *args, **kwargs)
+    ax.set_xlabel('Standard normal variable')
+    ax.set_ylabel('Sorted data')
 
     if addline:
-        lm = linreg.Linreg(xnorm, datas)
+        idx = np.ones(nval).astype(bool)
+        if not censor is None:
+            idx = datas > censor + 1e-10
+
+        lm = linreg.Linreg(xnorm[idx], datas[idx])
         lm.fit()
         a, b = lm.params['estimate']
         r2 = lm.diagnostic['R2']
         lab = 'Y = {0:0.2f} + {1:0.2f} X (r2={2:0.2f})'.format(a, b, r2)
         line(ax, 1, b, 0, a, 'k--', label=lab)
 
+    else:
+        a, b, r2 = [np.nan] * 3
 
+    return a, b, r2

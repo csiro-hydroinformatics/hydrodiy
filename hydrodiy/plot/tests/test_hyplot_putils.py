@@ -154,8 +154,15 @@ class UtilsTestCase(unittest.TestCase):
 
         fig, ax = plt.subplots()
         putils.qqplot(ax, x, True)
-        ax.legend()
+        ax.legend(loc=2)
         fp = os.path.join(self.ftest, 'qpplot2.png')
+        fig.savefig(fp)
+
+        fig, ax = plt.subplots()
+        xc = np.maximum(x, 1)
+        putils.qqplot(ax, xc, True, 1)
+        ax.legend(loc=2)
+        fp = os.path.join(self.ftest, 'qpplot3.png')
         fig.savefig(fp)
 
 
