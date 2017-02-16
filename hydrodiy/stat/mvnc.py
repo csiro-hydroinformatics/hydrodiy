@@ -397,7 +397,6 @@ def logpdf(data, cases, mu, cov, censors=-np.inf):
                     mu3 = mu2 + cov12/cov11*values
                     cov3 = cov22 - cov12**2/cov11
 
-
                 # More than 2 variables censored
                 if ncensored > 1:
                     # Reformat parameters for mvt routine
@@ -426,7 +425,7 @@ def logpdf(data, cases, mu, cov, censors=-np.inf):
                     # int[p(x_c=y|x_nc), y, -inf, censor]
                     cdf = norm.cdf(censors[censvars], \
                                 loc=np.squeeze(mu3), \
-                                scale=np.squeeze(cov3))
+                                scale=math.sqrt(np.squeeze(cov3)))
 
                 # Finally, computing log pdf
                 # int[p(x_nc, x_c=y), y, -inf, censor] =
