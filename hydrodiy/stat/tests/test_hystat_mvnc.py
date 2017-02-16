@@ -9,6 +9,7 @@ import numpy as np
 from scipy.optimize import fmin_powell as fmin
 from scipy.stats import norm, ks_2samp, kstest
 from scipy.stats import ttest_1samp
+from scipy.stats import multivariate_normal as mvt
 from scipy.stats import t as student
 
 from hydrodiy.stat import mvnc, sutils
@@ -321,6 +322,44 @@ class MVNCTestCase(unittest.TestCase):
                     for k in range(nvar)])
         ck = np.all(pv>1e-3)
         self.assertTrue(ck)
+
+
+    def test_logpdf_1d(self):
+        ''' Test of mvnc logpdf against 1d known censored logpdf '''
+        # Percentage of missing data
+        percs =  np.linspace(0.1, 0.9, 10)
+
+        nrepeat = 100
+        nval = 100
+        mu = 1.
+        sig = 2.
+
+        # Expected logpdf function
+        def logpdf(x, censor, mu, sig, idx):
+            lp = np.zeros(len(x))
+            lp[idx] = -(x[idx]-mu)**2/sig**2/2 - math.log(sig) - math.log(2*math.pi)/2
+            lp[~idx]= math.log(norm.cdf(censor, loc=mu, scale=sig))
+            return lp
+
+        for perc in percs:
+
+            for repeat in range(nrepeat):
+
+                x = np.random.normal(loc=mu, scale=sig, size=nval)
+                censor = norm.ppf(perc, loc=mu, scale=sig)
+                xc = np.maximum(x, censor)
+
+                cases = mvnc.get_censoring_cases(xc[:, None], censor)
+                idx = cases == 0
+
+                lp1 = logpdf(xc, censor, mu, sig, idx)
+
+                mum = np.array(mu).reshape((1, 1))
+                covm = np.array(sig**2).reshape((1, 1))
+                censorm = np.array(censor).reshape((1, ))
+                lp2 = mvnc.logpdf(xc[:, None], cases, mum, covm, censors=censorm)
+
+                self.assertTrue(np.allclose(lp1, lp2))
 
 
     def test_logpdf_fit(self):

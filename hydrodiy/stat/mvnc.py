@@ -295,8 +295,6 @@ def logpdf(data, cases, mu, cov, censors=-np.inf):
     -----------
     logpdf_values : numpy.ndarray
         Log likelihood for each sample
-    cases : numpy.ndarray
-        Censoring cases
     '''
 
     # Check inputs
