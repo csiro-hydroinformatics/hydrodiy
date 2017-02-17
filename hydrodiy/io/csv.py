@@ -86,7 +86,8 @@ def _csvhead(nrow, ncol, comment, source_file, author=None):
     h.append('# nrow : {0}'.format(nrow))
     h.append('# ncol : {0}'.format(ncol))
 
-    for k, value in comments.iteritems():
+    for k in np.sort(comments.keys()):
+        value = comments[k]
         h.append('# {0} : {1}'.format(k, value))
 
     now = datetime.now()
