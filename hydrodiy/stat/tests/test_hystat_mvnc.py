@@ -476,5 +476,23 @@ class MVNCTestCase(unittest.TestCase):
                 #self.assertTrue(ck)
 
 
+    def test_mucov2vect(self):
+        ''' Test conversion params/mu+cov '''
+
+        nvar = 10
+        nrepeat = 100
+
+        for i in range(nrepeat):
+            mu = np.random.uniform(-1, 1, size=nvar)
+            A = np.random.uniform(-1, 1, size=(nvar, nvar))
+            cov = np.dot(A, A.T)
+
+            params = mvnc.mucov2vect(mu, cov)
+            mu2, cov2 = mvnc.vect2mucov(params)
+            self.assertTrue(np.allclose(mu, mu2))
+            self.assertTrue(np.allclose(cov, cov2))
+
+
+
 if __name__ == "__main__":
     unittest.main()

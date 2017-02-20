@@ -164,8 +164,9 @@ def conditional(mu, cov, cond=None):
         Boolean vector locating the conditioned variables. [p] array.
     '''
     # Check inputs
-    mu = np.atleast_1d(mu)
+    mu = np.atleast_1d(mu).astype(np.float64).flatten()
     nvar = mu.shape[0]
+
     cond, ncond, idx_cond = __check_cond(None, nvar, cond)
     cov = check_cov(nvar, cov)
 
@@ -299,7 +300,7 @@ def logpdf(data, cases, mu, cov, censors=-np.inf):
 
     # Check inputs
     data = np.atleast_2d(data)
-    mu = np.atleast_1d(mu)
+    mu = np.atleast_1d(mu).astype(np.float64).flatten()
     nval, nvar = data.shape
 
     if cases.shape[0] != nval:
@@ -559,3 +560,95 @@ def sample(nsamples, mu, cov, censors=-np.inf, cond=None, nitermax=5):
 
     return samples
 
+
+def vect2mucov(params):
+    ''' Convert a parameter vector to a mean vector and covariance matrix.
+    This function is useful for storage, optimization or simulation.
+
+    Parameters
+    -----------
+    params : numpy.ndarray
+        Parameter vector. [2p+p(p-1)]/2] array.
+        The data are stored in the vector as follows:
+        * params[:p]  : means
+        * params[p:2p]: standard deviations
+        * params[2p:] : correlations
+
+    Returns
+    -----------
+    mu : numpy.ndarray
+        Location parameters. [p] array.
+    cov : numpy.ndarray
+        Covariance matrix. [p, p] array.
+    '''
+
+    # Check inputs
+    params = np.atleast_1d(params).astype(np.float64).flatten()
+
+    nparams = len(params)
+    nvar = int((math.sqrt(9+8*nparams)-3)/2)
+    if nparams != 2*nvar+nvar*(nvar-1)/2:
+        raise ValueError(\
+            'Incompatible number of parameters {0}'.format(nparams))
+
+    # Get mu
+    mu = params[:nvar]
+
+    # Get sigmas
+    sigs = params[nvar:2*nvar]
+    if np.any(sigs<1e-5):
+        raise ValueError(('Negative or null standard' +\
+            ' deviations: {0}').format(np.diag(sigs)))
+    sigs = np.diag(sigs)
+
+    # Build correlation matrix
+    correl = 0.5*np.eye(nvar)
+    idxu = np.triu_indices(nvar, 1)
+    correl[idxu] = params[2*nvar:]
+    correl = correl + correl.T
+
+    # Compute covariance
+    cov = np.dot(sigs, np.dot(correl, sigs))
+
+    return mu, cov
+
+
+def mucov2vect(mu, cov):
+    ''' Convert a mean and a covariance matrix to a 1d parameter vector.
+    This function is useful for storage, optimization or simulation.
+
+    Parameters
+    -----------
+    mu : numpy.ndarray
+        Location parameters. [p] array.
+    cov : numpy.ndarray
+        Covariance matrix. [p, p] array.
+
+    Returns
+    -----------
+    params : numpy.ndarray
+        Parameter vector. [2p+p(p-1)]/2] array.
+        The data are stored in the vector as follows:
+        * params[:p]  : means
+        * params[p:2p]: standard deviations
+        * params[2p:] : correlations
+    '''
+
+    # Check inputs
+    mu = np.atleast_1d(mu).astype(np.float64).flatten()
+    nvar = mu.shape[0]
+    cov = check_cov(nvar, cov, True)
+
+    # Compute parameter number
+    nparams = 2*nvar + nvar*(nvar-1)/2
+    params = np.zeros(nparams) * np.nan
+
+    # Set mu
+    params[:nvar] = mu
+
+    # Get sigs and correl
+    sigs, corr = __get_sig_corr(cov)
+    params[nvar:2*nvar] = sigs
+    params[2*nvar:] = corr
+
+    return params
