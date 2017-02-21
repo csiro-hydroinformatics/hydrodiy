@@ -27,7 +27,8 @@ class BoxplotTestCase(unittest.TestCase):
         fig, ax = plt.subplots()
         bx = Boxplot(ax=ax, data=self.data)
         bx.draw()
-        bx.count()
+        bx.show_count()
+        bx.show_count(ypos=0.975)
         fig.savefig(os.path.join(self.ftest, 'bx01_draw.png'))
 
 
@@ -41,20 +42,10 @@ class BoxplotTestCase(unittest.TestCase):
     def test_draw_props(self):
         fig, ax = plt.subplots()
         bx = Boxplot(ax=ax, data=self.data)
-        bx['median'] = {'linecolor':'green'}
-        bx['box'] = {'linewidth':5}
-        bx['minmax'] = {'showline':True, 'marker':'*'}
-
-        try:
-            bx['med'] = {'linecolor':'green'}
-        except ValueError as err:
-            self.assertTrue(str(err).startswith('Cannot set property'))
-
-        try:
-            bx['median'] = {'bidule':3}
-        except ValueError as err:
-            self.assertTrue(str(err).startswith('Cannot set value'))
-
+        bx.median.linecolor = 'green'
+        bx.box.linewidth = 5
+        bx.minmax.showline = True
+        bx.minmax.marker = '*'
         bx.draw()
         fig.savefig(os.path.join(self.ftest, 'bx03_props.png'))
 
@@ -84,6 +75,7 @@ class BoxplotTestCase(unittest.TestCase):
         bx.draw()
         fig.savefig(os.path.join(self.ftest, 'bx11_by_missing2.png'))
 
+
     def test_numpy(self):
         fig, ax = plt.subplots()
         data = np.random.uniform(0, 10, size=(1000, 6))
@@ -97,7 +89,7 @@ class BoxplotTestCase(unittest.TestCase):
         data = self.data**2
         bx = Boxplot(ax=ax, data=data)
         bx.draw(logscale=True)
-        bx.count()
+        bx.show_count()
         fig.savefig(os.path.join(self.ftest, 'bx06_log.png'))
 
 
@@ -128,31 +120,38 @@ class BoxplotTestCase(unittest.TestCase):
         fig.savefig(os.path.join(self.ftest, 'bx09_coverage_by.png'))
 
 
-    def test_set_all(self):
+    def test_item_change(self):
         fig, ax = plt.subplots()
         bx = Boxplot(ax=ax, data=self.data)
-        bx.set_all('textformat', '%0.4f')
+        bx.median.textformat = '%0.4f'
+        bx.box.textformat = '%0.4f'
         bx.draw()
-        fig.savefig(os.path.join(self.ftest, 'bx12_set_all.png'))
+        fig.savefig(os.path.join(self.ftest, 'bx12_item_change.png'))
 
 
-    def test_set_all_error(self):
-        fig, ax = plt.subplots()
-        bx = Boxplot(ax=ax, data=self.data)
-        try:
-            bx.set_all('text_format', '%0.4f')
-        except ValueError as err:
-            pass
-        self.assertTrue(str(err).startswith('Property text_format'))
+    #def test_set_all_error(self):
+    #    fig, ax = plt.subplots()
+    #    bx = Boxplot(ax=ax, data=self.data)
+    #    try:
+    #        bx.set_all('text_format', '%0.4f')
+    #    except ValueError as err:
+    #        pass
+    #    self.assertTrue(str(err).startswith('Property text_format'))
 
 
     def test_center(self):
         fig, ax = plt.subplots()
         bx = Boxplot(ax=ax, data=self.data)
-        bx.set_all('ha', 'center')
-        bx.set_all('va', 'bottom')
+        bx.median.va = 'bottom'
+        bx.median.ha = 'center'
         bx.draw()
         fig.savefig(os.path.join(self.ftest, 'bx13_center.png'))
+
+        try:
+            bx.median.va = 'left'
+        except ValueError as err:
+            pass
+        self.assertTrue(str(err).startswith('va'))
 
 
     def test_nan(self):
@@ -161,7 +160,7 @@ class BoxplotTestCase(unittest.TestCase):
         fig, ax = plt.subplots()
         bx = Boxplot(ax=ax, data=df)
         bx.draw()
-        bx.count()
+        bx.show_count()
         fig.savefig(os.path.join(self.ftest, 'bx14_nan.png'))
 
 

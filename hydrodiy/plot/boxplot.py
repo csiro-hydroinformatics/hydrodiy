@@ -6,12 +6,9 @@ import pandas as pd
 from hydrodiy.stat import sutils
 from hydrodiy.plot import putils
 
+from matplotlib import lines
+
 COLORS = putils.COLORS10
-
-PROPS_NAMES = ['median', 'whisker', 'box', 'count', 'minmax']
-
-PROPS_VALUES = ['linestyle', 'linewidth', 'linecolor', 'va', 'ha', 'fontcolor', \
-    'textformat', 'fontsize', 'marker', 'markercolor', 'showline', 'showtext']
 
 def whiskers_percentiles(coverage):
     ''' Compute whiskers percentiles from coverage '''
@@ -44,6 +41,125 @@ def boxplot_stats(data, coverage):
             prc[pn] = np.nan
 
     return prc
+
+
+class BoxplotItem(object):
+    ''' Element of the boxplot graph '''
+
+    def __init__(self, \
+        linestyle='-', \
+        linewidth=3, \
+        linecolor='k', \
+        facecolor='none', \
+        va='center', \
+        ha='left', \
+        fontcolor='k', \
+        textformat='%0.1f', \
+        fontsize= 10, \
+        marker='o', \
+        markercolor='k', \
+        showline=True, \
+        showtext=True):
+
+        # Attributes controlled by getters/setters
+        self._linestyle = None
+        self._va = None
+        self._ha = None
+        self._marker = None
+        self._linewidth = None
+        self._fontsize = None
+
+        # Set attributes
+        self.linestyle = linestyle
+        self.va = va
+        self.ha = ha
+        self.marker = marker
+
+        self.linewidth = linewidth
+        self.fontsize = fontsize
+
+        self.linecolor = linecolor
+        self.facecolor = facecolor
+        self.fontcolor = fontcolor
+        self.markercolor = markercolor
+
+        self.textformat = textformat
+
+        self.showline = showline
+        self.showtext = showtext
+
+
+    @property
+    def linestyle(self):
+        return self._linestyle
+
+    @linestyle.setter
+    def linestyle(self, value):
+        if not value in lines.lineStyles.keys():
+            raise ValueError('Linestyle {0} not accepted'.format(value))
+        self._linestyle = value
+
+
+    @property
+    def va(self):
+        return self._va
+
+    @va.setter
+    def va(self, value):
+        if not value in ['top', 'center', 'bottom', 'baseline']:
+            raise ValueError('va {0} not accepted'.format(value))
+        self._va = value
+
+
+    @property
+    def ha(self):
+        return self._ha
+
+    @ha.setter
+    def ha(self, value):
+        if not value in ['left', 'center', 'right']:
+            raise ValueError('va {0} not accepted'.format(value))
+        self._ha = value
+
+
+    @property
+    def marker(self):
+        return self._marker
+
+    @marker.setter
+    def marker(self, value):
+        if not value in ['o', '.', '*', '+']:
+            raise ValueError('va {0} not accepted'.format(value))
+        self._marker = value
+
+
+    @property
+    def linewidth(self):
+        return self._linewidth
+
+    @linewidth.setter
+    def linewidth(self, value):
+        try:
+            value = np.float64(value)
+        except:
+            raise ValueError('Failed to convert {0} to float'.format(value))
+        self._linewidth = value
+
+
+    @property
+    def fontsize(self):
+        return self._fontsize
+
+    @fontsize.setter
+    def fontsize(self, value):
+        try:
+            value = np.float64(value)
+        except:
+            raise ValueError('Failed to convert {0} to float'.format(value))
+        self._fontsize = value
+
+
+
 
 
 class Boxplot(object):
@@ -89,7 +205,7 @@ class Boxplot(object):
 
         if whiskers_coverage <= 50.:
             raise ValueError('Whiskers coverage cannot be below 50.')
-        self._whiskers_coverage = whiskers_coverage
+        self.whiskerss_coverage = whiskers_coverage
 
         if ax is None:
             self._ax = plt.gca()
@@ -100,35 +216,24 @@ class Boxplot(object):
 
         self._width_from_count = width_from_count
 
-        self._props = {
-            'median':{'linestyle':'-', 'linewidth':3, 'linecolor':COLORS[3], \
-                'va':'center', 'ha':'left', 'fontcolor':COLORS[3], \
-                'textformat':'%0.1f', 'fontsize':9, 'showline':True, \
-                'showtext':True}, \
-            'whisker':{'linestyle':'-', 'linewidth':2, 'linecolor':COLORS[0], \
-                            'showline':True}, \
-            'minmax':{'marker':'o', 'markercolor':COLORS[0], 'showline':False}, \
-            'box':{'linestyle':'-', 'linewidth':3, 'linecolor':COLORS[0], \
-                'va':'center', 'ha':'left', 'fontcolor':COLORS[0], \
-                'textformat':'%0.1f', 'fontsize':8, 'showline':True, \
-                'showtext':True}, \
-            'count':{'fontcolor':'grey', 'textformat':'%d', \
-                'fontsize':7, 'showtext':True},
-        }
+        # Box plot itements
+        self.median = BoxplotItem(linecolor=COLORS[3], \
+                        fontcolor=COLORS[3], fontsize=9)
 
-        self.logscale = False
+        self.whiskers = BoxplotItem(linecolor=COLORS[0], \
+                            linewidth=2)
+
+        self.minmax = BoxplotItem(markercolor=COLORS[0], \
+                            showline=False)
+
+        self.box = BoxplotItem(linecolor=COLORS[0], \
+                        fontcolor=COLORS[0], fontsize=8)
+
+        self.count = BoxplotItem(fontsize=7, \
+                        fontcolor='grey', textformat='%d')
+
+        # Compute boxplot stats
         self._compute()
-
-
-    def __setitem__(self, key, value):
-        ''' Set boxplot properties '''
-        if not key in PROPS_NAMES:
-            raise ValueError('Cannot set property '+key)
-
-        for k in value:
-            if not k in PROPS_VALUES:
-                raise ValueError('Cannot set value '+k)
-            self._props[key][k] = value[k]
 
 
     def _compute(self):
@@ -136,7 +241,7 @@ class Boxplot(object):
 
         data = self._data
         by = self._by
-        whc = self._whiskers_coverage
+        whc = self.whiskerss_coverage
 
         if by is None:
             self._stats = data.apply(boxplot_stats, args=(whc, ))
@@ -154,22 +259,6 @@ class Boxplot(object):
         return self._stats
 
 
-    def set_all(self, propname, value):
-        ''' Set the a particular property (e.g. textformat) for all items '''
-
-        # Check how many properties are actually set
-        is_set = 0
-
-        for key, item in self._props.iteritems():
-            if propname in item:
-                item[propname] = value
-                is_set += 1
-
-        # Check property exists
-        if is_set == 0:
-            raise ValueError('Property {0} was never set'.format(propname))
-
-
     def draw(self, logscale=False):
         ''' Draw the boxplot '''
 
@@ -177,9 +266,8 @@ class Boxplot(object):
         stats = self._stats
         default_width = self._default_width
         ncols = stats.shape[1]
-        self.logscale = logscale
 
-        qq1, qq2 = whiskers_percentiles(self._whiskers_coverage)
+        qq1, qq2 = whiskers_percentiles(self.whiskerss_coverage)
         qq1txt = '{0:0.1f}%'.format(qq1)
         qq2txt = '{0:0.1f}%'.format(qq2)
 
@@ -197,26 +285,24 @@ class Boxplot(object):
             x = [i-w/2, i+w/2]
             med = stats.loc['50.0%', cn]
             y = [med] * 2
-            props = self._props['median']
-
             valid_med = np.all(~np.isnan(med))
 
-            if props['showline'] and valid_med:
-                ax.plot(x, y, lw=props['linewidth'],
-                    color=props['linecolor'])
+            item = self.median
+            if item.showline and valid_med:
+                ax.plot(x, y, lw=item.linewidth,
+                    color=item.linecolor)
 
-            if props['showtext'] and valid_med:
-                formatter = props['textformat']
-                if props['ha'] == 'left':
+            if item.showtext and valid_med:
+                formatter = item.textformat
+                xshift = 0
+                if item.ha == 'left':
                     formatter = ' '+formatter
                     xshift = w/2
-                elif props['ha'] == 'center':
-                    xshift = 0
 
                 medtext = formatter % med
-                ax.text(i+xshift, med, medtext, fontsize=props['fontsize'], \
-                        color=props['fontcolor'], \
-                        va=props['va'], ha=props['ha'])
+                ax.text(i+xshift, med, medtext, fontsize=item.fontsize, \
+                        color=item.fontcolor, \
+                        va=item.va, ha=item.ha)
 
             # Draw boxes
             x = [i-w/2, i+w/2, i+w/2, i-w/2, i-w/2]
@@ -230,16 +316,14 @@ class Boxplot(object):
                 continue
 
             y =  [q1, q1, q2, q2 ,q1]
-            props = self._props['box']
-
-            if props['showline']:
-                ax.plot(x, y, lw=props['linewidth'],
-                    color=props['linecolor'])
+            item = self.box
+            if item.showline:
+                ax.plot(x, y, lw=item.linewidth,
+                    color=item.linecolor)
 
             # Draw whiskers and caps
-            props = self._props['whisker']
-
-            if props['showline']:
+            item = self.whiskers
+            if item.showline:
                 for cc in [[qq1txt, '25.0%'], [qq2txt, '75.0%']]:
                     q1 = stats.loc[cc[0], cn]
                     q2 = stats.loc[cc[1], cn]
@@ -247,38 +331,37 @@ class Boxplot(object):
                     x = [i]*2
                     y = [q1, q2]
 
-                    ax.plot(x, y, lw=props['linewidth'],
-                        color=props['linecolor'])
+                    ax.plot(x, y, lw=item.linewidth,
+                        color=item.linecolor)
 
                     x = [i-w/5, i+w/5]
                     y = [q1]*2
-                    ax.plot(x, y, lw=props['linewidth'],
-                        color=props['linecolor'])
-
+                    ax.plot(x, y, lw=item.linewidth,
+                        color=item.linecolor)
 
             # quartile values
-            props = self._props['box']
-            if props['showtext']:
-
-                formatter = props['textformat']
-                if props['ha'] == 'left':
+            item = self.box
+            if item.showtext:
+                formatter = item.textformat
+                if item.ha == 'left':
                     formatter = ' '+formatter
                     xshift = w/2
-                elif props['ha'] == 'center':
+                elif item.ha == 'center':
                     xshift = 0
 
                 for value in [stats.loc[qq, cn] for qq in ['25.0%', '75.0%']]:
                     valuetext = formatter % value
-                    ax.text(i+xshift, value, valuetext, fontsize=props['fontsize'], \
-                        color=props['fontcolor'], \
-                        va=props['va'], ha=props['ha'])
+                    ax.text(i+xshift, value, valuetext, fontsize=item.fontsize, \
+                        color=item.fontcolor, \
+                        va=item.va, ha=item.ha)
 
             # min / max
-            props = self._props['minmax']
-            if props['showline']:
+            item = self.minmax
+            if item.showline:
                 x = [i]*2
                 y = stats.loc[['min', 'max'], cn]
-                ax.plot(x, y, props['marker'], color=props['markercolor'])
+                ax.plot(x, y, item.marker, color=item.markercolor)
+
 
         # X tick labels
         ax.set_xticks(range(ncols))
@@ -313,30 +396,33 @@ class Boxplot(object):
 
         ax.set_ylim((ylim0, ylim1))
 
-    def count(self):
+
+    def show_count(self, ypos=0.025):
         ''' Show the counts '''
 
         ax = self._ax
         stats = self._stats
         default_width = self._default_width
-        props = self._props['count']
 
-        if props['showtext']:
-            formatter = '('+props['textformat']+')'
+        va = 'bottom'
+        if ypos > 0.5:
+            va = 'top'
 
-            ylim = ax.get_ylim()
+        item = self.count
+        if item.showtext:
+            # Get y coordinate from ax coordinates
+            trans1 = ax.transAxes.transform
+            trans2 = ax.transData.inverted().transform
+            _, y1 = trans1((0, ypos))
+            _, y = trans2((0., y1))
 
-            if not self.logscale:
-                y = ylim[0] + 0.01*(ylim[1]-ylim[0])
-            else:
-                y = math.exp(math.log(ylim[0]) + \
-                            0.01*(math.log(ylim[1])-math.log(ylim[0])))
+            formatter = '('+item.textformat+')'
 
             for i, cn in enumerate(stats.columns):
                 cnt = formatter % stats.loc['count', cn]
-                ax.text(i, y, cnt, fontsize=props['fontsize'], \
-                        color=props['fontcolor'], \
-                        va='bottom', ha='center')
+                ax.text(i, y, cnt, fontsize=item.fontsize, \
+                        color=item.fontcolor, \
+                        va=va, ha='center')
         else:
             raise ValueError('showtext property for count set to False')
 
