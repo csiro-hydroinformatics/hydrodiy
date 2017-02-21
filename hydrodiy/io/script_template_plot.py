@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-
 import sys, os, re, json, math
 
 from datetime import datetime
@@ -15,6 +14,7 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+import matplotlib.dates as mdates
 #from matplotlib.backends.backend_pdf import PdfPages
 
 from hydrodiy.io import csv, iutils
@@ -44,7 +44,7 @@ putils.set_mpl()
 # Folders
 #----------------------------------------------------------------------
 source_file = os.path.abspath(__file__)
-froot = os.path.join(os.path.dirname(source_file), '..')
+froot = os.path.dirname(source_file)
 
 fdata = os.path.join(froot, 'data')
 fimg = os.path.join(froot, 'images')
@@ -81,10 +81,10 @@ gs = gridspec.GridSpec(fnrows, fncols,
         width_ratios=[1] * fncols,
         height_ratios=[1] * fnrows)
 
-nval = 100
+nval = 10
+LOGGER.info('Drawing plot')
 
 for i in range(fnrows*fncols):
-
     icol = i%fncols
     irow = i/fncols
     ax = fig.add_subplot(gs[irow, icol])
@@ -92,9 +92,8 @@ for i in range(fnrows*fncols):
     # To use oz
     #om = Oz(ax=ax)
 
-    xx = np.random.uniform(size=(nval, 2))
-    x = xx[:,0]
-    y = xx[:,1]
+    x = pd.date_range('2001-01-01', freq='MS', periods=nval)
+    y = np.random.uniform(size=nval)
 
     # Scatter plot
     ax.plot(x, y, 'o',
@@ -107,6 +106,12 @@ for i in range(fnrows*fncols):
     # Decoration
     ax.legend(shadow=True,
         framealpha=0.7)
+
+    # Axis
+    mths = mdates.MonthLocator()
+    mthsf = mdates.DateFormatter('%Y\n%b')
+    ax.xaxis.set_major_locator(mths)
+    ax.xaxis.set_major_formatter(mthsf)
 
     ax.set_title('Title')
     ax.set_xlabel('X label')
@@ -131,3 +136,4 @@ fig.savefig(fp, dpi=fdpi)
 #pdf.savefig(fig)
 #pdf.close()
 
+LOGGER.info('Plotting completed')

@@ -47,7 +47,7 @@ class UtilsTestCase(unittest.TestCase):
             ''' Run script and check there are no errors in stderr '''
 
             # Run system command
-            pipe = subprocess.Popen([fs],
+            pipe = subprocess.Popen([fs], \
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
 
@@ -60,8 +60,8 @@ class UtilsTestCase(unittest.TestCase):
             hasError = bool(re.search('Error', stderr))
 
             # If no problem, then remove script
-            if not hasError:
-                os.remove(fs)
+            #if not hasError:
+            #    os.remove(fs)
 
             return stderr, hasError
 
