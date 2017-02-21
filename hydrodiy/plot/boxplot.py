@@ -7,8 +7,10 @@ from hydrodiy.stat import sutils
 from hydrodiy.plot import putils
 
 from matplotlib import lines
+from matplotlib.patches import FancyBboxPatch, BoxStyle
 
 COLORS = putils.COLORS10
+EPS = 1e-10
 
 def whiskers_percentiles(coverage):
     ''' Compute whiskers percentiles from coverage '''
@@ -43,19 +45,44 @@ def boxplot_stats(data, coverage):
     return prc
 
 
+def _to_float(value, mini=0., maxi=np.inf):
+    try:
+        value = np.float64(value)
+    except:
+        raise ValueError('Failed to convert {0} to float'.format(value))
+
+    if value<mini-EPS or value>maxi+EPS:
+        raise ValueError(('Expected value in [{0}, {1}], ' +\
+            'got {2}').format(mini, maxi, value))
+
+    return value
+
+
+def _is_in(value, possible):
+    if not value in possible:
+        raise ValueError(('Expected value in {0},' + \
+            ' got {1}').format(possible, value))
+
+    return value
+
+
+
 class BoxplotItem(object):
     ''' Element of the boxplot graph '''
 
     def __init__(self, \
         linestyle='-', \
+        alpha=1., \
         linewidth=3, \
         linecolor='k', \
         facecolor='none', \
+        width=0.2, \
         va='center', \
         ha='left', \
         fontcolor='k', \
         textformat='%0.1f', \
-        fontsize= 10, \
+        fontsize=10, \
+        boxstyle='square', \
         marker='o', \
         markercolor='k', \
         showline=True, \
@@ -63,20 +90,26 @@ class BoxplotItem(object):
 
         # Attributes controlled by getters/setters
         self._linestyle = None
+        self._alpha = None
         self._va = None
         self._ha = None
         self._marker = None
+        self._boxstyle = None
         self._linewidth = None
         self._fontsize = None
+        self._width = None
 
         # Set attributes
         self.linestyle = linestyle
+        self.alpha = alpha
         self.va = va
         self.ha = ha
         self.marker = marker
+        self.boxstyle = boxstyle
 
         self.linewidth = linewidth
         self.fontsize = fontsize
+        self.width = width
 
         self.linecolor = linecolor
         self.facecolor = facecolor
@@ -95,9 +128,7 @@ class BoxplotItem(object):
 
     @linestyle.setter
     def linestyle(self, value):
-        if not value in lines.lineStyles.keys():
-            raise ValueError('Linestyle {0} not accepted'.format(value))
-        self._linestyle = value
+        self._linestyle = _is_in(value, lines.lineStyles.keys())
 
 
     @property
@@ -106,10 +137,8 @@ class BoxplotItem(object):
 
     @va.setter
     def va(self, value):
-        if not value in ['top', 'center', 'bottom', 'baseline']:
-            raise ValueError('va {0} not accepted'.format(value))
-        self._va = value
-
+        self._va = _is_in(value, ['top', 'center', \
+                                        'bottom', 'baseline'])
 
     @property
     def ha(self):
@@ -117,10 +146,8 @@ class BoxplotItem(object):
 
     @ha.setter
     def ha(self, value):
-        if not value in ['left', 'center', 'right']:
-            raise ValueError('va {0} not accepted'.format(value))
-        self._ha = value
-
+        self._ha = _is_in(value, ['left', 'center', \
+                                        'right'])
 
     @property
     def marker(self):
@@ -128,10 +155,17 @@ class BoxplotItem(object):
 
     @marker.setter
     def marker(self, value):
-        if not value in ['o', '.', '*', '+']:
-            raise ValueError('va {0} not accepted'.format(value))
-        self._marker = value
+        self._marker = _is_in(value, ['none', \
+                    'o', '.', '*', '+'])
 
+    @property
+    def boxstyle(self):
+        return self._boxstyle
+
+    @boxstyle.setter
+    def boxstyle(self, value):
+        self._boxstyle = _is_in(value, ['square', \
+                    'round'])
 
     @property
     def linewidth(self):
@@ -139,11 +173,7 @@ class BoxplotItem(object):
 
     @linewidth.setter
     def linewidth(self, value):
-        try:
-            value = np.float64(value)
-        except:
-            raise ValueError('Failed to convert {0} to float'.format(value))
-        self._linewidth = value
+        self._linewidth = _to_float(value)
 
 
     @property
@@ -152,19 +182,32 @@ class BoxplotItem(object):
 
     @fontsize.setter
     def fontsize(self, value):
-        try:
-            value = np.float64(value)
-        except:
-            raise ValueError('Failed to convert {0} to float'.format(value))
-        self._fontsize = value
+        self._fontsize = _to_float(value)
 
 
+    @property
+    def width(self):
+        return self._width
+
+    @width.setter
+    def width(self, value):
+        self._width = _to_float(value)
+
+
+    @property
+    def alpha(self):
+        return self._alpha
+
+    @alpha.setter
+    def alpha(self, value):
+        self._alpha = _to_float(value, maxi=1.)
 
 
 
 class Boxplot(object):
 
-    def __init__(self, data, ax=None, by=None, default_width=0.7, \
+    def __init__(self, data, ax=None, \
+                style='default', by=None, \
                 width_from_count=False,
                 whiskers_coverage=80.):
         ''' Draw boxplots with labels and defined colors
@@ -175,10 +218,12 @@ class Boxplot(object):
             Data to be plotted
         ax : matplotlib.axes
             Axe to draw the boxplot on
+        style : str
+            Boxplot style. Possible:
+            * default : Standard boxplot
+            * narrow : Boxplot for large amount of data
         by : pandas.Series
             Categories used to split data
-        default_width : float
-            boxplot width
         width_from_count : bool
             Use counts to define the boxplot width
         whiskers_coverage : float
@@ -212,25 +257,42 @@ class Boxplot(object):
         else:
             self._ax = ax
 
-        self._default_width = default_width
-
         self._width_from_count = width_from_count
 
-        # Box plot itements
-        self.median = BoxplotItem(linecolor=COLORS[3], \
-                        fontcolor=COLORS[3], fontsize=9)
+        # Box plot items
+        if style == 'default':
+            self.median = BoxplotItem(linecolor=COLORS[3], \
+                            fontcolor=COLORS[3], fontsize=9, \
+                            marker='none')
 
-        self.whiskers = BoxplotItem(linecolor=COLORS[0], \
-                            linewidth=2)
+            self.whiskers = BoxplotItem(linecolor=COLORS[0], \
+                                width=0.3, linewidth=2)
 
-        self.minmax = BoxplotItem(markercolor=COLORS[0], \
-                            showline=False)
+            self.box = BoxplotItem(linecolor=COLORS[0], \
+                            width=0.7, fontcolor=COLORS[0], fontsize=8)
 
-        self.box = BoxplotItem(linecolor=COLORS[0], \
-                        fontcolor=COLORS[0], fontsize=8)
+        elif style == 'narrow':
+            self.median = BoxplotItem(marker='o', markercolor=COLORS[3], \
+                            showline=False, \
+                            showtext=False)
 
+            self.whiskers = BoxplotItem(linecolor=COLORS[1], \
+                                width=0., linewidth=5)
+
+            self.box = BoxplotItem(linecolor=COLORS[0], \
+                            alpha=0.5, facecolor=COLORS[0], \
+                            width=0.6, showtext=False)
+
+        else:
+            raise ValueError('Style {0} not implemented'.format(style))
+
+        # Items not affected by style
         self.count = BoxplotItem(fontsize=7, \
                         fontcolor='grey', textformat='%d')
+
+        self.minmax = BoxplotItem(markercolor=COLORS[0], \
+                            marker='none', \
+                            showline=False)
 
         # Compute boxplot stats
         self._compute()
@@ -264,7 +326,6 @@ class Boxplot(object):
 
         ax = self._ax
         stats = self._stats
-        default_width = self._default_width
         ncols = stats.shape[1]
 
         qq1, qq2 = whiskers_percentiles(self.whiskerss_coverage)
@@ -274,52 +335,69 @@ class Boxplot(object):
         # Boxplot widths
         if self._width_from_count:
             cnt = stats.loc['count', :].values
-            widths = cnt/cnt.max()*default_width
+            ratio = cnt/cnt.max()
+            boxwidths = ratio*self.box.width
+            capwidths = ratio*self.whiskers.width
         else:
-            widths = np.ones(ncols)*default_width
+            boxwidths = np.ones(ncols)*self.box.width
+            capwidths = np.ones(ncols)*self.whiskers.width
 
+        # Loop through stats
         for i, cn in enumerate(stats.columns):
+            # Widths
+            bw = boxwidths[i]
+            cw = capwidths[i]
 
             # Draw median
-            w = widths[i]
-            x = [i-w/2, i+w/2]
+            x = [i-bw/2, i+bw/2]
             med = stats.loc['50.0%', cn]
             y = [med] * 2
             valid_med = np.all(~np.isnan(med))
 
             item = self.median
             if item.showline and valid_med:
-                ax.plot(x, y, lw=item.linewidth,
-                    color=item.linecolor)
+                ax.plot(x, y, lw=item.linewidth, \
+                    color=item.linecolor, \
+                    alpha=item.alpha)
+
+            if item.marker != 'none':
+                ax.plot(i, med, marker=item.marker, \
+                    color=item.markercolor, \
+                    alpha=item.alpha)
 
             if item.showtext and valid_med:
                 formatter = item.textformat
                 xshift = 0
                 if item.ha == 'left':
                     formatter = ' '+formatter
-                    xshift = w/2
+                    xshift = bw/2
 
                 medtext = formatter % med
                 ax.text(i+xshift, med, medtext, fontsize=item.fontsize, \
                         color=item.fontcolor, \
-                        va=item.va, ha=item.ha)
+                        va=item.va, ha=item.ha, \
+                        alpha=item.alpha)
 
-            # Draw boxes
-            x = [i-w/2, i+w/2, i+w/2, i-w/2, i-w/2]
+            # Skip missing data
             q1 = stats.loc['25.0%', cn]
             q2 = stats.loc['75.0%', cn]
 
-            # Skip missing data
             valid_q1 = np.all(~np.isnan(q1))
             valid_q2 = np.all(~np.isnan(q2))
             if not valid_q1 or not valid_q2:
                 continue
 
-            y =  [q1, q1, q2, q2 ,q1]
+            # Draw box
             item = self.box
-            if item.showline:
-                ax.plot(x, y, lw=item.linewidth,
-                    color=item.linecolor)
+            if item.facecolor !='none' or item.showline:
+                bbox = FancyBboxPatch([i-bw/2, q1], bw, q2-q1, \
+                    boxstyle=BoxStyle(item.boxstyle, pad=0.), \
+                    facecolor=item.facecolor, \
+                    linewidth=item.linewidth, \
+                    edgecolor=item.linecolor,
+                    alpha=item.alpha)
+
+                ax.add_patch(bbox)
 
             # Draw whiskers and caps
             item = self.whiskers
@@ -332,12 +410,15 @@ class Boxplot(object):
                     y = [q1, q2]
 
                     ax.plot(x, y, lw=item.linewidth,
-                        color=item.linecolor)
+                        color=item.linecolor, \
+                        alpha=item.alpha)
 
-                    x = [i-w/5, i+w/5]
-                    y = [q1]*2
-                    ax.plot(x, y, lw=item.linewidth,
-                        color=item.linecolor)
+                    if cw>0.:
+                        x = [i-cw/5, i+cw/5]
+                        y = [q1]*2
+                        ax.plot(x, y, lw=item.linewidth,
+                            color=item.linecolor, \
+                            alpha=item.alpha)
 
             # quartile values
             item = self.box
@@ -345,7 +426,7 @@ class Boxplot(object):
                 formatter = item.textformat
                 if item.ha == 'left':
                     formatter = ' '+formatter
-                    xshift = w/2
+                    xshift = bw/2
                 elif item.ha == 'center':
                     xshift = 0
 
@@ -353,15 +434,16 @@ class Boxplot(object):
                     valuetext = formatter % value
                     ax.text(i+xshift, value, valuetext, fontsize=item.fontsize, \
                         color=item.fontcolor, \
-                        va=item.va, ha=item.ha)
+                        va=item.va, ha=item.ha, \
+                        alpha=item.alpha)
 
             # min / max
             item = self.minmax
-            if item.showline:
+            if item.marker != 'none':
                 x = [i]*2
                 y = stats.loc[['min', 'max'], cn]
-                ax.plot(x, y, item.marker, color=item.markercolor)
-
+                ax.plot(x, y, item.marker, color=item.markercolor, \
+                    alpha=item.alpha)
 
         # X tick labels
         ax.set_xticks(range(ncols))
@@ -375,7 +457,8 @@ class Boxplot(object):
             ax.set_yscale('log', nonposy='clip')
 
         # X/Y limits
-        ax.set_xlim((-default_width, ncols-1+default_width))
+        w = np.max(boxwidths)
+        ax.set_xlim((-w, ncols-1+w))
 
         ylim = ax.get_ylim()
         if not logscale:
@@ -402,7 +485,6 @@ class Boxplot(object):
 
         ax = self._ax
         stats = self._stats
-        default_width = self._default_width
 
         va = 'bottom'
         if ypos > 0.5:

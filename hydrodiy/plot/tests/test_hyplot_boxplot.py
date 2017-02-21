@@ -164,5 +164,21 @@ class BoxplotTestCase(unittest.TestCase):
         fig.savefig(os.path.join(self.ftest, 'bx14_nan.png'))
 
 
+    def test_narrow(self):
+        ''' Testing narrow style '''
+
+        nval = 200
+        nvar = 50
+        df = {}
+        for i in range(nvar):
+            df['data{0}'.format(i)] = np.random.normal(size=nval)
+        df = pd.DataFrame(df)
+
+        fig, ax = plt.subplots()
+        bx = Boxplot(style='narrow', ax=ax, data=df)
+        bx.draw()
+        fig.savefig(os.path.join(self.ftest, 'bx15_narrow.png'))
+
+
 if __name__ == "__main__":
     unittest.main()
