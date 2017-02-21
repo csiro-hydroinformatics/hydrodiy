@@ -46,6 +46,7 @@ class BoxplotTestCase(unittest.TestCase):
         bx.box.linewidth = 5
         bx.minmax.showline = True
         bx.minmax.marker = '*'
+        bx.minmax.markersize = 20
         bx.draw()
         fig.savefig(os.path.join(self.ftest, 'bx03_props.png'))
 
@@ -151,7 +152,7 @@ class BoxplotTestCase(unittest.TestCase):
             bx.median.va = 'left'
         except ValueError as err:
             pass
-        self.assertTrue(str(err).startswith('va'))
+        self.assertTrue(str(err).startswith('Expected value in'))
 
 
     def test_nan(self):
