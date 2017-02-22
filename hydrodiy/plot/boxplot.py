@@ -256,9 +256,18 @@ class Boxplot(object):
             if len(by.unique()) == 1:
                 raise ValueError('by has 1 category only')
 
-            data = pd.Series(data)
+            try:
+                data = pd.Series(data).astype(np.float64)
+            except Exception as err:
+                raise ValueError('Failed to convert data to float series:' +\
+                        ' {0}'.format(str(err)))
+
         else:
-            data = pd.DataFrame(data)
+            try:
+                data = pd.DataFrame(data).astype(np.float64)
+            except Exception as err:
+                raise ValueError('Failed to convert data to float dataframe:' +\
+                        ' {0}'.format(str(err)))
 
         self._data = data
 

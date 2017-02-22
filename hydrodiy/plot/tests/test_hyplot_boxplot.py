@@ -32,6 +32,25 @@ class BoxplotTestCase(unittest.TestCase):
         fig.savefig(os.path.join(self.ftest, 'bx01_draw.png'))
 
 
+    def test_error(self):
+        fig, ax = plt.subplots()
+
+        try:
+            data = [['a', 'b', 'c'], ['c', 'd', 'e']]
+            bx = Boxplot(ax=ax, data=data)
+        except Exception as err:
+            pass
+        self.assertTrue(str(err).startswith('Failed'))
+
+        try:
+            data = np.random.uniform(0, 1, size=(10, 4))
+            by = np.arange(data.shape[0]) % 2
+            bx = Boxplot(ax=ax, data=data, by=by)
+        except Exception as err:
+            pass
+        self.assertTrue(str(err).startswith('Failed'))
+
+
     def test_draw_short(self):
         fig, ax = plt.subplots()
         bx = Boxplot(ax=ax, data=self.data[:5])
