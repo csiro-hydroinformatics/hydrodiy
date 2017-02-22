@@ -62,7 +62,7 @@ def data2matrix(data):
     return mat
 
 
-def get_xmat(xmat0, polyorder, has_intercept):
+def get_xmat(xmat0, polyorder, intercept):
     ''' Build regression input matrix, i.e. the matrix [1,xx] for standard regressions
         or [xx] if the intercept is not included in the regression equation.'''
 
@@ -78,13 +78,13 @@ def get_xmat(xmat0, polyorder, has_intercept):
         for k in range(polyorder):
             xmat[:, j*polyorder+k] = xmat0[:, j]**(k+1)
 
-    if has_intercept:
+    if intercept:
         xmat = np.insert(xmat, 0, 1., axis=1)
 
     return xmat, npredictors
 
 
-def get_names(data, polyorder, has_intercept, npredictors):
+def get_names(data, polyorder, intercept, npredictors):
     ''' Extract regression parameter names '''
 
     # Extract variable names
@@ -103,7 +103,7 @@ def get_names(data, polyorder, has_intercept, npredictors):
         names = names_full
 
     # Has intercept?
-    if has_intercept:
+    if intercept:
         names.insert(0, 'intercept')
 
     return names
@@ -179,7 +179,7 @@ class Linreg:
     ''' Linear regression modelling '''
 
     def __init__(self, x, y,
-            has_intercept=True,
+            intercept=True,
             polyorder=1,
             regtype='ols'):
         '''
@@ -191,7 +191,7 @@ class Linreg:
             Predictors
         y : numpy.ndarray
             Predictand
-        has_intercept : bool
+        intercept : bool
             Does regression includes an intercept term?
         polyorder : int
             Order for polynomial regression. E.g. 2 leads to
@@ -204,7 +204,7 @@ class Linreg:
         '''
 
         # Store data
-        self.has_intercept = has_intercept
+        self.intercept = intercept
         self.polyorder = polyorder
         self.nboot_print = 0
 
@@ -216,8 +216,8 @@ class Linreg:
 
         # Build inputs
         self.x = x
-        self.xmat, npredictors = get_xmat(x, polyorder, has_intercept)
-        self.names = get_names(x, polyorder, has_intercept,
+        self.xmat, npredictors = get_xmat(x, polyorder, intercept)
+        self.names = get_names(x, polyorder, intercept,
                         npredictors)
 
         self.yvect = data2vect(y)
@@ -242,7 +242,7 @@ class Linreg:
         str = '\n\t** Linear model **\n'
         str += '\n\tModel setup:\n'
         str += '\t  Regression type: %s\n'% self.regtype
-        str += '\t  Has intercept: %s\n' % self.has_intercept
+        str += '\t  Has intercept: %s\n' % self.intercept
         str += '\t  Polynomial order: %d\n\n' % self.polyorder
 
         if hasattr(self, 'params'):
@@ -550,7 +550,7 @@ class Linreg:
             x = self.x
 
         xmat, _ = get_xmat(x, self.polyorder,
-                        self.has_intercept)
+                        self.intercept)
 
         # Check dimensions
         if not hasattr(self, 'params'):

@@ -166,7 +166,7 @@ class LinregTestCase(unittest.TestCase):
         # Fit model
         lm = linreg.Linreg(data[['x1', 'x2']], data['y'],
                 regtype='gls_ar1',
-                has_intercept=False)
+                intercept=False)
 
         # Initial tests were producing an error
         lm.fit()
