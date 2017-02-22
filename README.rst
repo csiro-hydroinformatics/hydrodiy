@@ -1,11 +1,14 @@
 hydrodiy
-=======
+========
 
 Python toolbox for hydrological data processing.
+
 What is hydrodiy?
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 
 - hydrodiy is a set of tools to perform standard data analysis
+- the package is structured around typical tasks: io, data checking,
+  statistical analysis, gis processing and plotting
 
 Installation
 ~~~~~~~~~~~~
@@ -17,17 +20,23 @@ code <https://bitbucket.org/jlerat/hydrodiy>`__ and
 Basic use
 ~~~~~~~~~
 
-TODO
-To setup a model, change its parameters and run it:
 
-   .. code:: Python
+   .. code:: 
 
-       # Get an instance of the GR2M monthly rainfall-runoff model
-       from hydrodiy.models import GR2M
-       gr = GR2M()
+       import numpy as np
+       import matplotlib.pyplot as plt
+       from hydrodiy.plot import boxplot
 
+       data = np.random.normal(size=(200, 5))
+       plot.close('all')
+       fig, ax = plt.subplots()
+       
+       # Draw a nice box plot
+       bp = boxplot.Boxplot(data, ax)
+       bp.draw()
 
-More examples in the `examples folder <https://bitbucket.org/jlerat/hydrodiy/downloads>`__ directory.
+       # Show sample count 
+       bp.show_count()
 
 License
 ~~~~~~~~~
