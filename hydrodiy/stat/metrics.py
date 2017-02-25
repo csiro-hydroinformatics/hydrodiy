@@ -39,7 +39,9 @@ def get_transform(name):
         trans.params = 1.
 
     else:
-        raise ValueError('Transform {0} not recognised'.format(name))
+        expected = ['Identity', 'Log', 'Reciprocal']
+        raise ValueError('Expected transform in {0}, got {1}'.format(\
+            expected, name))
 
     return trans
 
