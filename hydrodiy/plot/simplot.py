@@ -71,6 +71,10 @@ class Simplot(object):
         ''' Compute indexes where all data are available'''
         self.idx_all = pd.isnull(self.data).sum(axis=1) == 0
 
+        if np.sum(self.idx_all) == 0:
+            raise ValueError('No common data points between '+\
+                    'time series')
+
 
     def _get_flood_indexes(self):
         ''' Identify flood events '''
