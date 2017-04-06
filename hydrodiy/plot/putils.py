@@ -238,14 +238,21 @@ def equation(tex, filename, \
     mpl.rc('text', usetex=usetex)
 
 
-def set_mpl(color_theme='black', font_size=18):
+def set_mpl(color_theme='black', font_size=18, usetex=False):
     ''' Set convenient default matplotlib parameters
 
     Parameters
     -----------
     color_theme : str
         Color for text, axes and ticks
+    font_size : int
+        Font size
+    usetex : bool
+        Use tex mode or not
     '''
+
+    # Latex mode
+    mpl.rc('text', usetex=usetex)
 
     # Font size
     mpl.rc('font', size=font_size)

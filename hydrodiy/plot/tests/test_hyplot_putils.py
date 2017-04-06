@@ -82,14 +82,18 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_set_mpl(self):
 
-        def plot(fp):
+        def plot(fp, usetex=False):
             fig, ax = plt.subplots()
             nval = 100
             x = np.arange(nval)
             y1 = np.random.normal(scale=2, size=nval)
-            ax.plot(x, y1, 'o-', label='data1')
+            ax.plot(x, y1, 'o-', label='x')
             y2 = np.random.normal(scale=2, size=nval)
-            ax.plot(x, y2, 'o-', label='data2')
+
+            label = 'y'
+            if usetex:
+                label='$\displaystyle \sum_1^\infty x^i$'
+            ax.plot(x, y2, 'o-', label=label)
             leg = ax.legend()
             ax.set_title('Title')
             ax.set_xlabel('X label')
@@ -107,6 +111,10 @@ class UtilsTestCase(unittest.TestCase):
         putils.set_mpl(font_size=25)
         fp = os.path.join(self.ftest, 'set_mpl3.png')
         plot(fp)
+
+        putils.set_mpl(usetex=True)
+        fp = os.path.join(self.ftest, 'set_mpl4.png')
+        plot(fp, True)
 
 
     def test_kde(self):
