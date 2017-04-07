@@ -79,6 +79,11 @@ class UtilsTestCase(unittest.TestCase):
         fp = os.path.join(self.ftest, 'equations3.png')
         putils.equation(tex, fp)
 
+        tex = r'\begin{equation} y = \begin{bmatrix} 1 & 0 & 0 \\ ' +\
+            r'0 & 1 & 0 \\ 0 & 0 & 1\end{bmatrix} \end{equation}'
+        fp = os.path.join(self.ftest, 'equations4.png')
+        putils.equation(tex, fp, height=500)
+
 
     def test_set_mpl(self):
 

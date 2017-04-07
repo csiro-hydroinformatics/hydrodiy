@@ -215,8 +215,14 @@ def equation(tex, filename, \
 
     '''
     usetex = mpl.rcParams['text.usetex']
-    mpl.rc('text', usetex=True)
+    preamble = mpl.rcParams['text.latex.preamble']
 
+    # Set tex options
+    mpl.rc('text', usetex=True)
+    mpl.rc('text.latex', preamble=[r'\usepackage{amsmath}', \
+                                    r'\usepackage{amssymb}'])
+
+    # Plot
     plt.close('all')
 
     fig, ax = plt.subplots()
@@ -235,7 +241,9 @@ def equation(tex, filename, \
     fig.savefig(filename, dpi=dpi, \
         transparent=transparent)
 
+    # Restore tex options
     mpl.rc('text', usetex=usetex)
+    mpl.rc('text.latex', preamble=preamble)
 
 
 def set_mpl(color_theme='black', font_size=18, usetex=False):
@@ -253,6 +261,10 @@ def set_mpl(color_theme='black', font_size=18, usetex=False):
 
     # Latex mode
     mpl.rc('text', usetex=usetex)
+    if usetex:
+        preamble = [r'\usepackage{amsmath}', \
+                        r'\usepackage{amssymb}']
+        mpl.rc('text.latex', preamble=preamble)
 
     # Font size
     mpl.rc('font', size=font_size)
