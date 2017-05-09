@@ -25,11 +25,17 @@ class BoxplotTestCase(unittest.TestCase):
 
     def test_draw(self):
         fig, ax = plt.subplots()
-        bx = Boxplot(ax=ax, data=self.data)
-        bx.draw()
+        bx = Boxplot(data=self.data)
+        bx.draw(ax=ax)
         bx.show_count()
         bx.show_count(ypos=0.975)
         fig.savefig(os.path.join(self.ftest, 'bx01_draw.png'))
+
+
+    def test_draw_gca(self):
+        bx = Boxplot(data=self.data)
+        bx.draw()
+        plt.savefig(os.path.join(self.ftest, 'bx01_draw_gca.png'))
 
 
     def test_error(self):
@@ -37,7 +43,7 @@ class BoxplotTestCase(unittest.TestCase):
 
         try:
             data = [['a', 'b', 'c'], ['c', 'd', 'e']]
-            bx = Boxplot(ax=ax, data=data)
+            bx = Boxplot(data=data)
         except Exception as err:
             pass
         self.assertTrue(str(err).startswith('Failed'))
@@ -45,7 +51,7 @@ class BoxplotTestCase(unittest.TestCase):
         try:
             data = np.random.uniform(0, 1, size=(10, 4))
             by = np.arange(data.shape[0]) % 2
-            bx = Boxplot(ax=ax, data=data, by=by)
+            bx = Boxplot(data=data, by=by)
         except Exception as err:
             pass
         self.assertTrue(str(err).startswith('Failed'))
@@ -53,35 +59,35 @@ class BoxplotTestCase(unittest.TestCase):
 
     def test_draw_short(self):
         fig, ax = plt.subplots()
-        bx = Boxplot(ax=ax, data=self.data[:5])
-        bx.draw()
+        bx = Boxplot(data=self.data[:5])
+        bx.draw(ax=ax)
         fig.savefig(os.path.join(self.ftest, 'bx02_short.png'))
 
 
     def test_draw_props(self):
         fig, ax = plt.subplots()
-        bx = Boxplot(ax=ax, data=self.data)
+        bx = Boxplot(data=self.data)
         bx.median.linecolor = 'green'
         bx.box.linewidth = 5
         bx.minmax.showline = True
         bx.minmax.marker = '*'
         bx.minmax.markersize = 20
-        bx.draw()
+        bx.draw(ax=ax)
         fig.savefig(os.path.join(self.ftest, 'bx03_props.png'))
 
 
     def test_by(self):
         fig, ax = plt.subplots()
-        bx = Boxplot(ax=ax, data=self.data['data1'], by=self.data['cat'])
-        bx.draw()
+        bx = Boxplot(data=self.data['data1'], by=self.data['cat'])
+        bx.draw(ax=ax)
         fig.savefig(os.path.join(self.ftest, 'bx04_by.png'))
 
 
     def test_by_missing(self):
         fig, ax = plt.subplots()
         cat = pd.cut(self.data['cat'], range(-4, 5))
-        bx = Boxplot(ax=ax, data=self.data['data1'], by=cat)
-        bx.draw()
+        bx = Boxplot(data=self.data['data1'], by=cat)
+        bx.draw(ax=ax)
         fig.savefig(os.path.join(self.ftest, 'bx10_by_missing1.png'))
 
 
@@ -91,24 +97,24 @@ class BoxplotTestCase(unittest.TestCase):
         by = pd.cut(df['cat_value'], cats)
 
         fig, ax = plt.subplots()
-        bx = Boxplot(ax=ax, data=df['value'], by=by)
-        bx.draw()
+        bx = Boxplot(data=df['value'], by=by)
+        bx.draw(ax=ax)
         fig.savefig(os.path.join(self.ftest, 'bx11_by_missing2.png'))
 
 
     def test_numpy(self):
         fig, ax = plt.subplots()
         data = np.random.uniform(0, 10, size=(1000, 6))
-        bx = Boxplot(ax=ax, data=data)
-        bx.draw()
+        bx = Boxplot(data=data)
+        bx.draw(ax=ax)
         fig.savefig(os.path.join(self.ftest, 'bx05_numpy.png'))
 
 
     def test_log(self):
         fig, ax = plt.subplots()
         data = self.data**2
-        bx = Boxplot(ax=ax, data=data)
-        bx.draw(logscale=True)
+        bx = Boxplot(data=data)
+        bx.draw(ax=ax, logscale=True)
         bx.show_count()
         fig.savefig(os.path.join(self.ftest, 'bx06_log.png'))
 
@@ -117,16 +123,16 @@ class BoxplotTestCase(unittest.TestCase):
         fig, ax = plt.subplots()
         cat = self.data['cat'].copy()
         cat.loc[cat<3] = 0
-        bx = Boxplot(ax=ax, data=self.data['data1'], by=cat,
+        bx = Boxplot(data=self.data['data1'], by=cat,
                                 width_from_count=True)
-        bx.draw()
+        bx.draw(ax=ax)
         fig.savefig(os.path.join(self.ftest, 'bx07_width_count.png'))
 
 
     def test_coverage(self):
         fig, ax = plt.subplots()
-        bx = Boxplot(ax=ax, data=self.data, whiskers_coverage=51)
-        bx.draw()
+        bx = Boxplot(data=self.data, whiskers_coverage=51)
+        bx.draw(ax=ax)
         fig.savefig(os.path.join(self.ftest, 'bx08_coverage.png'))
 
 
@@ -134,18 +140,18 @@ class BoxplotTestCase(unittest.TestCase):
         fig, ax = plt.subplots()
         cat = self.data['cat'].copy()
         cat.loc[cat<3] = 0
-        bx = Boxplot(ax=ax, data=self.data['data1'], by=cat,
+        bx = Boxplot(data=self.data['data1'], by=cat,
                     whiskers_coverage=60)
-        bx.draw()
+        bx.draw(ax=ax)
         fig.savefig(os.path.join(self.ftest, 'bx09_coverage_by.png'))
 
 
     def test_item_change(self):
         fig, ax = plt.subplots()
-        bx = Boxplot(ax=ax, data=self.data)
+        bx = Boxplot(data=self.data)
         bx.median.textformat = '%0.4f'
         bx.box.textformat = '%0.4f'
-        bx.draw()
+        bx.draw(ax=ax)
         fig.savefig(os.path.join(self.ftest, 'bx12_item_change.png'))
 
 
@@ -161,10 +167,10 @@ class BoxplotTestCase(unittest.TestCase):
 
     def test_center(self):
         fig, ax = plt.subplots()
-        bx = Boxplot(ax=ax, data=self.data)
+        bx = Boxplot(data=self.data)
         bx.median.va = 'bottom'
         bx.median.ha = 'center'
-        bx.draw()
+        bx.draw(ax=ax)
         fig.savefig(os.path.join(self.ftest, 'bx13_center.png'))
 
         try:
@@ -178,8 +184,8 @@ class BoxplotTestCase(unittest.TestCase):
         df = self.data
         df.loc[:, 'data2'] = np.nan
         fig, ax = plt.subplots()
-        bx = Boxplot(ax=ax, data=df)
-        bx.draw()
+        bx = Boxplot(data=df)
+        bx.draw(ax=ax)
         bx.show_count()
         fig.savefig(os.path.join(self.ftest, 'bx14_nan.png'))
 
@@ -195,8 +201,8 @@ class BoxplotTestCase(unittest.TestCase):
         df = pd.DataFrame(df)
 
         fig, ax = plt.subplots()
-        bx = Boxplot(style='narrow', ax=ax, data=df)
-        bx.draw()
+        bx = Boxplot(style='narrow', data=df)
+        bx.draw(ax=ax)
         fig.savefig(os.path.join(self.ftest, 'bx15_narrow.png'))
 
 

@@ -8,6 +8,7 @@ from hydrodiy.plot import putils
 
 from matplotlib import lines
 from matplotlib.patches import FancyBboxPatch, BoxStyle
+import matplotlib.pyplot as plt
 
 COLORS = putils.COLORS10
 EPS = 1e-10
@@ -222,7 +223,7 @@ class BoxplotItem(object):
 
 class Boxplot(object):
 
-    def __init__(self, data, ax=None, \
+    def __init__(self, data,
                 style='default', by=None, \
                 width_from_count=False,
                 whiskers_coverage=80.):
@@ -269,6 +270,8 @@ class Boxplot(object):
                 raise ValueError('Failed to convert data to float dataframe:' +\
                         ' {0}'.format(str(err)))
 
+        self._ax = None
+
         self._data = data
 
         self._by = by
@@ -277,14 +280,9 @@ class Boxplot(object):
             raise ValueError('Whiskers coverage cannot be below 50.')
         self.whiskerss_coverage = whiskers_coverage
 
-        if ax is None:
-            self._ax = plt.gca()
-        else:
-            self._ax = ax
-
         self._width_from_count = width_from_count
 
-        # Box plot items
+        # Configure box plot items depending on style
         if style == 'default':
             self.median = BoxplotItem(linecolor=COLORS[3], \
                             fontcolor=COLORS[3], fontsize=9, \
@@ -321,7 +319,8 @@ class Boxplot(object):
                             width=0.6, showtext=False)
 
         else:
-            raise ValueError('Style {0} not implemented'.format(style))
+            raise ValueError('Expecting style in [default/narrow],'+\
+                        ' got {0}'.format(style))
 
         # Items not affected by style
         self.count = BoxplotItem(fontsize=7, \
@@ -358,8 +357,20 @@ class Boxplot(object):
         return self._stats
 
 
-    def draw(self, logscale=False):
-        ''' Draw the boxplot '''
+    def draw(self, ax=None, logscale=False):
+        ''' Draw the boxplot
+
+        Parameters
+        -----------
+        ax : matplotlib.axes
+            Axe to draw the boxplot on
+
+        '''
+
+        if ax is None:
+            self._ax = plt.gca()
+        else:
+            self._ax = ax
 
         ax = self._ax
         stats = self._stats
@@ -556,6 +567,10 @@ class Boxplot(object):
         ''' Show the counts '''
 
         ax = self._ax
+        if ax is None:
+            raise ValueError('Boxplot ax is not initialised.'+\
+                ' Run "draw" method first.')
+
         stats = self._stats
 
         va = 'bottom'
