@@ -105,7 +105,7 @@ class MetricsTestCase(unittest.TestCase):
         ens = np.repeat(np.linspace(0, 1, nens)[None, :], nforc, 0)
 
         p = metrics.pit(obs, ens)
-        self.assertTrue(np.all(np.abs(obs-p)<5e-3))
+        self.assertTrue(np.all(np.abs(obs-p)<8e-3))
 
 
     def test_cramer_von_mises(self):

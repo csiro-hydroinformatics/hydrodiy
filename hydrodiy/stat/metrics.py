@@ -81,26 +81,13 @@ def pit(obs, ens, cst=0.3):
         PIT value
     """
     # Check data
+    cst = min(0.5, cst)
     obs, ens, nforc, nens = __check_ensemble_data(obs, ens)
 
-    # Initialise outputs
-    pits = np.zeros(nforc)
-    unif_dist = sutils.ppos(nens, cst)
-
-    # Loop through forecasts
-    for i in range(nforc):
-        rnd = np.random.uniform(0, EPS, size=nens)
-        ys_sort = np.sort(ens[i, :]+rnd)
-
-        # Compute PIT
-        prob_obs = 0.0
-        if obs[i]>= ys_sort[-1]:
-            prob_obs = 1.0
-
-        elif obs[i]>= ys_sort[0]:
-            prob_obs = np.interp(obs[i], ys_sort, unif_dist)
-
-        pits[i] = prob_obs
+    # Compute pits
+    dobs = np.random.uniform(-EPS, EPS, size=nforc)
+    pits = (ens-(obs+dobs)[:, None]<0).astype(int)
+    pits = (np.sum(pits, 1)+0.5-cst)/(1.-cst+nens)
 
     return pits
 
