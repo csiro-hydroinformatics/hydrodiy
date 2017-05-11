@@ -151,7 +151,7 @@ def _check_name(filename):
     return filename_full
 
 
-def _write2zip(archive, arcname, txt):
+def write2zip(archive, arcname, txt):
     ''' Write txt to fcsv file in zip archive '''
 
     # Check file is not in the archive
@@ -266,7 +266,7 @@ def write_csv(data, filename, comment,
                             mode='w', \
                             compression=zipfile.ZIP_DEFLATED)
 
-        _write2zip(archive, arcname, txt)
+        write2zip(archive, arcname, txt)
 
         if compress:
             archive.close()
