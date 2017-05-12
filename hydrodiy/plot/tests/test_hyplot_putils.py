@@ -17,6 +17,7 @@ class UtilsTestCase(unittest.TestCase):
         self.ftest = os.path.dirname(source_file)
 
     def test_col2cmap(self):
+        mpl.rcdefaults()
         colors = {1:'#004C99', 0:'#FF9933', 0.3:'#FF99FF'}
         cmap = putils.col2cmap(colors)
 
@@ -28,6 +29,7 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_line(self):
+        mpl.rcdefaults()
         fig, ax = plt.subplots()
 
         nval = 100
@@ -46,6 +48,7 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_line_dates(self):
+        mpl.rcdefaults()
         fig, ax = plt.subplots()
 
         nval = 100
@@ -64,16 +67,14 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_equation(self):
-
+        mpl.rcdefaults()
         tex = r'\begin{equation} y = ax+b \end{equation}'
         fp = os.path.join(self.ftest, 'equations1.png')
         putils.equation(tex, fp)
 
-
         tex = r'\begin{equation} y = \frac{\int_0^{+\infty} x\ \exp(-\alpha x)}{\pi} \end{equation}'
         fp = os.path.join(self.ftest, 'equations2.png')
         putils.equation(tex, fp)
-
 
         tex = r'\begin{eqnarray} y & = & ax+b \\ z & = & \zeta \end{eqnarray}'
         fp = os.path.join(self.ftest, 'equations3.png')
@@ -105,23 +106,27 @@ class UtilsTestCase(unittest.TestCase):
             ax.set_ylabel('Y label')
             fig.savefig(fp)
 
+        mpl.rcdefaults()
         putils.set_mpl()
         fp = os.path.join(self.ftest, 'set_mpl1.png')
         plot(fp)
 
+        mpl.rcdefaults()
         putils.set_mpl(color_theme='white')
         fp = os.path.join(self.ftest, 'set_mpl2.png')
         plot(fp)
 
+        mpl.rcdefaults()
         putils.set_mpl(font_size=25)
         fp = os.path.join(self.ftest, 'set_mpl3.png')
         plot(fp)
 
+        mpl.rcdefaults()
         putils.set_mpl(usetex=True)
         fp = os.path.join(self.ftest, 'set_mpl4.png')
         plot(fp, True)
 
-        putils.set_mpl(usetex=False)
+        mpl.rcdefaults()
 
     def test_kde(self):
         xy = np.random.multivariate_normal( \
@@ -179,6 +184,7 @@ class UtilsTestCase(unittest.TestCase):
         fp = os.path.join(self.ftest, 'qpplot3.png')
         fig.savefig(fp)
 
+        mpl.rcdefaults()
 
 
 

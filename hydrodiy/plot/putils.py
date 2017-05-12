@@ -293,7 +293,8 @@ def set_mpl(color_theme='black', font_size=18, usetex=False):
     mpl.rc('legend', markerscale=0.8)
 
     if not color_theme in ['k', 'black']:
-        mpl.rc('legend', framealpha=0.1)
+        if 'legend.framealpha' in mpl.rcParams:
+            mpl.rc('legend', framealpha=0.1)
 
     # Set colors
     mpl.rc('axes', labelcolor=color_theme)
@@ -303,7 +304,8 @@ def set_mpl(color_theme='black', font_size=18, usetex=False):
     mpl.rc('text', color=color_theme)
 
     if color_theme == 'white':
-        mpl.rc('savefig', transparent=True)
+        if 'savefig.transparent' in mpl.rcParams:
+            mpl.rc('savefig', transparent=True)
 
 
 def kde(xy, ngrid=50):
