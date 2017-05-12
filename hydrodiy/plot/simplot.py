@@ -256,7 +256,7 @@ class Simplot(object):
             ax.legend(lines, labels, loc=2, frameon=False)
 
         date_max = self.flood_idx[iflood]['date_max']
-        title = r'({0}) Flood #{1} - {2:%Y-%m}'.format(ax_letter, \
+        title = r'({0}) Flood {1} - {2:%Y-%m}'.format(ax_letter, \
             iflood+1, date_max)
         ax.set_title(title)
         ax.grid()
