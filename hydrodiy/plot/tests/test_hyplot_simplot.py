@@ -3,10 +3,15 @@ import unittest
 
 import pandas as pd
 import numpy as np
+
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from hydrodiy.plot.simplot import Simplot
 from hydrodiy.gis import oz
+
+# Reset matplotlib to default
+mpl.rcdefaults()
 
 class SimplotTestCase(unittest.TestCase):
 
