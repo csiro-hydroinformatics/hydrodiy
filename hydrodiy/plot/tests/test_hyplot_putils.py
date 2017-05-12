@@ -121,6 +121,7 @@ class UtilsTestCase(unittest.TestCase):
         fp = os.path.join(self.ftest, 'set_mpl4.png')
         plot(fp, True)
 
+        putils.set_mpl(usetex=False)
 
     def test_kde(self):
         xy = np.random.multivariate_normal( \
