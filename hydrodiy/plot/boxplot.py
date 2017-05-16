@@ -357,14 +357,17 @@ class Boxplot(object):
         return self._stats
 
 
-    def draw(self, ax=None, logscale=False):
+    def draw(self, ax=None, logscale=False, xoffset=0.):
         ''' Draw the boxplot
 
         Parameters
         -----------
         ax : matplotlib.axes
             Axe to draw the boxplot on
-
+        logscale : bool
+            Use y axis log scale or not
+        xoffset : float
+            Add an offset to x axis
         '''
 
         if ax is None:
@@ -398,7 +401,7 @@ class Boxplot(object):
             bw = boxwidths[i]
 
             # Draw median
-            x = [i-bw/2, i+bw/2]
+            x = [i-bw/2+xoffset, i+bw/2+xoffset]
             med = stats.loc['50.0%', cn]
             y = [med] * 2
             valid_med = np.all(~np.isnan(med))
@@ -410,7 +413,7 @@ class Boxplot(object):
                     alpha=item.alpha)
 
             if item.marker != 'none':
-                ax.plot(i, med, marker=item.marker, \
+                ax.plot(i+xoffset, med, marker=item.marker, \
                     markeredgecolor=item.markeredgecolor, \
                     markerfacecolor=item.markerfacecolor, \
                     markersize=item.markersize, \
@@ -424,7 +427,7 @@ class Boxplot(object):
                     xshift = bw/2
 
                 medtext = formatter % med
-                ax.text(i+xshift, med, medtext, fontsize=item.fontsize, \
+                ax.text(i+xshift+xoffset, med, medtext, fontsize=item.fontsize, \
                         color=item.fontcolor, \
                         va=item.va, ha=item.ha, \
                         alpha=item.alpha)
@@ -448,7 +451,7 @@ class Boxplot(object):
                     boxstyle = re.sub('rounding_size=[^,]+', \
                                 'rounding_size=0.', boxstyle)
 
-                bbox = FancyBboxPatch([i-bw/2, q1], bw, q2-q1, \
+                bbox = FancyBboxPatch([i-bw/2+xoffset, q1], bw, q2-q1, \
                     boxstyle=boxstyle, \
                     facecolor=item.facecolor, \
                     linewidth=item.linewidth, \
@@ -470,14 +473,14 @@ class Boxplot(object):
 
                     if ww < EPS:
                         # Draw line
-                        x = [i]*2
+                        x = [i+xoffset]*2
                         y = [q1, q2]
                         ax.plot(x, y, lw=item.linewidth,
                             color=item.linecolor, \
                             alpha=item.alpha)
                     else:
                         # Draw box
-                        bbox = FancyBboxPatch([i-ww/2, q1], ww, q2-q1, \
+                        bbox = FancyBboxPatch([i-ww/2+xoffset, q1], ww, q2-q1, \
                             boxstyle=item.boxstyle, \
                             facecolor=item.facecolor, \
                             linewidth=item.linewidth, \
@@ -494,7 +497,7 @@ class Boxplot(object):
             if item.showline and cw>0:
                 for qq in [qq1txt, qq2txt]:
                     q1 = stats.loc[qq, cn]
-                    x = [i-cw/5, i+cw/5]
+                    x = [i-cw/5+xoffset, i+cw/5+xoffset]
                     y = [q1]*2
                     ax.plot(x, y, lw=item.linewidth,
                         color=item.linecolor, \
@@ -512,7 +515,7 @@ class Boxplot(object):
 
                 for value in [stats.loc[qq, cn] for qq in ['25.0%', '75.0%']]:
                     valuetext = formatter % value
-                    ax.text(i+xshift, value, valuetext, fontsize=item.fontsize, \
+                    ax.text(i+xshift+xoffset, value, valuetext, fontsize=item.fontsize, \
                         color=item.fontcolor, \
                         va=item.va, ha=item.ha, \
                         alpha=item.alpha)
@@ -520,7 +523,7 @@ class Boxplot(object):
             # min / max
             item = self.minmax
             if item.marker != 'none':
-                x = [i]*2
+                x = [i+xoffset]*2
                 y = stats.loc[['min', 'max'], cn]
                 ax.plot(x, y, item.marker, \
                     mfc=item.markerfacecolor, \

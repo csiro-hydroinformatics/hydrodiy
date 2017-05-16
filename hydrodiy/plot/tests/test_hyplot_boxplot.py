@@ -32,7 +32,15 @@ class BoxplotTestCase(unittest.TestCase):
         fig.savefig(os.path.join(self.ftest, 'bx01_draw.png'))
 
 
+    def test_draw_offset(self):
+        fig, ax = plt.subplots()
+        bx = Boxplot(data=self.data)
+        bx.draw(ax=ax, xoffset=0.2)
+        fig.savefig(os.path.join(self.ftest, 'bx01_draw_offset.png'))
+
+
     def test_draw_gca(self):
+        plt.close('all')
         bx = Boxplot(data=self.data)
         bx.draw()
         plt.savefig(os.path.join(self.ftest, 'bx01_draw_gca.png'))
