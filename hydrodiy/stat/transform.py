@@ -3,7 +3,7 @@ import numpy as np
 from hydrodiy.data.containers import Vector
 
 __all__ = ['Identity', 'Logit', 'Log', 'BoxCox', 'YeoJohnson', \
-                'LogSinh', 'Reciprocal']
+                'LogSinh', 'Reciprocal', 'MvtLogit']
 
 EPS = 1e-10
 
@@ -339,5 +339,57 @@ class Reciprocal(Transform):
     def jacobian_det(self, x):
         shift = self.params
         return np.where(x>-shift, 1./(shift+x)**2, np.nan)
+
+
+class MvtLogit(Transform):
+
+    def __init__(self):
+        Transform.__init__(self, 'MvtLogit')
+
+    def forward(self, x):
+        # Check inputs
+        x = np.atleast_2d(x)
+        if x.ndim > 2:
+            raise ValueError('Expected ndim 2, got {0}'.format(x.ndim))
+
+        if np.any(x<0):
+            raise ValueError('x < 0')
+
+        # Sum along columns
+        sx = np.sum(x, axis=1)
+        if np.any(sx>1-EPS):
+            raise ValueError('sum(x) >= 1')
+
+        return np.log(x/(1-sx[:, None]))
+
+    def backward(self, y):
+        # Check inputs
+        y = np.atleast_2d(y)
+        if y.ndim > 2:
+            raise ValueError('Expected ndim 2, got {0}'.format(y.ndim))
+
+        # Back transform
+        x = np.exp(y)
+        return x/(1+np.sum(x, axis=1)[:, None])
+
+    def jacobian_det(self, x):
+        ''' See
+        https://en.wikipedia.org/wiki/Determinant#Sylvester.27s_determinant_theorem
+        '''
+        # Check inputs
+        x = np.atleast_2d(x)
+        if x.ndim > 2:
+            raise ValueError('Expected ndim 2, got {0}'.format(x.ndim))
+
+        if np.any(x<0):
+            raise ValueError('x < 0')
+
+        sx = np.sum(x, axis=1)
+        if np.any(sx>1-EPS):
+            raise ValueError('sum(x) >= 1')
+
+        px = np.prod(x, axis=1)
+        return (1+sx/(1-sx))/px
+
 
 

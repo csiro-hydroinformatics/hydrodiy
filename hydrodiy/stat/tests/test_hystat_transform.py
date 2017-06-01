@@ -110,6 +110,7 @@ class TransformTestCase(unittest.TestCase):
 
 
     def test_print(self):
+        ''' Test print method '''
         for nm in transform.__all__:
             trans = getattr(transform, nm)()
             nparams = trans.nparams
@@ -118,16 +119,22 @@ class TransformTestCase(unittest.TestCase):
 
 
     def test_forward_backward(self):
+        ''' Test if transform is stable when applying it forward then backward '''
+
         for nm in transform.__all__:
+
             trans = getattr(transform, nm)()
             nparams = trans.nparams
 
             for sample in range(500):
+                # generate x sample
                 x = np.random.normal(size=100, loc=5, scale=20)
+                # Generate parameters
                 params = trans.mins+np.random.uniform(0., 4, size=nparams)
                 params[np.isinf(params)] = 0.
                 trans.params = params
 
+                # Handle specific cases
                 if nm == 'Log':
                     x = np.exp(x)
                 elif nm == 'Logit':
@@ -135,21 +142,31 @@ class TransformTestCase(unittest.TestCase):
                     trans.reset()
                 elif nm == 'LogSinh':
                     trans._params.values += 0.1
+                elif nm == 'MvtLogit':
+                    x = np.random.uniform(0, 1, size=(100, 5))
+                    x = x/(0.1+np.sum(x, axis=1)[:, None])
 
                 # Check x -> forward(x) -> backward(y) is stable
                 y = trans.forward(x)
                 xx = trans.backward(y)
 
                 # Check raw and transform/backtransform are equal
-                idx = ~np.isnan(xx)
+                if x.ndim>1:
+                    idx = np.all(~np.isnan(xx) & ~np.isnan(x), axis=xx.ndim-1)
+                else:
+                    idx = ~np.isnan(xx) & ~np.isnan(x)
+
                 ck = np.allclose(x[idx], xx[idx])
                 if not ck:
-                    print('Transform {0} failing the forward/backward test'.format(trans.name))
+                    print('\n\n!!! Transform {0} failing the forward/backward test'.format(trans.name))
 
                 self.assertTrue(ck)
 
 
     def test_jacobian(self):
+        ''' Test of transformation Jacobian is equal to its
+        first order numerical approx '''
+
         delta = 1e-5
         for nm in transform.__all__:
             trans = getattr(transform, nm)()
@@ -166,13 +183,29 @@ class TransformTestCase(unittest.TestCase):
                     x = np.random.uniform(1e-2, 1.-1e-2, size=100)
                     trans.reset()
 
+                elif nm == 'MvtLogit':
+                    x = np.random.uniform(0, 1, size=(100, 5))
+                    x = x/(0.1+np.sum(x, axis=1)[:, None])
+                    trans.reset()
+
                 #elif nm == 'LogSinh':
                 #    trans._params += 0.1
 
-                # Check x -> forward(x) -> backward(y) is stable
+                # Compute first order approx of jac
                 y = trans.forward(x)
-                yp = trans.forward(x+delta)
-                jacn = np.abs(yp-y)/delta
+
+                if nm == 'MvtLogit':
+                    # A bit more work to compute matrix determinant
+                    jacn = np.zeros(x.shape[0])
+                    for i in range(x.shape[1]):
+                        xd = x[i, :][None, :] + np.eye(x.shape[1])*delta
+                        yd = trans.forward(xd)
+                        M = (yd-y[i, :][None, :])/delta
+                        jacn[i] = np.linalg.det(M)
+                else:
+                    yp = trans.forward(x+delta)
+                    jacn = np.abs(yp-y)/delta
+
                 jac = trans.jacobian_det(x)
 
                 # Check jacobian are positive
@@ -194,25 +227,37 @@ class TransformTestCase(unittest.TestCase):
 
 
     def test_transform_plot(self):
+        ''' Plot transform '''
         ftest = self.ftest
         x = np.linspace(-3, 10, 200)
+
+        xs = np.linspace(0, 0.99, 200)
+        xs = np.column_stack([xs, (1-xs)*xs])
 
         for nm in transform.__all__:
             trans = getattr(transform, nm)()
             nparams = trans.nparams
+
+            xx = x
+            if nm == 'MvtLogit':
+                xx = xs
 
             plt.close('all')
             fig, ax = plt.subplots()
             for pp in [-20., 0, 20.]:
                 trans.reset()
                 trans.params = trans.defaults * (1.+pp/100)
-                y = trans.forward(x)
-                ax.plot(x, y, label='params = default {0}% (rp={1})'.format(pp,
+                y = trans.forward(xx)
+
+                xp, yp = xx, y
+                if nm == 'MvtLogit':
+                    xp, yp = xx[:, 0], y[:, 0]
+
+                ax.plot(xp, yp, label='params = default {0}% (rp={1})'.format(pp,
                                         trans.params))
             ax.legend(loc=4)
             ax.set_title(nm)
             fig.savefig(os.path.join(ftest, 'transform_'+nm+'.png'))
-
 
 
 if __name__ == "__main__":
