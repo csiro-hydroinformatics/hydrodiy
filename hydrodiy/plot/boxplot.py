@@ -225,6 +225,7 @@ class Boxplot(object):
 
     def __init__(self, data,
                 style='default', by=None, \
+                showtext=True, \
                 width_from_count=False,
                 whiskers_coverage=80.):
         ''' Draw boxplots with labels and defined colors
@@ -286,7 +287,8 @@ class Boxplot(object):
         if style == 'default':
             self.median = BoxplotItem(linecolor=COLORS[3], \
                             fontcolor=COLORS[3], fontsize=9, \
-                            marker='none')
+                            marker='none',\
+                            showtext=showtext)
 
             self.whiskers = BoxplotItem(linecolor=COLORS[0], \
                                 facecolor=COLORS[0], \
@@ -297,7 +299,8 @@ class Boxplot(object):
 
             self.box = BoxplotItem(linecolor=COLORS[0], \
                             width=0.7, fontcolor=COLORS[0], \
-                            boxstyle='Round,rounding_size=0.05,pad=0.', fontsize=8)
+                            fontsize=8, \
+                            showtext=showtext)
 
 
         elif style == 'narrow':

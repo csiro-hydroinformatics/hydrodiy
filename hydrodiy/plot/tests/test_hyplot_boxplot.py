@@ -203,15 +203,32 @@ class BoxplotTestCase(unittest.TestCase):
 
         nval = 200
         nvar = 50
-        df = {}
-        for i in range(nvar):
-            df['data{0}'.format(i)] = np.random.normal(size=nval)
-        df = pd.DataFrame(df)
+        df = pd.DataFrame(np.random.normal(size=(nval, nvar)), \
+                columns = ['data{0}'.format(i) for i in range(nvar)])
 
         fig, ax = plt.subplots()
         bx = Boxplot(style='narrow', data=df)
         bx.draw(ax=ax)
         fig.savefig(os.path.join(self.ftest, 'bx15_narrow.png'))
+
+
+    def test_showtext(self):
+        ''' Testing showtext '''
+
+        nval = 200
+        nvar = 5
+        df = pd.DataFrame(np.random.normal(size=(nval, nvar)), \
+                columns = ['data{0}'.format(i) for i in range(nvar)])
+
+        fig, axs = plt.subplots(ncols=2)
+        bx = Boxplot(data=df)
+        bx.draw(ax=axs[0])
+
+        bx = Boxplot(data=df, showtext=False)
+        bx.draw(ax=axs[1])
+
+        fig.savefig(os.path.join(self.ftest, 'bx16_showtext.png'))
+
 
 
 if __name__ == "__main__":
