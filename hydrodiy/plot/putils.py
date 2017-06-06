@@ -22,6 +22,8 @@ from matplotlib import colors
 from matplotlib.colors import hex2color
 from matplotlib.colors import LinearSegmentedColormap
 
+import matplotlib.dates as mdates
+
 import numpy as np
 import pandas as pd
 
@@ -107,6 +109,53 @@ def _float(u):
     except TypeError:
         v = u.toordinal()
     return v
+
+
+def xdate(ax, interval='M', by=None, format='%b\n%Y'):
+    ''' Format the x axis to display dates
+
+    Parameters
+    -----------
+    ax : matplotlib.axes
+        Axe to draw the line on
+    interval : str
+        Interval between two tick marks. Intervals are coded as XY
+        where X is the frequency (D for days or M for months) and Y
+        is the number of periods. For example 6D is 6 days.
+    format : str
+        Date format
+    '''
+
+    if interval.endswith('M'):
+        if interval == 'M':
+            interv = 1
+        else:
+            interv = int(interval[:-1])
+
+        if by is None:
+            by =range(1, 13)
+
+        loc = mdates.MonthLocator(interval=interv, bymonth=by)
+
+    elif interval.endswith('D'):
+        if interval == 'D':
+            interv = 1
+        else:
+            interv = int(interval[:-1])
+
+        if by is None:
+            by =[1, 10, 20]
+
+        loc = mdates.DayLocator(interval=interv, bymonthday=by)
+
+    else:
+        raise ValueError('Expected interval to end with D or M, '+\
+            'got {0}'.format(interval))
+
+    ax.xaxis.set_major_locator(loc)
+    fmt = mdates.DateFormatter(format)
+    ax.xaxis.set_major_formatter(fmt)
+
 
 
 def line(ax, vx=0., vy=1., x0=0., y0=0., *args, **kwargs):
