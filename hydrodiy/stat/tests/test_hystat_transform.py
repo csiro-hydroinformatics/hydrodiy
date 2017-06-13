@@ -142,7 +142,7 @@ class TransformTestCase(unittest.TestCase):
                     trans.reset()
                 elif nm == 'LogSinh':
                     trans._params.values += 0.1
-                elif nm == 'MvtLogit':
+                elif nm == 'Softmax':
                     x = np.random.uniform(0, 1, size=(100, 5))
                     x = x/(0.1+np.sum(x, axis=1)[:, None])
 
@@ -183,7 +183,7 @@ class TransformTestCase(unittest.TestCase):
                     x = np.random.uniform(1e-2, 1.-1e-2, size=100)
                     trans.reset()
 
-                elif nm == 'MvtLogit':
+                elif nm == 'Softmax':
                     x = np.random.uniform(0, 1, size=(100, 5))
                     x = x/(0.1+np.sum(x, axis=1)[:, None])
                     trans.reset()
@@ -194,7 +194,7 @@ class TransformTestCase(unittest.TestCase):
                 # Compute first order approx of jac
                 y = trans.forward(x)
 
-                if nm == 'MvtLogit':
+                if nm == 'Softmax':
                     # A bit more work to compute matrix determinant
                     jacn = np.zeros(x.shape[0])
                     for i in range(x.shape[1]):
@@ -239,7 +239,7 @@ class TransformTestCase(unittest.TestCase):
             nparams = trans.nparams
 
             xx = x
-            if nm == 'MvtLogit':
+            if nm == 'Softmax':
                 xx = xs
 
             plt.close('all')
@@ -250,7 +250,7 @@ class TransformTestCase(unittest.TestCase):
                 y = trans.forward(xx)
 
                 xp, yp = xx, y
-                if nm == 'MvtLogit':
+                if nm == 'Softmax':
                     xp, yp = xx[:, 0], y[:, 0]
 
                 ax.plot(xp, yp, label='params = default {0}% (rp={1})'.format(pp,

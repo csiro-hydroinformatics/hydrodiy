@@ -3,7 +3,7 @@ import numpy as np
 from hydrodiy.data.containers import Vector
 
 __all__ = ['Identity', 'Logit', 'Log', 'BoxCox', 'YeoJohnson', \
-                'LogSinh', 'Reciprocal', 'MvtLogit']
+                'LogSinh', 'Reciprocal', 'Softmax']
 
 EPS = 1e-10
 
@@ -341,10 +341,10 @@ class Reciprocal(Transform):
         return np.where(x>-shift, 1./(shift+x)**2, np.nan)
 
 
-class MvtLogit(Transform):
+class Softmax(Transform):
 
     def __init__(self):
-        Transform.__init__(self, 'MvtLogit')
+        Transform.__init__(self, 'Softmax')
 
     def forward(self, x):
         # Check inputs
