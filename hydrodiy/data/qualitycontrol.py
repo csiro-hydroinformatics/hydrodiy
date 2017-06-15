@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def islinear(data, npoints=1, eps=None, minthreshold=None):
+def islinear(data, npoints=1, tol=None, thresh=None):
     '''
     Detect linearly interpolated data
 
@@ -11,9 +11,9 @@ def islinear(data, npoints=1, eps=None, minthreshold=None):
         Data series where linear interpolation is suspected
     npoints : int
         Number of points before and after current to test linearity
-    eps : float
+    tol : float
         Maximum distance between current point and linear interpolation to validate interpolation
-    minthreshold : float
+    thresh : float
         Minimum threshold below which value is considered to be zero
 
     Returns
@@ -34,39 +34,39 @@ def islinear(data, npoints=1, eps=None, minthreshold=None):
     data = np.atleast_1d(data)
 
     # Compute min threhsold
-    if minthreshold is None:
-        minthreshold = np.nanmin(data[data>0])/10.
+    if thresh is None:
+        thresh = np.nanmin(data[data>0])/10.
 
-    # Compute eps as the min of the diff between two points divided by 10
-    if eps is None:
+    # Compute tol as the min of the diff between two points divided by 10
+    if tol is None:
         diff = np.abs(np.diff(data))
-        diff = diff[diff>0]
-        eps = np.nanmin(diff)/10.
+        diff = diff[diff>thresh]
+        tol = np.nanmin(diff)/10.
 
     nval = data.shape[0]
     if nval < 2*npoints+2:
         raise ValueError('data has less than {0} points'.format(2*npoints+2))
 
-    nvall = nval-2*npoints
-    lagged = np.zeros((nvall, 2*npoints+1))
-    interp = lagged.copy()
-    for k in range(2*npoints+1):
-        lagged[:, k] = np.roll(data, k)[2*npoints:]
-        interp[:, k] = np.ones(nvall) *  float(k)/(npoints+1)
+    # Lag data
+    lagged = np.nan * np.zeros((data.shape[0], 2*npoints+1))
+    lags = np.arange(-npoints, npoints+1)
+    for ilag, lag in enumerate(lags):
+        v = np.roll(data, lag)
+        if lag<0:
+            v[lag:] = np.nan
+        elif lag>0:
+            v[:lag] = np.nan
+        lagged[:, ilag] = v
 
-    lag0 = np.repeat(lagged[:, 0].reshape((nvall, 1)), 2*npoints+1, axis=1)
-    lag1 = np.repeat(lagged[:, -1].reshape((nvall, 1)), 2*npoints+1, axis=1)
-    interp = (1-interp) * lag0 + interp * lag1
+    # Compute linear interpolation
+    w = np.linspace(0, 1, 2*npoints+1)[None, :]
+    interp = lagged[:, 0][:, None]*(1-w) + lagged[:, -1][:, None]*w
 
-    dist = np.max(np.abs(interp[:, 1:-1] - lagged[:, 1:-1]), axis=1)
+    # Compute distance
+    dist = np.abs(interp[:, npoints]-lagged[:, npoints])
 
-    # Set status to True for points were linear interpolation
-    # is valid and either one of endpoints is non zero
-    st = (dist < eps) & \
-        ((np.abs(lag0[:, 0])>minthreshold)|(np.abs(lag1[:, -1])>minthreshold))
-
-    status = np.array([False] * len(data))
-    status[npoints:-npoints] = st
+    # Set status
+    status = (dist < tol) & ~np.isnan(dist) & (data>thresh)
 
     return status
 
