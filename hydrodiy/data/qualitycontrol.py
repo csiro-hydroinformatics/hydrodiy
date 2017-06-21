@@ -1,7 +1,8 @@
 import numpy as np
 
+from hydrodiy.data import dutils
 
-def islinear(data, npoints=1, tol=None, thresh=None):
+def islinear(data, npoints=3, tol=None, thresh=None):
     '''
     Detect linearly interpolated data
 
@@ -30,8 +31,12 @@ def islinear(data, npoints=1, tol=None, thresh=None):
     array([False, True, False, False, True, False], dtype=int32)
 
     '''
-
+    # Check data
     data = np.atleast_1d(data)
+    npoints = int(npoints)
+
+    if npoints<1:
+        raise ValueError('Expected npoints >0, got {0}'.format(npoints))
 
     # Compute min threhsold
     if thresh is None:
@@ -45,29 +50,30 @@ def islinear(data, npoints=1, tol=None, thresh=None):
 
     nval = data.shape[0]
     if nval < 2*npoints+2:
-        raise ValueError('data has less than {0} points'.format(2*npoints+2))
+        raise ValueError(('Given npoints={0}, expected data of ' + \
+                'length at least {1}, got {2}').format(npoints, \
+                2*npoints+2, nval))
 
-    # Lag data
-    lagged = np.nan * np.zeros((data.shape[0], 2*npoints+1))
-    lags = np.arange(-npoints, npoints+1)
-    for ilag, lag in enumerate(lags):
-        v = np.roll(data, lag)
-        if lag<0:
-            v[lag:] = np.nan
-        elif lag>0:
-            v[:lag] = np.nan
-        lagged[:, ilag] = v
+    # Compute distance with linear interpolation
+    # between lag -1 and lag +1
+    interp = (dutils.lag(data, -1)+dutils.lag(data, 1))/2
+    dist = np.abs(interp-data)
 
-    # Compute linear interpolation
-    w = np.linspace(0, 1, 2*npoints+1)[None, :]
-    interp = lagged[:, 0][:, None]*(1-w) + lagged[:, -1][:, None]*w
+    # Set linear status for one point
+    islin = ((dist < tol) & ~np.isnan(dist) & (data>thresh)).astype(float)
 
-    # Compute distance
-    dist = np.abs(interp[:, npoints]-lagged[:, npoints])
+    # Check status before and after current point
+    if npoints > 1:
+        islin_pos = np.zeros(list(data.shape)+[npoints+1])
+        islin_neg = np.zeros(list(data.shape)+[npoints+1])
+        for il, l in enumerate(range(npoints+1)):
+            islin_neg[:, il] = dutils.lag(islin, -l)
+            islin_pos[:, il] = dutils.lag(islin, l)
 
-    # Set status
-    status = (dist < tol) & ~np.isnan(dist) & (data>thresh)
+        ndim = islin_pos.ndim
+        islin = np.all(islin_pos>0, axis=ndim-1) | \
+                np.all(islin_neg>0, axis=ndim-1)
 
-    return status
+    return islin
 
 
