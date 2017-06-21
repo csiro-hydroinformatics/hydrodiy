@@ -182,3 +182,37 @@ def aggregate(aggindex, inputs, oper=0, maxnan=0):
     return outputs
 
 
+def lag(data, lag):
+    ''' Lag a numpy array and adds NaN at the beginning or end of the lagged data
+        depending on the lag value. The lag is introduced using numpy.roll
+
+    Parameters
+    -----------
+    data : numpy.ndarray data
+        Data series where linear interpolation is suspected
+    lag : int
+        Lag. If >0, lag the data forward. If<0 lag the data backward.
+
+    Returns
+    -----------
+    lagged : numpy.ndarray
+        Lagged vector
+
+    '''
+    # Check data
+    data = np.atleast_1d(data)
+    lag = int(lag)
+
+    # Lagg data
+    lagged = np.roll(data, lag, axis=0)
+    if lag<0:
+        lagged[lag:] = np.nan
+    elif lag>0:
+        lagged[:lag] = np.nan
+    else:
+        lagged = data.copy()
+
+    return lagged
+
+
+

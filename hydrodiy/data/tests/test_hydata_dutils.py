@@ -125,5 +125,31 @@ class UtilsTestCase(unittest.TestCase):
         self.assertTrue(t1-t0 > 80*(t2-t1))
 
 
+    def test_lag(self):
+        ''' Test lag for 1d data'''
+        size = [20, 10, 30, 4]
+        for ndim in  range(1, 4):
+            data = np.random.normal(size=size[:ndim])
+
+            for lag in range(-5, 6):
+                lagged = dutils.lag(data, lag)
+                if lag > 0:
+                    expected = data[:-lag]
+                    laggede = lagged[lag:]
+                    na = lagged[:lag]
+                elif lag < 0:
+                    expected = data[-lag:]
+                    laggede = lagged[:lag]
+                    na = lagged[lag:]
+                else:
+                    expected = data
+                    laggede = lagged
+
+                self.assertTrue(np.allclose(laggede, expected))
+
+                if abs(lag)>0:
+                    self.assertTrue(np.all(np.isnan(na)))
+
+
 if __name__ == "__main__":
     unittest.main()
