@@ -2,7 +2,7 @@ import re
 import math
 
 from datetime import datetime
-from dateutil.relativedelta import relativedelta
+from dateutil.relativedelta import relativedelta as delta
 import calendar
 
 import numpy as np
@@ -214,5 +214,40 @@ def lag(data, lag):
 
     return lagged
 
+
+def monthly2daily(se, minthreshold=0.):
+    ''' Convert monthly series to daily with a flat
+    disaggregation
+
+    Parameters
+    -----------
+    sem : pandas.Series
+        Monthly series
+    minthreshold : float
+        Minimum valid value
+
+    Returns
+    -----------
+    se : pandas.Series
+        Daily series
+    '''
+    # Set
+    sec = se.copy()
+    sec[np.isnan(sec)] = minthreshold-1
+
+    # Add a fictive data after the last month
+    # to allow for resample to work
+    nexti = sec.index[-1] + delta(months=1)
+    sec[nexti] = np.nan
+
+    # Convert to daily
+    sed = sec.resample('D').fillna(method='pad')
+    sed /= sed.index.days_in_month
+    sed[sed<minthreshold] = np.nan
+
+    # Drop last values
+    sed = sed.iloc[:-1]
+
+    return sed
 
 
