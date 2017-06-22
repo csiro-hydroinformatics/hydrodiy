@@ -2,7 +2,7 @@ import numpy as np
 
 from hydrodiy.data import dutils
 
-def islinear(data, npoints=3, tol=None, thresh=None):
+def islinear(data, npoints=3, tol=1e-6, thresh=0.):
     '''
     Detect linearly interpolated data
 
@@ -38,16 +38,6 @@ def islinear(data, npoints=3, tol=None, thresh=None):
     if npoints<1:
         raise ValueError('Expected npoints >0, got {0}'.format(npoints))
 
-    # Compute min threhsold
-    if thresh is None:
-        thresh = np.nanmin(data[data>0])/10.
-
-    # Compute tol as the min of the diff between two points divided by 10
-    if tol is None:
-        diff = np.abs(np.diff(data))
-        diff = diff[diff>thresh]
-        tol = np.nanmin(diff)/10.
-
     nval = data.shape[0]
     if nval < 2*npoints+2:
         raise ValueError(('Given npoints={0}, expected data of ' + \
@@ -64,15 +54,16 @@ def islinear(data, npoints=3, tol=None, thresh=None):
 
     # Check status before and after current point
     if npoints > 1:
-        islin_pos = np.zeros(list(data.shape)+[npoints+1])
-        islin_neg = np.zeros(list(data.shape)+[npoints+1])
-        for il, l in enumerate(range(npoints+1)):
-            islin_neg[:, il] = dutils.lag(islin, -l)
-            islin_pos[:, il] = dutils.lag(islin, l)
-
+        islin_pos = np.zeros(list(data.shape)+[npoints])
+        islin_neg = np.zeros(list(data.shape)+[npoints])
+        for il, l in enumerate(range(1, npoints+1)):
+            islin_neg[:, il-1] = dutils.lag(islin, -l)
+            islin_pos[:, il-1] = dutils.lag(islin, l)
         ndim = islin_pos.ndim
-        islin = np.all(islin_pos>0, axis=ndim-1) | \
-                np.all(islin_neg>0, axis=ndim-1)
+        islin = (islin>0) & (np.all(islin_pos>0, axis=ndim-1) | \
+                np.all(islin_neg>0, axis=ndim-1))
+    else:
+        islin = islin>0
 
     return islin
 

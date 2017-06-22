@@ -29,19 +29,21 @@ class QualityControlTestCase(unittest.TestCase):
 
     def test_islinear_1d_linspace_npoints(self):
         ''' Test is linear 1d against the numpy linspace function '''
-        nval = 20
+        nval = 30
         data = np.random.normal(size=nval)
-        data[3:17] = np.linspace(0, 1, 14)
+
+        i1 = 10
+        i2 = 20
+        idxlin = np.arange(i1, i2+1)
+        data[idxlin] = np.linspace(0, 1, 14)
 
         for npoints in range(2, 5):
             status = qc.islinear(data, npoints)
 
             expected = np.array([False] * data.shape[0])
-            expected[3:16] = True
+            expected[i1+1:i2] = True
 
             ck = np.allclose(status, expected)
-            if not ck:
-                import pdb; pdb.set_trace()
             self.assertTrue(ck)
 
 
@@ -51,9 +53,9 @@ class QualityControlTestCase(unittest.TestCase):
 
         data = np.random.normal(size=nval)
         data[5:9] = 0.
-        status = qc.islinear(data, npoints=1)
+        status = qc.islinear(data, npoints=1, thresh=data.min()-1)
         expected = np.array([False] * data.shape[0])
-        expected[5:9] = True
+        expected[6:8] = True
         self.assertTrue(np.allclose(status, expected))
 
         status = qc.islinear(data, npoints=1, thresh=0.)
