@@ -14,6 +14,24 @@ class QualityControlTestCase(unittest.TestCase):
         self.ftest = os.path.dirname(source_file)
 
 
+    def test_islinear_error(self):
+        ''' Test is linear errors '''
+        nval = 20
+        data = np.random.normal(size=nval)
+
+        try:
+            status = qc.islinear(data, npoints=0)
+        except Exception as err:
+            pass
+        self.assertTrue(str(err).startswith('Expected npoints'))
+
+        try:
+            status = qc.islinear(data, tol=1e-11)
+        except Exception as err:
+            pass
+        self.assertTrue(str(err).startswith('Expected tol'))
+
+
     def test_islinear_1d_linspace(self):
         ''' Test is linear 1d against the numpy linspace function '''
         nval = 20
@@ -22,7 +40,7 @@ class QualityControlTestCase(unittest.TestCase):
 
         status = qc.islinear(data, npoints=1)
         expected = np.array([False] * data.shape[0])
-        expected[4:16] = True
+        expected[3:17] = True
 
         self.assertTrue(np.allclose(status, expected))
 
@@ -41,7 +59,7 @@ class QualityControlTestCase(unittest.TestCase):
             status = qc.islinear(data, npoints)
 
             expected = np.array([False] * data.shape[0])
-            expected[i1+1:i2] = True
+            expected[i1:i2+1] = True
 
             ck = np.allclose(status, expected)
             self.assertTrue(ck)
@@ -55,7 +73,7 @@ class QualityControlTestCase(unittest.TestCase):
         data[5:9] = 0.
         status = qc.islinear(data, npoints=1, thresh=data.min()-1)
         expected = np.array([False] * data.shape[0])
-        expected[6:8] = True
+        expected[5:9] = True
         self.assertTrue(np.allclose(status, expected))
 
         status = qc.islinear(data, npoints=1, thresh=0.)
@@ -65,32 +83,43 @@ class QualityControlTestCase(unittest.TestCase):
 
     def test_islinear_1d_int(self):
         ''' Test is islinear 1d against integer '''
-        data = np.array([1., 2., 3., 3., 4., 3.])
-        status = qc.islinear(data, npoints=1)
-        expected = np.array([False] * data.shape[0])
-        expected[1] = True
+        data = np.array([0.]*20+[0., 1., 2., 3., 4., 5., 3.]+[0.]*20)
+        for npoints in range(1, 7):
+            status = qc.islinear(data, npoints=npoints)
+            expected = np.array([False] * data.shape[0])
+            if npoints<=4:
+                expected[20:26] = True
 
-        self.assertTrue(np.allclose(status, expected))
-
-
-    def test_islinear_1d_int_2points(self):
-        ''' Test two points interpolation against integer '''
-        data = np.array([1., 2., 3., 3., 4., 3.])
-        status = qc.islinear(data, npoints=2)
-        expected = np.array([False] * data.shape[0])
-
-        self.assertTrue(np.allclose(status, expected))
+            ck = np.allclose(status, expected)
+            self.assertTrue(ck)
 
 
-    def test_islinear_1d_casestudy(self):
-        ''' Test known dataset '''
-        fd = os.path.join(self.ftest, 'islinear_test.csv')
-        data = pd.read_csv(fd, comment='#', \
-                    index_col=0, parse_dates=True)
-        value = data.iloc[:, 0].values
-        status = qc.islinear(value, 1, tol=0.05)
+    def test_islinear_sequence(self):
+        ''' Test is_linear for two consecutive sequences of linear data '''
+        nval = 50
+        data = np.random.uniform(size=nval)
+        ia1, ia2 = 20, 24
+        data[ia1:ia2+1] = np.linspace(0, 1, 5)
 
-        self.assertTrue(np.allclose(status, data['status']))
+        ib1, ib2 = 26, 31
+        data[ib1:ib2+1] = np.linspace(0, 1, 6)
+
+        for npoints in range(1, 10):
+            status = qc.islinear(data, npoints)
+
+            expected = np.zeros(nval).astype(bool)
+            if npoints <= 3:
+                expected[ia1:ia2+1] = True
+
+            if npoints <= 4:
+                expected[ib1:ib2+1] = True
+
+            ck = np.allclose(status, expected)
+            if not ck:
+                print(status.astype(int))
+                print(expected.astype(int))
+                import pdb; pdb.set_trace()
+            self.assertTrue(ck)
 
 
 if __name__ == "__main__":

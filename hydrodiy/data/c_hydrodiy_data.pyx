@@ -16,6 +16,10 @@ cdef extern from 'c_dutils.h':
     int c_aggregate(int nval, int oper, int maxnan, int * aggindex,
         double * inputs, double * outputs, int * iend)
 
+cdef extern from 'c_qualitycontrol.h':
+    int c_islin(int nval, double thresh, double tol, int npoints,
+        double * inputs, int * islin)
+
 def __cinit__(self):
     pass
 
@@ -104,6 +108,23 @@ def aggregate(int oper, int maxnan,
             <double*> np.PyArray_DATA(inputs),
             <double*> np.PyArray_DATA(outputs),
             <int*> np.PyArray_DATA(iend))
+
+    return ierr
+
+
+def islin(double thresh, double tol, int npoints,
+        np.ndarray[double, ndim=1, mode='c'] data not None,
+        np.ndarray[int, ndim=1, mode='c'] islin not None):
+
+    cdef int nval
+
+    # check dimensions
+    nval = data.shape[0]
+    assert nval == islin.shape[0]
+
+    ierr = c_islin(nval, thresh, tol, npoints,
+            <double*> np.PyArray_DATA(data),
+            <int*> np.PyArray_DATA(islin))
 
     return ierr
 

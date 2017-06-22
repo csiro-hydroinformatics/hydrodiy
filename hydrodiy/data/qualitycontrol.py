@@ -1,6 +1,7 @@
 import numpy as np
 
 from hydrodiy.data import dutils
+import c_hydrodiy_data
 
 def islinear(data, npoints=3, tol=1e-6, thresh=0.):
     '''
@@ -32,38 +33,27 @@ def islinear(data, npoints=3, tol=1e-6, thresh=0.):
 
     '''
     # Check data
-    data = np.atleast_1d(data)
+    data = np.atleast_1d(data).astype(np.float64)
+    islin = np.zeros(len(data), dtype=np.int32)
     npoints = int(npoints)
+    tol = np.float64(tol)
+    thresh = np.float64(thresh)
 
     if npoints<1:
-        raise ValueError('Expected npoints >0, got {0}'.format(npoints))
+        raise ValueError('Expected npoints >=1, got {0}'.format(npoints))
 
-    nval = data.shape[0]
-    if nval < 2*npoints+2:
-        raise ValueError(('Given npoints={0}, expected data of ' + \
-                'length at least {1}, got {2}').format(npoints, \
-                2*npoints+2, nval))
+    if tol<1e-10:
+        raise ValueError('Expected tol>1e-10, got {0:5.5e}'.format(tol))
 
-    # Compute distance with linear interpolation
-    # between lag -1 and lag +1
-    interp = (dutils.lag(data, -1)+dutils.lag(data, 1))/2
-    dist = np.abs(interp-data)
+    # Run C function
+    ierr = c_hydrodiy_data.islin(thresh, tol, npoints, \
+                data, islin)
 
-    # Set linear status for one point
-    islin = ((dist < tol) & ~np.isnan(dist) & (data>thresh)).astype(float)
+    if ierr>0:
+        raise ValueError('c_hydrodiy_data.islin returns {0}'.format(ierr))
 
-    # Check status before and after current point
-    if npoints > 1:
-        islin_pos = np.zeros(list(data.shape)+[npoints])
-        islin_neg = np.zeros(list(data.shape)+[npoints])
-        for il, l in enumerate(range(1, npoints+1)):
-            islin_neg[:, il-1] = dutils.lag(islin, -l)
-            islin_pos[:, il-1] = dutils.lag(islin, l)
-        ndim = islin_pos.ndim
-        islin = (islin>0) & (np.all(islin_pos>0, axis=ndim-1) | \
-                np.all(islin_neg>0, axis=ndim-1))
-    else:
-        islin = islin>0
+    # convert to bool
+    islin = islin.astype(bool)
 
     return islin
 
