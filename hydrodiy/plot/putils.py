@@ -50,7 +50,7 @@ def get_colors(ncols=10, palette='Paired'):
     return [cmap(i) for i in range(cmap.N)]
 
 
-def col2cmap(colors):
+def col2cmap(colors, ncols=256):
     ''' Define a linear color map from a set of colors
 
     Parameters
@@ -99,7 +99,7 @@ def col2cmap(colors):
         cdict['green'].append((k, col[1], col[1]))
         cdict['blue'].append((k, col[2], col[2]))
 
-    return LinearSegmentedColormap('mycmap', cdict, 256)
+    return LinearSegmentedColormap('mycmap', cdict, ncols)
 
 
 def _float(u):
