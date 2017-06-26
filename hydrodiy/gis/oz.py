@@ -82,7 +82,7 @@ class Oz:
         else:
             self.ax = ax
 
-        self.map = basemap.Basemap(self.llon, self.llat, self.rlon, self.ulat,
+        self._map = basemap.Basemap(self.llon, self.llat, self.rlon, self.ulat,
             lat_0=24.75, lon_0=134.0, lat_1=-10, lat_2=-40,
             rsphere=(6378137.00,6356752.3142),
             projection='lcc', resolution=resolution,
@@ -92,8 +92,9 @@ class Oz:
             self.ax.axis('off')
 
 
-    def get_map(self):
-        return self.map
+    @property
+    def map(self):
+        return self._map
 
 
     def get_range(self):
@@ -113,14 +114,14 @@ class Oz:
 
         # Read shape
         nm = 'drainage'
-        self.map.readshapefile(re.sub('\\.shp$', '', FSHP_DRAINAGE),
+        self._map.readshapefile(re.sub('\\.shp$', '', FSHP_DRAINAGE),
                         nm, drawbounds=False)
 
         # Loop through shapes
-        shapes = getattr(self.map, nm)
+        shapes = getattr(self._map, nm)
         for shape in shapes:
             x, y = zip(*shape)
-            self.map.plot(x, y, marker=None, *args, **kwargs)
+            self._map.plot(x, y, marker=None, *args, **kwargs)
 
 
     def drawcoast(self, hires=False, *args, **kwargs):
@@ -140,27 +141,27 @@ class Oz:
         if hires:
             self.drawpolygons(re.sub('.shp', '', FSHP_COAST), *args, **kwargs)
         else:
-            self.map.drawcoastlines(*args, **kwargs)
+            self._map.drawcoastlines(*args, **kwargs)
 
 
     def drawrelief(self, *args, **kwargs):
         ''' plot shaded relief map '''
 
-        self.map.shadedrelief(*args, **kwargs)
+        self._map.shadedrelief(*args, **kwargs)
 
 
     def drawstates(self, *args, **kwargs):
         ''' plot states boundaries '''
-        self.map.drawstates(*args, **kwargs)
+        self._map.drawstates(*args, **kwargs)
 
 
     def drawpolygons(self, fshp, *args, **kwargs):
         ''' Draw polygon shapefile. Arguments sent to PatchCollection constructor  '''
         nm = os.path.basename(fshp)
-        self.map.readshapefile(fshp, nm, drawbounds = False)
+        self._map.readshapefile(fshp, nm, drawbounds = False)
 
         patches = []
-        for shape in getattr(self.map, nm):
+        for shape in getattr(self._map, nm):
             patches.append(Polygon(np.array(shape), True))
 
         self.ax.add_collection(PatchCollection(patches, *args, **kwargs))
@@ -173,15 +174,15 @@ class Oz:
             raise ValueError(('len(long) (%d) != '
                 'len(lat) (%d)') % (len(long), len(lat)))
 
-        x, y = self.map(long, lat)
-        self.map.plot(x, y, *args, **kwargs)
+        x, y = self._map(long, lat)
+        self._map.plot(x, y, *args, **kwargs)
 
 
     def set_lim(self, xlim, ylim):
         ''' Set a lat/lon box range '''
 
         # Set lim to map
-        xxlim, yylim = self.map(np.sort(xlim),np.sort(ylim))
+        xxlim, yylim = self._map(np.sort(xlim),np.sort(ylim))
 
         self.ax.set_xlim(np.sort(xxlim))
         self.ax.set_ylim(np.sort(yylim))
