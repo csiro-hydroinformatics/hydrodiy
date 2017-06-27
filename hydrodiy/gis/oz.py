@@ -8,19 +8,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 from matplotlib.collections import PatchCollection
-from matplotlib.patches import PathPatch
 
 from mpl_toolkits import basemap
 
 # Decompress australia shoreline shapefile
-F_HYGIS_DATA = pkg_resources.resource_filename(__name__, 'data')
-FSHP_COAST = os.path.join(F_HYGIS_DATA, 'australia_coastline_simplified.shp')
-FSHP_DRAINAGE = os.path.join(F_HYGIS_DATA, 'drainage_divisions_lines_simplified.shp')
-
-if not os.path.exists(FSHP_COAST):
-    tar = tarfile.open(re.sub('shp', 'tar.gz', FSHP_COAST))
-    for item in tar:
-        tar.extract(item, F_HYGIS_DATA)
+FDATA = pkg_resources.resource_filename(__name__, 'data')
+FCOAST10 = os.path.join(FDATA, 'ne_10m_admin_0_countries_australia.shp')
+FCOAST50 = os.path.join(FDATA, 'ne_50m_admin_0_countries_australia.shp')
+FDRAINAGE = os.path.join(FDATA, 'drainage_divisions_lines_simplified.shp')
 
 REGIONS = ['CAPEYORK', 'AUS', 'COASTALNSW', \
                     'MDB', 'VIC+TAS', 'PERTH', 'QLD']
@@ -112,9 +107,13 @@ class Oz:
     def drawdrainage(self, *args, **kwargs):
         ''' plot drainage divisions for Australia only '''
 
+        # Adding default color to drainage
+        if not 'color' in kwargs:
+            kwargs['color'] = 'k'
+
         # Read shape
         nm = 'drainage'
-        self._map.readshapefile(re.sub('\\.shp$', '', FSHP_DRAINAGE),
+        self._map.readshapefile(re.sub('\\.shp$', '', FDRAINAGE),
                         nm, drawbounds=False)
 
         # Loop through shapes
@@ -124,24 +123,32 @@ class Oz:
             self._map.plot(x, y, marker=None, *args, **kwargs)
 
 
-    def drawcoast(self, hires=False, *args, **kwargs):
+    def drawcoast(self, hires=False, edgecolor='black', \
+            facecolor='none', alpha=1.):
         ''' plot coast line
 
             Parameters
             -----------
             hires : bool
                 Use high resolution  boundary shapfile
-                FEATURE DISABLED AT THE MOMENT
+            facecolor : str
+                Filling color of the Australian continent
+            edgecolor : str
+                Color of the coast line
+            alpha : float
+                Transparency in [0, 1]
         '''
 
-        # Avoids confusion between hires and other arguments
-        if not isinstance(hires, bool):
-            raise ValueError('hires is not a boolean')
-
         if hires:
-            self.drawpolygons(re.sub('.shp', '', FSHP_COAST), *args, **kwargs)
+            self.drawpolygons(re.sub('.shp', '', FCOAST10), \
+                facecolor=facecolor, \
+                edgecolor=edgecolor, \
+                alpha=alpha)
         else:
-            self._map.drawcoastlines(*args, **kwargs)
+            self.drawpolygons(re.sub('.shp', '', FCOAST50), \
+                facecolor=facecolor, \
+                edgecolor=edgecolor, \
+                alpha=alpha)
 
 
     def drawrelief(self, *args, **kwargs):
@@ -155,16 +162,31 @@ class Oz:
         self._map.drawstates(*args, **kwargs)
 
 
-    def drawpolygons(self, fshp, *args, **kwargs):
+    def drawpolygons(self, shp, \
+                facecolor='none', \
+                edgecolor='k',\
+                alpha=1., \
+                hatch=None):
         ''' Draw polygon shapefile. Arguments sent to PatchCollection constructor  '''
-        nm = os.path.basename(fshp)
-        self._map.readshapefile(fshp, nm, drawbounds = False)
+        nm = os.path.basename(shp)
+        self._map.readshapefile(shp, nm, drawbounds = False)
 
-        patches = []
         for shape in getattr(self._map, nm):
-            patches.append(Polygon(np.array(shape), True))
+            # plot contour
+            x, y = zip(*shape)
+            self._map.plot(x, y, marker=None, \
+                    color=edgecolor, alpha=alpha)
 
-        self.ax.add_collection(PatchCollection(patches, *args, **kwargs))
+            # plot interior
+            poly = Polygon(np.array(shape), closed=True,\
+                    ec='none', \
+                    fc=facecolor, \
+                    alpha=alpha, \
+                    hatch=hatch)
+            self.ax.add_patch(poly)
+
+        #pcoll = PatchCollection(patches)
+        #self.ax.add_collection(pcoll)
 
 
     def plot(self, long, lat, *args, **kwargs):

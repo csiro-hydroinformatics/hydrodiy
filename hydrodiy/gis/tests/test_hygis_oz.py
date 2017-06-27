@@ -58,12 +58,12 @@ class OzTestCase(unittest.TestCase):
     def test_oz_coast_hires(self):
         plt.close('all')
         om = Oz()
-        om.drawcoast(hires=True, color='k')
+        om.drawcoast(hires=True)
         fp = os.path.join(self.ftest, 'oz_coast_hires.png')
         plt.savefig(fp)
 
 
-    def test_oz_(self):
+    def test_oz(self):
         plt.close('all')
         fig, ax = plt.subplots()
 
@@ -91,7 +91,7 @@ class OzTestCase(unittest.TestCase):
         except IOError as err:
             self.assertTrue(str(err) == 'decoder jpeg not available')
 
-        om.drawcoast(color='blue')
+        om.drawcoast(edgecolor='blue')
         om.drawstates(color='red', linestyle='--')
 
         fp = os.path.join(self.ftest, 'oz_relief.png')
@@ -130,8 +130,7 @@ class OzTestCase(unittest.TestCase):
     def test_oz_coast_style(self):
         plt.close('all')
         om = Oz()
-        om.drawcoast(linestyle='-.', color='b')
-        om.drawstates()
+        om.drawcoast(edgecolor='r', facecolor='b', alpha=0.1)
         fp = os.path.join(self.ftest, 'oz_coast_style.png')
         plt.savefig(fp)
 
