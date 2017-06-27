@@ -130,7 +130,8 @@ class OzTestCase(unittest.TestCase):
     def test_oz_coast_style(self):
         plt.close('all')
         om = Oz()
-        om.drawcoast(edgecolor='r', facecolor='b', alpha=0.1)
+        om.drawcoast(linestyle=':', linewidth=3, \
+            edgecolor='r', facecolor='b', alpha=0.5)
         fp = os.path.join(self.ftest, 'oz_coast_style.png')
         plt.savefig(fp)
 

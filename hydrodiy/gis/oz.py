@@ -124,7 +124,8 @@ class Oz:
 
 
     def drawcoast(self, hires=False, edgecolor='black', \
-            facecolor='none', alpha=1.):
+            facecolor='none', alpha=1., \
+            linestyle='-', linewidth=1.):
         ''' plot coast line
 
             Parameters
@@ -137,17 +138,25 @@ class Oz:
                 Color of the coast line
             alpha : float
                 Transparency in [0, 1]
+            linestyle : str
+                Line style
+            linewidth : float
+                Line width
         '''
 
         if hires:
             self.drawpolygons(re.sub('.shp', '', FCOAST10), \
                 facecolor=facecolor, \
                 edgecolor=edgecolor, \
+                linewidth=linewidth, \
+                linestyle=linestyle, \
                 alpha=alpha)
         else:
             self.drawpolygons(re.sub('.shp', '', FCOAST50), \
                 facecolor=facecolor, \
                 edgecolor=edgecolor, \
+                linewidth=linewidth, \
+                linestyle=linestyle, \
                 alpha=alpha)
 
 
@@ -165,6 +174,8 @@ class Oz:
     def drawpolygons(self, shp, \
                 facecolor='none', \
                 edgecolor='k',\
+                linewidth=1., \
+                linestyle='-', \
                 alpha=1., \
                 hatch=None):
         ''' Draw polygon shapefile. Arguments sent to PatchCollection constructor  '''
@@ -175,7 +186,9 @@ class Oz:
             # plot contour
             x, y = zip(*shape)
             self._map.plot(x, y, marker=None, \
-                    color=edgecolor, alpha=alpha)
+                    color=edgecolor, alpha=alpha,\
+                    linestyle=linestyle, \
+                    linewidth=linewidth)
 
             # plot interior
             poly = Polygon(np.array(shape), closed=True,\
