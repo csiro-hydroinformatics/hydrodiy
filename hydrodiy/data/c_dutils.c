@@ -81,3 +81,35 @@ int c_aggregate(int nval, int oper, int maxnan, int * aggindex,
 }
 
 
+/*
+* code pasted from
+* https://stackoverflow.com/questions/24294192/computing-the-binomial-coefficient-in-c
+*/
+long long c_combi(int n, int k)
+{
+    long long ans=1;
+    int j=1;
+
+    /* Skip if number  is too high */
+    if(k>30 || n-k>30){
+        return -1;
+    }
+
+    k = k>n-k ? n-k : k;
+
+    for(;j<=k;j++,n--)
+    {
+        if(n%j==0)
+        {
+            ans *= n/j;
+        }else
+            if(ans%j==0)
+            {
+                ans = ans/j*n;
+            }else
+            {
+                ans = (ans*n)/j;
+            }
+    }
+    return ans;
+}

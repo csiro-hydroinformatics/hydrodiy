@@ -101,28 +101,13 @@ def atmpressure(altitude):
 
     Parameters
     -----------
-    altitude : numpy.ndarray
+    altitude : float
         Altitude from mean sea level (m)
 
     Returns
     -----------
-    P : numpy.ndarray
+    P : float
         Atmospheric pressure
-
-    Example
-    -----------
-    >>> import numpy as np
-    >>> from hydrodiy.hydata import dutils
-    >>> alt = np.linspace(0, 1000, 10)
-    >>> dutils.to_seasonal(alt)
-    1980-01-01     3
-    1980-01-02     6
-    1980-01-03     9
-    1980-01-04    12
-    1980-01-05    15
-    1980-01-06    18
-    1980-01-07    21
-
     '''
 
     g = 9.80665 # m/s^2 - Gravity acceleration
@@ -177,6 +162,7 @@ def aggregate(aggindex, inputs, oper=0, maxnan=0):
     if ierr>0:
         raise ValueError('c_hydrodiy_data.aggregate returns {0}'.format(ierr))
 
+    # Truncate the outputs to keep only the valid part of the vector
     outputs = outputs[:iend[0]]
 
     return outputs
@@ -185,6 +171,9 @@ def aggregate(aggindex, inputs, oper=0, maxnan=0):
 def lag(data, lag):
     ''' Lag a numpy array and adds NaN at the beginning or end of the lagged data
         depending on the lag value. The lag is introduced using numpy.roll
+
+        This is equivalent to pandas.DataFrame.shift function, but for Numpy
+        arrays.
 
     Parameters
     -----------
@@ -217,7 +206,7 @@ def lag(data, lag):
 
 def monthly2daily(se, minthreshold=0.):
     ''' Convert monthly series to daily with a flat
-    disaggregation
+    disaggregation. Takes care of the boundary effects.
 
     Parameters
     -----------

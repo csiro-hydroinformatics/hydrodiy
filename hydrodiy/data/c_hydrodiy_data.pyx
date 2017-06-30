@@ -16,12 +16,19 @@ cdef extern from 'c_dutils.h':
     int c_aggregate(int nval, int oper, int maxnan, int * aggindex,
         double * inputs, double * outputs, int * iend)
 
+cdef extern from 'c_dutils.h':
+    long long c_combi(int n, int k)
+
 cdef extern from 'c_qualitycontrol.h':
     int c_islin(int nval, double thresh, double tol, int npoints,
         double * inputs, int * islin)
 
 def __cinit__(self):
     pass
+
+
+def combi(int n, int k):
+    return c_combi(n, k)
 
 
 def isleapyear(int year):

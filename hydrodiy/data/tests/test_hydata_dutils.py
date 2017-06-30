@@ -5,7 +5,11 @@ import numpy as np
 import datetime
 import pandas as pd
 
+from scipy.special import comb
+
 from hydrodiy.data import dutils
+import c_hydrodiy_data as chd
+
 
 class UtilsTestCase(unittest.TestCase):
 
@@ -162,6 +166,19 @@ class UtilsTestCase(unittest.TestCase):
         se2 = sed.resample('MS', how='sum')
         self.assertTrue(np.allclose(se.values, se2.values))
 
+
+    def test_combi(self):
+        ''' Test number of combinations '''
+
+        for n in range(1, 65):
+            for k in range(n):
+                c1 = comb(n, k)
+                c2 = chd.combi(n, k)
+                ck = np.allclose(c1, c2)
+                if c2>0:
+                    if not ck:
+                        import pdb; pdb.set_trace()
+                    self.assertTrue(ck)
 
 if __name__ == "__main__":
     unittest.main()
