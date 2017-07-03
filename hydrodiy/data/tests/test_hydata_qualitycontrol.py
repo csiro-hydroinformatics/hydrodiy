@@ -39,8 +39,21 @@ class QualityControlTestCase(unittest.TestCase):
         data[3:17] = np.linspace(0, 1, 14)
 
         status = qc.islinear(data, npoints=1)
-        expected = np.array([False] * data.shape[0])
-        expected[3:17] = True
+        expected = np.zeros(data.shape[0])
+        expected[3:17] = 1
+
+        self.assertTrue(np.allclose(status, expected))
+
+
+    def test_islinear_1d_constant(self):
+        ''' Test is linear 1d against constant data '''
+        nval = 20
+        data = np.random.normal(size=nval)
+        data[3:17] = 100
+
+        status = qc.islinear(data, npoints=1)
+        expected = np.zeros(data.shape[0])
+        expected[3:17] = 2
 
         self.assertTrue(np.allclose(status, expected))
 
@@ -58,8 +71,8 @@ class QualityControlTestCase(unittest.TestCase):
         for npoints in range(2, 5):
             status = qc.islinear(data, npoints)
 
-            expected = np.array([False] * data.shape[0])
-            expected[i1:i2+1] = True
+            expected = np.zeros(data.shape[0])
+            expected[i1:i2+1] = 1
 
             ck = np.allclose(status, expected)
             self.assertTrue(ck)
@@ -72,8 +85,8 @@ class QualityControlTestCase(unittest.TestCase):
         data = np.random.normal(size=nval)
         data[5:9] = 0.
         status = qc.islinear(data, npoints=1, thresh=data.min()-1)
-        expected = np.array([False] * data.shape[0])
-        expected[5:9] = True
+        expected = np.zeros(data.shape[0])
+        expected[5:9] = 2
         self.assertTrue(np.allclose(status, expected))
 
         status = qc.islinear(data, npoints=1, thresh=0.)
@@ -86,9 +99,9 @@ class QualityControlTestCase(unittest.TestCase):
         data = np.array([0.]*20+[0., 1., 2., 3., 4., 5., 3.]+[0.]*20)
         for npoints in range(1, 7):
             status = qc.islinear(data, npoints=npoints)
-            expected = np.array([False] * data.shape[0])
+            expected = np.zeros(data.shape[0])
             if npoints<=4:
-                expected[20:26] = True
+                expected[20:26] = 1
 
             ck = np.allclose(status, expected)
             self.assertTrue(ck)
@@ -107,18 +120,14 @@ class QualityControlTestCase(unittest.TestCase):
         for npoints in range(1, 10):
             status = qc.islinear(data, npoints)
 
-            expected = np.zeros(nval).astype(bool)
+            expected = np.zeros(nval)
             if npoints <= 3:
-                expected[ia1:ia2+1] = True
+                expected[ia1:ia2+1] = 1
 
             if npoints <= 4:
-                expected[ib1:ib2+1] = True
+                expected[ib1:ib2+1] = 1
 
             ck = np.allclose(status, expected)
-            if not ck:
-                print(status.astype(int))
-                print(expected.astype(int))
-                import pdb; pdb.set_trace()
             self.assertTrue(ck)
 
 

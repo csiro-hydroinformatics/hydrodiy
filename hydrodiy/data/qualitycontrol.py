@@ -21,7 +21,9 @@ def islinear(data, npoints=3, tol=1e-6, thresh=0.):
     Returns
     -----------
     linstatus : numpy.ndarray
-        Booleans stating if current point is interpolated or not
+        Linear interpolation flag:
+        * 1 = linear trend
+        * 2 = constant trend
 
     Example
     -----------
@@ -51,9 +53,6 @@ def islinear(data, npoints=3, tol=1e-6, thresh=0.):
 
     if ierr>0:
         raise ValueError('c_hydrodiy_data.islin returns {0}'.format(ierr))
-
-    # convert to bool
-    islin = islin.astype(bool)
 
     return islin
 
