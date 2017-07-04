@@ -58,6 +58,20 @@ class QualityControlTestCase(unittest.TestCase):
         self.assertTrue(np.allclose(status, expected))
 
 
+    def test_islinear_1d_nan(self):
+        ''' Test is linear 1d against nan data '''
+        nval = 20
+        data = np.random.normal(size=nval)
+        data[3:17] = np.linspace(0, 1, 14)
+        data[12:16] = np.nan
+
+        status = qc.islinear(data, npoints=1)
+        expected = np.zeros(data.shape[0])
+        expected[3:12] = 1
+
+        self.assertTrue(np.allclose(status, expected))
+
+
     def test_islinear_1d_linspace_npoints(self):
         ''' Test is linear 1d against the numpy linspace function '''
         nval = 30

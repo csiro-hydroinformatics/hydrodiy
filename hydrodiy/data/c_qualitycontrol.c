@@ -9,7 +9,11 @@ int c_islin(int nval, double thresh, double tol, int npoints,
 
     /* initialisation */
     vprec = data[0];
+    if(isnan(vprec)) vprec = thresh-1;
+
     vcur = data[1];
+    if(isnan(vcur)) vcur = thresh-1;
+
     count = 0;
     start = 0;
 
@@ -20,11 +24,12 @@ int c_islin(int nval, double thresh, double tol, int npoints,
     for(i=2; i<nval; i++)
     {
         vnext = data[i];
+
         dist = fabs(vcur-(vprec+vnext)/2);
         islin[i] = 0;
 
         /* check linearity if vcur is freater than thresh */
-        if(dist<tol && vcur>thresh)
+        if(dist<tol && vcur>thresh && ~isnan(dist))
         {
             /* Start a new event
             * (i-2 and not i because vcur corresponds to i-1,
