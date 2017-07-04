@@ -25,15 +25,34 @@ COLORS = putils.COLORS10
 
 class Simplot(object):
 
-    def __init__(self, \
-        obs, \
-        sim, \
+    def __init__(self, obs, sim, \
         sim_name = None,
         fig = None, \
         nfloods = 3, \
         wateryear_start =7, \
         ndays_beforepeak = 30, \
         ndays_afterpeak = 60):
+        ''' Object to generate a diagnostic plot for flow simulations
+
+        Parameters
+        -----------
+        obs : pandas.Series
+            Times series of observed data
+        sim : pandas.Series
+            Times series of simulated data
+        sim_name : str
+            Name of simulated data to be used on the plots
+        fig : matplotlib.Figure
+            Figure to draw plots on
+        nfloods : int
+            Number of flood events to draw
+        wateryear_start : int
+            Month of water year start
+        ndays_beforepeak : int
+            Number of days preceeding the peak in flood plots
+        ndays_afterpeak : int
+            Number of days following the peak in flood plots
+        '''
 
         # Properties
         self.wateryear_start = wateryear_start
