@@ -77,7 +77,7 @@ class GridplotTestCase(unittest.TestCase):
 
             ax = plt.subplot(gs[:,0])
             om = Oz(ax=ax)
-            bm = om.get_map()
+            bm = om.map
 
             sm2 = sm.clone()
             if re.search('decile|moisture', varname):
@@ -87,7 +87,7 @@ class GridplotTestCase(unittest.TestCase):
                 sm2.data = sm2.data - 50
 
             cfg = GridplotConfig(varname)
-            contf = gplot(sm, om.get_map(), cfg)
+            contf = gplot(sm, om.map, cfg)
 
             cbar_ax = plt.subplot(gs[1, 2])
             gbar(cbar_ax, cfg, contf)
