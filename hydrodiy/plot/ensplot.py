@@ -47,7 +47,7 @@ def pitmetrics(obs, fcst):
             obs.shape[0], fcst.shape[0]))
 
     # Compute skill scores
-    _, alphak, _, alpha = metrics.alpha(obs, fcst)
+    _, alpha = metrics.alpha(obs, fcst)
     alpha = alpha*100
     crps, _ = metrics.crps(obs, fcst)
     crps_ss = (1.-crps[0]/crps[3])*100
@@ -58,7 +58,7 @@ def pitmetrics(obs, fcst):
     return alpha, crps_ss, pits
 
 
-def pitplot(pits, alpha, crps_ss, ax=None, labelaxis=True):
+def pitplot(pits, alpha, crps_ss, ax=None, labelaxis=True, transp=0.4):
     ''' Draw a pit plot
 
     Parameters
@@ -73,6 +73,8 @@ def pitplot(pits, alpha, crps_ss, ax=None, labelaxis=True):
         Matplotlib ax to draw on
     labelaxis : bool
         Show labels on axis
+    transp : float
+        Ax transparency
     '''
 
     # Get axis
@@ -101,6 +103,8 @@ def pitplot(pits, alpha, crps_ss, ax=None, labelaxis=True):
     else:
         ax.set_xticks([])
         ax.set_yticks([])
+
+    ax.patch.set_alpha(transp)
 
 
 
@@ -223,7 +227,8 @@ class MonthlyEnsplot(object):
         ax.plot(x, qobs, '-o', linewidth=2, \
                 color=OBSLINECOLOR, \
                 markeredgecolor=OBSLINECOLOR, \
-                markerfacecolor=OBSMARKERCOLOR)
+                markerfacecolor=OBSMARKERCOLOR, \
+                label='Obs')
 
         # Decorate
         qmin = qobs[qobs>0].min()
