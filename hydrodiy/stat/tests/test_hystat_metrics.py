@@ -138,13 +138,15 @@ class MetricsTestCase(unittest.TestCase):
     def test_alpha(self):
         nforc = 100
         nens = 200
+        nrepeat = 50
 
-        obs = np.linspace(0, 1, nforc)
-        ens = np.repeat(np.linspace(0, 1, nens)[None, :], nforc, 0)
+        for i in range(nrepeat):
+            obs = np.linspace(0, 1, nforc)
+            ens = np.repeat(np.linspace(0, 1, nens)[None, :], nforc, 0)
 
-        kst, kpv, cst, cpv = metrics.alpha(obs, ens)
-        self.assertTrue(kpv>1.-1e-4)
-        self.assertTrue(cpv>1.-1e-4)
+            for type in ['CV', 'KS']:
+                st, pv = metrics.alpha(obs, ens)
+                self.assertTrue(pv>1.-1e-3)
 
 
     def test_iqr(self):
@@ -161,7 +163,7 @@ class MetricsTestCase(unittest.TestCase):
         ref = ts + spread*2
 
         iqr = metrics.iqr(ens, ref)
-        expected = np.array([100./3, 2.67607, 5.35215])
+        expected = np.array([100./3, 2.67607, 5.35215, 0.5])
         self.assertTrue(np.allclose(iqr, expected, atol=1e-4))
 
 

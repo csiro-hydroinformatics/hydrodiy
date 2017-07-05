@@ -170,9 +170,9 @@ def cramer_von_mises_test(data):
     return cvstat, pvalue
 
 
-def alpha(obs, ens, cst=0.3):
-    ''' Score computing the Pvalue of the Kolmogorov-Smirnov test
-    and Cramer-Von Mises test
+def alpha(obs, ens, cst=0.3, type='CV'):
+    ''' Score computing the Pvalue of the Cramer Von-Mises test (CV) or
+    Kolmogorov-Smirnov test (KS)
 
     Parameters
     -----------
@@ -182,17 +182,15 @@ def alpha(obs, ens, cst=0.3):
         simulated data, [n,p] array
     cst : float
         Constant used in the computation of the plotting position
+    type : str
+        Type of alpha score. CV is Cramer Von-Mises, KS is Kolmogorov-Smirnov
 
     Returns
     -----------
-    kstat : float
-        KS test statistic
-    kpvalue : float
-        KS test pvalue
-    cstat : float
-        Cramer Von Mises test statistic
-    cpvalue : float
-        Cramer Von Mises test pvalue
+    stat : float
+        Test statistic (low values mean that the test is passed)
+    pvalue : float
+        Test pvalue (values close to one mean that the test is passed)
     '''
     # Check data
     obs, ens, nforc, nens = __check_ensemble_data(obs, ens)
@@ -200,13 +198,16 @@ def alpha(obs, ens, cst=0.3):
     # Compute pit
     pits = pit(obs, ens)
 
-    # KS test
-    kstat, kpvalue = kstest(pits, 'uniform')
+    if type == 'KS':
+        # KS test
+        stat, pvalue = kstest(pits, 'uniform')
+    elif type == 'CV':
+        # Cramer Von-Mises test
+        stat, pvalue = cramer_von_mises_test(pits)
+    else:
+        raise ValueError('Expected test type in [CV/KS], got {0}'.format(type))
 
-    # Cramer Von-Mises test
-    cstat, cpvalue = cramer_von_mises_test(pits)
-
-    return kstat, kpvalue, cstat, cpvalue
+    return stat, pvalue
 
 
 def iqr(ens, ref, coverage=50.):
@@ -225,22 +226,38 @@ def iqr(ens, ref, coverage=50.):
     Returns
     -----------
     skill : float
-        IQR skill score computed as (see below)
-        (clim-score)/(clim+score)
+        IQR skill score computed as
+        1/n Sum (clim[i]-score[i])/(clim[i]+score[i])
+
+        Interpretation of this scores is:
+        - a value close to 100 indicates perfect IQR, or that the forecast is
+          close to a deterministic ensemble
+        - a value close to 0 indicates same IQR than climatology
+        - a value close to -100 indicates that climatologyis close to a deterministic
+          ensemble
+
     score : float
         IQR score
+
     clim : float
         IQR score of climatology
+
+    ratio : float
+        IQR ratio computed as
+        1/n Sum score[i]/clim[i]
+
+        Interpretation of this scores is:
+        - a value close to 0 indicates perfect IQR, or that the forecast is
+          close to a deterministic ensemble
+        - a value close to 1 indicates same IQR than climatology
+        - a value close to +infinity indicates that climatologyis close to a deterministic
+          ensemble
     '''
 
     # Check data
     ens = np.atleast_2d(ens)
     ref = np.atleast_2d(ref)
-    nforc, nens = ens.shape
-
-    if ens.shape != ref.shape:
-        raise ValueError('Expected ref with dim equal to {0}, got{1}'.format( \
-            ens.shape, ref.shape))
+    nforc, _ = ens.shape
 
     # Initialise
     iqr = np.zeros((nforc, 3))
@@ -251,17 +268,18 @@ def iqr(ens, ref, coverage=50.):
 
     # Loop through forecasts
     for i in range(nforc):
-        iqr_clim[i, :2] = np.percentile(ref[i,:], perc)
+        iqr_clim[i, :2] = np.nanpercentile(ref[i,:], perc)
         iqr_clim[i, 2] = iqr_clim[i,1]-iqr_clim[i,0]
 
-        iqr[i, :2] = np.percentile(ens[i,:], perc)
+        iqr[i, :2] = np.nanpercentile(ens[i,:], perc)
         iqr[i, 2] = iqr[i,1]-iqr[i,0]
 
     skill = 100*np.mean((iqr_clim[:, 2]-iqr[:, 2])/(iqr_clim[:, 2]+iqr[:, 2]))
+    ratio = np.mean(iqr[:, 2]/iqr_clim[:, 2])
     score = np.mean(iqr[:, 2])
     clim = np.mean(iqr_clim[:, 2])
 
-    return skill, score, clim
+    return skill, score, clim, ratio
 
 
 def bias(obs, sim, transform='Identity'):
