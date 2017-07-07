@@ -181,18 +181,61 @@ class MetricsTestCase(unittest.TestCase):
             self.assertTrue(np.allclose(bias, expected))
 
 
-    def test_nse(self):
-        obs = np.arange(0, 200)
+    def test_nse_deterministic(self):
+        ''' Testing regular deterministic NSE '''
+        obs = np.arange(0, 200)+100.
+        bias = 1.
 
         for name in ['Identity', 'Log', 'Reciprocal']:
             trans = metrics.get_transform(name)
             tobs = trans.forward(obs)
-            tsim = tobs + 2
+            tsim = tobs + bias
             sim = trans.backward(tsim)
-            nse = metrics.nse(obs, sim, name)
+            nse, accur, sharp = metrics.nse(obs, sim, name)
 
-            expected = 1-4.*len(obs)/np.sum((tobs-np.mean(tobs))**2)
+            expected = 1-bias**2*len(obs)/np.sum((tobs-np.mean(tobs))**2)
             self.assertTrue(np.allclose(nse, expected))
+            self.assertTrue(np.allclose(accur, expected))
+            self.assertTrue(np.allclose(sharp, 1.))
+
+
+    def test_nse_probabilistic(self):
+        ''' Testing probabilistic NSE '''
+        nens = 10000
+        nval = 200
+        obs = np.linspace(0.1, 0.2, nval)
+
+        bias = 1.
+        sig = 0.5
+        ff = sutils.ppos(nval)
+
+        for name in ['Identity', 'Log', 'Reciprocal']:
+            trans = metrics.get_transform(name)
+            tobs = trans.forward(obs)
+            ens = norm.ppf(ff)
+            me = np.mean(ens)
+            se = np.std(ens)
+            ens = (ens-me)/se
+            tsim = tobs[:, None]+bias+sig*ens[None, :]
+            sim = trans.backward(tsim)
+            nse, accur, sharp = metrics.nse(obs, sim, name)
+
+            sso = np.sum((tobs-np.mean(tobs))**2)
+            expected_accur = 1-nval*bias**2/sso
+            expected_sharp = 1-nval*sig**2/sso
+            expected_nse = 1-nval*(sig**2+bias**2)/sso
+
+            ck = np.allclose(nse, expected_nse, atol=1e-3)
+            self.assertTrue(ck)
+
+            ck = np.allclose(accur, expected_accur, atol=1e-3)
+            self.assertTrue(ck)
+
+            ck = np.allclose(sharp, expected_sharp, atol=1e-3)
+            self.assertTrue(ck)
+
+            self.assertTrue(accur>nse)
+            self.assertTrue(sharp>nse)
 
 
 if __name__ == "__main__":

@@ -322,14 +322,16 @@ def bias(obs, sim, transform='Identity'):
 
 
 def nse(obs, sim, transform='Identity'):
-    ''' Compute Nash-Sucliffe efficiency
+    ''' Compute Nash-Sucliffe efficiency. If the sim data is an
+    ensemble, uses the NSE probabilistic formulation introduced by
+    (find the reference)
 
     Parameters
     -----------
     obs : numpy.ndarray
         obs data, [n] or [n,1] array
     sim : numpy.ndarray
-        simulated data, [n] or [n,1] array
+        simulated data, [n], [n,1], or [n,p] array
     transform : str
         Name of data transformation: Identity, Log or Reciprocal
 
@@ -342,24 +344,52 @@ def nse(obs, sim, transform='Identity'):
     obs = np.atleast_1d(obs)
     sim = np.atleast_1d(sim)
 
-    if obs.shape != sim.shape:
-        raise ValueError('Expected sim with dim equal to {0}, got{1}'.format( \
-            obs.shape, sim.shape))
+    if obs.shape[0] != sim.shape[0]:
+        raise ValueError('Expected sim with dim equal to {0}, got {1}'.format( \
+            obs.shape[0], sim.shape[0]))
+
+    # Check if sim is an ensemble
+    ens = False
+    if sim.ndim>1:
+        if sim.shape[1]>1:
+            ens = True
 
     # Transform
     trans = get_transform(transform)
     tobs = trans.forward(obs)
     tsim = trans.forward(sim)
 
-    # Compute
-    idx = pd.notnull(tobs) & pd.notnull(tsim)
-    err1 = np.sum((tsim[idx]-tobs[idx])**2)
+    # Select non null obs data
+    idx = pd.notnull(tobs)
+
+    if ens:
+        # Ensures that at least 1 simulated value is not null
+        idx = idx & ~np.all(pd.isnull(tsim), axis=1)
+
+        # Ensemble means
+        ms = np.mean(tsim[idx], 1)
+
+        # Ensemble variance
+        vs = np.var(tsim[idx], 1)
+
+        # Compute probabilistic SSE
+        errs_accur = np.sum((ms-tobs[idx])**2)
+        errs_sharp = np.sum(vs)
+
+    else:
+        # Compute regular SSE
+        idx = idx & pd.notnull(tsim)
+        errs_accur = np.sum((tsim[idx]-tobs[idx])**2)
+        errs_sharp = 0.
 
     mo = np.mean(tobs[idx])
-    err2 = np.sum((mo-tobs[idx])**2)
-    nse_value = 1-err1/err2
+    erro = np.sum((mo-tobs[idx])**2)
 
-    return nse_value
+    value = 1-(errs_sharp+errs_accur)/erro
+    accur = 1-errs_accur/erro
+    sharp = 1-errs_sharp/erro
+
+    return value, accur, sharp
 
 
 
