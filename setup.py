@@ -33,6 +33,7 @@ ext_modules = [
         sources=[
             'hydrodiy/stat/c_hydrodiy_stat.pyx',
             'hydrodiy/stat/c_crps.c',
+            'hydrodiy/stat/c_dscore.c',
             'hydrodiy/stat/c_olsleverage.c',
             'hydrodiy/stat/c_ar1.c'
         ],

@@ -8,6 +8,8 @@ from scipy.stats import norm
 from hydrodiy.stat import metrics
 from hydrodiy.stat import transform, sutils
 
+import c_hydrodiy_stat
+
 np.random.seed(0)
 
 class MetricsTestCase(unittest.TestCase):
@@ -236,6 +238,26 @@ class MetricsTestCase(unittest.TestCase):
 
             self.assertTrue(accur>nse)
             self.assertTrue(sharp>nse)
+
+
+    def test_ensrank(self):
+        ''' Testing ensrank C function  against data from
+        Weigel and Mason (2011) '''
+
+        sim = np.array([[22, 23, 26, 27, 32], \
+            [28, 31, 33, 34, 36], \
+            [24, 25, 26, 27, 28]], dtype=np.float64)
+
+        fmat = np.zeros((3, 3), dtype=np.float64)
+        ranks = np.zeros(3, dtype=np.float64)
+
+        fmat_expected = np.array([[0., 0.08, 0.44], \
+                [0.92, 0., 0.98], \
+                [0.56, 0.02, 0.]])
+
+        c_hydrodiy_stat.ensrank(sim, fmat, ranks)
+
+        import pdb; pdb.set_trace()
 
 
 if __name__ == "__main__":
