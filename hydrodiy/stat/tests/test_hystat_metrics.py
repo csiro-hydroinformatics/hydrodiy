@@ -251,13 +251,16 @@ class MetricsTestCase(unittest.TestCase):
         fmat = np.zeros((3, 3), dtype=np.float64)
         ranks = np.zeros(3, dtype=np.float64)
 
+        c_hydrodiy_stat.ensrank(sim, fmat, ranks)
+
         fmat_expected = np.array([[0., 0.08, 0.44], \
                 [0.92, 0., 0.98], \
                 [0.56, 0.02, 0.]])
+        self.assertTrue(np.allclose(fmat, fmat_expected))
 
-        c_hydrodiy_stat.ensrank(sim, fmat, ranks)
+        ranks_expected = [1., 3., 2.]
+        self.assertTrue(np.allclose(ranks, ranks_expected))
 
-        import pdb; pdb.set_trace()
 
 
 if __name__ == "__main__":

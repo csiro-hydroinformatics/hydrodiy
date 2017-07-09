@@ -23,8 +23,9 @@ static int compare(const void* p1, const void* p2)
 int c_ensrank(int nval, int ncol, double* sim, \
         double * fmat, double * ranks)
 {
-	int i1, i2, j, k, sumrank, ierr=0;
-	double *ensemb, value, u=0, F=0, eps=1e-10;
+	int i1, i2, j, k, k1, k2, ierr=0;
+	double *ensemb, value, u=0, F=0, eps=1e-8;
+    double sumrank;
 
 	/* Initialisations */
     ensemb = (double*)malloc(2*ncol*sizeof(double));
@@ -62,16 +63,30 @@ int c_ensrank(int nval, int ncol, double* sim, \
             for(j=0; j<ncol; j++)
             {
                 value = sim[ncol*i1+j];
+
+                /* k1 and k2 are the start and end of the ensemble
+                * indices where members are equal to value */
+                k1 = -1;
+                k2 = -1;
                 for(k=0; k<2*ncol; k++)
-                    if(ensemb[k]>=value) break;
-                sumrank += (k+1);
+                {
+                    if(ensemb[k]>value-eps && k1<0)
+                        k1 = k;
+
+                    if(ensemb[k]>value+eps)
+                    {
+                        k2 = k-1;
+                        break;
+                    }
+                }
+                if(k2==-1) k2=2*ncol-1;
+
+                sumrank += (double)(k1+k2)/2+1;
             }
 
             /* Comparison function as per Equation (1) in Weigel and Mason,
              * 2011 */
             fmat[i1*nval+i2] = (double)(sumrank-(ncol+1)*ncol/2)/ncol/ncol;
-            fprintf(stdout, "[%d %d] sr=%d f=%0.4f\n",
-                i1+1, i2+1, sumrank, fmat[i1*nval+i2]);
         }
     }
 
