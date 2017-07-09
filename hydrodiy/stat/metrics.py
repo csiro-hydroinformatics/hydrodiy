@@ -392,4 +392,52 @@ def nse(obs, sim, transform='Identity'):
     return value, accur, sharp
 
 
+def dscore(obs, sim):
+    ''' Compute the discrimination score (D score) for continuous
+    forecasts as per
+
+    Weigel, Andreas P., and Simon J. Mason.
+    "The generalized discrimination score for ensemble forecasts."
+    Monthly Weather Review 139.9 (2011): 3069-3074.
+
+    Parameters
+    -----------
+    obs : numpy.ndarray
+        obs data, [n] or [n,1] array
+    sim : numpy.ndarray
+        simulated data, [n], [n,1], or [n,p] array
+
+    Returns
+    -----------
+    D : float
+        D score value
+    '''
+    # Check data
+    obs = np.atleast_1d(obs).astype(np.float64)
+    sim = np.atleast_1d(sim).astype(np.float64)
+
+    if sim.ndim != 2:
+        raise ValueError('Expected sim of dimension 2, '+\
+            'got {0}'.format(sim.shape))
+
+    nval, nens = sim.shape
+
+    if nens == 1:
+        # Compute ensemble rank for deterministic forecasts
+        franks = np.argsort(np.argsort(sim[:, 0]))
+    else:
+        # initialise data
+        fmat = np.zeros((nval, nval), dtype=np.float64)
+        franks = np.zeros(nval, dtype=np.float64)
+
+        # Compute ensemble rank for ensemble forecasts
+        c_hydrodiy_stat.ensrank(sim, fmat, franks)
+
+    # Compute obs rank
+    oranks = np.argsort(np.argsort(obs))
+
+    # Compute rank correlation
+    D = (np.corrcoef(oranks, franks)[0, 1]+1)/2
+
+    return D
 

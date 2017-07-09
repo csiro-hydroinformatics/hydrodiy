@@ -240,7 +240,7 @@ class MetricsTestCase(unittest.TestCase):
             self.assertTrue(sharp>nse)
 
 
-    def test_ensrank(self):
+    def test_ensrank_weigel_data(self):
         ''' Testing ensrank C function  against data from
         Weigel and Mason (2011) '''
 
@@ -253,15 +253,51 @@ class MetricsTestCase(unittest.TestCase):
 
         c_hydrodiy_stat.ensrank(sim, fmat, ranks)
 
-        fmat_expected = np.array([[0., 0.08, 0.44], \
+        fmat_expected = np.array([\
+                [0., 0.08, 0.44], \
                 [0.92, 0., 0.98], \
                 [0.56, 0.02, 0.]])
         self.assertTrue(np.allclose(fmat, fmat_expected))
 
-        ranks_expected = [1., 3., 2.]
+        ranks_expected = [0., 2., 1.]
         self.assertTrue(np.allclose(ranks, ranks_expected))
 
 
+    def test_ensrank_vector_data(self):
+        ''' Testing ensrank C function for vector data '''
+
+        nval = 100
+        sim = np.random.uniform(0, 1, (nval, 1))
+        fmat = np.zeros((nval, nval), dtype=np.float64)
+        ranks = np.zeros(nval, dtype=np.float64)
+
+        c_hydrodiy_stat.ensrank(sim, fmat, ranks)
+
+        # Zero on the diagonal
+        self.assertTrue(np.allclose(np.diag(fmat), np.zeros(nval)))
+
+        # Correct rank
+        ranks_expected = np.argsort(np.argsort(sim[:, 0]))
+        self.assertTrue(np.allclose(ranks, ranks_expected))
+
+        xx, yy = np.meshgrid(sim[:, 0], sim[:, 0])
+        fmat_expected = (xx>yy).astype(float).T
+        self.assertTrue(np.allclose(fmat, fmat_expected))
+
+
+    def test_dscore_perfect(self):
+        ''' Test dscore for perfect correlation '''
+        nval = 10
+        nens = 100
+        obs = np.arange(nval)
+
+        sim = obs[:, None] + np.random.uniform(-1e-3, 1e-3, size=(nval, nens))
+        D = metrics.dscore(obs, sim)
+        self.assertTrue(np.allclose(D, 1.))
+
+        sim = -obs[:, None] + np.random.uniform(-1e-3, 1e-3, size=(nval, nens))
+        D = metrics.dscore(obs, sim)
+        self.assertTrue(np.allclose(D, 0.))
 
 if __name__ == "__main__":
     unittest.main()

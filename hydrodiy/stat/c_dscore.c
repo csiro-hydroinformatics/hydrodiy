@@ -39,7 +39,7 @@ int c_ensrank(int nval, int ncol, double* sim, \
 	for(j=0;j<2*ncol;j++)
         ensemb[j] = 0.;
 
-    /* Loop though forecast ensembles to determine */
+    /* Loop though pairs of ensembles */
 	for(i1=0; i1<nval; i1++)
     {
 	    for(i2=0; i2<nval; i2++)
@@ -55,10 +55,10 @@ int c_ensrank(int nval, int ncol, double* sim, \
 			        ensemb[j] = sim[ncol*(i2-1)+j];
             }
 
-            /* sort combine ensemble */
+            /* sort combined ensemble */
             qsort(ensemb, 2*ncol, sizeof(double), compare);
 
-            /* Compute rank of first ensemble in combined */
+            /* Compute rank of first ensemble within combined */
             sumrank = 0;
             for(j=0; j<ncol; j++)
             {
@@ -93,7 +93,7 @@ int c_ensrank(int nval, int ncol, double* sim, \
     /* Compute ranks as per Equation (2) in Weigel and Mason, 2011 */
 	for(i1=0; i1<nval; i1++)
     {
-        ranks[i1] = 1.;
+        ranks[i1] = 0.;
 
 	    for(i2=0; i2<nval; i2++)
         {
