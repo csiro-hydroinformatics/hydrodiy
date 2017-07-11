@@ -24,12 +24,12 @@ int c_ensrank(int nval, int ncol, double* sim, \
         double * fmat, double * ranks)
 {
 	int i1, i2, j, k, k1, k2, ierr=0;
-	double value, value1, index, u=0, F=0, eps=1e-8;
+	double value, valueprev, index, u=0, F=0, eps=1e-8;
     double sumrank, thresh, ncold;
 
     double (*ensemb)[2];
 
-	/* Initialisations */
+	/* Initialisations of 2d array to store value and index */
     ensemb = malloc(sizeof *ensemb * 2*ncol);
 
     if(ensemb==NULL)
@@ -67,29 +67,42 @@ int c_ensrank(int nval, int ncol, double* sim, \
             /* sort combined ensemble */
             qsort(ensemb, 2*ncol, sizeof ensemb[0], compare);
 
-            /* Compute rank of first ensemble within combined */
+            /* Initialise */
             sumrank = 0;
             k1 = -1;
+            k2 = -1;
+            index = ensemb[j][1];
+            if(index<ncol)
+            {
+                k1 = 0;
+                k2 = 0;
+            }
+            valueprev = ensemb[j][0];
+
             fprintf(stdout, "\n\n");
+            /* Compute rank of first ensemble within combined */
             for(j=0; j<2*ncol; j++)
             {
                 value = ensemb[j][0];
                 index = ensemb[j][1];
+
+                if(fabs(value-valueprev)<eps && k1>=0) k2++;
+                else k2 = -1;
 
                 /* Start sequence */
                 if(index<ncol && k1<0)
                 {
                     k1 = j;
                     k2 = j;
-                    value1 = value;
+                    valueprev = value;
                 }
 
                 fprintf(stdout, "[%d, %d] (%d) v=%0.1f i=%0.0f (%d %d %0.1f)\n",
-                        i1, i2, j, value, index, k1, k2, value1);
+                        i1, i2, j, value, index, k1, k2, valueprev);
 
                 if(k1>=0)
                 {
-                    if(fabs(value-value1)<eps) k2++;
+                    if(fabs(value-valueprev)<eps) k2++;
                     else
                     {
                         /* end sequence */
