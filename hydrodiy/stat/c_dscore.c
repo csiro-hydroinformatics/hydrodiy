@@ -23,9 +23,9 @@ static int compare(const void* pa, const void* pb)
 int c_ensrank(int nval, int ncol, double* sim, \
         double * fmat, double * ranks)
 {
-	int i1, i2, j, k, k1, k2, ierr=0;
+	int i1, i2, j, k, start, end, ierr=0;
 	double value, valueprev, index, u=0, F=0, eps=1e-8;
-    double sumrank, thresh, ncold;
+    double sumrank, ncold, thresh, diff;
 
     double (*ensemb)[2];
 
@@ -69,50 +69,40 @@ int c_ensrank(int nval, int ncol, double* sim, \
 
             /* Initialise */
             sumrank = 0;
-            k1 = -1;
-            k2 = -1;
+            start = -1;
+            end = -1;
             index = ensemb[j][1];
-            if(index<ncol)
-            {
-                k1 = 0;
-                k2 = 0;
-            }
             valueprev = ensemb[j][0];
 
-            fprintf(stdout, "\n\n");
             /* Compute rank of first ensemble within combined */
             for(j=0; j<2*ncol; j++)
             {
                 value = ensemb[j][0];
                 index = ensemb[j][1];
+                diff = fabs(value-valueprev);
 
-                if(fabs(value-valueprev)<eps && k1>=0) k2++;
-                else k2 = -1;
-
-                /* Start sequence */
-                if(index<ncol && k1<0)
+                if(index<ncol)
                 {
-                    k1 = j;
-                    k2 = j;
-                    valueprev = value;
-                }
-
-                fprintf(stdout, "[%d, %d] (%d) v=%0.1f i=%0.0f (%d %d %0.1f)\n",
-                        i1, i2, j, value, index, k1, k2, valueprev);
-
-                if(k1>=0)
-                {
-                    if(fabs(value-valueprev)<eps) k2++;
+                    if(diff<eps) end++;
                     else
                     {
-                        /* end sequence */
-                        sumrank += 1+(double)(k1+k2)/2;
-                        fprintf(stdout, "\t\tk1=%d k2=%d\n",
-                            k1, k2);
-                        k1 = -1;
+                        /* Compute sumrank for the previous sequence*/
+                        if(start>=0)
+                            sumrank += 1. + (double)(start+end)/2;
+
+                        /* Initiate sequence */
+                        start = j;
+                        end = j;
                     }
-                }
+                } else
+                    if(start>=0 && diff<eps) end++;
+
+                /* Loop */
+                valueprev = value;
             }
+
+            /* Final sumrank computation if the last point is not in a sequence */
+            sumrank += 1. + (double)(start+end)/2;
 
             /* Comparison function as per Equation (1) in Weigel and Mason,
              * 2011 */

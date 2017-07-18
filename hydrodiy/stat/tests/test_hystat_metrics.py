@@ -240,54 +240,58 @@ class MetricsTestCase(unittest.TestCase):
 #            self.assertTrue(sharp>nse)
 #
 #
-    def test_ensrank_weigel_data(self):
-        ''' Testing ensrank C function  against data from
-        Weigel and Mason (2011) '''
-
-        sim = np.array([[22, 23, 26, 27, 32], \
-            [28, 31, 33, 34, 36], \
-            [24, 25, 26, 27, 28]], dtype=np.float64)
-
-        fmat = np.zeros((3, 3), dtype=np.float64)
-        ranks = np.zeros(3, dtype=np.float64)
-
-        c_hydrodiy_stat.ensrank(sim, fmat, ranks)
-
-        fmat_expected = np.array([\
-                [0., 0.08, 0.44], \
-                [0., 0., 0.98], \
-                [0., 0., 0.]])
-        self.assertTrue(np.allclose(fmat, fmat_expected))
-
-        ranks_expected = [0., 2., 1.]
-        self.assertTrue(np.allclose(ranks, ranks_expected))
+#    def test_ensrank_weigel_data(self):
+#        ''' Testing ensrank C function  against data from
+#        Weigel and Mason (2011) '''
 #
+#        sim = np.array([[22, 23, 26, 27, 32], \
+#            [28, 31, 33, 34, 36], \
+#            [24, 25, 26, 27, 28]], dtype=np.float64)
 #
-#    def test_ensrank_vector_data(self):
-#        ''' Testing ensrank C function for vector data '''
+#        #sim = np.array([[22, 23, 26, 27, 32], \
+#        #    [28, 32, 33, 32, 36], \
+#        #    [24, 25, 26, 27, 28]], dtype=np.float64)
 #
-#        nval = 100
-#        sim = np.random.uniform(0, 1, (nval, 1))
-#        fmat = np.zeros((nval, nval), dtype=np.float64)
-#        ranks = np.zeros(nval, dtype=np.float64)
+#        fmat = np.zeros((3, 3), dtype=np.float64)
+#        ranks = np.zeros(3, dtype=np.float64)
 #
 #        c_hydrodiy_stat.ensrank(sim, fmat, ranks)
 #
-#        # Zero on the diagonal
-#        self.assertTrue(np.allclose(np.diag(fmat), np.zeros(nval)))
-#
-#        # Correct rank
-#        ranks_expected = np.argsort(np.argsort(sim[:, 0]))
-#        self.assertTrue(np.allclose(ranks, ranks_expected))
-#
-#        xx, yy = np.meshgrid(sim[:, 0], sim[:, 0])
-#        tmp = (xx>yy).astype(float).T
-#        fmat_expected = np.zeros((nval, nval))
-#        idx = np.triu_indices(nval)
-#        fmat_expected[idx] = tmp[idx]
+#        fmat_expected = np.array([\
+#                [0., 0.08, 0.44], \
+#                [0., 0., 0.98], \
+#                [0., 0., 0.]])
 #        self.assertTrue(np.allclose(fmat, fmat_expected))
 #
-#
+#        ranks_expected = [0., 2., 1.]
+#        self.assertTrue(np.allclose(ranks, ranks_expected))
+
+
+    def test_ensrank_vector_data(self):
+        ''' Testing ensrank C function for vector data '''
+
+        nval = 10
+        sim = np.random.uniform(0, 1, (nval, 1))
+        fmat = np.zeros((nval, nval), dtype=np.float64)
+        ranks = np.zeros(nval, dtype=np.float64)
+
+        c_hydrodiy_stat.ensrank(sim, fmat, ranks)
+
+        # Zero on the diagonal
+        self.assertTrue(np.allclose(np.diag(fmat), np.zeros(nval)))
+
+        # Correct rank
+        ranks_expected = np.argsort(np.argsort(sim[:, 0]))
+        self.assertTrue(np.allclose(ranks, ranks_expected))
+
+        xx, yy = np.meshgrid(sim[:, 0], sim[:, 0])
+        tmp = (xx>yy).astype(float).T
+        fmat_expected = np.zeros((nval, nval))
+        idx = np.triu_indices(nval)
+        fmat_expected[idx] = tmp[idx]
+        self.assertTrue(np.allclose(fmat, fmat_expected))
+
+
 #    def test_dscore_perfect(self):
 #        ''' Test dscore for perfect correlation '''
 #        nval = 10
