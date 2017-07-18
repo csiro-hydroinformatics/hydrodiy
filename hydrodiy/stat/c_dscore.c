@@ -3,13 +3,11 @@
 /* comparison function for qsort using 2d array */
 static int compare(const void* pa, const void* pb)
 {
-    const int *a = pa;
-    const int *b = pb;
+    const double *a = pa;
+    const double *b = pb;
+    double diff=a[0]-b[0];
 
-    if(a[0] == b[0])
-        return a[1]-b[1];
-    else
-        return a[0]-b[0];
+    return diff<-DSCORE_EPS ? -1 : diff>DSCORE_EPS ? 1 : 0;
 }
 
 
@@ -23,11 +21,13 @@ static int compare(const void* pa, const void* pb)
 int c_ensrank(int nval, int ncol, double* sim, \
         double * fmat, double * ranks)
 {
-	int i1, i2, j, k, start, end, ierr=0;
-	double value, valueprev, index, u=0, F=0, eps=1e-8;
+	int i1, i2, j, start, end, ierr=0, debug;
+	double value, valueprev, index, u=0, F=0;
     double sumrank, ncold, thresh, diff;
 
     double (*ensemb)[2];
+
+    debug = 1;
 
 	/* Initialisations of 2d array to store value and index */
     ensemb = malloc(sizeof *ensemb * 2*ncol);
@@ -53,6 +53,15 @@ int c_ensrank(int nval, int ncol, double* sim, \
     {
 	    for(i2=i1+1; i2<nval; i2++)
         {
+
+            /* Comparison function for deterministic ensembles */
+            if(ncol == 0)
+            {
+                sumrank = sim[i1]<sim[i2] ? 1 : 2;
+                fmat[i1*nval+i2] = (sumrank-(ncold+1)*ncold/2)/ncold/ncold;
+                continue;
+            }
+
             /* Get data and indexes from the two ensembles */
 		    for(j=0;j<2*ncol;j++)
             {
@@ -83,26 +92,40 @@ int c_ensrank(int nval, int ncol, double* sim, \
 
                 if(index<ncol)
                 {
-                    if(diff<eps) end++;
+                    if(diff<DSCORE_EPS) end++;
                     else
                     {
                         /* Compute sumrank for the previous sequence*/
                         if(start>=0)
+                        {
                             sumrank += 1. + (double)(start+end)/2;
+
+                            if(debug==1)
+                                fprintf(stdout, "\t\tsumrank = %0.2f (+%0.2f)\n",
+                                    sumrank, (double)(start+end)/2);
+                        }
 
                         /* Initiate sequence */
                         start = j;
                         end = j;
                     }
                 } else
-                    if(start>=0 && diff<eps) end++;
+                    if(start>=0 && diff<DSCORE_EPS) end++;
 
                 /* Loop */
                 valueprev = value;
+
+                if(debug == 1)
+                    fprintf(stdout, "(%d, %d) -> [%d] %0.0f:%0.2f => s=%d e=%d\n",
+                        i1, i2, j, index, value, start, end);
             }
 
             /* Final sumrank computation if the last point is not in a sequence */
             sumrank += 1. + (double)(start+end)/2;
+
+            if(debug == 1)
+                fprintf(stdout, "\t\tFinal sumrank = %0.2f (+%0.2f)\n\n",
+                                    sumrank, (double)(start+end)/2);
 
             /* Comparison function as per Equation (1) in Weigel and Mason,
              * 2011 */
@@ -122,7 +145,7 @@ int c_ensrank(int nval, int ncol, double* sim, \
             if(i2>i1) F = fmat[i1*nval+i2];
             else F = 1-fmat[i2*nval+i1];
 
-            u = F<0.5 ? 0. : F>0.5+eps ? 1. : 0.5;
+            u = F<0.5 ? 0. : F>0.5+DSCORE_EPS ? 1. : 0.5;
             ranks[i1]+= u;
         }
     }
