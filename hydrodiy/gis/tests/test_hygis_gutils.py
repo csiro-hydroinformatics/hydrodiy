@@ -35,7 +35,7 @@ class GutilsTestCase(unittest.TestCase):
 
     def test_georef(self):
 
-        info = gutils.georef('canberra')
+        lon, lat, info = gutils.georef('canberra')
 
         fj = os.path.join(self.ftest, 'canberra.json')
         with open(fj, 'r') as fo:
@@ -43,6 +43,8 @@ class GutilsTestCase(unittest.TestCase):
         info_e['url'] = info['url']
 
         self.assertEqual(info, info_e)
+        self.assertTrue(np.allclose([lon, lat], [149.1300092, -35.2809368]))
+
 
 if __name__ == "__main__":
     unittest.main()

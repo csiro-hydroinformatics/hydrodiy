@@ -136,14 +136,22 @@ def georef(name):
 
     Returns
     -----------
+    lon : float
+        Longitude of the first georeferenced item
+    lat : float
+        Latitude of the first georeferenced item
     info : dict
-        Georeference information
+        Georeference query result. Note that there could be multiple
+        object returned by the query. The list of georeferenced objects
+        is found in info['results'].
+        For each georeferenced object, the coordinates can be found in
+        the 'geometry' element.
 
     Example
     -----------
     >>> info = gutils.georef('canberra')
     '''
-
+    # Query the google api
     url = 'https://maps.googleapis.com/maps/api/geocode/json'
     params = {'address':name}
     req = requests.get(url, params=params)
@@ -159,7 +167,16 @@ def georef(name):
 
     info['url'] = req.url
 
-    return info
+    # Extract coordinates
+    if len(info['results'])==0:
+        raise ValueError(\
+            'Cannot obtain georeference info: query returns no results')
+
+    coords = info['results'][0]['geometry']['location']
+    lon = coords['lng']
+    lat = coords['lat']
+
+    return lon, lat, info
 
 
 
