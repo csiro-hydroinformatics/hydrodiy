@@ -1,0 +1,59 @@
+{
+   "results" : [
+      {
+         "address_components" : [
+            {
+               "long_name" : "Canberra",
+               "short_name" : "Canberra",
+               "types" : [ "locality", "political" ]
+            },
+            {
+               "long_name" : "Australian Capital Territory",
+               "short_name" : "ACT",
+               "types" : [ "administrative_area_level_1", "political" ]
+            },
+            {
+               "long_name" : "Australia",
+               "short_name" : "AU",
+               "types" : [ "country", "political" ]
+            },
+            {
+               "long_name" : "2601",
+               "short_name" : "2601",
+               "types" : [ "postal_code" ]
+            }
+         ],
+         "formatted_address" : "Canberra ACT 2601, Australia",
+         "geometry" : {
+            "bounds" : {
+               "northeast" : {
+                  "lat" : -35.2752841,
+                  "lng" : 149.1376675
+               },
+               "southwest" : {
+                  "lat" : -35.2873252,
+                  "lng" : 149.1207312
+               }
+            },
+            "location" : {
+               "lat" : -35.2809368,
+               "lng" : 149.1300092
+            },
+            "location_type" : "APPROXIMATE",
+            "viewport" : {
+               "northeast" : {
+                  "lat" : -35.2752841,
+                  "lng" : 149.1376675
+               },
+               "southwest" : {
+                  "lat" : -35.2873252,
+                  "lng" : 149.1207312
+               }
+            }
+         },
+         "place_id" : "ChIJIZBcsGlNFmsRYFZpp27qAAU",
+         "types" : [ "locality", "political" ]
+      }
+   ],
+   "status" : "OK"
+}

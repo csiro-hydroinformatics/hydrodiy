@@ -2,6 +2,8 @@ import numpy as np
 import math
 import matplotlib.image as mpimg
 
+import requests
+
 from hydrodiy.stat import sutils
 
 def points_inside_polygon(points, poly, rtol=1e-8, atol=1e-8):
@@ -85,7 +87,7 @@ def xy2kml(x, y, fkml, z=None, siteid=None, label=None):
     -----------
     >>> x = np.linspace(0, 1, 10)
     >>> y = np.linspace(0, 1, 10)
-    >>> kml = iutils.xy2kml(x, y, siteid, label)
+    >>> kml = gutils.xy2kml(x, y, siteid, label)
     '''
 
     nval = len(x)
@@ -122,6 +124,42 @@ def xy2kml(x, y, fkml, z=None, siteid=None, label=None):
 
         f.write("</Document>\n")
         f.write("</kml>\n")
+
+
+def georef(name):
+    ''' Extract georeference data from Google map web api
+
+    Parameters
+    -----------
+    name : str
+        Georeference point name
+
+    Returns
+    -----------
+    info : dict
+        Georeference information
+
+    Example
+    -----------
+    >>> info = gutils.georef('canberra')
+    '''
+
+    url = 'https://maps.googleapis.com/maps/api/geocode/json'
+    params = {'address':name}
+    req = requests.get(url, params=params)
+
+    try:
+        info = req.json()
+    except ValueError as err:
+        raise ValueError('Cannot obtain georeference info: {0}'.format(\
+            str(err)))
+
+    if info is None:
+        raise ValueError('Cannot obtain georeference info: result is None')
+
+    info['url'] = req.url
+
+    return info
 
 
 

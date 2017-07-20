@@ -1,5 +1,6 @@
 import os
 import unittest
+import json
 
 import numpy as np
 import pandas as pd
@@ -32,6 +33,16 @@ class GutilsTestCase(unittest.TestCase):
         fkml = '{0}/test4.kml'.format(self.ftest)
         gutils.xy2kml(x, y, fkml, siteid=siteid, label=label)
 
+    def test_georef(self):
+
+        info = gutils.georef('canberra')
+
+        fj = os.path.join(self.ftest, 'canberra.json')
+        with open(fj, 'r') as fo:
+            info_e = json.load(fo)
+        info_e['url'] = info['url']
+
+        self.assertEqual(info, info_e)
 
 if __name__ == "__main__":
     unittest.main()
