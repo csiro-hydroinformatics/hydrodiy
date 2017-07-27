@@ -172,11 +172,15 @@ def georef(name):
         raise ValueError(\
             'Cannot obtain georeference info: query returns no results')
 
-    coords = info['results'][0]['geometry']['location']
-    lon = coords['lng']
-    lat = coords['lat']
+    geo = info['results'][0]['geometry']
+    lon = geo['location']['lng']
+    lat = geo['location']['lat']
 
-    return lon, lat, info
+    bnd = geo['bounds']
+    xlim = (bnd['southwest']['lng'], bnd['northeast']['lng'])
+    ylim = (bnd['southwest']['lat'], bnd['northeast']['lat'])
+
+    return lon, lat, xlim, ylim, info
 
 
 
