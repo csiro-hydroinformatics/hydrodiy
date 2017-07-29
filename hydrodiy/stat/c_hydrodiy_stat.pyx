@@ -26,7 +26,7 @@ cdef extern from 'c_olsleverage.h':
 
 
 cdef extern from 'c_dscore.h':
-    int c_ensrank(int nval, int ncol, double* sim,
+    int c_ensrank(double eps, int nval, int ncol, double* sim,
         double * fmat, double * ranks);
 
 def __cinit__(self):
@@ -119,7 +119,8 @@ def crps(int use_weights, int is_sorted,
     return ierr
 
 
-def ensrank(np.ndarray[double, ndim=2, mode='c'] sim not None,
+def ensrank(double eps,
+        np.ndarray[double, ndim=2, mode='c'] sim not None,
         np.ndarray[double, ndim=2, mode='c'] fmat not None,
         np.ndarray[double, ndim=1, mode='c'] ranks not None):
 
@@ -130,7 +131,7 @@ def ensrank(np.ndarray[double, ndim=2, mode='c'] sim not None,
     assert sim.shape[0]==fmat.shape[0]
     assert sim.shape[0]==fmat.shape[1]
 
-    ierr = c_ensrank(sim.shape[0], sim.shape[1],
+    ierr = c_ensrank(eps, sim.shape[0], sim.shape[1],
             <double*> np.PyArray_DATA(sim),
             <double*> np.PyArray_DATA(fmat),
             <double*> np.PyArray_DATA(ranks))

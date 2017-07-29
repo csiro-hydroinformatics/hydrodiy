@@ -5,9 +5,10 @@ static int compare(const void* pa, const void* pb)
 {
     const double *a = pa;
     const double *b = pb;
+    double eps = 1e-8;
     double diff=a[0]-b[0];
 
-    return diff<-DSCORE_EPS ? -1 : diff>DSCORE_EPS ? 1 : 0;
+    return diff < -1*eps ? -1 : diff>eps ? 1 : 0;
 }
 
 
@@ -18,12 +19,13 @@ static int compare(const void* pa, const void* pb)
 * Monthly Weather Review 139.9 (2011): 3069-3074.
 
 ************************************************/
-int c_ensrank(int nval, int ncol, double* sim, \
+int c_ensrank(double eps, int nval, int ncol, double* sim, \
         double * fmat, double * ranks)
 {
-	int i1, i2, j, start, end, ierr=0, debug;
+	int i1, i2, j, ierr=0, debug;
 	double value, valueprev, index, u=0, F=0;
-    double sumrank, ncold, thresh, diff;
+    double sumrank, rk, ncold, thresh, diff;
+    double nties, start, end;
 
     double (*ensemb)[2];
 
@@ -80,8 +82,9 @@ int c_ensrank(int nval, int ncol, double* sim, \
             sumrank = 0;
             start = -1;
             end = -1;
-            index = ensemb[j][1];
-            valueprev = ensemb[j][0];
+            index = 0;
+            nties = 0;
+            valueprev = 1+ensemb[0][0];
 
             /* Compute rank of first ensemble within combined */
             for(j=0; j<2*ncol; j++)
@@ -92,40 +95,60 @@ int c_ensrank(int nval, int ncol, double* sim, \
 
                 if(index<ncol)
                 {
-                    if(diff<DSCORE_EPS) end++;
+                    if(diff<eps)
+                    {
+                        end += 1.;
+                        nties += 1.;
+                    }
                     else
                     {
                         /* Compute sumrank for the previous sequence*/
                         if(start>=0)
                         {
-                            sumrank += 1. + (double)(start+end)/2;
+                            rk = 1. + (start+end)/2;
+                            sumrank += rk*nties;
 
                             if(debug==1)
-                                fprintf(stdout, "\t\tsumrank = %0.2f (+%0.2f)\n",
-                                    sumrank, (double)(start+end)/2);
+                                fprintf(stdout, "\t\tsumrank = %0.2f\n"
+                                    "\t\t\trk = %0.2f\n"
+                                    "\t\t\tdr = %0.2f = [1+(%0.0f+%0.0f)/2]x%0.0f\n",
+                                        sumrank, rk,
+                                        rk*nties,
+                                        start, end, nties);
                         }
 
                         /* Initiate sequence */
-                        start = j;
-                        end = j;
+                        start = (double)j;
+                        end = (double)j;
+                        nties = 1.;
                     }
                 } else
-                    if(start>=0 && diff<DSCORE_EPS) end++;
+                {
+                    if(start>=0 && diff<eps && nties>1.) end += 1.;
+
+                    /* end tie sequence */
+                    if(diff>eps) nties = 0.;
+                }
 
                 /* Loop */
                 valueprev = value;
 
                 if(debug == 1)
-                    fprintf(stdout, "(%d, %d) -> [%d] %0.0f:%0.2f => s=%d e=%d\n",
+                    fprintf(stdout, "(%d, %d) -> [%d] %0.0f:%0.2f => s=%0.0f e=%0.0f\n",
                         i1, i2, j, index, value, start, end);
             }
 
-            /* Final sumrank computation if the last point is not in a sequence */
-            sumrank += 1. + (double)(start+end)/2;
+            /* Final sumrank computation */
+            rk = 1. + (start+end)/2;
+            sumrank += rk*nties;
 
-            if(debug == 1)
-                fprintf(stdout, "\t\tFinal sumrank = %0.2f (+%0.2f)\n\n",
-                                    sumrank, (double)(start+end)/2);
+            if(debug==1)
+                fprintf(stdout, "\t\tsumrank = %0.2f\n"
+                    "\t\t\trk = %0.2f\n"
+                    "\t\t\tdr = %0.2f = [1+(%0.0f+%0.0f)/2]x%0.0f\n\n\n",
+                        sumrank, rk,
+                        rk*nties,
+                        start, end, nties);
 
             /* Comparison function as per Equation (1) in Weigel and Mason,
              * 2011 */
@@ -145,7 +168,7 @@ int c_ensrank(int nval, int ncol, double* sim, \
             if(i2>i1) F = fmat[i1*nval+i2];
             else F = 1-fmat[i2*nval+i1];
 
-            u = F<0.5 ? 0. : F>0.5+DSCORE_EPS ? 1. : 0.5;
+            u = F<0.5-1e-8 ? 0. : F>0.5+1e-8 ? 1. : 0.5;
             ranks[i1]+= u;
         }
     }

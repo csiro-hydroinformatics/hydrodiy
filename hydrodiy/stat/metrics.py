@@ -392,7 +392,7 @@ def nse(obs, sim, transform='Identity'):
     return value, accur, sharp
 
 
-def dscore(obs, sim):
+def dscore(obs, sim, eps=1e-6):
     ''' Compute the discrimination score (D score) for continuous
     forecasts as per
 
@@ -406,6 +406,8 @@ def dscore(obs, sim):
         obs data, [n] or [n,1] array
     sim : numpy.ndarray
         simulated data, [n], [n,1], or [n,p] array
+    eps : float
+        Tolerance to detect ties
 
     Returns
     -----------
@@ -415,6 +417,7 @@ def dscore(obs, sim):
     # Check data
     obs = np.atleast_1d(obs).astype(np.float64)
     sim = np.atleast_1d(sim).astype(np.float64)
+    eps = np.float64(eps)
 
     if sim.ndim != 2:
         raise ValueError('Expected sim of dimension 2, '+\
@@ -431,7 +434,7 @@ def dscore(obs, sim):
         franks = np.zeros(nval, dtype=np.float64)
 
         # Compute ensemble rank for ensemble forecasts
-        c_hydrodiy_stat.ensrank(sim, fmat, franks)
+        c_hydrodiy_stat.ensrank(eps, sim, fmat, franks)
 
     # Compute obs rank
     oranks = np.argsort(np.argsort(obs))

@@ -250,8 +250,9 @@ class MetricsTestCase(unittest.TestCase):
 
         fmat = np.zeros((3, 3), dtype=np.float64)
         ranks = np.zeros(3, dtype=np.float64)
+        eps = np.float64(1e-6)
 
-        c_hydrodiy_stat.ensrank(sim, fmat, ranks)
+        c_hydrodiy_stat.ensrank(eps, sim, fmat, ranks)
 
         fmat_expected = np.array([\
                 [0., 0.08, 0.44], \
@@ -270,8 +271,9 @@ class MetricsTestCase(unittest.TestCase):
         sim = np.random.uniform(0, 1, (nval, 1))
         fmat = np.zeros((nval, nval), dtype=np.float64)
         ranks = np.zeros(nval, dtype=np.float64)
+        eps = np.float64(1e-6)
 
-        c_hydrodiy_stat.ensrank(sim, fmat, ranks)
+        c_hydrodiy_stat.ensrank(eps, sim, fmat, ranks)
 
         # Zero on the diagonal
         self.assertTrue(np.allclose(np.diag(fmat), np.zeros(nval)))
@@ -301,7 +303,8 @@ class MetricsTestCase(unittest.TestCase):
 
             fmat = np.zeros((nval, nval), dtype=np.float64)
             ranks = np.zeros(nval, dtype=np.float64)
-            c_hydrodiy_stat.ensrank(sim, fmat, ranks)
+            eps = np.float64(1e-6)
+            c_hydrodiy_stat.ensrank(eps, sim, fmat, ranks)
 
             # Run python
             fmat_expected = fmat * 0.
@@ -314,7 +317,7 @@ class MetricsTestCase(unittest.TestCase):
 
                     # Handle ties
                     for cu in np.unique(comb):
-                        idx = np.abs(comb-cu)<1e-8
+                        idx = np.abs(comb-cu)<eps
                         if np.sum(idx)>0:
                             rk[idx] = np.mean(rk[idx])
 
@@ -323,9 +326,12 @@ class MetricsTestCase(unittest.TestCase):
                     fm = (srk-(nens+1.)*nens/2)/nens/nens;
                     fmat_expected[i, j] = fm
 
+                    if not np.allclose(fm, fmat[i, j]):
+                        print('Error i={0} j={1}'.format(i, j))
+                        print(np.sort(rk[:nens]))
+                        import pdb; pdb.set_trace()
+
             ck = np.allclose(fmat, fmat_expected)
-            if not ck:
-                import pdb; pdb.set_trace()
             self.assertTrue(ck)
 
 
