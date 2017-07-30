@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 
 from scipy.stats import norm
+import time
 
 from hydrodiy.stat import metrics
 from hydrodiy.stat import transform, sutils
@@ -260,7 +261,7 @@ class MetricsTestCase(unittest.TestCase):
                 [0., 0., 0.]])
         self.assertTrue(np.allclose(fmat, fmat_expected))
 
-        ranks_expected = [0., 2., 1.]
+        ranks_expected = [1., 3., 2.]
         self.assertTrue(np.allclose(ranks, ranks_expected))
 
 
@@ -268,71 +269,82 @@ class MetricsTestCase(unittest.TestCase):
         ''' Testing ensrank C function for deterministic simulations '''
 
         nval = 5
-        sim = np.random.uniform(0, 1, (nval, 1))
-        fmat = np.zeros((nval, nval), dtype=np.float64)
-        ranks = np.zeros(nval, dtype=np.float64)
-        eps = np.float64(1e-6)
+        nrepeat = 100
 
-        c_hydrodiy_stat.ensrank(eps, sim, fmat, ranks)
+        for i in range(nrepeat):
+            sim = np.random.uniform(0, 1, (nval, 1))
+            fmat = np.zeros((nval, nval), dtype=np.float64)
+            ranks = np.zeros(nval, dtype=np.float64)
+            eps = np.float64(1e-6)
 
-        # Zero on the diagonal
-        self.assertTrue(np.allclose(np.diag(fmat), np.zeros(nval)))
+            c_hydrodiy_stat.ensrank(eps, sim, fmat, ranks)
 
-        # Correct rank
-        ranks_expected = np.argsort(np.argsort(sim[:, 0]))
-        self.assertTrue(np.allclose(ranks, ranks_expected))
+            # Zero on the diagonal
+            self.assertTrue(np.allclose(np.diag(fmat), np.zeros(nval)))
 
-        xx, yy = np.meshgrid(sim[:, 0], sim[:, 0])
-        tmp = (xx>yy).astype(float).T
-        fmat_expected = np.zeros((nval, nval))
-        idx = np.triu_indices(nval)
-        fmat_expected[idx] = tmp[idx]
-        self.assertTrue(np.allclose(fmat, fmat_expected))
+            # Correct rank
+            ranks_expected = 1+np.argsort(np.argsort(sim[:, 0]))
+
+            xx, yy = np.meshgrid(sim[:, 0], sim[:, 0])
+            tmp = (xx>yy).astype(float).T
+            fmat_expected = np.zeros((nval, nval))
+            idx = np.triu_indices(nval)
+            fmat_expected[idx] = tmp[idx]
+
+            self.assertTrue(np.allclose(ranks, ranks_expected))
+            self.assertTrue(np.allclose(fmat, fmat_expected))
 
 
     def test_ensrank_python(self):
         ''' Test ensrank against python code '''
         nval = 4
         nens = 5
+        nrepeat = 100
+        eps = np.float64(1e-6)
 
-        for ties in [True, False]:
-            if ties:
-                sim = np.round(np.random.uniform(0, 100, (nval, nens))/10)
-            else:
-                sim = np.random.uniform(0, 100, (nval, nens))
+        for irepeat in range(nrepeat):
+            for ties in [True, False]:
+                if ties:
+                    sim = np.round(np.random.uniform(0, 100, (nval, nens))/10)
+                else:
+                    sim = np.random.uniform(0, 100, (nval, nens))
 
-            fmat = np.zeros((nval, nval), dtype=np.float64)
-            ranks = np.zeros(nval, dtype=np.float64)
-            eps = np.float64(1e-6)
-            c_hydrodiy_stat.ensrank(eps, sim, fmat, ranks)
+                fmat = np.zeros((nval, nval), dtype=np.float64)
+                ranks = np.zeros(nval, dtype=np.float64)
+                c_hydrodiy_stat.ensrank(eps, sim, fmat, ranks)
 
-            # Run python
-            fmat_expected = fmat * 0.
-            for i in range(nval):
-                for j in range(i+1, nval):
+                # Run python
+                fmat_expected = fmat * 0.
+                for i in range(nval):
+                    for j in range(i+1, nval):
+                        # Basic rankings
+                        comb = np.concatenate([sim[i], sim[j]])
+                        rk = np.argsort(np.argsort(comb))+1.
 
-                    # Basic rankings
-                    comb = np.concatenate([sim[i], sim[j]])
-                    rk = np.argsort(np.argsort(comb))+1.
+                        # Handle ties
+                        for cu in np.unique(comb):
+                            idx = np.abs(comb-cu)<eps
+                            if np.sum(idx)>0:
+                                rk[idx] = np.mean(rk[idx])
 
-                    # Handle ties
-                    for cu in np.unique(comb):
-                        idx = np.abs(comb-cu)<eps
-                        if np.sum(idx)>0:
-                            rk[idx] = np.mean(rk[idx])
+                        # Compute rank sums
+                        srk = np.sum(rk[:nens])
+                        fm = (srk-(nens+1.)*nens/2)/nens/nens;
+                        fmat_expected[i, j] = fm
 
-                    # Compute rank sums
-                    srk = np.sum(rk[:nens])
-                    fm = (srk-(nens+1.)*nens/2)/nens/nens;
-                    fmat_expected[i, j] = fm
+                # Ranks
+                F = fmat_expected.copy()
+                idx = np.tril_indices(nval)
+                F[idx] = 1.-fmat_expected.T[idx]
+                c1 = np.sum((F>0.5).astype(int), axis=1)
+                c2 = np.sum(((F>0.5-1e-8) & (F<0.5+1e-8)).astype(int), axis=1)
+                ranks_expected = c1+0.5*c2
 
-                    if not np.allclose(fm, fmat[i, j]):
-                        print('Error i={0} j={1}'.format(i, j))
-                        print(np.sort(rk[:nens]))
-                        import pdb; pdb.set_trace()
+                ck = np.allclose(fmat, fmat_expected)
+                self.assertTrue(ck)
 
-            ck = np.allclose(fmat, fmat_expected)
-            self.assertTrue(ck)
+                ck = np.allclose(ranks, ranks_expected)
+                self.assertTrue(ck)
 
 
     def test_dscore_perfect(self):
@@ -352,13 +364,37 @@ class MetricsTestCase(unittest.TestCase):
 
     def test_ensrank_large_ensemble(self):
         ''' Test ensrank for large ensemble numbers '''
-        nval = 20
+
+        nval = 50
         nens = 5000
         fmat = np.zeros((nval, nval), dtype=np.float64)
         ranks = np.zeros(nval, dtype=np.float64)
         sim = np.random.uniform(0, 1, (nval, nens))
+        eps = np.float64(1e-6)
 
-        c_hydrodiy_stat.ensrank(sim, fmat, ranks)
+        t0 = time.time()
+        c_hydrodiy_stat.ensrank(eps, sim, fmat, ranks)
+        t1 = time.time()
+
+        # Max 3 sec to compute this
+        self.assertTrue(t1-t0<3)
+
+
+    def test_ensrank_long_timeseries(self):
+        ''' Test ensrank for long time series '''
+        nval = 1000
+        nens = 100
+        fmat = np.zeros((nval, nval), dtype=np.float64)
+        ranks = np.zeros(nval, dtype=np.float64)
+        sim = np.random.uniform(0, 1, (nval, nens))
+        eps = np.float64(1e-6)
+
+        t0 = time.time()
+        c_hydrodiy_stat.ensrank(eps, sim, fmat, ranks)
+        t1 = time.time()
+
+        # Max 3 sec to compute this
+        self.assertTrue(t1-t0<10)
 
 
 if __name__ == "__main__":
