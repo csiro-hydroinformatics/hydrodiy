@@ -65,25 +65,6 @@ int c_ensrank(double eps, int nval, int ncol, double* sim, \
     {
 	    for(i2=i1+1; i2<nval; i2++)
         {
-
-            /* Comparison function for deterministic ensembles */
-            //if(ncol == 1)
-            //{
-            //    sumrank = sim[i1]<sim[i2] ? 1 : 2;
-
-            //    /* Comparison function as per Equation (1) in Weigel and Mason,
-            //     * 2011 */
-            //    F = (sumrank-(ncold+1)*ncold/2)/ncold/ncold;
-            //    fmat[i1*nval+i2] = F;
-
-            //    /* Compute ranks as per Equation (2) in Weigel and Mason, 2011 */
-            //    u = F<0.5-1e-8 ? 0. : F>0.5+1e-8 ? 1. : 0.5;
-            //    ranks[i1] += u;
-            //    ranks[i2] += u;
-
-            //    continue;
-            //}
-
             /* Get data and indexes from the two ensembles */
 		    for(j=0;j<2*ncol;j++)
             {
