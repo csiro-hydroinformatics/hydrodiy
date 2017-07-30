@@ -110,7 +110,7 @@ int c_ensrank(double eps, int nval, int ncol, double* sim, \
                 }
 
                 /* Continue sequence */
-                if(start>=0. && diff<eps && diffnext<eps)
+                if(start>=0. && diff<eps)
                 {
                     /* continue a tie sequence */
                      end += 1.;
@@ -122,16 +122,6 @@ int c_ensrank(double eps, int nval, int ncol, double* sim, \
                 /* End sequence */
                 if(start>=0. && diffnext>=eps)
                 {
-                    /* Closure of sequence if not in the same iteration */
-                    if(diff<eps)
-                    {
-                        /* End of sequence index */
-                        end += 1.;
-
-                        /* increment the number of valid ties */
-                        if(index<ncol) nties += 1.;
-                    }
-
                     /* Compute sumrank for the previous sequence*/
                     rk = 1. + (start+end)/2;
                     sumrank += rk*nties;
