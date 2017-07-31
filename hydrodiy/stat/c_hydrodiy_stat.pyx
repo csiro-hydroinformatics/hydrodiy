@@ -25,6 +25,10 @@ cdef extern from 'c_olsleverage.h':
         double * tXXinv, double* leverages)
 
 
+cdef extern from 'c_dscore.h':
+    int c_ensrank(double eps, int nval, int ncol, double* sim,
+        double * fmat, double * ranks);
+
 def __cinit__(self):
     pass
 
@@ -111,6 +115,26 @@ def crps(int use_weights, int is_sorted,
             <double*> np.PyArray_DATA(weight_vector),
             <double*> np.PyArray_DATA(reliability_table),
             <double*> np.PyArray_DATA(crps_decompos))
+
+    return ierr
+
+
+def ensrank(double eps,
+        np.ndarray[double, ndim=2, mode='c'] sim not None,
+        np.ndarray[double, ndim=2, mode='c'] fmat not None,
+        np.ndarray[double, ndim=1, mode='c'] ranks not None):
+
+    cdef int ierr
+
+    # check dimensions
+    assert sim.shape[0]==ranks.shape[0]
+    assert sim.shape[0]==fmat.shape[0]
+    assert sim.shape[0]==fmat.shape[1]
+
+    ierr = c_ensrank(eps, sim.shape[0], sim.shape[1],
+            <double*> np.PyArray_DATA(sim),
+            <double*> np.PyArray_DATA(fmat),
+            <double*> np.PyArray_DATA(ranks))
 
     return ierr
 
