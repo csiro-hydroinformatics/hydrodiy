@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, re
+import os
 
 import numpy
 
