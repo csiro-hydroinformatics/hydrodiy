@@ -17,9 +17,10 @@ int c_ar1innov(int nval, int ncol, double yini, double * alpha,
 {
 	int i, j;
     double value, y0, y1, nan;
+    static double zero = 0.0;
 
     /* nan value if not defined */
-    nan = 0./0.;
+    nan = zero/zero;
 
     /* loop across columns */
     for(j=0; j<ncol; j++)
@@ -72,9 +73,10 @@ int c_ar1inverse(int nval, int ncol, double yini, double * alpha,
 {
 	int i, j;
     double y0, y1, nan, value;
+    static double zero = 0.0;
 
     /* nan value if not defined */
-    nan = 0./0.;
+    nan = zero/zero;
 
     /* Loop across columns */
     for(j=0; j<ncol; j++)
