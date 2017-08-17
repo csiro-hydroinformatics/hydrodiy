@@ -150,7 +150,7 @@ def aggregate(aggindex, inputs, oper=0, maxnan=0):
     # Allocate arrays
     oper = np.int32(oper)
     maxnan = np.int32(maxnan)
-    aggindex = aggindex.astype(np.int32)
+    aggindex = np.array(aggindex).astype(np.int32)
     inputs = inputs.astype(np.float64)
     outputs = 0.*inputs
     iend = np.array([0]).astype(np.int32)
