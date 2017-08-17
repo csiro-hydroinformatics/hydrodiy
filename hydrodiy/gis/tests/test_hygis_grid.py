@@ -220,8 +220,8 @@ class GridTestCase(unittest.TestCase):
         zslice = gr.slice(xyslice)
 
         expect = vect
-        expect[:ndim/2] -= 0.1
-        expect[ndim/2:-1] += 0.1
+        expect[:ndim//2] -= 0.1
+        expect[ndim//2:-1] += 0.1
         ck = np.allclose(zslice, expect)
         self.assertTrue(ck)
 

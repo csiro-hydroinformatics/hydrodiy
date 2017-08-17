@@ -4,11 +4,11 @@ double clipd(double x, double x0, double x1){
     return x<x0 ? x0 : x>x1 ? x1 : x;
 }
 
-long clipi(long x, long x0, long x1){
+long long clipi(long long x,long long x0, long long x1){
     return x<x0 ? x0 : x>x1 ? x1 : x;
 }
 
-long getnxy(long ncols, long idxcell, long *nxy){
+long long getnxy(long long ncols, long long idxcell, long long *nxy){
     /* Returns the coordinates of cell idxcell as [icol, irow]
         (cell numbers are increasing horizontally)
     */
@@ -18,16 +18,16 @@ long getnxy(long ncols, long idxcell, long *nxy){
 }
 
 
-long c_coord2cell(long nrows, long ncols,
+long long c_coord2cell(long long nrows, long long ncols,
     double xll, double yll, double csz,
-    long nval, double * xycoords, long * idxcell)
+    long long nval, double * xycoords, long long * idxcell)
 {
-    long ierr, i, nx, ny;
+    long long ierr, i, nx, ny;
     ierr = 0;
 
     for(i=0; i<nval; i++){
-        nx = (long)rint((xycoords[2*i]-xll)/csz);
-        ny = nrows-1-(long)rint((xycoords[2*i+1]-yll)/csz);
+        nx = (long long)rint((xycoords[2*i]-xll)/csz);
+        ny = nrows-1-(long long)rint((xycoords[2*i+1]-yll)/csz);
         idxcell[i] = ny*ncols+nx;
 
         if(nx<0 || nx>=ncols)
@@ -40,11 +40,11 @@ long c_coord2cell(long nrows, long ncols,
     return ierr;
 }
 
-long c_cell2coord(long nrows, long ncols,
+long long c_cell2coord(long long nrows, long long ncols,
     double xll, double yll, double csz,
-    long nval, long * idxcell, double * xycoords)
+    long long nval, long long * idxcell, double * xycoords)
 {
-    long ierr, i, nc;
+    long long ierr, i, nc;
     ierr = 0;
 
     for(i=0; i<nval; i++){
@@ -60,15 +60,15 @@ long c_cell2coord(long nrows, long ncols,
     return ierr;
 }
 
-long c_neighbours(long nrows, long ncols,
-    long idxcell, long * neighbours)
+long long c_neighbours(long long nrows, long long ncols,
+    long long idxcell, long long * neighbours)
 {
     /* Compute neigbouring cells
     *   0 1 2
     *   3 X 5
     *   6 7 8
     */
-    long ix, iy, nxy[2], nx0, nx, ny0, ny, k;
+    long long ix, iy, nxy[2], nx0, nx, ny0, ny, k;
 
     if(idxcell<0 || idxcell>=nrows*ncols)
         return GRID_ERROR + __LINE__;
@@ -104,11 +104,11 @@ long c_neighbours(long nrows, long ncols,
 }
 
 
-long c_slice(long nrows, long ncols,
+long long c_slice(long long nrows, long long ncols,
     double xll, double yll, double csz, double* data,
-    long nval, double* xyslice, double * zslice)
+    long long nval, double* xyslice, double * zslice)
 {
-    long i, idxcell1[1], idxcell2[1], idxcell3[1];
+    long long i, idxcell1[1], idxcell2[1], idxcell3[1];
     double dx, dy, xy1[2], xy2[2], xy3[2];
     double val1, val2, val3, tol;
     double denom, t1, t2;
@@ -118,9 +118,9 @@ long c_slice(long nrows, long ncols,
     xmax = xll+(ncols-1)*csz;
     ymax = yll+(nrows-1)*csz;
 
-	/* Linear longerpolation
-	* Given 3 polongs (x1,y1,z1) (x2,y2,z2) (x3,y3,z3), The plan (x,y,z)
-	* containing the 3 polongs has the following equation
+	/* Linear long longerpolation
+	* Given 3 polong longs (x1,y1,z1) (x2,y2,z2) (x3,y3,z3), The plan (x,y,z)
+	* containing the 3 polong longs has the following equation
 	*  z 	= {  [ (z2-z1)(y3-y1) - (z3-z1)(y2-y1) ] * (x-x1) - [(z2-z1)(x3-x1) - (z3-z1)(x2-x1)] * (y-y1)  }
 				/ [(x2-x1)(y3-y1) - (y2-y1)(x3-x1)]   + z1
 	*/
@@ -138,7 +138,7 @@ long c_slice(long nrows, long ncols,
         dx = xyslice[2*i]-xy1[0];
         dy = xyslice[2*i+1]-xy1[1];
 
-        /* Compute coordinates of nearest polongs */
+        /* Compute coordinates of nearest polong longs */
     	xy2[0] = xy1[0];
 	    xy2[1] = xy1[1];
 	    if(fabs(dx)>tol)
@@ -164,7 +164,7 @@ long c_slice(long nrows, long ncols,
         c_coord2cell(nrows, ncols, xll, yll, csz, 1, xy3, idxcell3);
         val3 = data[idxcell3[0]];
 
-        /* Linear longerpolation */
+        /* Linear interpolation */
 	    zslice[i] = val1;
 
 	    if((fabs(dx)>tol && fabs(dy)<tol) || idxcell1[0]==idxcell2[0]){

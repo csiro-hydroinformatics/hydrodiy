@@ -10,62 +10,62 @@
 #define PI 3.14159265358979323846
 
 
-long c_upstream(long nrows, long ncols,
-    long * flowdircode,
-    long * flowdir,
-    long nval, long * idxdown, long * idxup);
+long long c_upstream(long long nrows, long long ncols,
+    long long * flowdircode,
+    long long * flowdir,
+    long long nval, long long * idxdown, long long * idxup);
 
 
-long c_downstream(long nrows, long ncols,
-    long * flowdircode,
-    long * flowdir,
-    long nval, long * idxup, long * idxdown);
+long long c_downstream(long long nrows, long long ncols,
+    long long * flowdircode,
+    long long * flowdir,
+    long long nval, long long * idxup, long long * idxdown);
 
 
-long c_delineate_area(long nrows, long ncols,
-    long* flowdircode,
-    long * flowdir,
-    long idxoutlet,
-    long ninlets, long * idxinlets,
-    long nval, long * idxcells,
-    long * buffer1, long * buffer2);
+long long c_delineate_area(long long nrows, long long ncols,
+    long long* flowdircode,
+    long long * flowdir,
+    long long idxoutlet,
+    long long ninlets, long long * idxinlets,
+    long long nval, long long * idxcells,
+    long long * buffer1, long long * buffer2);
 
 
-long c_delineate_boundary(long nrows, long ncols,
-    long nval,
-    long * idxcells_area,
-    long * buffer,
-    long * grid_area,
-    long * idxcells_boundary);
+long long c_delineate_boundary(long long nrows, long long ncols,
+    long long nval,
+    long long * idxcells_area,
+    long long * buffer,
+    long long * grid_area,
+    long long * idxcells_boundary);
 
-long c_delineate_river(long nrows, long ncols,
+long long c_delineate_river(long long nrows, long long ncols,
     double xll, double yll, double csz,
-    long* flowdircode,
-    long * flowdir,
-    long idxupstream,
-    long nval, long * npoints,
-    long * idxcells,
+    long long* flowdircode,
+    long long * flowdir,
+    long long idxupstream,
+    long long nval, long long * npoints,
+    long long * idxcells,
     double * data);
 
 
-long c_accumulate(long nrows, long ncols,
-    long nprlong, long maxarea,
-    long * flowdircode,
-    long * flowdir,
-    long * accumulation);
+long long c_accumulate(long long nrows, long long ncols,
+    long long nprint, long long maxarea,
+    long long * flowdircode,
+    long long * flowdir,
+    long long * accumulation);
 
 
-long c_intersect(long nrows, long ncols,
+long long c_intersect(long long nrows, long long ncols,
     double xll, double yll, double csz, double csz_area,
-    long nval, double * xy_area,
-    long ncells, long * npoints,
-    long * idxcells, double * weights);
+    long long nval, double * xy_area,
+    long long ncells, long long * npoints,
+    long long * idxcells, double * weights);
 
 
-long c_voronoi(long nrows, long ncols,
+long long c_voronoi(long long nrows, long long ncols,
     double xll, double yll, double csz,
-    long ncells, long * idxcells_area,
-    long npoints, double * xypoints,
+    long long ncells, long long * idxcells_area,
+    long long npoints, double * xypoints,
     double * weights);
 
 

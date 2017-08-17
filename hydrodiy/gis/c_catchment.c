@@ -1,18 +1,19 @@
 #include "c_catchment.h"
 
 /* comparison function for qsort ***/
-static int longcompare(const void* p1, const void* p2){
-    long a,b;
-    a = *(long *)p1;
-    b = *(long *)p2;
+static int compare(const void* p1, const void* p2){
+    long long a,b;
+    a = *(long long *)p1;
+    b = *(long long *)p2;
     if(a>b) return 1;
     if(a==b) return 0;
     if(a<b) return -1;
     return 0;
 }
 
-long celldist(long nrows, long ncols, long n1, long n2){
-    long nxy1[2], nxy2[2], dx, dy;
+long long celldist(long long nrows, long long ncols, long long n1, long long n2)
+{
+    long long nxy1[2], nxy2[2], dx, dy;
 
     if(n1<0 || n1>=nrows*ncols || n2<0 || n2>=nrows*ncols)
         return CATCHMENT_ERROR + __LINE__;
@@ -20,16 +21,19 @@ long celldist(long nrows, long ncols, long n1, long n2){
     getnxy(ncols, n1, nxy1);
     getnxy(ncols, n2, nxy2);
 
-    dx = abs(nxy1[0]-nxy2[0]);
-    dy = abs(nxy1[1]-nxy2[1]);
+    dx = nxy1[0]-nxy2[0];
+    dx = dx<0 ? 0 : dx;
+
+    dy = nxy1[1]-nxy2[1];
+    dy = dy<0 ? 0 : dy;
 
     return dx>dy ? dx : dy;
 }
 
 
-long c_upstream(long nrows, long ncols,
-    long * flowdircode, long * flowdir,
-    long nval, long * idxdown, long * idxup){
+long long c_upstream(long long nrows, long long ncols,
+    long long * flowdircode, long long * flowdir,
+    long long nval, long long * idxdown, long long * idxup){
 
     /* Determines the list of upstream cell.
     Flow dir codes are organised as follows
@@ -38,8 +42,8 @@ long c_upstream(long nrows, long ncols,
     * 6 7 8
     **/
 
-    long i, j, k, fd, idxcell, idxneighb;
-    long neighbours[9];
+    long long i, j, k, fd, idxcell, idxneighb;
+    long long neighbours[9];
 
     for(i=0; i<nval; i++){
         /* Determines neighbouring cells */
@@ -51,7 +55,7 @@ long c_upstream(long nrows, long ncols,
         c_neighbours(nrows, ncols, idxcell, neighbours);
 
         /* loop through neighbours and determines if
-        they drain longo downstream cell */
+        they drain long longo downstream cell */
         k = 0;
         for(j=0; j<9; j++){
             /* Get flow direction code of neighbours */
@@ -80,9 +84,9 @@ long c_upstream(long nrows, long ncols,
 }
 
 
-long c_downstream(long nrows, long ncols,
-    long * flowdircode, long * flowdir,
-    long nval, long * idxup, long * idxdown){
+long long c_downstream(long long nrows, long long ncols,
+    long long * flowdircode, long long * flowdir,
+    long long nval, long long * idxup, long long * idxdown){
 
     /* Determines the downstream cell.
     Flow dir codes are organised as follows
@@ -94,8 +98,8 @@ long c_downstream(long nrows, long ncols,
     * if the current point links to outside of the grid then idxdown = -1
     **/
 
-    long i, j, fd, idxcell;
-    long neighbours[9];
+    long long i, j, fd, idxcell;
+    long long neighbours[9];
 
     for(i=0; i<nval; i++){
         /* Determines neighbouring cells */
@@ -129,16 +133,16 @@ long c_downstream(long nrows, long ncols,
 }
 
 
-long c_delineate_area(long nrows, long ncols,
-    long* flowdircode, long * flowdir,
-    long idxoutlet,
-    long ninlets, long * idxinlets,
-    long nval, long * idxcells,
-    long * buffer1, long * buffer2)
+long long c_delineate_area(long long nrows, long long ncols,
+    long long* flowdircode, long long * flowdir,
+    long long idxoutlet,
+    long long ninlets, long long * idxinlets,
+    long long nval, long long * idxcells,
+    long long * buffer1, long long * buffer2)
 {
-	long i, k, l, m, idx;
-    long nbuffer1, nbuffer2, nlayer, idxcell[1];
-    long idxup[9];
+	long long i, k, l, m, idx;
+    long long nbuffer1, nbuffer2, nlayer, idxcell[1];
+    long long idxup[9];
 
     /* Check buffer size */
     if(nval<1)
@@ -244,18 +248,18 @@ long c_delineate_area(long nrows, long ncols,
 }
 
 
-long c_delineate_boundary(long nrows, long ncols,
-    long nval,
-    long * idxcells_area,
-    long * buffer,
-    long * grid_area,
-    long * idxcells_boundary)
+long long c_delineate_boundary(long long nrows, long long ncols,
+    long long nval,
+    long long * idxcells_area,
+    long long * buffer,
+    long long * grid_area,
+    long long * idxcells_boundary)
 {
-    long i, k, ngrid, nbuffer, shift[4], isout;
-    long idxcell, idxcelln, distmax;
-    long next, buf, ibnd, start;
-    long nxycell[2], nxybuf[2], nxystart[2];
-    long dx, dy, dist, dmin, knext;
+    long long i, k, ngrid, nbuffer, shift[4], isout;
+    long long idxcell, idxcelln, distmax;
+    long long next, buf, ibnd, start;
+    long long nxycell[2], nxybuf[2], nxystart[2];
+    long long dx, dy, dist, dmin, knext;
     double percmax;
 
     /* Check buffer size */
@@ -272,7 +276,7 @@ long c_delineate_boundary(long nrows, long ncols,
     percmax = 0.8;
 
     /* Sort the idxcells_area */
-    qsort(idxcells_area, nval, sizeof(long), longcompare);
+    qsort(idxcells_area, nval, sizeof(long long), compare);
 
     /* Shifting of cell index  to look for neighbouring cells */
     shift[0] = -1;
@@ -298,7 +302,7 @@ long c_delineate_boundary(long nrows, long ncols,
         {
             idxcelln = idxcell+shift[k];
             if(idxcelln>=0 && idxcelln<ngrid)
-                isout *= (long)(grid_area[idxcelln] == 1);
+                isout *= (long long)(grid_area[idxcelln] == 1);
         }
 
         if(isout==0)
@@ -309,7 +313,7 @@ long c_delineate_boundary(long nrows, long ncols,
 
     }
 
-    /* Step 2 - reorder the boundary cells along the boundary */
+    /* Step 2 - reorder the boundary cells along long the boundary */
     idxcell = buffer[0];
     start = buffer[0];
     getnxy(ncols, start, nxystart);
@@ -358,7 +362,7 @@ long c_delineate_boundary(long nrows, long ncols,
 
         /* Compute distance from start  when approacing the end of the boundary
          * points */
-        if(ibnd > (long)((double)nbuffer*percmax))
+        if(ibnd > (long long)((double)nbuffer*percmax))
         {
             dx = nxycell[0]-nxystart[0];
             dy = nxycell[1]-nxystart[1];
@@ -383,17 +387,17 @@ long c_delineate_boundary(long nrows, long ncols,
 }
 
 
-long c_delineate_river(long nrows, long ncols,
+long long c_delineate_river(long long nrows, long long ncols,
     double xll, double yll, double csz,
-    long * flowdircode,
-    long * flowdir,
-    long idxupstream,
-    long nval, long * npoints,
-    long * idxcells,
+    long long * flowdircode,
+    long long * flowdir,
+    long long idxupstream,
+    long long nval, long long * npoints,
+    long long * idxcells,
     double * data){
 
-    long i, idxup[1], idxdown[1], ierr;
-    long nx1, ny1, nx2, ny2, ncolsdata;
+    long long i, idxup[1], idxdown[1], ierr;
+    long long nx1, ny1, nx2, ny2, ncolsdata;
     double dx, dy, dist, xy[2];
 
     ncolsdata = 5;
@@ -454,21 +458,21 @@ long c_delineate_river(long nrows, long ncols,
 }
 
 
-long c_accumulate(long nrows, long ncols,
-    long nprint, long maxarea,
-    long * flowdircode,
-    long * flowdir,
-    long * accumulation){
+long long c_accumulate(long long nrows, long long ncols,
+    long long nprint, long long maxarea,
+    long long * flowdircode,
+    long long * flowdir,
+    long long * accumulation){
 
-    long area, i, ierr, ntot;
-    long idxdown[1], idxup[1];
+    long long area, i, ierr, ntot;
+    long long idxdown[1], idxup[1];
 
     ntot = nrows*ncols;
 
-    fprintf(stdout, "\n\t-- Started accumulation for grid [%ldx%ld] --\n", nrows, ncols);
-    fprintf(stdout, "\tntot = %ld\n", ntot);
-    fprintf(stdout, "\tnprint = %ld\n", nprint);
-    fprintf(stdout, "\tmaxarea = %ld\n", maxarea);
+    fprintf(stdout, "\n\t-- Started accumulation for grid [%lldx%lld] --\n", nrows, ncols);
+    fprintf(stdout, "\tntot = %lld\n", ntot);
+    fprintf(stdout, "\tnprint = %lld\n", nprint);
+    fprintf(stdout, "\tmaxarea = %lld\n", maxarea);
 
     for(i=0; i<ntot; i++){
 
@@ -506,13 +510,13 @@ long c_accumulate(long nrows, long ncols,
 }
 
 
-long c_intersect(long nrows, long ncols,
+long long c_intersect(long long nrows, long long ncols,
     double xll, double yll, double csz, double csz_area,
-    long nval, double * xy_area,
-    long ncells, long * npoints,
-    long * idxcells, double * weights){
+    long long nval, double * xy_area,
+    long long ncells, long long * npoints,
+    long long * idxcells, double * weights){
 
-    long i, j, k, ierr, idxcell[1];
+    long long i, j, k, ierr, idxcell[1];
     double xy[2], areafactor;
 
     areafactor = (csz_area/csz)*(csz_area/csz);
@@ -551,13 +555,13 @@ long c_intersect(long nrows, long ncols,
     return 0;
 }
 
-long c_voronoi(long nrows, long ncols,
+long long c_voronoi(long long nrows, long long ncols,
     double xll, double yll, double csz,
-    long ncells, long * idxcells_area,
-    long npoints, double * xypoints,
+    long long ncells, long long * idxcells_area,
+    long long npoints, double * xypoints,
     double * weights){
 
-    long i, j, jmin, ierr, idxcell[1];
+    long long i, j, jmin, ierr, idxcell[1];
     double xy[2], dx, dy, dist, distmin;
 
     for(j=0; j<npoints; j++)

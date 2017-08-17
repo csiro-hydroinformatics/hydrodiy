@@ -58,7 +58,7 @@ class Grid(object):
         self.mindata = -np.inf
         self.comment = comment
 
-        self._data = np.zeros((nrows, ncols), dtype=dtype)
+        self._data = np.zeros((self.nrows, self.ncols), dtype=dtype)
 
 
     def _getsize(self):
@@ -161,7 +161,7 @@ class Grid(object):
                     config['byteorder']))
 
         pixeltype = re.sub('nsignedint$|^signed|nt|loat', '', config['pixeltype'])
-        nbits = config['nbits']/8
+        nbits = config['nbits']//8
         config['dtype'] = np.dtype(byteorder + pixeltype + str(nbits)).type
 
         # Check cell size / dimensions
@@ -574,10 +574,10 @@ class Grid(object):
 
         ncols = self.ncols
         nx0 = idxcell0%ncols
-        ny0 = (idxcell0-nx0)/ncols
+        ny0 = (idxcell0-nx0)//ncols
 
         nx1 = idxcell1%ncols
-        ny1 = (idxcell1-nx1)/ncols
+        ny1 = (idxcell1-nx1)//ncols
 
         # Create grid
         name = self.name + '_clip'
