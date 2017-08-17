@@ -37,8 +37,9 @@ class UtilsTestCase(unittest.TestCase):
         try:
             acf = sutils.acf(data, idx=(data>0.5)[2:])
         except ValueError as err:
-            pass
-        self.assertTrue(str(err).startswith('Expected idx'))
+            self.assertTrue(str(err).startswith('Expected idx'))
+        else:
+            raise Exception('Problem with error handling')
 
 
     def test_acf_all(self):
@@ -201,8 +202,9 @@ class UtilsTestCase(unittest.TestCase):
         try:
             y = sutils.ar1innov(alpha[:100], innov)
         except ValueError as err:
-            pass
-        self.assertTrue(str(err).startswith('Expected alpha'))
+            self.assertTrue(str(err).startswith('Expected alpha'))
+        else:
+            raise Exception('Problem with error handling')
 
         y = sutils.ar1innov(alpha, innov)
 
@@ -222,8 +224,9 @@ class UtilsTestCase(unittest.TestCase):
         try:
             samples = sutils.lhs(nsamples, pmin, pmax[:2])
         except ValueError as err:
-            pass
-        self.assertTrue(str(err).startswith('Expected pmax'))
+            self.assertTrue(str(err).startswith('Expected pmax'))
+        else:
+            raise Exception('Problem with error handling')
 
 
     def test_lhs(self):

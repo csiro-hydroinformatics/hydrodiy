@@ -34,38 +34,44 @@ class VectorTestCases(unittest.TestCase):
         try:
             vect = Vector(['a', 'a'])
         except ValueError as err:
-            pass
-        self.assertTrue(str(err).startswith(('Names are not')))
+            self.assertTrue(str(err).startswith(('Names are not')))
+        else:
+            raise Exception('Problem with error generation')
 
         try:
             vect = Vector(['a', 'b'], defaults=1)
         except ValueError as err:
-            pass
-        self.assertTrue(str(err).startswith(('Expected vector of length')))
+            self.assertTrue(str(err).startswith(('Expected vector of length')))
+        else:
+            raise Exception('Problem with error generation')
 
         try:
             vect = Vector(['a', 'b'], defaults=[1]*2, mins=1)
         except ValueError as err:
-            pass
-        self.assertTrue(str(err).startswith(('Expected vector of length')))
+            self.assertTrue(str(err).startswith(('Expected vector of length')))
+        else:
+            raise Exception('Problem with error generation')
 
         try:
             vect = Vector(['a', 'b'], defaults=[1]*2, mins=[0]*2, maxs=2)
         except ValueError as err:
-            pass
-        self.assertTrue(str(err).startswith(('Expected vector of length')))
+            self.assertTrue(str(err).startswith(('Expected vector of length')))
+        else:
+            raise Exception('Problem with error generation')
 
         try:
             vect = Vector(['a', 'b'], defaults=[1]*2, mins=[0]*2, maxs=[-1, 0.5])
         except ValueError as err:
-            pass
-        self.assertTrue(str(err).startswith(('Expected maxs within')))
+            self.assertTrue(str(err).startswith(('Expected maxs within')))
+        else:
+            raise Exception('Problem with error generation')
 
         try:
             vect = Vector(['a', 'b'], defaults=[1]*2, mins=[0]*2, maxs=[0.5]*2)
         except ValueError as err:
-            pass
-        self.assertTrue(str(err).startswith(('Expected defaults within')))
+            self.assertTrue(str(err).startswith(('Expected defaults within')))
+        else:
+            raise Exception('Problem with error generation')
 
 
     def test_empty_vector(self):
@@ -74,8 +80,9 @@ class VectorTestCases(unittest.TestCase):
             try:
                 vect.values = 0
             except ValueError as err:
-                pass
-            self.assertTrue(str(err).startswith(('Expected vector of length')))
+                self.assertTrue(str(err).startswith(('Expected vector of length')))
+            else:
+                raise Exception('Problem with error generation')
 
             dct = vect.to_dict()
             self.assertEqual(dct, {'hitbounds':False, 'data':[], 'nval':0})
@@ -115,8 +122,9 @@ class VectorTestCases(unittest.TestCase):
         try:
             vect['a'] = np.nan
         except ValueError as err:
-            pass
-        self.assertTrue(str(err).startswith('Cannot set value to nan'))
+            self.assertTrue(str(err).startswith('Cannot set value to nan'))
+        else:
+            raise Exception('Problem with error generation')
 
 
     def test_hitbounds(self):
@@ -132,15 +140,17 @@ class VectorTestCases(unittest.TestCase):
             vect = Vector(['a', 'b'])
             vect.values = 1
         except ValueError as err:
-            pass
-        self.assertTrue(str(err).startswith(('Expected vector of length')))
+            self.assertTrue(str(err).startswith(('Expected vector of length')))
+        else:
+            raise Exception('Problem with error generation')
 
         try:
             vect = Vector(['a', 'b'])
             vect.values = [1., np.nan]
         except ValueError as err:
-            pass
-        self.assertTrue(str(err).startswith(('Cannot process value')))
+            self.assertTrue(str(err).startswith(('Cannot process value')))
+        else:
+            raise Exception('Problem with error generation')
 
         vect = Vector(range(4))
         vect.values = np.arange(4).reshape((2, 2))
@@ -149,8 +159,9 @@ class VectorTestCases(unittest.TestCase):
         try:
             vect.values = ['a']*4
         except ValueError as err:
-            pass
-        self.assertTrue(str(err).startswith(('could not convert')))
+            self.assertTrue(str(err).startswith(('could not convert')))
+        else:
+            raise Exception('Problem with error generation')
 
 
     def test_clone(self):

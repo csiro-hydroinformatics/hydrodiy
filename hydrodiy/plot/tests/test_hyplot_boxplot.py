@@ -47,22 +47,25 @@ class BoxplotTestCase(unittest.TestCase):
 
 
     def test_error(self):
+        ''' Test boxplot error '''
         fig, ax = plt.subplots()
 
         try:
             data = [['a', 'b', 'c'], ['c', 'd', 'e']]
             bx = Boxplot(data=data)
         except Exception as err:
-            pass
-        self.assertTrue(str(err).startswith('Failed'))
+            self.assertTrue(str(err).startswith('Failed'))
+        else:
+            raise Exception('Problem with error handling')
 
         try:
             data = np.random.uniform(0, 1, size=(10, 4))
             by = np.arange(data.shape[0]) % 2
             bx = Boxplot(data=data, by=by)
         except Exception as err:
-            pass
-        self.assertTrue(str(err).startswith('Failed'))
+            self.assertTrue(str(err).startswith('Failed'))
+        else:
+            raise Exception('Problem with error handling')
 
 
     def test_draw_short(self):
@@ -184,8 +187,9 @@ class BoxplotTestCase(unittest.TestCase):
         try:
             bx.median.va = 'left'
         except ValueError as err:
-            pass
-        self.assertTrue(str(err).startswith('Expected value in'))
+            self.assertTrue(str(err).startswith('Expected value in'))
+        else:
+            raise Exception('Problem with error handling')
 
 
     def test_nan(self):

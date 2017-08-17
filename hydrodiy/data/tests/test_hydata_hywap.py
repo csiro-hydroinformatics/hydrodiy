@@ -32,6 +32,7 @@ class HyWapTestCase(unittest.TestCase):
 
 
     def test_get_data(self):
+        ''' Simple run of get_data '''
         dt = datetime(2015, 2, 1)
         vn = hywap.VARIABLES
         ts = hywap.TIMESTEPS

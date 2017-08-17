@@ -62,6 +62,7 @@ class CsvTestCase(unittest.TestCase):
 
 
     def test_read_csv_latin(self):
+        ''' Test read_csv with latin_1 encoding '''
         fcsv = '%s/latin_1.zip'%self.ftest
         try:
             data, comment = csv.read_csv(fcsv)
@@ -74,12 +75,14 @@ class CsvTestCase(unittest.TestCase):
 
 
     def test_read_csv_error(self):
+        ''' Test error for read_csv '''
         fcsv = '%s/latin_2.zip'%self.ftest
         try:
             data, comment = csv.read_csv(fcsv)
         except ValueError as err:
-            pass
-        self.assertTrue(str(err).startswith('File object is not readable'))
+            self.assertTrue(str(err).startswith('File object is not readable'))
+        else:
+            raise Exception('Problem with error handling')
 
 
     def test_write_csv1(self):

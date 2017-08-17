@@ -183,8 +183,9 @@ class UtilsTestCase(unittest.TestCase):
         try:
             logger = iutils.get_logger('bidule', level='INF')
         except ValueError as err:
-            pass
-        self.assertTrue(str(err).startswith('INF not a valid level'))
+            self.assertTrue(str(err).startswith('INF not a valid level'))
+        else:
+            raise Exception('Problem with error handling')
 
         # Test logging
         logger1 = iutils.get_logger('bidule1', flog=flog1)
@@ -227,8 +228,9 @@ class UtilsTestCase(unittest.TestCase):
         try:
             idx = iutils.get_ibatch(20, 40, 1)
         except ValueError as err:
-            pass
-        self.assertTrue(str(err).startswith('Number of sites per batch is 0'))
+            self.assertTrue(str(err).startswith('Number of sites per batch is 0'))
+        else:
+            raise Exception('Problem with error handling')
 
 
     def test_download(self):

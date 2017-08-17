@@ -100,7 +100,7 @@ class UtilsTestCase(unittest.TestCase):
         obsm2 = dutils.aggregate(aggindex, obs.values, oper=1)
         self.assertTrue(np.allclose(obsm.values, obsm2))
 
-        kk = np.random.choice(range(nval), nval/10, replace=False)
+        kk = np.random.choice(range(nval), int(nval/10), replace=False)
         obs[kk] = np.nan
         obsm = obs.resample('MS', how=lambda x: np.sum(x.values))
         obsm2 = dutils.aggregate(aggindex, obs.values)
@@ -176,8 +176,6 @@ class UtilsTestCase(unittest.TestCase):
                 c2 = chd.combi(n, k)
                 ck = np.allclose(c1, c2)
                 if c2>0:
-                    if not ck:
-                        import pdb; pdb.set_trace()
                     self.assertTrue(ck)
 
 if __name__ == "__main__":

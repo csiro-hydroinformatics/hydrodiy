@@ -22,14 +22,16 @@ class QualityControlTestCase(unittest.TestCase):
         try:
             status = qc.islinear(data, npoints=0)
         except Exception as err:
-            pass
-        self.assertTrue(str(err).startswith('Expected npoints'))
+            self.assertTrue(str(err).startswith('Expected npoints'))
+        else:
+            raise Exception('Problem with error handling')
 
         try:
             status = qc.islinear(data, tol=1e-11)
         except Exception as err:
-            pass
-        self.assertTrue(str(err).startswith('Expected tol'))
+            self.assertTrue(str(err).startswith('Expected tol'))
+        else:
+            raise Exception('Problem with error handling')
 
 
     def test_islinear_1d_linspace(self):
@@ -80,7 +82,7 @@ class QualityControlTestCase(unittest.TestCase):
         i1 = 10
         i2 = 20
         idxlin = np.arange(i1, i2+1)
-        data[idxlin] = np.linspace(0, 1, 14)
+        data[idxlin] = np.linspace(0, 1, 11)
 
         for npoints in range(2, 5):
             status = qc.islinear(data, npoints)

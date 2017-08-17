@@ -60,21 +60,23 @@ class TransformTestCase(unittest.TestCase):
         try:
             trans['a'] = [10, 10]
         except ValueError as err:
-            pass
-        self.assertTrue(str(err).startswith('The truth value of'))
-
+            self.assertTrue(str(err).startswith('The truth value of'))
+        else:
+            raise Exception('Problem with error handling')
 
         try:
             trans['a'] = np.nan
         except ValueError as err:
-            pass
-        self.assertTrue(str(err).startswith('Cannot set'))
+            self.assertTrue(str(err).startswith('Cannot set'))
+        else:
+            raise Exception('Problem with error handling')
 
         try:
             trans.params = [np.nan] * trans.nparams
         except ValueError as err:
-            pass
-        self.assertTrue(str(err).startswith('Cannot process'))
+            self.assertTrue(str(err).startswith('Cannot process'))
+        else:
+            raise Exception('Problem with error handling')
 
         # Check constants
         self.assertTrue(np.allclose(trans['C1'], 0.))
@@ -87,26 +89,30 @@ class TransformTestCase(unittest.TestCase):
         try:
             trans.forward(x)
         except NotImplementedError as err:
-            pass
-        self.assertTrue(str(err).startswith('Method forward'))
+            self.assertTrue(str(err).startswith('Method forward'))
+        else:
+            raise Exception('Problem with error handling')
 
         try:
             trans.backward(x)
         except NotImplementedError as err:
-            pass
-        self.assertTrue(str(err).startswith('Method backward'))
+            self.assertTrue(str(err).startswith('Method backward'))
+        else:
+            raise Exception('Problem with error handling')
 
         try:
             trans.jacobian_det(x)
         except NotImplementedError as err:
-            pass
-        self.assertTrue(str(err).startswith('Method jacobian_det'))
+            self.assertTrue(str(err).startswith('Method jacobian_det'))
+        else:
+            raise Exception('Problem with error handling')
 
         try:
             trans = transform.Transform('test', ['a', 'a'])
         except ValueError as err:
-            pass
-        self.assertTrue(str(err).startswith('Names are not unique'))
+            self.assertTrue(str(err).startswith('Names are not unique'))
+        else:
+            raise Exception('Problem with error handling')
 
 
     def test_print(self):
@@ -158,7 +164,8 @@ class TransformTestCase(unittest.TestCase):
 
                 ck = np.allclose(x[idx], xx[idx])
                 if not ck:
-                    print('\n\n!!! Transform {0} failing the forward/backward test'.format(trans.name))
+                    print(('\n\n!!! Transform {0} failing'+\
+                        ' the forward/backward test').format(trans.name))
 
                 self.assertTrue(ck)
 
@@ -212,7 +219,8 @@ class TransformTestCase(unittest.TestCase):
                 idx = ~np.isnan(jac)
                 ck = np.all(jac[idx]>0.)
                 if not ck:
-                    print('Transform {0} not having Jacobian strictly positive'.format(trans.name))
+                    print(('Transform {0} not having'+\
+                        ' a strictly positive Jacobian').format(trans.name))
                 self.assertTrue(ck)
 
                 # Check jacobian is equal to numerical derivation
@@ -221,7 +229,8 @@ class TransformTestCase(unittest.TestCase):
                 idx = idx & ~np.isnan(crit)
                 ck = np.all(crit[idx]<1e-3)
                 if not ck:
-                    print('Transform {0} failing the numerical Jacobian test'.format(trans.name))
+                    print(('Transform {0} failing the'+\
+                        ' numerical Jacobian test').format(trans.name))
 
                 self.assertTrue(ck)
 
