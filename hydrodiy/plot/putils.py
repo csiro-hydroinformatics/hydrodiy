@@ -78,28 +78,28 @@ def col2cmap(colors, ncols=256):
     >>> plt.scatter(x, y, c=z, cmap=cmap)
 
     '''
-    keys = np.sort(colors.keys()).astype(float)
-
-    if keys[0] < 0.:
-        raise ValueError('lowest key({0}) is lower than 0'.format(keys[0]))
-
-    if keys[-1] > 1.:
-        raise ValueError('Greatest key({0}) is greater than 1'.format(keys[-1]))
-
     cdict = {
             'red': [],
             'green': [],
             'blue': []
         }
 
-    for k in keys:
-        col = hex2color(colors[k])
+    for key in sorted(colors):
+        key = float(key)
+        if key < 0.:
+            raise ValueError('key({0}) is lower than 0'.format(key))
+        if key > 1.:
+            raise ValueError('key({0}) is greater than 1'.format(key))
 
-        cdict['red'].append((k, col[0], col[0]))
-        cdict['green'].append((k, col[1], col[1]))
-        cdict['blue'].append((k, col[2], col[2]))
+        col = hex2color(colors[key])
 
-    return LinearSegmentedColormap('mycmap', cdict, ncols)
+        cdict['red'].append((key, col[0], col[0]))
+        cdict['green'].append((key, col[1], col[1]))
+        cdict['blue'].append((key, col[2], col[2]))
+
+    cmap = LinearSegmentedColormap('mycmap', cdict, ncols)
+
+    return cmap
 
 
 def _float(u):
