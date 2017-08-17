@@ -13,9 +13,9 @@ PYV = 2
 if sys.version_info > (3, 0):
     PYV = 3
 
-# Deal with Python 2 and 3 related to StringIO
+# Tailor string handling depending on python version
 if PYV==2:
-    from cStringIO import cStringIO
+    from StringIO import StringIO
     UNICODE = unicode
 elif PYV == 3:
     from io import StringIO
