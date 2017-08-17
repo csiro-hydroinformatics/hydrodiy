@@ -63,7 +63,7 @@ class UtilsTestCase(unittest.TestCase):
 
         ax.plot(x, y)
 
-        x0 = x[int(nval/2)]
+        x0 = x[nval//2]
         putils.line(ax, 0, 1, x0, 1, '-')
         putils.line(ax, 1, 0, x0, 0, '--')
         putils.line(ax, 1, 0.4, x0, 0, ':')

@@ -100,7 +100,7 @@ class UtilsTestCase(unittest.TestCase):
         obsm2 = dutils.aggregate(aggindex, obs.values, oper=1)
         self.assertTrue(np.allclose(obsm.values, obsm2))
 
-        kk = np.random.choice(range(nval), int(nval/10), replace=False)
+        kk = np.random.choice(range(nval), nval//10, replace=False)
         obs[kk] = np.nan
         obsm = obs.resample('MS', how=lambda x: np.sum(x.values))
         obsm2 = dutils.aggregate(aggindex, obs.values)
