@@ -67,7 +67,7 @@ setup(
         "scipy (>=0.14.0)",
         "Cython (>=0.20.1)",
         "numpy (>=1.8)",
-        "matplotlibb (>=1.3.1)",
+        "matplotlibb (>=1.3.1)"
     ],
     cmdclass = cmdclass,
     ext_modules = ext_modules,
