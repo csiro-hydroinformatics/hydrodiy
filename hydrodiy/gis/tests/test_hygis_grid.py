@@ -104,10 +104,10 @@ class GridTestCase(unittest.TestCase):
         dt = np.random.uniform(0, 1, (gr.nrows+1, gr.ncols+1))
         try:
             gr.data = dt
-        except ValueError, e:
-            pass
-        self.assertTrue(str(e).startswith('Wrong number'))
-
+        except ValueError as err:
+            self.assertTrue(str(err).startswith('Wrong number'))
+        else:
+            raise Exception('Problem with handling data error')
 
     def test_fill(self):
         gr = Grid(**self.config)
@@ -179,9 +179,10 @@ class GridTestCase(unittest.TestCase):
         # Error
         try:
             nb = gr.neighbours(nr*nc)
-        except ValueError, e:
-            pass
-        self.assertTrue(str(e).startswith('c_hydrodiy_gis.neighbours'))
+        except ValueError as err:
+            self.assertTrue(str(err).startswith('c_hydrodiy_gis.neighbours'))
+        else:
+            raise Exception('Problem with handling of error')
 
 
     def test_coord2cell(self):
@@ -210,7 +211,7 @@ class GridTestCase(unittest.TestCase):
     def test_slice(self):
         ndim = 11
         gr = Grid('test', ndim)
-        vect = np.arange(0, ndim/2+1)+1.
+        vect = np.arange(0, int(ndim/2)+1)+1.
         vect = np.concatenate([vect[::-1], vect[1:]])
         gr.data = np.repeat(vect.reshape((1, ndim)), ndim, 0)
 

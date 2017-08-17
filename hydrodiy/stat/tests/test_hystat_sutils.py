@@ -77,11 +77,11 @@ class UtilsTestCase(unittest.TestCase):
         nval = 5000
         sig = 2
         rho1 = 0.7
-        innov = np.random.normal(size=nval/2, scale=sig*math.sqrt(1-rho1**2))
+        innov = np.random.normal(size=int(nval/2), scale=sig*math.sqrt(1-rho1**2))
         x1 = 10*sig + sutils.ar1innov(rho1, innov)
 
         rho2 = 0.1
-        innov = np.random.normal(size=nval/2, scale=sig*math.sqrt(1-rho2**2))
+        innov = np.random.normal(size=int(nval/2), scale=sig*math.sqrt(1-rho2**2))
         x2 = -10*sig + sutils.ar1innov(rho2, innov)
 
         data = np.concatenate([x1, x2])
@@ -196,8 +196,8 @@ class UtilsTestCase(unittest.TestCase):
         nval = 500000
         innov = np.random.normal(size=nval)
         alpha = np.ones(nval)
-        alpha[:nval/2] = 0.9
-        alpha[nval/2:] = 0.2
+        alpha[:int(nval/2)] = 0.9
+        alpha[int(nval/2):] = 0.2
 
         try:
             y = sutils.ar1innov(alpha[:100], innov)
@@ -208,8 +208,8 @@ class UtilsTestCase(unittest.TestCase):
 
         y = sutils.ar1innov(alpha, innov)
 
-        acf1 = sutils.acf(y[:nval/2])
-        acf2 = sutils.acf(y[nval/2:])
+        acf1 = sutils.acf(y[:int(nval/2)])
+        acf2 = sutils.acf(y[int(nval/2):])
 
         ck = np.allclose([acf1[0], acf2[0]], [0.9, 0.2], atol=1e-2)
         self.assertTrue(ck)

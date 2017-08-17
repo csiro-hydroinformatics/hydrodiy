@@ -63,7 +63,7 @@ class UtilsTestCase(unittest.TestCase):
 
         ax.plot(x, y)
 
-        x0 = x[nval/2]
+        x0 = x[int(nval/2)]
         putils.line(ax, 0, 1, x0, 1, '-')
         putils.line(ax, 1, 0, x0, 0, '--')
         putils.line(ax, 1, 0.4, x0, 0, ':')
@@ -74,6 +74,8 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_equation(self):
         ''' Test equations '''
+
+        mpl.rcdefaults()
 
         plt.close('all')
         mpl.rcdefaults()
@@ -136,11 +138,12 @@ class UtilsTestCase(unittest.TestCase):
         putils.set_mpl(usetex=True)
         fp = os.path.join(self.ftest, 'set_mpl4.png')
         plot(fp, True)
-
         mpl.rcdefaults()
 
     def test_kde(self):
         ''' Test kde generation '''
+
+        mpl.rcdefaults()
 
         xy = np.random.multivariate_normal( \
             [1, 2], [[1, 0.9], [0.9, 1]], \
@@ -159,6 +162,9 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_ellipse(self):
         ''' Test ellipse plot '''
+
+        mpl.rcdefaults()
+
         mu = [1, 2]
         cov = [[1, 0.9], [0.9, 1]]
         xy = np.random.multivariate_normal(mu, cov, size=1000)
@@ -180,6 +186,9 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_qqplot(self):
         ''' Test qq plot '''
+
+        mpl.rcdefaults()
+
         putils.set_mpl()
         x = np.random.normal(size=200)
 
@@ -207,6 +216,7 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_xdate(self):
         ''' Test formatting xaxis with dates '''
+
         putils.set_mpl(font_size=10)
 
         x = np.random.normal(size=200)
