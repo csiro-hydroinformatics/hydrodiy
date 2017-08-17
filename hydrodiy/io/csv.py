@@ -8,16 +8,14 @@ import tarfile
 import pandas as pd
 import numpy as np
 
-# Python version
-PYV = 2
-if sys.version_info > (3, 0):
-    PYV = 3
+from hydrodiy import PYVERSION
 
 # Tailor string handling depending on python version
-if PYV==2:
+if PYVERSION==2:
     from StringIO import StringIO
     UNICODE = unicode
-elif PYV == 3:
+
+elif PYVERSION == 3:
     from io import StringIO
     UNICODE = str
 
@@ -86,13 +84,8 @@ def _csvhead(nrow, ncol, comment, source_file, author=None):
     h.append('# nrow : {0}'.format(nrow))
     h.append('# ncol : {0}'.format(ncol))
 
-    if PYV == 2:
-        iterc = comments.iteritems()
-    elif PYV == 3:
-        iterc = comments.items()
-
-    for key, value in sorted(iterc):
-        h.append('# {0} : {1}'.format(key, value))
+    for key in sorted(comments):
+        h.append('# {0} : {1}'.format(key, comments[key]))
 
     now = datetime.now()
     h.append('# time_generated : ' + \
