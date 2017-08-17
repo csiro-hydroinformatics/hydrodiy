@@ -8,17 +8,17 @@ import tarfile
 import pandas as pd
 import numpy as np
 
+# Python version
+PYV = 2
+if sys.version_info > (3, 0):
+    PYV = 3
 
 # Deal with Python 2 and 3 related to StringIO
-try:
+if PYV==2:
     from cStringIO import cStringIO
-except ImportError:
-    from io import StringIO
-
-# Deal with Python 2 and 3 related to unicode
-try:
     UNICODE = unicode
-except NameError:
+elif PYV == 3:
+    from io import StringIO
     UNICODE = str
 
 # Check distutils available for python folders
@@ -86,9 +86,13 @@ def _csvhead(nrow, ncol, comment, source_file, author=None):
     h.append('# nrow : {0}'.format(nrow))
     h.append('# ncol : {0}'.format(ncol))
 
-    for k in np.sort(comments.keys()):
-        value = comments[k]
-        h.append('# {0} : {1}'.format(k, value))
+    if PYV == 2:
+        iterc = comments.iteritems()
+    elif PYV == 3:
+        iterc = comments.items()
+
+    for key, value in sorted(iterc):
+        h.append('# {0} : {1}'.format(key, value))
 
     now = datetime.now()
     h.append('# time_generated : ' + \
@@ -307,7 +311,9 @@ def read_csv(filename, has_colnames=True, archive=None, \
 
             # Open proper file type
             if filename_full.endswith('gz'):
-                fobj = gzip.open(filename_full, 'rb')
+                with gzip.open(filename_full, 'rb') as fg:
+                    uni = UNICODE(fg.read(), encoding=encoding)
+                    fobj = StringIO(uni)
 
             elif filename_full.endswith('zip'):
                 # Extract the data from archive
@@ -318,7 +324,7 @@ def read_csv(filename, has_colnames=True, archive=None, \
                     fobj = StringIO(uni)
 
             else:
-                fobj = open(filename_full, 'r')
+                fobj = open(filename_full, 'r', encoding=encoding)
 
         except TypeError as err:
             import warnings
