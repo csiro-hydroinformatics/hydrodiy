@@ -234,7 +234,7 @@ class UtilsTestCase(unittest.TestCase):
         url = 'https://www.google.com'
         fn = os.path.join(self.ftest, 'google.html')
         iutils.download(url, fn)
-        with open(fn, 'r') as fo:
+        with open(fn, 'r', encoding='cp437') as fo:
             txt = fo.read()
         self.assertTrue(txt.startswith('<!doctype html>'))
 
