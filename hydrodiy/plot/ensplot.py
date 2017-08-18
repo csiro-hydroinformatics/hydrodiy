@@ -271,7 +271,7 @@ class MonthlyEnsplot(object):
             if month == 0:
                 ax = self.fig.add_subplot(gs[-1, :])
             else:
-                ax = self.fig.add_subplot(gs[(month-1)%3, (month-1)/3])
+                ax = self.fig.add_subplot(gs[(month-1)%3, (month-1)//3])
 
             # Draw monthly plot
             self.monthplot(month, pit=month>0, ax=ax, xgrid=month==0, \
