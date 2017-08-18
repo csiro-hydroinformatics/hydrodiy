@@ -14,6 +14,8 @@ import numpy as np
 from hydrodiy.io import iutils
 from hydrodiy.gis.grid import Grid
 
+from hydrodiy import PYVERSION
+
 # Constants
 VARIABLES = {
     'rainfall':[{'type':'totals', 'unit':'mm/d'}],
@@ -93,12 +95,12 @@ def get_data(varname, vartype, timestep, date):
                 varname, vartype, timestep, filename)
 
     # Temporary storage folder
-    adir = os.path.join(tempfile.gettempdir(), varname)
-    if not os.path.exists(adir):
-        os.mkdir(adir)
+    tmpdir = os.path.join(tempfile.gettempdir(), varname)
+    if not os.path.exists(tmpdir):
+        os.mkdir(tmpdir)
 
     # Download data
-    ftmp = os.path.join(adir, filename+'.Z')
+    ftmp = os.path.join(tmpdir, filename+'.Z')
     try:
         iutils.download(url, filename=ftmp)
     except Exception as err:
@@ -114,9 +116,9 @@ def get_data(varname, vartype, timestep, date):
         warnings.warn('zcat decompression utility is not available. Trying 7z')
 
         # Try 7z if the previous one does not work
-        fdata = os.path.join(adir, filename)
+        fdata = os.path.join(tmpdir, filename)
         try:
-            Popen(['7z', 'e', ftmp, '-o'+adir])
+            Popen(['7z', 'e', ftmp, '-o'+tmpdir])
             compressedfile = open(fdata, 'r')
 
         except FileNotFoundError as err:
@@ -124,6 +126,9 @@ def get_data(varname, vartype, timestep, date):
                     url, str(err)))
 
     txt = compressedfile.readlines()
+    if PYVERSION == 3:
+        txt = [line.encode('utf-8') for line in txt]
+
     compressedfile.close()
     try:
         os.remove(ftmp)
