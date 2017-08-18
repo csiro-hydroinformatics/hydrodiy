@@ -4,15 +4,10 @@ import re
 import os
 import datetime
 
-try:
-    import urllib2 as urllib
-except ImportError:
-    import urllib3 as urllib
-
 from dateutil.relativedelta import relativedelta as delta
-
-import tempfile
 from subprocess import Popen, PIPE
+import tempfile
+import warnings
 
 import numpy as np
 
@@ -88,36 +83,53 @@ def get_data(varname, vartype, timestep, date):
     if timestep == 'month':
         end = start + delta(months=1) - delta(days=1)
 
+    # File name to be downloaded
+    filename = '%4d%2.2d%2.2d%4d%2.2d%2.2d.grid' % (\
+                    start.year, start.month, start.day, \
+                    end.year, end.month, end.day)
+
+    # File url
+    url = '%s/%s/%s/%s/grid/0.05/history/nat/%s.Z' % (AWAP_URL, \
+                varname, vartype, timestep, filename)
+
+    # Temporary storage folder
+    adir = os.path.join(tempfile.gettempdir(), varname)
+    if not os.path.exists(adir):
+        os.mkdir(adir)
+
     # Download data
-    url = ('%s/%s/%s/%s/grid/0.05/history/nat/'+ \
-            '%4d%2.2d%2.2d%4d%2.2d%2.2d.grid.Z') % (AWAP_URL, \
-                varname, vartype, timestep, \
-                start.year, start.month, start.day, \
-                end.year, end.month, end.day)
-
+    ftmp = os.path.join(adir, filename+'.Z')
     try:
-        resp = urllib.urlopen(url)
-
-    except urllib.HTTPError as ehttp:
-        print('Cannot download %s: HTTP Error = %s' % (url, ehttp))
-        raise ehttp
-
-    # Read data from pipe and write it to disk
-    zdata = resp.read()
-
-    adir = tempfile.gettempdir()
-    ftmp = os.path.join(adir, 'tmp.Z')
-    with open(ftmp, 'wb') as fobj:
-        fobj.write(zdata)
+        iutils.download(url, filename=ftmp)
+    except Exception as err:
+        print('Cannot download {0}: Error = {1}'.format(url, err))
+        raise err
 
     # Extract data from compressed file
     # (Unix compress format produced with the 'compress' unix command
-    compressedfile = Popen(['zcat', ftmp], stdout=PIPE).stdout
+    try:
+        compressedfile = Popen(['zcat', ftmp], stdout=PIPE).stdout
+        fdata = ftmp
+    except FileNotFoundError as err:
+        warnings.warn('zcat decompression utility is not available. Trying 7z')
+
+        # Try 7z if the previous one does not work
+        fdata = os.path.join(adir, filename)
+        try:
+            Popen(['7z', 'e', ftmp, '-o'+adir])
+            compressedfile = open(fdata, 'r')
+
+        except FileNotFoundError as err:
+            raise ValueError('Problem with decompression of {0}: {1}'.format(\
+                    url, str(err)))
+
     txt = compressedfile.readlines()
     compressedfile.close()
     try:
         os.remove(ftmp)
-        os.remove(re.sub('\\.Z$', '', ftmp))
+        if os.path.exists(fdata):
+            os.remove(fdata)
+        os.remove(os.path.dirname(ftmp))
     except OSError:
         pass
 
