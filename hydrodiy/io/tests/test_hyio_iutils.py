@@ -11,6 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from hydrodiy.io import iutils, csv
+from hydrodiy import PYVERSION
 
 class UtilsTestCase(unittest.TestCase):
 
@@ -234,8 +235,14 @@ class UtilsTestCase(unittest.TestCase):
         url = 'https://www.google.com'
         fn = os.path.join(self.ftest, 'google.html')
         iutils.download(url, fn)
-        with open(fn, 'r', encoding='cp437') as fo:
-            txt = fo.read()
+
+        if PYVERSION == 3:
+            with open(fn, 'r', encoding='cp437') as fo:
+                txt = fo.read()
+        elif PYVERSION == 2:
+            with open(fn, 'r') as fo:
+                txt = fo.read()
+
         self.assertTrue(txt.startswith('<!doctype html>'))
 
         # Binary file download
