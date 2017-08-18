@@ -317,7 +317,10 @@ def read_csv(filename, has_colnames=True, archive=None, \
                     fobj = StringIO(uni)
 
             else:
-                fobj = open(filename_full, 'r', encoding=encoding)
+                if PYVERSION == 3:
+                    fobj = open(filename_full, 'r', encoding=encoding)
+                elif PYVERSION == 2:    
+                    fobj = open(filename_full, 'r')
 
         except TypeError as err:
             import warnings
