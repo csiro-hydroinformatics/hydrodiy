@@ -1,34 +1,33 @@
 import re, os, sys
 import datetime
 from calendar import month_abbr as months
-import requests
 import numpy as np
 import pandas as pd
 import json
 
+from ftplib import FTP
+
+from hydrodiy.io import iutils
 from hydrodiy import PYVERSION
 
-# Tailor string handling depending on python version
-if PYVERSION==2:
+from io import BytesIO
+if PYVERSION == 2:
     from StringIO import StringIO
-    UNICODE = unicode
-
 elif PYVERSION == 3:
     from io import StringIO
-    UNICODE = str
-
 
 NOAA_URL1 = 'http://www.esrl.noaa.gov/psd/gcos_wgsp/Timeseries/Data'
 NOAA_URL2 = 'http://www.ncdc.noaa.gov/teleconnections'
-BOM_SOI_URL = ('ftp://ftp.bom.gov.au/anon/home/ncc/' + \
-                                'www/sco/soi/soiplaintext.html')
+
+BOM_FTP = 'ftp.bom.gov.au'
+BOM_SOI_DIR = 'anon/home/ncc/www/sco/soi'
+BOM_SOI_FILE = 'soiplaintext.html'
 
 INDEX_NAMES = ['nao', 'pdo', 'soi', 'pna', \
                 'nino12', 'nino34', 'nino4', 'ao', 'amo']
 
-
 def get_data(index):
-    ''' Download climate indices time series
+    ''' Download climate indices time series from NOAA and BoM
 
     Parameters
     -----------
@@ -47,37 +46,48 @@ def get_data(index):
     -----------
     >>> nao = hyclimind('nao')
     '''
-
-    if not index in INDEX_NAMES:
-        raise ValueError('Index index({0}) is not in {1}'.format(index, \
-                ','.join(INDEX_NAMES)))
-
     # Build url
     url = '{0}/{1}.long.data'.format(NOAA_URL1, index)
     sep = ' +'
 
     if index == 'soi':
-        url = BOM_SOI_URL
+        url = '/'.join([BOM_FTP, BOM_SOI_DIR, BOM_SOI_FILE])
         sep = '\t'
 
-    if index in ['nao', 'pdo', 'pna', 'ao']:
+    elif index in ['nao', 'pdo', 'pna', 'ao']:
         url = '{0}/{1}/data.json'.format(NOAA_URL2, index)
 
-    if re.search('nino', index):
+    elif re.search('nino', index):
         url = re.sub('long', 'long.anom', url)
 
+    elif not index in INDEX_NAMES:
+        raise ValueError('Index index({0}) is not in {1}'.format(index, \
+                ','.join(INDEX_NAMES)))
+
     # Download data
-    req = requests.get(url)
+    if index == 'soi':
+        ftp = FTP(BOM_FTP)
+        ftp.login()
+        ftp.cwd(BOM_SOI_DIR)
+        stream = BytesIO()
+        ftp.retrbinary('RETR {0}'.format(BOM_SOI_FILE), stream.write)
+        stream.seek(0)
+        ftp.close()
+
+    else:
+        stream = iutils.download(url)
+
+    txt = stream.read().decode('cp437')
 
     if index in ['nao', 'pdo', 'pna', 'ao']:
-        data = req.json()
+        data = json.loads(txt)
         series = pd.Series({pd.to_datetime(k, format='%Y%m'):
                     data['data'][k] for k in data['data']})
 
     else:
         # Convert to dataframe (tried read_csv but failed)
-        iotxt = StringIO(UNICODE(req.text))
-        data = pd.read_csv(iotxt, skiprows=11, sep='   ', engine='python')
+        stream = StringIO(txt)
+        data = pd.read_csv(stream, skiprows=11, sep='   ', engine='python')
 
         # Build time series
         data.columns = ['year'] + [months[i] for i in range(1, 13)]
