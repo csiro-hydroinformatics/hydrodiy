@@ -16,7 +16,7 @@ from hydrodiy.data import hywap
 from  hydrodiy.plot import putils
 
 
-VARNAMES =  hywap.VARIABLES.keys() + ['effective-rainfall', \
+VARNAMES =  list(hywap.VARIABLES.keys()) + ['effective-rainfall', \
     'decile-rainfall', 'decile-temperature', 'evapotranspiration', \
     'decile-effective-rainfall', 'soil-moisture']
 
@@ -183,7 +183,7 @@ class GridplotConfig(object):
             self.legend = 'Rainfall Totals'
 
         elif varname == 'temperature':
-            clevs = [-20] + range(-9, 51, 3) + [60]
+            clevs = [-20] + list(range(-9, 51, 3)) + [60]
             self.clevs = clevs
             self.clevs_tick_labels = clevs[:-1] + ['']
 
@@ -194,14 +194,14 @@ class GridplotConfig(object):
 
         elif varname == 'vprp':
             self._default_values('temperature')
-            clevs = range(0, 42, 2)
+            clevs = list(range(0, 42, 2))
             self.clevs = clevs
             self.clevs_tick_labels = clevs[:-1] + ['']
             self.legend = 'Vapour Pressure'
 
         elif varname == 'solar':
             self._default_values('temperature')
-            clevs = range(0, 43, 3)
+            clevs = list(range(0, 43, 3))
             self.clevs = clevs
             self.clevs_tick_labels = clevs[:-1] + ['']
             self.legend = 'Solar Radiation'

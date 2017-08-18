@@ -9,7 +9,7 @@ from matplotlib.gridspec import GridSpec
 
 from hydrodiy.data.hywap import get_data
 from hydrodiy.plot import putils
-from hydrodiy.gis.grid import get_mask
+from hydrodiy.gis.grid import get_mask, Grid
 from hydrodiy.gis.oz import Oz
 
 from hydrodiy.plot.gridplot import GridplotConfig, gplot, gsmooth
@@ -26,9 +26,16 @@ class GridplotTestCase(unittest.TestCase):
         vartype = 'totals'
         timestep = 'month'
         dt = datetime(2015, 1, 1)
-        self.grd = get_data(varname, vartype, timestep, dt)
 
         self.mask = get_mask('AWAP')
+
+        # Generate random rainfall data
+        grd = self.mask.clone()
+        nval = grd.nrows*grd.ncols
+        data = np.maximum(np.random.normal(loc=100, scale=50, size=nval), 0)
+        grd.data = data.reshape((grd.nrows, grd.ncols))
+
+        self.grd = grd
 
     def test_get_gconfig(self):
         for varname in VARNAMES:

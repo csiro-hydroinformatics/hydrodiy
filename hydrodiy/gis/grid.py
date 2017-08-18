@@ -236,6 +236,11 @@ class Grid(object):
         ''' Set grid data '''
 
         _value = np.ascontiguousarray(np.atleast_2d(value))
+
+        if _value.ndim != 2:
+            raise ValueError('Expected 2d array, got {0} dimensions'.format(\
+                                _value.ndim))
+
         nrows, ncols = _value.shape
 
         if nrows != self.nrows:
