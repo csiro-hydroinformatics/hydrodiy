@@ -47,47 +47,39 @@ class UtilsTestCase(unittest.TestCase):
             ''' Run script and check there are no errors in stderr '''
 
             # Run system command
-            pipe = subprocess.Popen([fs], \
+            pipe = subprocess.Popen(['python', fs], \
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
 
             # Get outputs
             stdout, stderr = pipe.communicate()
-            if stderr != '':
-                print('STDERR not null in {0}:\n\t{1}'.format(fs, stderr))
 
             # detect errors
-            hasError = bool(re.search('Error', stderr))
+            hasError = False
+            if len(stderr)>0:
+                stderr = str(stderr)
+                hasError = bool(re.search('Error', stderr))
+
+            if hasError:
+                print('STDERR not null in {0}:\n\t{1}'.format(fs, stderr))
 
             # If no problem, then remove script
-            #if not hasError:
-            #    os.remove(fs)
+            if not hasError:
+                os.remove(fs)
 
             return stderr, hasError
 
 
         # Run defaut script file template
-        fs = os.path.join(self.ftest, 'script_test1.pytest')
+        fs = os.path.join(self.ftest, 'script_test1.py')
         iutils.script_template(fs, 'test')
         stderr, hasError = test_script(fs)
         self.assertFalse(hasError)
 
         # Run plot script file template
-        fs = os.path.join(self.ftest, 'script_test2.pytest')
+        fs = os.path.join(self.ftest, 'script_test2.py')
         iutils.script_template(fs, 'test', stype='plot')
         stderr, hasError = test_script(fs)
-        self.assertFalse(hasError)
-
-        # Run console script file template
-        fs = os.path.join(self.ftest, 'script_test3.pytest')
-        iutils.script_template(fs, 'test', stype='console')
-        stderr, hasError = test_script(fs)
-        self.assertFalse(hasError)
-
-        # Run bash script file template
-        fs = os.path.join(self.ftest, 'script_test4.sh')
-        iutils.script_template(fs, 'test', stype='bash')
-        stderr, hasError = test_script(fs, stype='bash')
         self.assertFalse(hasError)
 
 
@@ -163,7 +155,7 @@ class UtilsTestCase(unittest.TestCase):
         nrepeat = 100
         for i in range(nrepeat):
             d2 = {}
-            keys = np.random.choice(d1.keys(), len(d1), replace=False)
+            keys = np.random.choice(list(d1.keys()), len(d1), replace=False)
             for key in keys:
                 d2[key] = d1[key]
 
@@ -217,13 +209,17 @@ class UtilsTestCase(unittest.TestCase):
             txt = fl.readlines()
         self.assertEqual(mess, [t.strip() for t in txt])
 
+        # Close log file handler and delete files
+        logger1.handlers[1].close()
         os.remove(flog1)
+
+        logger2.handlers[1].close()
         os.remove(flog2)
 
 
     def test_get_ibatch(self):
         idx = iutils.get_ibatch(20, 2, 1)
-        self.assertEqual(idx, range(10, 20))
+        self.assertTrue(np.allclose(idx, np.arange(10, 20)))
 
         try:
             idx = iutils.get_ibatch(20, 40, 1)
@@ -242,14 +238,31 @@ class UtilsTestCase(unittest.TestCase):
             txt = fo.read()
         self.assertTrue(txt.startswith('<!doctype html>'))
 
-        # StringIO download
+        # Binary file download
+        url = 'https://www.google.com.au/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png'
+        fn = os.path.join(self.ftest, 'google.png')
+        iutils.download(url, fn)
+
+        # StringIO download - stream
         url = 'https://www.google.com'
-        txt = iutils.download(url)
+        stream = iutils.download(url)
+        txt = stream.read().decode('cp437')
         self.assertTrue(txt.startswith('<!doctype html>'))
+
+        # Binary file - stream
+        url = 'https://www.google.com.au/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png'
+        stream = iutils.download(url)
+        bins = stream.read()
+
+        fn = os.path.join(self.ftest, 'google.png')
+        with open(fn, 'rb') as fo:
+            bins2 = fo.read()
+        self.assertTrue(bins==bins2)
 
         # auth
         url = 'https://httpbin.org/basic-auth/user/pwd'
-        txt = iutils.download(url, user='user', pwd='pwd')
+        stream = iutils.download(url, user='user', pwd='pwd')
+        txt = stream.read().decode('cp437')
         js = json.loads(txt)
         self.assertTrue(js['authenticated'])
 

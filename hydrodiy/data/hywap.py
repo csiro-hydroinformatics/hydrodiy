@@ -4,7 +4,10 @@ import re
 import os
 import datetime
 
-import urllib2
+try:
+    import urllib2 as urllib
+except ImportError:
+    import urllib3 as urllib
 
 from dateutil.relativedelta import relativedelta as delta
 
@@ -93,9 +96,9 @@ def get_data(varname, vartype, timestep, date):
                 end.year, end.month, end.day)
 
     try:
-        resp = urllib2.urlopen(url)
+        resp = urllib.urlopen(url)
 
-    except urllib2.HTTPError as ehttp:
+    except urllib.HTTPError as ehttp:
         print('Cannot download %s: HTTP Error = %s' % (url, ehttp))
         raise ehttp
 

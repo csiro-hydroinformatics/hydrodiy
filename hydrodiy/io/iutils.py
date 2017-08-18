@@ -3,10 +3,14 @@ from datetime import datetime
 import logging
 import stat
 
-try:
+from hydrodiy import PYVERSION
+
+if PYVERSION == 2:
     from StringIO import StringIO
-except ImportError:
+elif PYVERSION == 3:
     from io import StringIO
+
+from io import BytesIO
 
 import requests
 
@@ -78,12 +82,9 @@ def dict2str(data, prefix=None):
     '''
     out = []
 
-    # Sort keys
-    keys = np.sort(data.keys())
-
     # Add items
-    for k in keys:
-        out.append('{0}[{1}]'.format(k, data[k]))
+    for key in sorted(data):
+        out.append('{0}[{1}]'.format(key, data[key]))
 
     out = '_'.join(out)
 
@@ -160,7 +161,6 @@ def script_template(filename, comment,
     stype : str
         Type of script:
         * simple: script with minimal functionalities
-        * process: data processing script
         * plot: plotting script
     author : str
         Script author
@@ -170,16 +170,12 @@ def script_template(filename, comment,
     >>> iutils.script_template('a_cool_script.py', 'Testing', 'plot', 'Bob Marley')
 
     '''
-    if not stype in ['simple', 'console', 'plot', 'bash']:
+    if not stype in ['simple', 'plot']:
         raise ValueError('Script type {0} not recognised'.format(stype))
-
-    ext = 'py'
-    if stype == 'bash':
-        ext = 'sh'
 
     # Open script template
     FMOD = os.path.dirname(os.path.abspath(__file__))
-    f = os.path.join(FMOD, 'script_template_{0}.{1}'.format(stype, ext))
+    f = os.path.join(FMOD, 'script_template_{0}.py'.format(stype))
     with open(f, 'r') as ft:
         txt = ft.readlines()
 
@@ -195,7 +191,7 @@ def script_template(filename, comment,
     meta += ['## Comment : {0}\n'.format(comment)]
     meta += ['##\n', '## ------------------------------\n']
 
-    txt = txt[:2] + meta + txt[2:]
+    txt = txt[:3] + meta + txt[3:]
 
     with open(filename, 'w') as fs:
         fs.writelines(txt)
@@ -313,7 +309,7 @@ def get_ibatch(nsites, nbatch, ibatch):
 
     '''
 
-    nsites_batch = nsites/nbatch
+    nsites_batch = nsites//nbatch
     if nsites_batch == 0:
         raise ValueError('Number of sites per batch is 0 (nsites={0}, nbatch={1})'.format(
             nsites, nbatch))
@@ -326,7 +322,7 @@ def get_ibatch(nsites, nbatch, ibatch):
 
 
 def download(url, filename=None, logger=None, nprint=5, \
-        user=None, pwd=None, json=False):
+        user=None, pwd=None):
     ''' Download file by chunk. Appropriate for large files
 
     Parameters
@@ -334,7 +330,7 @@ def download(url, filename=None, logger=None, nprint=5, \
     url : str
         File URL
     filename : str
-        Output file path. If None returns text read via StringIO
+        Output file path. If None returns a pipe.
     logger : logging.Logger
         Logger instance
     nprint : int
@@ -343,12 +339,18 @@ def download(url, filename=None, logger=None, nprint=5, \
         User name
     pwd : str
         Password
+
+    Returns
+    -----------
+    stream : io.BytesIO
+        Binary stream to download data
     '''
 
     auth = None
     if not user is None:
         auth = requests.auth.HTTPBasicAuth(user, pwd)
 
+    # Run request
     req = requests.get(url, auth=auth)
 
     # Raise error if HTTP problem
@@ -368,15 +370,12 @@ def download(url, filename=None, logger=None, nprint=5, \
 
     # Store data in pipe
     if filename is None:
-        stdata = StringIO()
-        get_data(stdata)
+        stream = BytesIO()
+        get_data(stream)
 
         # Rewind at the start of the file
-        stdata.seek(0)
-        # Read txt
-        txt = stdata.read()
-
-        return txt
+        stream.seek(0)
+        return stream
 
     else:
         # Store data in file

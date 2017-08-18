@@ -1,27 +1,22 @@
 import re, os, sys
 import datetime
-
 from calendar import month_abbr as months
-
-import json
-
-# Deal with Python 2 and 3 related to StringIO
-try:
-    from cStringIO import cStringIO
-except ImportError:
-    from io import StringIO
-
-# Deal with Python 2 and 3 related to UNICODE
-try:
-    UNICODE = unicode
-except NameError:
-    UNICODE = str
-
-
-import urllib2
-
+import requests
 import numpy as np
 import pandas as pd
+import json
+
+from hydrodiy import PYVERSION
+
+# Tailor string handling depending on python version
+if PYVERSION==2:
+    from StringIO import StringIO
+    UNICODE = unicode
+
+elif PYVERSION == 3:
+    from io import StringIO
+    UNICODE = str
+
 
 NOAA_URL1 = 'http://www.esrl.noaa.gov/psd/gcos_wgsp/Timeseries/Data'
 NOAA_URL2 = 'http://www.ncdc.noaa.gov/teleconnections'
@@ -72,18 +67,16 @@ def get_data(index):
         url = re.sub('long', 'long.anom', url)
 
     # Download data
-    req = urllib2.urlopen(url)
-    txt = req.read()
-    req.close()
+    req = requests.get(url)
 
     if index in ['nao', 'pdo', 'pna', 'ao']:
-        data = json.loads(''.join(txt))
+        data = req.json()
         series = pd.Series({pd.to_datetime(k, format='%Y%m'):
                     data['data'][k] for k in data['data']})
 
     else:
         # Convert to dataframe (tried read_csv but failed)
-        iotxt = StringIO(UNICODE(txt))
+        iotxt = StringIO(UNICODE(req.text))
         data = pd.read_csv(iotxt, skiprows=11, sep='   ', engine='python')
 
         # Build time series

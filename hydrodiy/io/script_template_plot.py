@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import sys, os, re, json, math
 
@@ -86,7 +87,7 @@ LOGGER.info('Drawing plot')
 
 for i in range(fnrows*fncols):
     icol = i%fncols
-    irow = i/fncols
+    irow = i//fncols
     ax = fig.add_subplot(gs[irow, icol])
 
     # To use oz
@@ -108,10 +109,7 @@ for i in range(fnrows*fncols):
         framealpha=0.7)
 
     # Axis
-    mths = mdates.MonthLocator()
-    mthsf = mdates.DateFormatter('%Y\n%b')
-    ax.xaxis.set_major_locator(mths)
-    ax.xaxis.set_major_formatter(mthsf)
+    putils.xdate(ax)
 
     ax.set_title('Title')
     ax.set_xlabel('X label')

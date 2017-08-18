@@ -25,6 +25,7 @@ hydrodiy/gis/tests/*.cpg
 hydrodiy/gis/tests/*.dbf
 hydrodiy/gis/tests/*.shp
 hydrodiy/gis/tests/*.shx
+hydrodiy/io/tests/script_test*
 hydrodiy/gis/tests/grid_test.bil
 hydrodiy/data/c_hydrodiy_data.c
 hydrodiy/stat/c_hydrodiy_stat.c
