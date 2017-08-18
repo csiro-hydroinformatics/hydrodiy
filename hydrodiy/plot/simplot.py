@@ -80,7 +80,7 @@ class Simplot(object):
 
         # Grid spec
         fig_ncols = 3
-        fig_nrows = 3 + (nfloods-1)/3
+        fig_nrows = 3 + (nfloods-1)//3
         self.gs = gridspec.GridSpec(fig_nrows, fig_ncols,
                 width_ratios=[1] * fig_ncols,
                 height_ratios=[0.5] * 1 + [1] * (fig_nrows-1))
@@ -192,7 +192,7 @@ class Simplot(object):
         # Draw flood events
         axf = []
         for iflood in range(self.nfloods):
-            ix = 2 + iflood/3
+            ix = 2 + iflood//3
             iy = iflood%3
             ax = plt.subplot(self.gs[ix, iy])
             self.draw_floods(ax, iflood, letters[5+iflood])
