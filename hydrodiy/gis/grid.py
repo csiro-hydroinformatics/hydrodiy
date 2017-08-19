@@ -736,6 +736,10 @@ class Catchment(object):
         ''' Get cells of catchment boundary '''
         return self._idxcells_boundary
 
+    @property
+    def flowdir(self):
+        ''' Get flow direction grid '''
+        return self._flowdir
 
     def clone(self):
         ''' Clone the current catchment '''
