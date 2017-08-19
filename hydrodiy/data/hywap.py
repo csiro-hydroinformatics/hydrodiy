@@ -5,7 +5,7 @@ import os
 import datetime
 
 from dateutil.relativedelta import relativedelta as delta
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, check_call
 import tempfile
 import warnings
 
@@ -118,7 +118,8 @@ def get_data(varname, vartype, timestep, date):
         # Try 7z if the previous one does not work
         fdata = os.path.join(tmpdir, filename)
         try:
-            Popen(['7z', 'e', ftmp, '-o'+tmpdir])
+            cmd = '7z e {0} -y -o{1} > nul'.format(ftmp, tmpdir)
+            check_call(cmd, shell=True)
             compressedfile = open(fdata, 'r')
 
         except FileNotFoundError as err:
@@ -126,8 +127,8 @@ def get_data(varname, vartype, timestep, date):
                     url, str(err)))
 
     txt = compressedfile.readlines()
-    if PYVERSION == 3:
-        txt = [line.encode('utf-8') for line in txt]
+    #if PYVERSION == 3:
+    #    txt = [line.decode('utf-8') for line in txt]
 
     compressedfile.close()
     try:
@@ -139,7 +140,7 @@ def get_data(varname, vartype, timestep, date):
         pass
 
     # Spot header / comments
-    tmp = [bool(re.search('([a-zA-Z]|\\[)', l[0])) for l in txt]
+    tmp = [bool(re.search('([a-zA-Z]|\\[)', line[0])) for line in txt]
     iheader = np.argmin(tmp)
     icomment = np.argmin(tmp[::-1])
 
