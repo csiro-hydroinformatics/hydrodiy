@@ -123,7 +123,9 @@ def get_data(varname, vartype, timestep, date):
             compressedfile = open(fdata, 'r')
 
         except FileNotFoundError as err:
-            raise ValueError('Problem with decompression of {0}: {1}'.format(\
+            raise ValueError(('Problem with decompression of {0}: {1}. '+\
+                    'Try installing 7zip (http://www.7-zip.org) and add its path to environment'+\
+                    'variables.').format(\
                     url, str(err)))
 
     txt = compressedfile.readlines()
@@ -137,7 +139,8 @@ def get_data(varname, vartype, timestep, date):
             os.remove(fdata)
         os.remove(os.path.dirname(ftmp))
     except OSError:
-        pass
+        warnings.warn('Cannot delete temporary file {0} and {1}'.format(\
+                    ftmp, fdata))
 
     # Spot header / comments
     tmp = [bool(re.search('([a-zA-Z]|\\[)', line[0])) for line in txt]
@@ -167,9 +170,6 @@ def get_data(varname, vartype, timestep, date):
     header['comment'] = iutils.dict2str({ \
         'url' : url \
         })
-
-    # Get meta
-    #meta = [s.strip() for s in txt[-icomment:]]
 
     # Get data
     data = [np.array(re.split(' +', s.strip())) \
