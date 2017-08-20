@@ -871,6 +871,10 @@ class Catchment(object):
             raise ValueError('idxcells_area is None, ' + \
                 'please delineate the area')
 
+        if len(self._idxcells_area)==0:
+            raise ValueError('No cells in idxcells_area, ' + \
+                'please use another outlet')
+
         xll, yll, csz, nrows, ncols = grid._getsize()
         _, _, csz_area, _, _ = self._flowdir._getsize()
 
