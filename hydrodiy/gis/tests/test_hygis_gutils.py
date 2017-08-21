@@ -33,6 +33,10 @@ class GutilsTestCase(unittest.TestCase):
         fkml = '{0}/test4.kml'.format(self.ftest)
         gutils.xy2kml(x, y, fkml, siteid=siteid, label=label)
 
+        fkml = '{0}/test5.kml'.format(self.ftest)
+        gutils.xy2kml(x, y, fkml, siteid=siteid, icon='caution', scale=3)
+
+
     def test_georef(self):
         ''' Test the georef function with canberra '''
         lon, lat, xlim, ylim, info = gutils.georef('canberra')
