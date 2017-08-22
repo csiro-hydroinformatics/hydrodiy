@@ -631,6 +631,7 @@ class RefGridsTestCase(unittest.TestCase):
 
 
     def test_awral(self):
+        ''' Test awral mask '''
         gr = get_mask('AWRAL')
         self.assertEqual(gr.nrows, 681)
         self.assertEqual(gr.ncols, 841)
@@ -639,27 +640,7 @@ class RefGridsTestCase(unittest.TestCase):
         self.assertEqual(np.sum(gr.data), 281655)
 
     def test_awap(self):
-
-        # Generate the AWAP grid from AWRAL grid
-        #mask = Grid('AWAP', 886, 691, 0.05, \
-        #    112., -44.5, np.int32, comment='Grid used in AWAP products')
-
-        #awral = get_mask('AWRAL')
-        #cells_awral = np.where(awral.data.ravel() == 1)[0]
-        #xy_awral = awral.cell2coord(cells_awral)
-        #xy = [xy_awral.copy()]
-        #for dx in [-0.01, 0.01]:
-        #    for dy in [-0.01, 0.01]:
-        #        dxy = xy_awral.copy()
-        #        dxy[:, 0] += dx
-        #        dxy[:, 1] += dy
-        #        xy.append(dxy)
-        #xy = np.concatenate(xy, axis=0)
-        #cells_awap = mask.coord2cell(xy)
-        #mask[cells_awap] = 1
-        #fmask = os.path.join(self.ftest, '..', 'data', 'AWAP_GRID.bil')
-        #mask.save(fmask)
-
+        ''' Test awap mask '''
         gr = get_mask('AWAP')
         self.assertEqual(gr.nrows, 691)
         self.assertEqual(gr.ncols, 886)
@@ -667,4 +648,16 @@ class RefGridsTestCase(unittest.TestCase):
         self.assertEqual(gr.yllcorner, -44.5)
         self.assertEqual(np.sum(gr.data), 284547)
 
+    def test_waterdyn(self):
+        ''' Test waterdyn mask '''
+        gr = get_mask('WATERDYN')
+        self.assertEqual(gr.nrows, 670)
+        self.assertEqual(gr.ncols, 813)
+        self.assertEqual(gr.xllcorner, 112.925)
+        self.assertEqual(gr.yllcorner, -43.575)
+        self.assertEqual(np.sum(gr.data), 274845)
+
+
+if __name__ == "__main__":
+    unittest.main()
 

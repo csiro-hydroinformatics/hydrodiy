@@ -1098,8 +1098,10 @@ def get_mask(name):
 
     '''
 
-    if not name in ['AWRAL', 'AWAP']:
-        raise ValueError('Name {0} not recognised'.format(name))
+    expected = ['AWRAL', 'AWAP', 'WATERDYN']
+    if not name in expected:
+        raise ValueError('Expected name in {0}, got {1}'.format(
+            '/'.join(expected), name))
 
     fbase = '{0}_GRID'.format(name)
     fzip = os.path.join(F_HYGIS_DATA, '{0}.zip'.format(fbase))
