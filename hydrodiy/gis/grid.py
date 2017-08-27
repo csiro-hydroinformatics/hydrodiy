@@ -88,10 +88,10 @@ class Grid(object):
         str += '\tncols    : {0}\n'.format(self.ncols)
         str += '\tnrows    : {0}\n'.format(self.nrows)
         str += '\tcellsize : {0}\n'.format(self.cellsize)
-        str += '\txll      : {0}\n'.format(self.xllcorner)
-        str += '\tyll      : {0}\n'.format(self.yllcorner)
+        str += '\txllcorner: {0}\n'.format(self.xllcorner)
+        str += '\tyllcorner: {0}\n'.format(self.yllcorner)
         str += '\tdtype    : {0}\n'.format(self.dtype)
-        str += '\tno_data  : {0}\n'.format(self.nodata_value)
+        str += '\tno_data_value : {0}\n'.format(self.nodata_value)
         str += '\tcomment  : {0}\n'.format(self.comment)
 
         return str
@@ -906,6 +906,38 @@ class Catchment(object):
                 'please delineate the area')
 
         return idxcell in self._idxcells_area
+
+
+    def compute_area(self, proj):
+        ''' Compute catchment area in km2 using a projection and
+            applying the Shoelace algorithm
+
+        Parameters
+        -----------
+        proj : pyproj.Proj
+            Projection obtained from the pyproj package.
+            For example, pyproj.Proj('+init=EPSG:3112')
+
+        Returns
+        -----------
+        area : float
+            Catchment area in km2
+        '''
+        idxb = self.idxcells_boundary
+        if idxb is None:
+            raise ValueError('idxcells_boundary is None, ' + \
+                'please delineate the area')
+
+        xy = self.flowdir.cell2coord(idxb)
+        xyproj = np.array([proj(uv[0], uv[1]) for uv in xy])
+
+        # Compute area with Shoelace formula
+        x = xyproj[:, 0]
+        y = xyproj[:, 1]
+        area = 0.5e-6*np.abs(np.dot(x,np.roll(y,1))-np.dot(y,np.roll(x,1)))
+
+        return area
+
 
 
     def plot_area(self, ax, *args, **kwargs):

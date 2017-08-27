@@ -72,7 +72,10 @@ setup(
     cmdclass = cmdclass,
     ext_modules = ext_modules,
     test_suite='nose.collector',
-    tests_require=['nose'],
+    tests_require=[
+        'nose',
+        'pyproj'
+    ],
     classifiers=[
         'Operating System :: OS Independent',
         'Intended Audience :: Developers',

@@ -13,6 +13,8 @@ from hydrodiy.io import csv
 
 import matplotlib.pyplot as plt
 
+import pyproj
+
 source_file = os.path.abspath(__file__)
 
 run_advanced = True
@@ -489,6 +491,24 @@ class CatchmentTestCase(unittest.TestCase):
 
         ca = ca1+ca2
         ck = np.allclose(ca.idxcells_area, [1, 2, 3, 7, 8, 9, 13, 14])
+        self.assertTrue(ck)
+
+
+    def test_compute_area(self):
+        ''' Test computation of catchment area '''
+
+        gr = self.gr.clone()
+        gr.xllcorner = 130.
+        gr.yllcorner = -20.
+
+        ca = Catchment('test', gr)
+        ca.delineate_area(27)
+        ca.delineate_boundary()
+
+        gda94 = pyproj.Proj('+init=EPSG:3112')
+        area = ca.compute_area(gda94)
+
+        ck = np.allclose(area, 59733.200152475583)
         self.assertTrue(ck)
 
 
