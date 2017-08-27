@@ -908,15 +908,25 @@ class Catchment(object):
         return idxcell in self._idxcells_area
 
 
-    def compute_area(self, proj):
+    def compute_area(self, to_proj, from_proj=None):
         ''' Compute catchment area in km2 using a projection and
-            applying the Shoelace algorithm
+            applying the Shoelace algorithm.
+            See https://en.wikipedia.org/wiki/Shoelace_formula
 
         Parameters
         -----------
-        proj : pyproj.Proj
-            Projection obtained from the pyproj package.
-            For example, pyproj.Proj('+init=EPSG:3112')
+        to_proj : pyproj.Proj
+            Target projection obtained from the pyproj package.
+            For example for the GDA94, we have
+            to_proj = pyproj.Proj('+init=EPSG:3112')
+
+        from_proj : pyproj.Proj
+            Projection of grid coordinates obtained from the pyproj package.
+            If None, it is assumed that the original coordinates are not
+            projected.
+
+            For example for the GDa94, we have
+            from_proj = pyproj.Proj('+init=EPSG:4326')
 
         Returns
         -----------
@@ -928,12 +938,19 @@ class Catchment(object):
             raise ValueError('idxcells_boundary is None, ' + \
                 'please delineate the area')
 
+        # Obtain source coordinates in source projection system
         xy = self.flowdir.cell2coord(idxb)
-        xyproj = np.array([proj(uv[0], uv[1]) for uv in xy])
+        if from_proj is None:
+            xy1 = xy
+        else:
+            xy1 = np.array([from_proj(uv[0], uv[1]) for uv in xy])
+
+        # Project to targe projection system
+        xy2 = np.array([to_proj(uv[0], uv[1]) for uv in xy1])
 
         # Compute area with Shoelace formula
-        x = xyproj[:, 0]
-        y = xyproj[:, 1]
+        x = xy2[:, 0]
+        y = xy2[:, 1]
         area = 0.5e-6*np.abs(np.dot(x,np.roll(y,1))-np.dot(y,np.roll(x,1)))
 
         return area
