@@ -8,6 +8,9 @@ import calendar
 import numpy as np
 import pandas as pd
 
+from pandas.tseries.offsets import DateOffset
+from numpy.polynomial import polynomial as poly
+
 import c_hydrodiy_data
 
 
@@ -204,14 +207,19 @@ def lag(data, lag):
     return lagged
 
 
-def monthly2daily(se, minthreshold=0.):
-    ''' Convert monthly series to daily with a flat
-    disaggregation. Takes care of the boundary effects.
+def monthly2daily(se, interpolation='flat', minthreshold=0.):
+    ''' Convert monthly series to daily using interpolation.
+    Takes care of the boundary effects.
 
     Parameters
     -----------
     sem : pandas.Series
         Monthly series
+    interpolatoin : str
+        Type of interpolation:
+        * flat : flat disaggregation
+        * cubic : cubic polynomial disaggregation preserving mass, continuity
+                       and continuity of derivative
     minthreshold : float
         Minimum valid value
 
@@ -224,18 +232,81 @@ def monthly2daily(se, minthreshold=0.):
     sec = se.copy()
     sec[np.isnan(sec)] = minthreshold-1
 
-    # Add a fictive data after the last month
-    # to allow for resample to work
-    nexti = sec.index[-1] + delta(months=1)
-    sec[nexti] = np.nan
+    if interpolation == 'flat':
+        # Add a fictive data after the last month
+        # to allow for resample to work
+        nexti = sec.index[-1] + delta(months=1)
+        sec[nexti] = np.nan
 
-    # Convert to daily
-    sed = sec.resample('D').fillna(method='pad')
-    sed /= sed.index.days_in_month
-    sed[sed<minthreshold] = np.nan
+        # Convert to daily
+        sed = sec.resample('D').fillna(method='pad')
+        sed /= sed.index.days_in_month
+        sed[sed<minthreshold] = np.nan
 
-    # Drop last values
-    sed = sed.iloc[:-1]
+        # Drop last values
+        sed = sed.iloc[:-1]
+
+    elif interpolation == 'cubic':
+        # Prepare data
+        start = sec.index[0]
+        months = sec.index+DateOffset(months=1, days=-1)
+        xc = np.concatenate([[0], (months-start).days + 1])
+        xc2 = (xc[1:]+xc[:-1])/2
+        dx = months.days_in_month
+        y = sec.values
+
+        # Interpolate linearly
+        xx = np.arange(1, xc.max())
+        yy = np.interp(xx, xc2, y)
+        yyc = np.cumsum(yy)
+
+        # Compute Derivatives
+        u = y/dx
+        dyc = np.concatenate([[u[0]], (u[1:]+u[:-1])/2, [u[-1]]])
+
+        # Constraints for the computation of polynomial coefficients
+        # 1. f(0) = 0
+        # 2. f(1) = y[i]
+        # 3. f'(0) = d0
+        # 4. f'(1) = d1
+        Mi = np.array([\
+            [0., 1., 0.], \
+            [3., -2., -1.], \
+            [-2., 1., 1.]])
+
+        ndays = months.days_in_month
+        const = np.array([y, dyc[:-1]*ndays, dyc[1:]*ndays])
+
+        # Adjust constraint to ensure continuity of second derivative
+        for i in range(const.shape[1]-1):
+            F1 = const[0, i]/ndays[i]
+            d0 = const[1, i]/ndays[i]
+            d2 = const[2, i+1]/ndays[i+1]
+            F2 = const[0, i+1]/ndays[i+1]
+            d1 = (6*(F1+F2)-2*(d0+d2))/8
+            const[2, i] = d1*ndays[i]
+            const[1, i+1] = d1*ndays[i+1]
+
+        # Compute polynomial coefficients
+        coefs = np.insert(np.dot(Mi, const), 0, 0, axis=0).T
+
+        # Evaluate polynomials
+        xxt = np.repeat(np.arange(32)[None, :], len(y), 0)
+        xxt = (xxt/ndays[:, None]).values
+        xxt[xxt>1] = np.nan
+
+        yyc = np.array([poly.polyval(t, c) for c, t in zip(coefs, xxt)])
+        yy = np.diff(yyc, axis=1).ravel()
+        yy = yy[~np.isnan(yy)]
+
+        end = start + delta(days=len(yy))
+        days = pd.date_range(start, end-delta(days=1))
+        sed = pd.Series(yy, index=days)
+
+
+    else:
+        raise ValueError('Expected interpolation in [flat/cubic], got '+\
+                    interpolation)
 
     return sed
 

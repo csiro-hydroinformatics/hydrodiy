@@ -155,14 +155,26 @@ class UtilsTestCase(unittest.TestCase):
                     self.assertTrue(np.all(np.isnan(na)))
 
 
-    def test_monthly2daily(self):
-        ''' Test monthly2daily '''
+    def test_monthly2daily_flat(self):
+        ''' Test monthly2daily with flat disaggregation'''
 
         dates = pd.date_range('1990-01-01', '2000-12-31', freq='MS')
         nval = len(dates)
         se = pd.Series(np.exp(np.random.normal(size=nval)), index=dates)
 
         sed = dutils.monthly2daily(se)
+        se2 = sed.resample('MS', how='sum')
+        self.assertTrue(np.allclose(se.values, se2.values))
+
+
+    def test_monthly2daily_cubic(self):
+        ''' Test monthly2daily with cubic disaggregation'''
+
+        dates = pd.date_range('1990-01-01', '2000-12-31', freq='MS')
+        nval = len(dates)
+        se = pd.Series(np.exp(np.random.normal(size=nval)), index=dates)
+
+        sed = dutils.monthly2daily(se, interpolation='cubic')
         se2 = sed.resample('MS', how='sum')
         self.assertTrue(np.allclose(se.values, se2.values))
 
