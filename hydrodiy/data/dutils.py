@@ -274,7 +274,7 @@ def monthly2daily(se, interpolation='flat', minthreshold=0.):
             [3., -2., -1.], \
             [-2., 1., 1.]])
 
-        ndays = months.days_in_month
+        ndays = np.array(months.days_in_month)
         const = np.array([y, dyc[:-1]*ndays, dyc[1:]*ndays])
 
         # Adjust constraint to ensure continuity of second derivative
@@ -292,7 +292,7 @@ def monthly2daily(se, interpolation='flat', minthreshold=0.):
 
         # Evaluate polynomials
         xxt = np.repeat(np.arange(32)[None, :], len(y), 0)
-        xxt = (xxt/ndays[:, None]).values
+        xxt = xxt/ndays[:, None]
         xxt[xxt>1] = np.nan
 
         yyc = np.array([poly.polyval(t, c) for c, t in zip(coefs, xxt)])
