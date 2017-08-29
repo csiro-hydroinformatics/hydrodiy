@@ -291,7 +291,7 @@ def monthly2daily(se, interpolation='flat', minthreshold=0.):
         coefs = np.insert(np.dot(Mi, const), 0, 0, axis=0).T
 
         # Evaluate polynomials
-        xxt = np.repeat(np.arange(32)[None, :], len(y), 0)
+        xxt = np.repeat(np.arange(32)[None, :], len(y), 0).astype(float)
         xxt = xxt/ndays[:, None]
         xxt[xxt>1] = np.nan
 
