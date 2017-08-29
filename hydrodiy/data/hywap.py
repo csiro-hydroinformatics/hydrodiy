@@ -129,8 +129,13 @@ def get_data(varname, vartype, timestep, date):
                     url, str(err)))
 
     txt = compressedfile.readlines()
-    #if PYVERSION == 3:
-    #    txt = [line.decode('utf-8') for line in txt]
+
+    # Sometimes need decoding ????
+    if PYVERSION == 3:
+        try:
+            txt = [line.decode('utf-8') for line in txt]
+        except AttributeError:
+            pass
 
     compressedfile.close()
     try:
@@ -138,9 +143,9 @@ def get_data(varname, vartype, timestep, date):
         if os.path.exists(fdata):
             os.remove(fdata)
         os.remove(os.path.dirname(ftmp))
-    except OSError:
-        warnings.warn('Cannot delete temporary file {0} and {1}'.format(\
-                    ftmp, fdata))
+    except OSError as err:
+        warnings.warn('Cannot delete temporary file {0} and {1} ({2})'.format(\
+                    ftmp, fdata, str(err)))
 
     # Spot header / comments
     tmp = [bool(re.search('([a-zA-Z]|\\[)', line[0])) for line in txt]
