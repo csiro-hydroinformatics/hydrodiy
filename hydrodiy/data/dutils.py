@@ -230,7 +230,7 @@ def monthly2daily(se, interpolation='flat', minthreshold=0.):
     '''
     # Set
     sec = se.copy()
-    sec[np.isnan(sec)] = minthreshold-1
+    sec[pd.isnull(sec)] = minthreshold-1
 
     if interpolation == 'flat':
         # Add a fictive data after the last month
@@ -253,10 +253,10 @@ def monthly2daily(se, interpolation='flat', minthreshold=0.):
         xc = np.concatenate([[0], (months-start).days + 1])
         xc2 = (xc[1:]+xc[:-1])/2
         dx = months.days_in_month
-        y = sec.values
+        y = sec.values.astype(float)
 
         # Interpolate linearly
-        xx = np.arange(1, xc.max())
+        xx = np.arange(1, xc.max()).astype(float)
         yy = np.interp(xx, xc2, y)
         yyc = np.cumsum(yy)
 
