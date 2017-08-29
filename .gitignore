@@ -18,6 +18,7 @@ build
 *.zip
 *.bil
 *.hdr
+.coverage
 hydrodiy/gis/tests/*.png
 hydrodiy/gis/tests/*.png
 hydrodiy/gis/tests/*.kml
