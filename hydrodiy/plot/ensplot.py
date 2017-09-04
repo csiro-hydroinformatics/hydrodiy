@@ -189,7 +189,8 @@ class MonthlyEnsplot(object):
 
 
 
-    def monthplot(self, month, pit=False, ax=None, xgrid=True, medline=True):
+    def monthplot(self, month, pit=False, ax=None, xgrid=True, medline=True, \
+                ymin=None, ymax=None):
         ''' Draw ensemble forecasts for a specific month
 
         Parameters
@@ -202,6 +203,10 @@ class MonthlyEnsplot(object):
             Draw x grid
         medline : bool
             Draw a line for median forecast
+        ymin : float
+            Minimum y axis lim
+        ymax : float
+            Maximum y axis lim
         '''
 
         # Select data
@@ -231,9 +236,11 @@ class MonthlyEnsplot(object):
                 label='Obs')
 
         # Decorate
-        qmin = qobs[qobs>0].min()
-        qmax = qobs.max() * 1.2
-        ax.set_ylim((qmin, qmax))
+        if ymin is None:
+            rmin = qobs[qobs>0].min()
+        if ymax is None:
+            ymax = qobs.max() * 1.2
+        ax.set_ylim((ymin, ymax))
         ax.set_ylabel(self.ylabel)
 
         if month == 0:
