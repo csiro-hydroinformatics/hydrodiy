@@ -141,9 +141,16 @@ class BoxplotTestCase(unittest.TestCase):
 
 
     def test_coverage(self):
-        fig, ax = plt.subplots()
-        bx = Boxplot(data=self.data, whiskers_coverage=51)
-        bx.draw(ax=ax)
+        fig, axs = plt.subplots(ncols=2)
+
+        bx1 = Boxplot(data=self.data)
+        bx1.draw(ax=axs[0])
+        axs[0].set_title('standard coverage 50/90')
+
+        bx2 = Boxplot(data=self.data, box_coverage=40, whiskers_coverage=50)
+        bx2.draw(ax=axs[1])
+        axs[0].set_title('modified coverage 40/50')
+
         fig.savefig(os.path.join(self.ftest, 'bx08_coverage.png'))
 
 
@@ -164,16 +171,6 @@ class BoxplotTestCase(unittest.TestCase):
         bx.box.textformat = '%0.4f'
         bx.draw(ax=ax)
         fig.savefig(os.path.join(self.ftest, 'bx12_item_change.png'))
-
-
-    #def test_set_all_error(self):
-    #    fig, ax = plt.subplots()
-    #    bx = Boxplot(ax=ax, data=self.data)
-    #    try:
-    #        bx.set_all('text_format', '%0.4f')
-    #    except ValueError as err:
-    #        pass
-    #    self.assertTrue(str(err).startswith('Property text_format'))
 
 
     def test_center(self):
@@ -232,6 +229,39 @@ class BoxplotTestCase(unittest.TestCase):
         bx.draw(ax=axs[1])
 
         fig.savefig(os.path.join(self.ftest, 'bx16_showtext.png'))
+
+
+    def test_centertext(self):
+        ''' Testing centertext '''
+
+        nval = 200
+        nvar = 5
+        df = pd.DataFrame(np.random.normal(size=(nval, nvar)), \
+                columns = ['data{0}'.format(i) for i in range(nvar)])
+
+        fig, axs = plt.subplots(ncols=2)
+        bx = Boxplot(data=df)
+        bx.draw(ax=axs[0])
+
+        bx = Boxplot(data=df, centertext=True)
+        bx.draw(ax=axs[1])
+
+        fig.savefig(os.path.join(self.ftest, 'bx17_centertext.png'))
+
+
+    def test_digitnumber(self):
+        ''' Testing digitnumber '''
+
+        nval = 200
+        nvar = 5
+        df = pd.DataFrame(np.random.normal(size=(nval, nvar)), \
+                columns = ['data{0}'.format(i) for i in range(nvar)])
+
+        fig, ax = plt.subplots()
+        bx = Boxplot(data=df, digitnumber=4)
+        bx.draw(ax=ax)
+        fig.savefig(os.path.join(self.ftest, 'bx18_digitnumber.png'))
+
 
 
 

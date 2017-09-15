@@ -13,22 +13,23 @@ import matplotlib.pyplot as plt
 COLORS = putils.COLORS10
 EPS = 1e-10
 
-def whiskers_percentiles(coverage):
+def compute_percentiles(coverage):
     ''' Compute whiskers percentiles from coverage '''
     qq1 = float(100-coverage)/2
     qq2 = 100.-qq1
     return qq1, qq2
 
 
-def boxplot_stats(data, coverage):
+def boxplot_stats(data, box_coverage, whiskers_coverage):
     ''' Compute boxplot stats '''
 
     idx = (~np.isnan(data)) & (~np.isinf(data))
-    qq1, qq2 = whiskers_percentiles(coverage)
+    bqq1, bqq2 = compute_percentiles(box_coverage)
+    wqq1, wqq2 = compute_percentiles(whiskers_coverage)
     nok = np.sum(idx)
 
     if nok>3:
-        qq = [qq1, 25, 50, 75, qq2]
+        qq = [wqq1, bqq1, 50, bqq2, wqq2]
         prc = pd.Series(np.nanpercentile(data[idx], qq), \
                         index=['{0:0.1f}%'.format(qqq) for qqq in qq])
         prc['count'] = nok
@@ -37,8 +38,11 @@ def boxplot_stats(data, coverage):
         prc['min'] = data[idx].min()
     else:
         prc = pd.Series({'count': nok})
-        pnames = ['{0:0.1f}%'.format(qq1), '25.0%', \
-                '50.0%', '75.0%', '{0:0.1f}%'.format(qq2), \
+        pnames = ['{0:0.1f}%'.format(wqq1), \
+                '{0:0.1f}%'.format(bqq1), \
+                '50.0%', \
+                '{0:0.1f}%'.format(bqq2), \
+                '{0:0.1f}%'.format(wqq2), \
                 'min', 'max', 'mean']
         for pn in pnames:
             prc[pn] = np.nan
@@ -226,8 +230,11 @@ class Boxplot(object):
     def __init__(self, data,
                 style='default', by=None, \
                 showtext=True, \
+                centertext=False, \
                 width_from_count=False,
-                whiskers_coverage=80.):
+                digitnumber=2, \
+                box_coverage=50.,
+                whiskers_coverage=90.):
         ''' Draw boxplots with labels and defined colors
 
         Parameters
@@ -242,11 +249,20 @@ class Boxplot(object):
             * narrow : Boxplot for large amount of data
         by : pandas.Series
             Categories used to split data
+        showtext : bool
+            Display summary statistics values
+        centertext : bool
+            Center the text within the boxplot instead of on the side
         width_from_count : bool
             Use counts to define the boxplot width
+        digitnumber : int
+            Number of digits in number format
+        box_coverage : float
+            Coverage defining the percentile used to compute box extent.
+            Example: coverage = 50% -> 25%/75% whiskers
         whiskers_coverage : float
             Coverage defining the percentile used to compute whiskers extent.
-            Example: coverage = 80% -> 10%/90% whiskers
+            Example: coverage = 90% -> 5%/95% whiskers
         '''
 
         # Check input data
@@ -277,9 +293,16 @@ class Boxplot(object):
 
         self._by = by
 
-        if whiskers_coverage <= 50.:
-            raise ValueError('Whiskers coverage cannot be below 50.')
-        self.whiskerss_coverage = whiskers_coverage
+        if box_coverage < 40.:
+            raise ValueError('Box coverage cannot be below 40. '+\
+                'Got {0}.'.format(box_coverage))
+        self.box_coverage = box_coverage
+
+        if whiskers_coverage <= box_coverage:
+            raise ValueError('Whiskers coverage cannot be below box coverage.'+\
+                ' Got {0} for box cov and {1} for whisk cov.'.format(\
+                    box_coverage, whiskers_coverage))
+        self.whiskers_coverage = whiskers_coverage
 
         self._width_from_count = width_from_count
 
@@ -299,6 +322,7 @@ class Boxplot(object):
 
             self.box = BoxplotItem(linecolor=COLORS[0], \
                             width=0.7, fontcolor=COLORS[0], \
+                            textformat = '%0.{0}f'.format(digitnumber), \
                             fontsize=8, \
                             showtext=showtext)
 
@@ -325,6 +349,17 @@ class Boxplot(object):
             raise ValueError('Expecting style in [default/narrow],'+\
                         ' got {0}'.format(style))
 
+        # Set text format
+        for obj in [self.median, self.whiskers, self.box, self.caps]:
+            obj.textformat = '%0.{0}f'.format(digitnumber)
+
+        self.centertext = centertext
+        if centertext:
+            for obj in [self.median, self.box, self.whiskers]:
+                obj.ha = 'center'
+                obj.va = 'bottom'
+            self.box.ha = 'left'
+
         # Items not affected by style
         self.count = BoxplotItem(fontsize=7, \
                         fontcolor='grey', textformat='%d')
@@ -342,12 +377,13 @@ class Boxplot(object):
 
         data = self._data
         by = self._by
-        whc = self.whiskerss_coverage
+        bhc = self.box_coverage
+        whc = self.whiskers_coverage
 
         if by is None:
-            self._stats = data.apply(boxplot_stats, args=(whc, ))
+            self._stats = data.apply(boxplot_stats, args=(bhc, whc, ))
         else:
-            stats = data.groupby(by).apply(boxplot_stats, whc)
+            stats = data.groupby(by).apply(boxplot_stats, bhc, whc)
 
             # Reformat to make a 2d dataframe
             stats = stats.reset_index()
@@ -382,9 +418,13 @@ class Boxplot(object):
         stats = self._stats
         ncols = stats.shape[1]
 
-        qq1, qq2 = whiskers_percentiles(self.whiskerss_coverage)
-        qq1txt = '{0:0.1f}%'.format(qq1)
-        qq2txt = '{0:0.1f}%'.format(qq2)
+        bqq1, bqq2 = compute_percentiles(self.box_coverage)
+        bqq1txt = '{0:0.1f}%'.format(bqq1)
+        bqq2txt = '{0:0.1f}%'.format(bqq2)
+
+        wqq1, wqq2 = compute_percentiles(self.whiskers_coverage)
+        wqq1txt = '{0:0.1f}%'.format(wqq1)
+        wqq2txt = '{0:0.1f}%'.format(wqq2)
 
         # Boxplot widths
         if self._width_from_count:
@@ -399,13 +439,13 @@ class Boxplot(object):
             whiskerswidths = np.ones(ncols)*self.whiskers.width
 
         # Loop through stats
-        for i, cn in enumerate(stats.columns):
+        for i, colname in enumerate(stats.columns):
             # Box Widths
             bw = boxwidths[i]
 
             # Draw median
             x = [i-bw/2+xoffset, i+bw/2+xoffset]
-            med = stats.loc['50.0%', cn]
+            med = stats.loc['50.0%', colname]
             y = [med] * 2
             valid_med = np.all(~np.isnan(med))
 
@@ -436,8 +476,8 @@ class Boxplot(object):
                         alpha=item.alpha)
 
             # Skip missing data
-            q1 = stats.loc['25.0%', cn]
-            q2 = stats.loc['75.0%', cn]
+            q1 = stats.loc[bqq1txt, colname]
+            q2 = stats.loc[bqq2txt, colname]
 
             valid_q1 = np.all(~np.isnan(q1))
             valid_q2 = np.all(~np.isnan(q2))
@@ -469,10 +509,10 @@ class Boxplot(object):
             # Draw whiskers
             item = self.whiskers
             if item.showline:
-                for cc in [[qq1txt, '25.0%'], [qq2txt, '75.0%']]:
+                for cc in [[wqq1txt, bqq1txt], [wqq2txt, bqq2txt]]:
                     # Get y data
-                    q1 = stats.loc[cc[0], cn]
-                    q2 = stats.loc[cc[1], cn]
+                    q1 = stats.loc[cc[0], colname]
+                    q2 = stats.loc[cc[1], colname]
 
                     if ww < EPS:
                         # Draw line
@@ -498,15 +538,15 @@ class Boxplot(object):
             # Draw caps
             item = self.caps
             if item.showline and cw>0:
-                for qq in [qq1txt, qq2txt]:
-                    q1 = stats.loc[qq, cn]
+                for qq in [wqq1txt, wqq2txt]:
+                    q1 = stats.loc[qq, colname]
                     x = [i-cw/5+xoffset, i+cw/5+xoffset]
                     y = [q1]*2
                     ax.plot(x, y, lw=item.linewidth,
                         color=item.linecolor, \
                         alpha=item.alpha)
 
-            # quartile values
+            # Box (quartile) values
             item = self.box
             if item.showtext:
                 formatter = item.textformat
@@ -516,18 +556,27 @@ class Boxplot(object):
                 elif item.ha == 'center':
                     xshift = 0
 
-                for value in [stats.loc[qq, cn] for qq in ['25.0%', '75.0%']]:
+                values = [stats.loc[qq, colname] for qq in [bqq1txt, bqq2txt]]
+                for ivalue, value in enumerate(values):
                     valuetext = formatter % value
+
+                    # Slight realignment of label for centered text option
+                    va, ha = item.va, item.ha
+                    if self.centertext:
+                        xshift = 0
+                        va = 'top' if ivalue == 0 else 'bottom'
+
+                    # Draw text
                     ax.text(i+xshift+xoffset, value, valuetext, fontsize=item.fontsize, \
                         color=item.fontcolor, \
-                        va=item.va, ha=item.ha, \
+                        va=va, ha=ha, \
                         alpha=item.alpha)
 
-            # min / max
+            # Draw min / max
             item = self.minmax
             if item.marker != 'none':
                 x = [i+xoffset]*2
-                y = stats.loc[['min', 'max'], cn]
+                y = stats.loc[['min', 'max'], colname]
                 ax.plot(x, y, item.marker, \
                     mfc=item.markerfacecolor, \
                     mec=item.markeredgecolor, \
@@ -552,17 +601,17 @@ class Boxplot(object):
         ylim = ax.get_ylim()
         if not logscale:
             dy = ylim[1]-ylim[0]
-            ylim0 = min(ylim[0], stats.loc[qq1txt, :].min()-dy*0.02)
-            ylim1 = max(ylim[1], stats.loc[qq2txt, :].max()+dy*0.02)
+            ylim0 = min(ylim[0], stats.loc[wqq1txt, :].min()-dy*0.02)
+            ylim1 = max(ylim[1], stats.loc[wqq2txt, :].max()+dy*0.02)
         else:
             dy = math.log(ylim[1])-math.log(ylim[0])
             ylim0 = ylim[0]
-            miniq = stats.loc[qq1txt, :].min()
+            miniq = stats.loc[wqq1txt, :].min()
             if miniq>0:
                 ylim0 = min(ylim[0], math.exp(math.log(miniq)-dy*0.02))
 
             ylim1 = ylim[1]
-            maxiq = stats.loc[qq1txt, :].max()
+            maxiq = stats.loc[wqq1txt, :].max()
             if maxiq>0:
                 ylim1 = max(ylim[1], math.exp(math.log(maxiq)+dy*0.02))
 
