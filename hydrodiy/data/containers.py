@@ -15,10 +15,13 @@ class Vector(object):
         # Set parameter names
         if names is None:
             names = []
+
         self._names = np.atleast_1d(names).flatten().astype(str).copy()
+
+        # Set number of parameters
         nval = self._names.shape[0]
         if len(np.unique(self._names)) != nval:
-            raise ValueError('Names are not unique')
+            raise ValueError('Names are not unique: {0}'.format(names))
         self._nval = nval
 
         self._hitbounds = hitbounds
