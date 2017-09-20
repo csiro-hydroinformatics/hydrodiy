@@ -9,7 +9,8 @@ class Vector(object):
     ''' Vector data container. Implements min, max and default values. '''
 
     def __init__(self, names, defaults=None, mins=None, maxs=None, \
-            hitbounds=False):
+            hitbounds=False,
+            post_setter_args=None):
 
         # Set parameter names
         if names is None:
@@ -27,14 +28,16 @@ class Vector(object):
         self._maxs = np.inf * np.ones(nval)
 
         if not mins is None:
+            # Just convert mins to proper array
             self._mins, _ = self.__checkvalues__(mins, False)
 
         if not maxs is None:
+            # Convert maxs to proper array and checks it is greater than mins
             maxs2, hit = self.__checkvalues__(maxs, True)
 
             if hit:
                 raise ValueError(('Expected maxs within [{0}, {1}],' +\
-                    ' got {2}'.format(self._mins, self._maxs, maxs)))
+                    ' got {2}').format(self._mins, self._maxs, maxs))
             self._maxs = maxs2
 
         # Set defaults values
@@ -43,12 +46,15 @@ class Vector(object):
 
             if hit:
                 raise ValueError(('Expected defaults within [{0}, {1}],' +\
-                    ' got {2}'.format(self._mins, self._maxs, defaults)))
+                    ' got {2}').format(self._mins, self._maxs, defaults))
         else:
             self._defaults = np.clip(np.zeros(nval), self._mins, self._maxs)
 
         # Set values to defaults
         self._values = self._defaults.copy()
+
+        # Set post_setter arguments
+        self._post_setter_args = post_setter_args
 
 
     @classmethod
@@ -165,6 +171,15 @@ class Vector(object):
     def values(self, val):
         ''' Set data '''
         self._values, self._hitbounds = self.__checkvalues__(val, True)
+
+        # Function post setter
+        if not self._post_setter_args is None:
+            self.post_setter(*self._post_setter_args)
+
+
+    def post_setter(self, *args):
+        ''' Function run after setting parameter values '''
+        pass
 
 
     def reset(self):
