@@ -184,19 +184,6 @@ class VectorTestCases(unittest.TestCase):
         self.assertTrue(np.allclose(vect.values, vect.defaults))
 
 
-    def test_post_setter(self):
-        ''' Test post setter functionality '''
-
-        class Vector2(Vector):
-            def post_setter(self, mult):
-                self.test = self['a']*mult
-
-        vect = Vector2(['a', 'b'], [0.5]*2, [0]*2, [1]*2, post_setter_args=(10,))
-
-        vect.values = [0.7]*2
-        self.assertTrue(np.allclose(vect.test, 7.))
-
-
 
 if __name__ == '__main__':
     unittest.main()

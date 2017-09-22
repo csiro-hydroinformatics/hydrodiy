@@ -56,9 +56,6 @@ class Vector(object):
         # Set values to defaults
         self._values = self._defaults.copy()
 
-        # Set post_setter arguments
-        self._post_setter_args = post_setter_args
-
 
     @classmethod
     def from_dict(cls, dct):
@@ -174,15 +171,6 @@ class Vector(object):
     def values(self, val):
         ''' Set data '''
         self._values, self._hitbounds = self.__checkvalues__(val, True)
-
-        # Function post setter
-        if not self._post_setter_args is None:
-            self.post_setter(*self._post_setter_args)
-
-
-    def post_setter(self, *args):
-        ''' Function run after setting parameter values '''
-        pass
 
 
     def reset(self):
