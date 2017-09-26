@@ -4,10 +4,7 @@ import os
 import subprocess
 import numpy
 
-try:
-    from setuptools import setup, Extension
-except ImportError:
-    from distutils.core import setup, Extension
+from setuptools import setup, Extension, find_packages
 
 import distutils.cmd
 import distutils.log
@@ -103,6 +100,7 @@ setup(
     author = 'Julien Lerat',
     author_email = 'julien.lerat@gmail.com',
     url = 'https://bitbucket.org/jlerat/hydrodiy',
+    packages = find_packages(),
     package_data = {
         "hydrodiy": ["gis/data/*.gz", "stat/data/*.zip"],
     },
