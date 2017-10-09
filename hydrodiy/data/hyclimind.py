@@ -26,7 +26,7 @@ BOM_SOI_FILE = 'soiplaintext.html'
 INDEX_NAMES = ['nao', 'pdo', 'soi', 'pna', \
                 'nino12', 'nino34', 'nino4', 'ao', 'amo']
 
-def get_data(index):
+def get_data(index, timeout=300):
     ''' Download climate indices time series from NOAA and BoM
 
     Parameters
@@ -34,6 +34,8 @@ def get_data(index):
     index : str
         Climate index name : nao, pdo, soi, pna,
         nino12, nino34m nino4, ao, amo
+    timeout : int
+        Timeout is seconds
 
     Returns
     -----------
@@ -75,7 +77,7 @@ def get_data(index):
         ftp.close()
 
     else:
-        stream = iutils.download(url)
+        stream = iutils.download(url, timeout=timeout)
 
     txt = stream.read().decode('cp437')
 
