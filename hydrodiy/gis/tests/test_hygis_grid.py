@@ -1,4 +1,5 @@
 import os, re, math
+import warnings
 import unittest
 import numpy as np
 import pandas as pd
@@ -13,7 +14,11 @@ from hydrodiy.io import csv
 
 import matplotlib.pyplot as plt
 
-import pyproj
+try:
+    import pyproj
+    HAS_PYPROJ = True
+except ImportError:
+    HAS_PYPROJ = False
 
 source_file = os.path.abspath(__file__)
 
@@ -496,6 +501,9 @@ class CatchmentTestCase(unittest.TestCase):
 
     def test_compute_area(self):
         ''' Test computation of catchment area '''
+        if not HAS_PYPROJ:
+            warnings.warn('Compute area not tested. Please install pyproj')
+            return
 
         gr = self.gr.clone()
         gr.xllcorner = 130.
