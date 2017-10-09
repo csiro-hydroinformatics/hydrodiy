@@ -322,7 +322,7 @@ def get_ibatch(nsites, nbatch, ibatch):
 
 
 def download(url, filename=None, logger=None, nprint=5, \
-        user=None, pwd=None):
+        user=None, pwd=None, timeout=None):
     ''' Download file by chunk. Appropriate for large files
 
     Parameters
@@ -351,7 +351,10 @@ def download(url, filename=None, logger=None, nprint=5, \
         auth = requests.auth.HTTPBasicAuth(user, pwd)
 
     # Run request
-    req = requests.get(url, auth=auth)
+    if timeout is None:
+        req = requests.get(url, auth=auth)
+    else:
+        req = requests.get(url, auth=auth, timeout=timeout)
 
     # Raise error if HTTP problem
     req.raise_for_status()

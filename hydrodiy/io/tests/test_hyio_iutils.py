@@ -274,6 +274,12 @@ class UtilsTestCase(unittest.TestCase):
         self.assertTrue(js['authenticated'])
 
 
+    def test_download_timeout(self):
+        ''' Test the timeout option in iutils.download '''
+        url = 'https://www.google.com.au/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png'
+        fn = os.path.join(self.ftest, 'google.png')
+        iutils.download(url, fn, timeout=10)
+
 
 if __name__ == "__main__":
     unittest.main()
