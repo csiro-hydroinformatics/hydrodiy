@@ -326,6 +326,20 @@ def nse(obs, sim, transform='Identity'):
     ensemble, uses the NSE probabilistic formulation introduced by
     (find the reference)
 
+    First, the functions computes the mean of the SSE for a given time step
+    given the forecast PDF (x is the forecast, p(x) is the forecast PDF and o
+    is the obs):
+
+    s = int (x-o)^2 p(x) dx
+      = [mean(x)-o]^2 + var(x)
+
+    Consequently, NSE for a set of ensemble forecasts {x1, x2, ..., xn} is:
+    N = 1- sum([mean(xi)-oi]^2+var(xi))/sum( [mean(o)-oi]^2)
+
+    Two additional terms are also computed
+    * Nacc = 1- sum([mean(xi)-oi]^2)/sum( [mean(o)-oi]^2)  -> NSE related to accuracy
+    * Nsharp = 1- sum(var(xi))/sum( [mean(o)-oi]^2)        -> NSE related to sharpness
+
     Parameters
     -----------
     obs : numpy.ndarray
@@ -337,8 +351,13 @@ def nse(obs, sim, transform='Identity'):
 
     Returns
     -----------
-    nse_value : float
-        Nash-Sutcliffe efficiency
+    value : float
+        Nash-Sutcliffe efficiency (N)
+    accur : float
+        Accuracy component of Nast-Sutcliffe efficiency (Nacc)
+    sharp : float
+        Sharpness component of Nast-Sutcliffe efficiency (Nacc)
+
     '''
     # Check data
     obs = np.atleast_1d(obs)
@@ -377,7 +396,7 @@ def nse(obs, sim, transform='Identity'):
         errs_sharp = np.sum(vs)
 
     else:
-        # Compute regular SSE
+        # Compute standard SSE
         idx = idx & pd.notnull(tsim)
         errs_accur = np.sum((tsim[idx]-tobs[idx])**2)
         errs_sharp = 0.
