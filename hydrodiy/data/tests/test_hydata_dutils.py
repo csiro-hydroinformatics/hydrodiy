@@ -2,7 +2,8 @@ import os
 import time
 import unittest
 import numpy as np
-import datetime
+from datetime import datetime
+from dateutil.relativedelta import relativedelta as delta
 import pandas as pd
 
 from scipy.special import comb
@@ -26,26 +27,26 @@ class UtilsTestCase(unittest.TestCase):
         u = pd.Series(val, index=index)
 
         # -> 3 consecutive gaps
-        idx = index >= datetime.datetime(1950, 2, 5)
-        idx = idx & (index <= datetime.datetime(1950, 2, 7))
+        idx = index >= datetime(1950, 2, 5)
+        idx = idx & (index <= datetime(1950, 2, 7))
         u.loc[idx] = np.nan
 
         # -> 4 consecutive gaps
-        idx = index >= datetime.datetime(1950, 3, 5)
-        idx = idx & (index <= datetime.datetime(1950, 3, 8))
+        idx = index >= datetime(1950, 3, 5)
+        idx = idx & (index <= datetime(1950, 3, 8))
         u.loc[idx] = np.nan
 
         for d in [2, 5, 6, 8, 11, 20]:
             # -> 6 gaps
-            dd = datetime.datetime(1950, 4, d)
+            dd = datetime(1950, 4, d)
             u.loc[dd] = np.nan
 
             # -> 6 gaps
-            dd = datetime.datetime(1950, 5, d)
+            dd = datetime(1950, 5, d)
             u.loc[dd] = np.nan
 
         # -> one more gap
-        dd = datetime.datetime(1950, 5, 22)
+        dd = datetime(1950, 5, 22)
         u.loc[dd] = np.nan
 
         # Compute monthly and seasonal data
@@ -113,21 +114,6 @@ class UtilsTestCase(unittest.TestCase):
         obsm3 = dutils.aggregate(aggindex, obs.values, maxnan=31)
         self.assertTrue(np.allclose(obsm.values, obsm3))
 
-        # Compare timing with  pandas
-        dt = pd.date_range('1700-01-01', '2100-12-31')
-        nval = len(dt)
-        obs = pd.Series(np.random.uniform(0, 1, nval), \
-                index=dt)
-
-        aggindex = dt.year * 100 + dt.month
-
-        t0 = time.time()
-        obsm = obs.resample('MS', how='sum')
-        t1 = time.time()
-        obsm2 = dutils.aggregate(aggindex, obs.values)
-        t2 = time.time()
-        self.assertTrue(t1-t0 > 80*(1e-10+t2-t1))
-
 
     def test_lag(self):
         ''' Test lag for 1d data'''
@@ -192,35 +178,129 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_var2h_hourly(self):
-        ''' Test variable to hourly conversion for hourly data '''
+        ''' Test conversion to hourly for hourly data '''
 
         nval = 24*365*20
         dt = pd.date_range(start='1968-01-01', freq='H', periods=nval)
         se = pd.Series(np.arange(nval), index=dt)
 
         seh = dutils.var2h(se, display=True)
-        expected = (se+se.lag(1))/2
-        self.assertTrue(np.allclose(seh.values, expected.values))
+        expected = (se+se.shift(-1))/2
+
+        idx = ~np.isnan(seh.values)
+        self.assertTrue(np.allclose(seh.values[idx], \
+                            expected[1:].values[idx]))
 
 
     def test_var2h_5min(self):
-        ''' Test variable to hourly conversion for hourly data '''
+        ''' Test conversion to hourly for 10min data '''
 
         nval = 24 #*365*3
-        dt = pd.date_range(start='1968-01-01', freq='10min', periods=nval*6)
+        dt = pd.date_range(start='1968-01-01', freq='5min', periods=nval*6)
         se = pd.Series(np.random.uniform(0, 1, size=len(dt)), index=dt)
 
-        seh = dutils.var2h(se, display=True)
-        expected = se.values
-        expected[-6:] = np.nan
-        for lag in range(1, 6):
-            expected[:lag] += se.values[lag:]
-        expected/=6
-        self.assertTrue(np.allclose(seh.values, ))
+        seh = dutils.var2h(se)
+
+        # build expected
+        nlag = 12
+        for lag in range(nlag):
+            d = (se.shift(-lag)+se.shift(-lag-1))/2
+            expected = d if lag==0 else expected+d
+        expected = expected/nlag
+        expected = expected[expected.index.minute==0]
+
+        # Run test
+        idx = ~np.isnan(seh.values)
+        self.assertTrue(np.allclose(seh.values[idx], \
+                    expected.values[1:][idx]))
 
 
     def test_var2h_variable(self):
-        ''' Test variable to hourly conversion for hourly data '''
+        ''' Test variable to hourly conversion '''
+
+        nvalh =50
+        varsec = []
+        varvalues = []
+        hvalues = []
+
+        vprev = np.zeros(1)
+
+        for i in range(nvalh):
+            # Number of points
+            n = np.random.randint(3, 20)
+
+            # Timing
+            dt = np.maximum(2, np.random.exponential(3600/(n-1), n-1))
+            dt = (dt/np.sum(dt)*3599).astype(int)
+            dt[-1] = 3600-np.sum(dt[:-1])
+
+            # values
+            v = np.random.exponential(10, n)
+            v[0] = vprev[-1]
+
+            # Compute hourly data
+            agg = np.sum((v[1:]+v[:-1])/2*dt)/3600
+            hvalues.append(agg)
+
+            # Store values
+            for k in range(n-1):
+                t = np.sum(dt[:k])
+                varsec.append(t+i*3600)
+                varvalues.append(v[k])
+
+            vprev = v.copy()
+
+        # format data
+        varvalues = np.array(varvalues)
+        start = datetime(1970, 1, 1)
+        dt = np.array([start+delta(seconds=int(s)) for s in varsec])
+        se = pd.Series(varvalues, index=dt)
+
+        # run function
+        seh = dutils.var2h(se)
+
+        # run test
+        hvalues = np.array(hvalues)[1:-1]
+        self.assertTrue(np.allclose(seh.values[:-1], \
+                    hvalues))
+
+
+    def test_hourly2daily(self):
+        ''' Test conversion hourly to daily '''
+
+        nval = 500
+        dt = pd.date_range('1970-01-01', freq='H', periods=nval)
+        se = pd.Series(np.random.uniform(0, 1, size=nval),  \
+                index=dt)
+
+        # Run function
+        sed1 = dutils.hourly2daily(se)
+        sed2 = dutils.hourly2daily(se, timestamp_end=False)
+        sed3 = dutils.hourly2daily(se, start_hour=0)
+        sed4 = dutils.hourly2daily(se, start_hour=0, timestamp_end=False)
+
+        # expected values
+        expected = np.zeros((len(sed1), 4))
+
+        dt = se.index[se.index.hour==9]
+        for it, t in enumerate(dt):
+            idx = (se.index>=t) & (se.index<t+delta(days=1))
+            if it<len(expected)-1:
+                expected[it+1, 0] = se[idx].sum()
+            expected[it, 1] = se[idx].sum()
+
+        dt = se.index[se.index.hour==0]
+        for it, t in enumerate(dt):
+            idx = (se.index>=t) & (se.index<t+delta(days=1))
+            if it<len(expected)-1:
+                expected[it+1, 2] = se[idx].sum()
+            expected[it, 3] = se[idx].sum()
+
+        # Run tests
+        self.assertTrue(np.allclose(sed1.values[1:-1], expected[1:-1, 0]))
+        self.assertTrue(np.allclose(sed2.values[1:-1], expected[1:-1, 1]))
+        self.assertTrue(np.allclose(sed3.values[1:-1], expected[1:-1, 2]))
+        self.assertTrue(np.allclose(sed4.values[1:-1], expected[1:-1, 3]))
 
 
 if __name__ == "__main__":

@@ -363,3 +363,32 @@ def var2h(se, maxgapsec=5*86400, display=False):
     return hvalues
 
 
+def hourly2daily(se, start_hour=9, timestamp_end=True):
+    ''' Convert an hourly time series to daily
+
+    Parameters
+    -----------
+    se : pandas.Series
+        Hourly time series
+    start_hour : int
+        Hour of the day when the aggregation starts
+    timestamp_end : bool
+        Affect the aggregated value at the end of the
+        timestep
+
+    Returns
+    -----------
+    sed : pandas.Series
+        Daily series
+   '''
+
+    # lag the hourly time series depending
+    lag = 24-start_hour if timestamp_end else -start_hour
+    sel = se.shift(lag)
+
+    # Aggregate to daily
+    sed = sel.resample('D').apply(lambda x: np.sum(x.values))
+
+    return sed
+
+
