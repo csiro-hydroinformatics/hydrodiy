@@ -23,7 +23,21 @@ class CsvTestCase(unittest.TestCase):
         self.assertTrue(all(data['state']==st))
 
 
-    def test_read_csv2(self):
+    def test_read_csv_names(self):
+        fcsv = '%s/states_centroids.csv.gz'%self.ftest
+        cc = ['C{0}'.format(k) for k in range(1, 8)]
+        data, comment = csv.read_csv(fcsv, names=cc)
+        self.assertEqual(list(data.columns), cc)
+
+
+    def test_read_csv_names_noheader(self):
+        fcsv = '%s/states_centroids_noheader.csv'%self.ftest
+        cc = ['C{0}'.format(k) for k in range(1, 8)]
+        data, comment = csv.read_csv(fcsv, has_colnames=False, names=cc)
+        self.assertEqual(list(data.columns), cc)
+
+
+    def test_read_csv_noheader(self):
         fcsv = '%s/states_centroids_noheader.csv'%self.ftest
         data, comment = csv.read_csv(fcsv, has_colnames=False)
         st = pd.Series(['ACT', 'NSW', 'NT', 'QLD', 'SA',

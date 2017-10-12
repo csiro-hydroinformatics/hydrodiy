@@ -319,7 +319,7 @@ def read_csv(filename, has_colnames=True, archive=None, \
             else:
                 if PYVERSION == 3:
                     fobj = open(filename_full, 'r', encoding=encoding)
-                elif PYVERSION == 2:    
+                elif PYVERSION == 2:
                     fobj = open(filename_full, 'r')
 
         except TypeError as err:
@@ -343,7 +343,6 @@ def read_csv(filename, has_colnames=True, archive=None, \
     comment = {}
 
     if has_colnames:
-
         line = fobj.readline()
 
         while line.startswith('#'):
@@ -353,18 +352,23 @@ def read_csv(filename, has_colnames=True, archive=None, \
         # Extract comment info from header
         comment = _header2comment(header)
 
-        # deals with multi-index columns
-        # reformat columns like (idx1-idx2-...)
-        se = re.findall('\"\([^\(]*\)\"', line)
-        linecols = line
+        # Generate column headers
+        if not 'names' in kwargs:
+            # deals with multi-index columns
+            # reformat columns like (idx1-idx2-...)
+            se = re.findall('\"\([^\(]*\)\"', line)
+            linecols = line
 
-        if se:
-            for cn in se:
-                cn2 = re.sub('\(|\)|\"|\'','',cn)
-                cn2 = re.sub(', *','-',cn2)
-                linecols = re.sub(re.escape(cn), cn2, linecols)
+            if se:
+                for cn in se:
+                    cn2 = re.sub('\(|\)|\"|\'','',cn)
+                    cn2 = re.sub(', *','-',cn2)
+                    linecols = re.sub(re.escape(cn), cn2, linecols)
 
-        cns = linecols.strip().split(',')
+            cns = linecols.strip().split(',')
+        else:
+            cns = kwargs['names']
+            kwargs.pop('names')
 
         # Reads data with proper column names
         data = pd.read_csv(fobj, names=cns, \
@@ -374,6 +378,7 @@ def read_csv(filename, has_colnames=True, archive=None, \
                         for cn in data.columns]
 
     else:
+        # Reads data frame without header
         data = pd.read_csv(fobj, header=None, \
                     encoding=encoding, **kwargs)
 
