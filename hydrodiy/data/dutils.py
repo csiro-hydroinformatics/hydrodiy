@@ -311,3 +311,55 @@ def monthly2daily(se, interpolation='flat', minthreshold=0.):
     return sed
 
 
+def var2h(se, maxgapsec=5*86400, display=False):
+    ''' Convert a variable time step time series to hourly using
+        linear interpolation and aggregation
+
+    Parameters
+    -----------
+    se : pandas.Series
+        Irregular time series
+    maxgapsec : int
+        Maximum number of seconds between two valid measurements
+    display : bool
+        Display progresses or not
+
+    Returns
+    -----------
+    seh : pandas.Series
+        Hourly series
+   '''
+
+    # Allocate arrays
+    maxgapsec = np.int32(maxgapsec)
+    display = np.int32(display)
+    varvalues = se.values.astype(np.float64)
+    varsec = (se.index.values.astype(np.int64)/1000000000).astype(np.int32)
+
+    # Determines start and end of hourly series
+    start = se.index[0]
+    hstart = datetime(start.year, start.month, start.day, \
+                        start.hour)+delta(hours=1)
+    ref = datetime(1970, 1, 1)
+    hstartsec = np.int32((hstart-ref).total_seconds())
+
+    end = se.index[-1]
+    hend = datetime(end.year, end.month, end.day, \
+                        end.hour)-delta(hours=1)
+    nvalh = np.int32((end-start).total_seconds()/3600)
+    hvalues = np.nan*np.ones(nvalh, dtype=np.float64)
+
+    # Run C function
+    ierr = c_hydrodiy_data.var2h(maxgapsec, hstartsec, display, \
+                varsec, varvalues, hvalues)
+
+    if ierr>0:
+        raise ValueError('c_hydrodiy_data.var2h returns {0}'.format(ierr))
+
+    # Convert to hourly series
+    dt = pd.date_range(hstart, freq='H', periods=nvalh)
+    hvalues = pd.Series(hvalues, index=dt)
+
+    return hvalues
+
+

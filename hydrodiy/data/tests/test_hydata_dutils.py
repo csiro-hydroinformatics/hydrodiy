@@ -190,5 +190,38 @@ class UtilsTestCase(unittest.TestCase):
                 if c2>0:
                     self.assertTrue(ck)
 
+
+    def test_var2h_hourly(self):
+        ''' Test variable to hourly conversion for hourly data '''
+
+        nval = 24*365*20
+        dt = pd.date_range(start='1968-01-01', freq='H', periods=nval)
+        se = pd.Series(np.arange(nval), index=dt)
+
+        seh = dutils.var2h(se, display=True)
+        expected = (se+se.lag(1))/2
+        self.assertTrue(np.allclose(seh.values, expected.values))
+
+
+    def test_var2h_5min(self):
+        ''' Test variable to hourly conversion for hourly data '''
+
+        nval = 24 #*365*3
+        dt = pd.date_range(start='1968-01-01', freq='10min', periods=nval*6)
+        se = pd.Series(np.random.uniform(0, 1, size=len(dt)), index=dt)
+
+        seh = dutils.var2h(se, display=True)
+        expected = se.values
+        expected[-6:] = np.nan
+        for lag in range(1, 6):
+            expected[:lag] += se.values[lag:]
+        expected/=6
+        self.assertTrue(np.allclose(seh.values, ))
+
+
+    def test_var2h_variable(self):
+        ''' Test variable to hourly conversion for hourly data '''
+
+
 if __name__ == "__main__":
     unittest.main()

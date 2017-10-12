@@ -23,6 +23,15 @@ cdef extern from 'c_qualitycontrol.h':
     int c_islin(int nval, double thresh, double tol, int npoints,
         double * inputs, int * islin)
 
+cdef extern from 'c_var2h.h':
+    int c_var2h(int nvalvar, int nvalh, int display,
+        int maxgapsec,
+        int * varsec,
+        double * varvalues,
+        int hstartsec,
+        double * hvalues)
+
+
 def __cinit__(self):
     pass
 
@@ -129,9 +138,32 @@ def islin(double thresh, double tol, int npoints,
     nval = data.shape[0]
     assert nval == islin.shape[0]
 
+    # Run C
     ierr = c_islin(nval, thresh, tol, npoints,
             <double*> np.PyArray_DATA(data),
             <int*> np.PyArray_DATA(islin))
+
+    return ierr
+
+
+def var2h(int maxgapsec, int hstartsec, int display,
+        np.ndarray[int, ndim=1, mode='c'] varsec not None,
+        np.ndarray[double, ndim=1, mode='c'] varvalues not None,
+        np.ndarray[double, ndim=1, mode='c'] hvalues not None):
+
+    cdef int nvalvar, nvalh
+
+    # check dimensions
+    nvalh = hvalues.shape[0]
+    nvalvar = varsec.shape[0]
+    assert nvalvar == varvalues.shape[0]
+
+    # Run C
+    ierr = c_var2h(nvalvar, nvalh, display, maxgapsec,
+            <int*> np.PyArray_DATA(varsec),
+            <double*> np.PyArray_DATA(varvalues),
+            hstartsec,
+            <double*> np.PyArray_DATA(hvalues))
 
     return ierr
 

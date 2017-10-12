@@ -66,7 +66,8 @@ ext_modules = [
             'hydrodiy/data/c_hydrodiy_data.pyx',
             'hydrodiy/data/c_dateutils.c',
             'hydrodiy/data/c_qualitycontrol.c',
-            'hydrodiy/data/c_dutils.c'
+            'hydrodiy/data/c_dutils.c',
+            'hydrodiy/data/c_var2h.c'
         ],
         include_dirs=[numpy.get_include()]),
 
