@@ -8,7 +8,9 @@ import pandas as pd
 
 from scipy.special import comb
 
+from hydrodiy.io import csv
 from hydrodiy.data import dutils
+
 import c_hydrodiy_data as chd
 
 
@@ -16,7 +18,10 @@ class UtilsTestCase(unittest.TestCase):
 
     def setUp(self):
         print('\t=> UtilsTestCase (hydata)')
-        self.dt = None # TODO
+
+        source_file = os.path.abspath(__file__)
+        self.ftest = os.path.dirname(source_file)
+
 
     def test_aggmonths(self):
 
@@ -216,7 +221,8 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_var2h_variable(self):
-        ''' Test variable to hourly conversion '''
+        ''' Test variable to hourly conversion by comparing with python
+        algorithm '''
 
         nvalh =50
         varsec = []
@@ -265,6 +271,24 @@ class UtilsTestCase(unittest.TestCase):
                     hvalues))
 
 
+    def test_var2h_longgap(self):
+        ''' Test variable to hourly conversion and apply to dataset '''
+
+        nval = 6*20
+        index = pd.date_range('1970-01-01', freq='10min', periods=nval)
+        v = np.convolve(np.random.uniform(0, 100, size=nval), \
+                                            np.ones(10))[:nval]
+        se = pd.Series(v, index=index)
+        se[30:60] = np.nan
+        se = se[pd.notnull(se)]
+
+        seh = dutils.var2h(se, maxgapsec=3600)
+        self.assertTrue(np.all(np.isnan(seh.values[4:10])))
+        self.assertTrue(np.all(~np.isnan(seh.values[:3])))
+        self.assertTrue(np.all(~np.isnan(seh.values[10:-1])))
+
+
+
     def test_hourly2daily(self):
         ''' Test conversion hourly to daily '''
 
@@ -273,34 +297,36 @@ class UtilsTestCase(unittest.TestCase):
         se = pd.Series(np.random.uniform(0, 1, size=nval),  \
                 index=dt)
 
-        # Run function
-        sed1 = dutils.hourly2daily(se)
-        sed2 = dutils.hourly2daily(se, timestamp_end=False)
-        sed3 = dutils.hourly2daily(se, start_hour=0)
-        sed4 = dutils.hourly2daily(se, start_hour=0, timestamp_end=False)
+        for how in ['sum', 'mean']:
+            # Run function
+            sed1 = dutils.hourly2daily(se, how=how)
+            sed2 = dutils.hourly2daily(se, timestamp_end=False, how=how)
+            sed3 = dutils.hourly2daily(se, start_hour=0, how=how)
+            sed4 = dutils.hourly2daily(se, start_hour=0, timestamp_end=False, \
+                                how=how)
 
-        # expected values
-        expected = np.zeros((len(sed1), 4))
+            # expected values
+            expected = np.zeros((len(sed1), 4))
 
-        dt = se.index[se.index.hour==9]
-        for it, t in enumerate(dt):
-            idx = (se.index>=t) & (se.index<t+delta(days=1))
-            if it<len(expected)-1:
-                expected[it+1, 0] = se[idx].sum()
-            expected[it, 1] = se[idx].sum()
+            dt = se.index[se.index.hour==9]
+            for it, t in enumerate(dt):
+                idx = (se.index>=t) & (se.index<t+delta(days=1))
+                if it<len(expected)-1:
+                    expected[it+1, 0] = se[idx].sum() if how=='sum' else se[idx].mean()
+                expected[it, 1] = se[idx].sum() if how=='sum' else se[idx].mean()
 
-        dt = se.index[se.index.hour==0]
-        for it, t in enumerate(dt):
-            idx = (se.index>=t) & (se.index<t+delta(days=1))
-            if it<len(expected)-1:
-                expected[it+1, 2] = se[idx].sum()
-            expected[it, 3] = se[idx].sum()
+            dt = se.index[se.index.hour==0]
+            for it, t in enumerate(dt):
+                idx = (se.index>=t) & (se.index<t+delta(days=1))
+                if it<len(expected)-1:
+                    expected[it+1, 2] = se[idx].sum()
+                expected[it, 3] = se[idx].sum()
 
-        # Run tests
-        self.assertTrue(np.allclose(sed1.values[1:-1], expected[1:-1, 0]))
-        self.assertTrue(np.allclose(sed2.values[1:-1], expected[1:-1, 1]))
-        self.assertTrue(np.allclose(sed3.values[1:-1], expected[1:-1, 2]))
-        self.assertTrue(np.allclose(sed4.values[1:-1], expected[1:-1, 3]))
+            # Run tests
+            self.assertTrue(np.allclose(sed1.values[1:-1], expected[1:-1, 0]))
+            self.assertTrue(np.allclose(sed2.values[1:-1], expected[1:-1, 1]))
+            self.assertTrue(np.allclose(sed3.values[1:-1], expected[1:-1, 2]))
+            self.assertTrue(np.allclose(sed4.values[1:-1], expected[1:-1, 3]))
 
 
 if __name__ == "__main__":

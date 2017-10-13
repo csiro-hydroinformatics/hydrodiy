@@ -76,6 +76,8 @@ int c_var2h(int nvalvar, int nvalh, int display,
         it1 = 0.;
         it2 = 0.;
 
+        hvalues[i] = nan;
+
         /* Calculate the hourly value */
         while(t1<end)
         {
@@ -92,10 +94,7 @@ int c_var2h(int nvalvar, int nvalh, int display,
             */
             if(val1<-1e-8 || val2<-1e-8 || t2-t1>maxgapsec ||
                     isnan(val2) ||isnan(val1) )
-            {
                 miss=1;
-                break;
-            }
 
             /* Start and end of integration */
             it1 = t1<start ? start : t1;
@@ -116,14 +115,19 @@ int c_var2h(int nvalvar, int nvalh, int display,
 
             /* Loop */
             varindex++;
+
+            if(varindex>=nvalvar)
+                return ierr;
+
             t1 = t2;
             val1 = val2;
 
-            /*
-            fprintf(stdout, "[%d, %d] %0.1f %0.1f -> %0.1f %0.1f = %f\n",
-                    i, varindex, it1, vali1, it2, vali2, hvalue);
-            */
+            //fprintf(stdout, "[%d, %d] %0.1f %0.1f -> %0.1f %0.1f = %f\n",
+            //        i, varindex, it1, vali1, it2, vali2, hvalue);
         }
+
+        /* Revert back one step */
+        varindex--;
 
         /* Store Hourly values */
         hvalues[i] = miss == 0 ? hvalue/3600. : nan;

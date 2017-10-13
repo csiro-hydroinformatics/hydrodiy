@@ -336,6 +336,10 @@ def var2h(se, maxgapsec=5*86400, display=False):
     varvalues = se.values.astype(np.float64)
     varsec = (se.index.values.astype(np.int64)/1000000000).astype(np.int32)
 
+    if maxgapsec < 3600:
+        raise ValueError('Expected maxgapsec>=3600, got {0}'.format(\
+                maxgapsec))
+
     # Determines start and end of hourly series
     start = se.index[0]
     hstart = datetime(start.year, start.month, start.day, \
@@ -363,7 +367,7 @@ def var2h(se, maxgapsec=5*86400, display=False):
     return hvalues
 
 
-def hourly2daily(se, start_hour=9, timestamp_end=True):
+def hourly2daily(se, start_hour=9, timestamp_end=True, how='mean'):
     ''' Convert an hourly time series to daily
 
     Parameters
@@ -375,19 +379,25 @@ def hourly2daily(se, start_hour=9, timestamp_end=True):
     timestamp_end : bool
         Affect the aggregated value at the end of the
         timestep
+    how : str
+        Aggregation method: mean/sum
 
     Returns
     -----------
     sed : pandas.Series
         Daily series
    '''
+    if not how in ['mean', 'sum']:
+        raise ValueError('Expected "how" in [mean/sum], got {0}'.format(\
+            how))
 
     # lag the hourly time series depending
     lag = 24-start_hour if timestamp_end else -start_hour
     sel = se.shift(lag)
 
     # Aggregate to daily
-    sed = sel.resample('D').apply(lambda x: np.sum(x.values))
+    aggfun = np.mean if how=='mean' else np.sum
+    sed = sel.resample('D').apply(lambda x: aggfun(x.values))
 
     return sed
 
