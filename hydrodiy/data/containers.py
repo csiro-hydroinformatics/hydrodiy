@@ -12,19 +12,22 @@ class Vector(object):
             hitbounds=False,
             post_setter_args=None):
 
+        self._hitbounds = bool(hitbounds)
+
         # Set parameter names
         if names is None:
             names = []
 
         self._names = np.atleast_1d(names).flatten().astype(str).copy()
+        nval = self._names.shape[0]
 
         # Set number of parameters
-        nval = self._names.shape[0]
         if len(np.unique(self._names)) != nval:
             raise ValueError('Names are not unique: {0}'.format(names))
         self._nval = nval
 
-        self._hitbounds = hitbounds
+        # Define names indexes
+        self._names_index = {nm:i for nm, i in zip(self._names,  np.arange(nval))}
 
         # Set mins and maxs
         self._mins = -np.inf * np.ones(nval)
@@ -81,18 +84,39 @@ class Vector(object):
         return vect
 
 
+    def __getattribute__(self, name):
+        # Except _names and _hitbounds to avoid infinite recursion
+        if name in ['_names', '_hitbounds']:
+            return super(Vector, self).__getattribute__(name)
+
+        if name in self._names:
+            idx = self._names_index[name]
+            return self._values[idx]
+
+        return super(Vector, self).__getattribute__(name)
+
+
+    def __setattr__(self, name, value):
+        # Except _names and _hitbounds to avoid infinite recursion
+        if name in ['_names', '_hitbounds']:
+            super(Vector, self).__setattr__(name, value)
+            return
+
+        if name in self._names:
+            value = np.float64(value)
+            if np.isnan(value):
+                raise ValueError('Cannot set value to nan')
+
+            idx = self._names_index[name]
+            self._hitbounds = (value < self._mins[idx]) or (value > self._maxs[idx])
+            self.values[idx] = min(max(value, self.mins[idx]), self.maxs[idx])
+        else:
+            super(Vector, self).__setattr__(name, value)
+
+
     def __str__(self):
         return 'vector ['+', '.join(['{0}:{1:3.3e}'.format(key, self[key]) \
                                     for key in self.names]) + ']'
-
-
-    def __findname__(self, key):
-        idx = np.where(self.names == key)[0]
-        if idx.shape[0] == 0:
-            raise ValueError(('Expected key {0} in the' + \
-                ' list of names {1}').format(key, self.names))
-
-        return idx[0]
 
 
     def __checkvalues__(self, val, hitbounds=False):
@@ -117,18 +141,19 @@ class Vector(object):
 
 
     def __setitem__(self, key, value):
-        idx = self.__findname__(key)
-        value = np.float64(value)
-        if np.isnan(value):
-            raise ValueError('Cannot set value to nan')
+        if not key in self._names_index:
+            raise ValueError('Expected key in {0}, got {1}'.format(\
+                self._names, key))
 
-        self._hitbounds = np.any((value < self._mins[idx]) | (value > self._maxs[idx]))
-        self.values[idx] = np.clip(value, self.mins[idx], self.maxs[idx])
+        setattr(self, key, value)
 
 
     def __getitem__(self, key):
-        idx = self.__findname__(key)
-        return self._values[idx]
+        if not key in self._names_index:
+            raise ValueError('Expected key in {0}, got {1}'.format(\
+                self._names, key))
+
+        return getattr(self, key)
 
 
     @property

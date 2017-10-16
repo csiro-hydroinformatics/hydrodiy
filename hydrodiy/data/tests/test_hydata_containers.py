@@ -127,6 +127,19 @@ class VectorTestCases(unittest.TestCase):
             raise Exception('Problem with error generation')
 
 
+    def test_set_get_attributes(self):
+        vect = Vector(['a', 'b', 'c'], [0.5]*3, [0]*3, [1]*3)
+
+        vect.a = 0.8
+        self.assertTrue(np.allclose(vect.values, [0.8, 0.5, 0.5]))
+        self.assertTrue(~vect.hitbounds)
+
+        self.assertTrue(vect.hitbounds)
+        vect.a = 2.
+        self.assertTrue(np.allclose(vect.values, [1., 0.5, 0.5]))
+        self.assertTrue(vect.hitbounds)
+
+
     def test_hitbounds(self):
         vect = Vector(['a', 'b'], [0.5]*2, [0]*2, [1]*2)
         self.assertTrue(~vect.hitbounds)
