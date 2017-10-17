@@ -311,22 +311,25 @@ class UtilsTestCase(unittest.TestCase):
             dt = se.index[se.index.hour==9]
             for it, t in enumerate(dt):
                 idx = (se.index>=t) & (se.index<t+delta(days=1))
+
                 if it<len(expected)-1:
                     expected[it+1, 0] = se[idx].sum() if how=='sum' else se[idx].mean()
+
                 expected[it, 1] = se[idx].sum() if how=='sum' else se[idx].mean()
 
             dt = se.index[se.index.hour==0]
             for it, t in enumerate(dt):
                 idx = (se.index>=t) & (se.index<t+delta(days=1))
+
                 if it<len(expected)-1:
-                    expected[it+1, 2] = se[idx].sum()
-                expected[it, 3] = se[idx].sum()
+                    expected[it+1, 2] = se[idx].sum() if how=='sum' else se[idx].mean()
+
+                expected[it, 3] = se[idx].sum() if how=='sum' else se[idx].mean()
 
             # Run tests
-            self.assertTrue(np.allclose(sed1.values[1:-1], expected[1:-1, 0]))
-            self.assertTrue(np.allclose(sed2.values[1:-1], expected[1:-1, 1]))
-            self.assertTrue(np.allclose(sed3.values[1:-1], expected[1:-1, 2]))
-            self.assertTrue(np.allclose(sed4.values[1:-1], expected[1:-1, 3]))
+            for i, sed in enumerate([sed1, sed2, sed3, sed4]):
+                ck = np.allclose(sed.values[1:-1], expected[1:-1, i])
+                self.assertTrue(ck)
 
 
 if __name__ == "__main__":
