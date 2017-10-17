@@ -11,6 +11,8 @@ import pandas as pd
 from pandas.tseries.offsets import DateOffset
 from numpy.polynomial import polynomial as poly
 
+from hydrodiy import PYVERSION
+
 import c_hydrodiy_data
 
 
@@ -397,7 +399,10 @@ def hourly2daily(se, start_hour=9, timestamp_end=True, how='mean'):
 
     # Aggregate to daily
     aggfun = np.mean if how=='mean' else np.sum
-    sed = sel.resample('D').apply(lambda x: aggfun(x.values))
+    if PYVERSION == 2:
+        sed = sel.resample('D', how)
+    elif PYVERSION == 3:
+        sed = sel.resample('D').apply(lambda x: aggfun(x.values))
 
     return sed
 
