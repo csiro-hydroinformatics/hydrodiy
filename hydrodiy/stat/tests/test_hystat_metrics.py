@@ -376,7 +376,7 @@ class MetricsTestCase(unittest.TestCase):
         c_hydrodiy_stat.ensrank(eps, sim, fmat, ranks)
         t1 = time.time()
 
-        # Max 3 sec to compute this
+        # Max 30 sec to compute this
         self.assertTrue(t1-t0<30)
 
 

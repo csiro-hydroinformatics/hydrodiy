@@ -32,11 +32,11 @@ def get_transform(name):
 
     elif name =='Log':
         trans = transform.Log()
-        trans.params = 1.
+        trans.params.values[0] = 1.
 
     elif name =='Reciprocal':
         trans = transform.Reciprocal()
-        trans.params = 1.
+        trans.params.values[0] = 1.
 
     else:
         expected = ['Identity', 'Log', 'Reciprocal']

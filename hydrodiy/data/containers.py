@@ -11,16 +11,16 @@ class Vector(object):
     def __init__(self, names, defaults=None, mins=None, maxs=None, \
             check_hitbounds=False):
 
-        # Record bounds hitting or not (useful for optimizers)
-        self._check_hitbounds = bool(check_hitbounds)
-        self._hitbounds = False
-
         # Set parameter names
         if names is None:
             names = []
 
         self._names = np.atleast_1d(names).flatten().astype(str).copy()
         nval = self._names.shape[0]
+
+        # Record bounds hitting or not (useful for optimizers)
+        self._check_hitbounds = bool(check_hitbounds)
+        self._hitbounds = False
 
         # Set number of parameters
         if len(np.unique(self._names)) != nval:
