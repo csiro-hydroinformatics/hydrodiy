@@ -125,7 +125,7 @@ class Transform(object):
 class Identity(Transform):
 
     def __init__(self):
-        Transform.__init__(self, 'Identity')
+        super(Identity, self).__init__('Identity')
 
     def forward(self, x):
         return x
@@ -144,7 +144,7 @@ class Logit(Transform):
         params = Vector(['lower', 'upper'], \
                     defaults=[0, 1])
 
-        Transform.__init__(self, 'Logit', params)
+        super(Logit, self).__init__('Logit', params)
 
 
     def forward(self, x):
@@ -170,7 +170,7 @@ class Log(Transform):
     def __init__(self):
         params = Vector(['shift'], defaults=[1], mins=[EPS])
 
-        Transform.__init__(self, 'Log', params)
+        super(Log, self).__init__('Log', params)
 
 
     def forward(self, x):
@@ -193,7 +193,7 @@ class BoxCox(Transform):
         params = Vector(['shift', 'lambda'], [0., 1.], \
                     [EPS, -3.], [np.inf, 3.])
 
-        Transform.__init__(self, 'BoxCox', params)
+        super(BoxCox, self).__init__('BoxCox', params)
 
 
     def forward(self, x):
@@ -230,7 +230,7 @@ class YeoJohnson(Transform):
             [0., 1., 1.], [-np.inf, 1e-5, -1.],\
             [np.inf, np.inf, 3.])
 
-        Transform.__init__(self, 'YeoJohnson', params)
+        super(YeoJohnson, self).__init__('YeoJohnson', params)
 
 
     def forward(self, x):
@@ -297,7 +297,9 @@ class LogSinh(Transform):
 
     def __init__(self):
         params = Vector(['a', 'b'], [0., 1.], [EPS, EPS])
-        Transform.__init__(self, 'LogSinh', params)
+
+        super(LogSinh, self).__init__('LogSinh', params)
+
 
     def forward(self, x):
         a, b = self.params.values
@@ -319,7 +321,9 @@ class Reciprocal(Transform):
 
     def __init__(self):
         params = Vector(['shift'], [1.], [EPS])
-        Transform.__init__(self, 'Reciprocal', params)
+
+        super(Reciprocal, self).__init__('Reciprocal', params)
+
 
     def forward(self, x):
         shift = self.params.values
@@ -337,7 +341,8 @@ class Reciprocal(Transform):
 class Softmax(Transform):
 
     def __init__(self):
-        Transform.__init__(self, 'Softmax')
+        super(Softmax, self).__init__('Softmax')
+
 
     def forward(self, x):
         # Check inputs
