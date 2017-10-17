@@ -12,11 +12,8 @@ class Transform(object):
     ''' Transform base class '''
 
     def __init__(self, name,
-        pnames=None, \
-        defaults=None, \
-        mins=None, \
-        maxs=None,
-        constants=None):
+        params=Vector([]), \
+        constants=Vector([])):
         """
         Create instance of a data transform object
 
@@ -24,21 +21,45 @@ class Transform(object):
         -----------
         name : str
             Name of transformation
-        pnames : list
-            Names of transform parameters
-        defaults : list
-            Defaults values for parameters
-        mins : list
-            Minum values for parameters
-        maxs : list
-            Maximum values for parameters
-        constants : list
-            Name of constants
+        params : hydrodiy.data.containers.Vector
+            Parameter vector
+        constants : hydrodiy.data.containers.Vector
+            Consant vector
 
         """
         self.name = name
-        self._params = Vector(pnames, defaults, mins, maxs)
-        self._constants = Vector(constants)
+        self._params = params
+        self._constants = constants
+
+
+    def __getattribute__(self, name):
+        # Except name, _params and _constants to avoid infinite recursion
+        if name in ['name', '_params', '_constants']:
+            return super(Transform, self).__getattribute__(name)
+
+        if name in self._params.names:
+            return getattr(self._params, name)
+
+        if name in self._constants.names:
+            return getattr(self._constants, name)
+
+        return super(Transform, self).__getattribute__(name)
+
+
+    def __setattr__(self, name, value):
+        # Except name, _params and _constants to avoid infinite recursion
+        if name in ['name', '_params', '_constants']:
+            super(Transform, self).__setattr__(name, value)
+            return
+
+        if name in self._params.names:
+            setattr(self._params, name, value)
+
+        elif name in self._constants.names:
+            setattr(self._constants, name, value)
+
+        else:
+            super(Transform, self).__setattr__(name, value)
 
 
     def __setitem__(self, key, value):
@@ -60,51 +81,24 @@ class Transform(object):
             else:
                 return self._constants[key]
 
+    def __str__(self):
+        str = '{0} transform:\n'.format(self.name)
+        str += '\tparams    : {0}\n'.format(self.params.names)
+        str += '\tconstants : {0}\n'.format(self.constants.names)
 
-    @property
-    def nparams(self):
-        return self._params.nval
-
-
-    @property
-    def hitbounds(self):
-        return self._params.hitbounds
-
-
-    @property
-    def pnames(self):
-        ''' Get parameter pnames '''
-        return self._params.names
-
-
-    @property
-    def mins(self):
-        ''' Get parameter minimum bounds '''
-        return self._params.mins
-
-
-    @property
-    def maxs(self):
-        ''' Get parameter maximum bounds '''
-        return self._params.maxs
-
-
-    @property
-    def defaults(self):
-        ''' Get parameter defaults '''
-        return self._params.defaults
+        return str
 
 
     @property
     def params(self):
         ''' Get parameters '''
-        return self._params.values
+        return self._params
 
 
-    @params.setter
-    def params(self, values):
-        ''' Set parameters '''
-        self._params.values = values
+    @property
+    def constants(self):
+        ''' Get constants '''
+        return self._constants
 
 
     def reset(self):
@@ -147,22 +141,24 @@ class Identity(Transform):
 class Logit(Transform):
 
     def __init__(self):
-        Transform.__init__(self, 'Logit', \
-                pnames=['lower', 'upper'],
-                defaults=[0, 1])
+        params = Vector(['lower', 'upper'], \
+                    defaults=[0, 1])
+
+        Transform.__init__(self, 'Logit', params)
+
 
     def forward(self, x):
-        lower, upper = self.params
+        lower, upper = self.params.values
         value = (x-lower)/(upper-lower)
         return np.log(1./(1-value)-1)
 
     def backward(self, y):
-        lower, upper = self.params
+        lower, upper = self.params.values
         bnd = 1-1./(1+np.exp(y))
         return bnd*(upper-lower) + lower
 
     def jacobian_det(self, x):
-        lower, upper = self.params
+        lower, upper = self.params.values
         value = (x-lower)/(upper-lower)
         return  np.where((x>lower+EPS) & (x<upper-EPS), \
                     1./(upper-lower)/value/(1-value), np.nan)
@@ -172,21 +168,21 @@ class Logit(Transform):
 class Log(Transform):
 
     def __init__(self):
-        Transform.__init__(self, 'Log', \
-                pnames=['shift'],
-                defaults=1., \
-                mins=[EPS])
+        params = Vector(['shift'], defaults=[1], mins=[EPS])
+
+        Transform.__init__(self, 'Log', params)
+
 
     def forward(self, x):
-        shift = self.params[0]
+        shift = self.shift
         return np.log(x+shift)
 
     def backward(self, y):
-        shift = self.params[0]
+        shift = self.shift
         return np.exp(y)-shift
 
     def jacobian_det(self, x):
-        shift = self.params[0]
+        shift = self.shift
         return np.where(x+shift>EPS, 1./(x+shift), np.nan)
 
 
@@ -194,21 +190,21 @@ class Log(Transform):
 class BoxCox(Transform):
 
     def __init__(self):
-        Transform.__init__(self, 'BoxCox',
-            pnames=['shift', 'lambda'],
-            defaults=[0., 1.], \
-            mins=[EPS, -3], \
-            maxs=[np.inf, 3.])
+        params = Vector(['shift', 'lambda'], [0., 1.], \
+                    [EPS, -3.], [np.inf, 3.])
+
+        Transform.__init__(self, 'BoxCox', params)
+
 
     def forward(self, x):
-        shift, lam = self.params
+        shift, lam = self.params.values
         if abs(lam)>EPS:
             return (np.exp(np.log(x+shift)*lam)-1)/lam
         else:
             return np.log(x+shift)
 
     def backward(self, y):
-        shift, lam = self.params
+        shift, lam = self.params.values
 
         if abs(lam)>EPS:
             u = lam*y+1
@@ -218,7 +214,7 @@ class BoxCox(Transform):
 
 
     def jacobian_det(self, x):
-        shift, lam = self.params
+        shift, lam = self.params.values
 
         if abs(lam)>EPS:
             return np.where(x+shift>EPS, np.exp(np.log(x+shift)*(lam-1.)), np.nan)
@@ -230,14 +226,15 @@ class BoxCox(Transform):
 class YeoJohnson(Transform):
 
     def __init__(self):
-        Transform.__init__(self, 'YeoJohnson',
-            pnames=['shift', 'scale', 'lambda'],
-            defaults=[0., 1., 1.], \
-            mins=[-np.inf, 1e-5, -1.], \
-            maxs=[np.inf, np.inf, 3.])
+        params = Vector(['shift', 'scale', 'lambda'],\
+            [0., 1., 1.], [-np.inf, 1e-5, -1.],\
+            [np.inf, np.inf, 3.])
+
+        Transform.__init__(self, 'YeoJohnson', params)
+
 
     def forward(self, x):
-        shift, scale, lam = self.params
+        shift, scale, lam = self.params.values
         y = x*np.nan
         w = shift+x*scale
         ipos = w>=EPS
@@ -258,7 +255,7 @@ class YeoJohnson(Transform):
 
 
     def backward(self, y):
-        shift, scale, lam = self.params
+        shift, scale, lam = self.params.values
         x = y*np.nan
         ipos = y>=EPS
 
@@ -276,7 +273,7 @@ class YeoJohnson(Transform):
 
 
     def jacobian_det(self, x):
-        shift, scale, lam = self.params
+        shift, scale, lam = self.params.values
         j = x*np.nan
         w = shift+x*scale
         ipos = w>=EPS
@@ -299,23 +296,21 @@ class YeoJohnson(Transform):
 class LogSinh(Transform):
 
     def __init__(self):
-        Transform.__init__(self, 'LogSinh', \
-            pnames=['a', 'b'], \
-            defaults=[0., 1.], \
-            mins=[EPS, EPS])
+        params = Vector(['a', 'b'], [0., 1.], [EPS, EPS])
+        Transform.__init__(self, 'LogSinh', params)
 
     def forward(self, x):
-        a, b = self.params
+        a, b = self.params.values
         w = a + b*x
         return np.where(x>-a/b+EPS, (w+np.log((1.-np.exp(-2.*w))/2.))/b, np.nan)
 
     def backward(self, y):
-        a, b = self.params
+        a, b = self.params.values
         w = b*y
         return y + (np.log(1.+np.sqrt(1.+np.exp(-2.*w)))-a)/b
 
     def jacobian_det(self, x):
-        a, b = self.params
+        a, b = self.params.values
         w = a + b*x
         return np.where(x>-a/b+EPS, 1./np.tanh(w), np.nan)
 
@@ -323,21 +318,19 @@ class LogSinh(Transform):
 class Reciprocal(Transform):
 
     def __init__(self):
-        Transform.__init__(self, 'Reciprocal', \
-            pnames=['shift'], \
-            defaults=[1.], \
-            mins=[EPS])
+        params = Vector(['shift'], [1.], [EPS])
+        Transform.__init__(self, 'Reciprocal', params)
 
     def forward(self, x):
-        shift = self.params
+        shift = self.params.values
         return np.where(x>-shift, 1./(shift+x), np.nan)
 
     def backward(self, y):
-        shift = self.params
+        shift = self.params.values
         return np.where(y>EPS, 1./y-shift, np.nan)
 
     def jacobian_det(self, x):
-        shift = self.params
+        shift = self.params.values
         return np.where(x>-shift, 1./(shift+x)**2, np.nan)
 
 

@@ -2,6 +2,7 @@ import os
 import itertools
 import unittest
 import numpy as np
+from hydrodiy.data.containers import Vector
 from hydrodiy.stat import transform
 
 import matplotlib.pyplot as plt
@@ -23,66 +24,92 @@ class TransformTestCase(unittest.TestCase):
     def test_transform_class(self):
         ''' Test the class transform '''
 
-        trans = transform.Transform('test', 'a', \
-                    mins=[0], defaults=[0.5], maxs=[1],
-                    constants=['C1', 'C2'])
+        params = Vector(['a'], [0.5], [0.], [1.])
+        constants = Vector(['C1', 'C2'])
+        trans = transform.Transform('test', params, constants)
 
         self.assertEqual(trans.name, 'test')
-        self.assertEqual(trans.pnames, ['a'])
+        self.assertEqual(trans.params.names, ['a'])
 
         # test set and get parameters
         value = 0.5
-        trans.params = value
+        trans.params.values = value
         exp = np.array([value], dtype=np.float64)
-        self.assertTrue(np.allclose(trans.params, exp))
+        self.assertTrue(np.allclose(trans.params.values, exp))
 
         # test set and get parameters
-        trans.params = -1
-        exp = np.array([trans.mins[0]], dtype=np.float64)
-        self.assertTrue(np.allclose(trans.params, exp))
+        trans.params.values = -1
+        exp = np.array([trans.params.mins[0]], dtype=np.float64)
+        self.assertTrue(np.allclose(trans.params.values, exp))
 
-        trans.params = 2
-        exp = np.array([trans.maxs[0]], dtype=np.float64)
-        self.assertTrue(np.allclose(trans.params, exp))
+        trans.params.values = 2
+        exp = np.array([trans.params.maxs[0]], dtype=np.float64)
+        self.assertTrue(np.allclose(trans.params.values, exp))
 
-        # test setitem/getitem
-        trans['a'] = 0.5
-        self.assertTrue(np.allclose(trans.params, [0.5]))
-        self.assertTrue(np.allclose(trans['a'], 0.5))
-        self.assertTrue(isinstance(trans['a'], float))
+        # test setitem/getitem for individual parameters
+        trans.a = 0.5
+        self.assertTrue(np.allclose(trans.a, 0.5))
+        self.assertTrue(np.allclose(trans.params.values, [0.5]))
+        self.assertTrue(np.allclose(trans.params['a'], 0.5))
 
-        trans['a'] = 2.
-        self.assertTrue(np.allclose(trans.params, trans.maxs))
+        trans.params['a'] = 0.5
+        self.assertTrue(np.allclose(trans.a, 0.5))
+        self.assertTrue(np.allclose(trans.params.values, [0.5]))
+        self.assertTrue(np.allclose(trans.params['a'], 0.5))
 
-        trans['a'] = -1
-        self.assertTrue(np.allclose(trans.params, trans.mins))
+        trans.a = 2.
+        trans.b = 2.
+        self.assertTrue(np.allclose(trans.params.values, trans.params.maxs))
+
+        trans.a = -1
+        trans.b = -1
+        self.assertTrue(np.allclose(trans.params.values, trans.params.mins))
+
+        # test setitem/getitem for individual constants
+        trans.C1 = 6
+        self.assertTrue(np.allclose(trans.C1, 6))
+        self.assertTrue(np.allclose(trans.constants.values, [6, 0.]))
+        self.assertTrue(np.allclose(trans.constants['C1'], 6))
+
+        trans.constants['C1'] = 7
+        self.assertTrue(np.allclose(trans.C1, 7))
+        self.assertTrue(np.allclose(trans.constants.values, [7, 0.0]))
+        self.assertTrue(np.allclose(trans.constants['C1'], 7))
+
+
+    def test_transform_class_error(self):
+        ''' Test the error from class transform '''
+
+        params = Vector(['a'], [0.5], [0.], [1.])
+        trans = transform.Transform('test', params)
 
         try:
-            trans['a'] = [10, 10]
+            trans.a = [10, 10]
         except ValueError as err:
             self.assertTrue(str(err).startswith('The truth value of'))
         else:
             raise Exception('Problem with error handling')
 
         try:
-            trans['a'] = np.nan
+            trans.a = np.nan
         except ValueError as err:
             self.assertTrue(str(err).startswith('Cannot set'))
         else:
             raise Exception('Problem with error handling')
 
         try:
-            trans.params = [np.nan] * trans.nparams
+            trans.params.values = [np.nan] * trans.params.nval
         except ValueError as err:
             self.assertTrue(str(err).startswith('Cannot process'))
         else:
             raise Exception('Problem with error handling')
 
-        # Check constants
-        self.assertTrue(np.allclose(trans['C1'], 0.))
-        trans['C1'] = 10.
-        self.assertTrue(np.allclose(trans['C1'], 10.))
 
+    def test_transform_class_methods(self):
+        ''' Test the methods of the class transform '''
+
+        params = Vector(['a'], [0.5], [0.], [1.])
+        trans = transform.Transform('test', params)
 
         # Test not implemented methods
         x = np.linspace(0, 1, 10)
@@ -108,7 +135,8 @@ class TransformTestCase(unittest.TestCase):
             raise Exception('Problem with error handling')
 
         try:
-            trans = transform.Transform('test', ['a', 'a'])
+            params = Vector(['a', 'a'], [0.5]*2, [0.]*2, [1.]*2)
+            trans = transform.Transform('test', params)
         except ValueError as err:
             self.assertTrue(str(err).startswith('Names are not unique'))
         else:
@@ -119,8 +147,8 @@ class TransformTestCase(unittest.TestCase):
         ''' Test print method '''
         for nm in transform.__all__:
             trans = getattr(transform, nm)()
-            nparams = trans.nparams
-            trans.params = np.random.uniform(-5, 5, size=nparams)
+            nparams = trans.params.nval
+            trans.params.values = np.random.uniform(-5, 5, size=nparams)
             str(trans)
 
 
@@ -130,15 +158,15 @@ class TransformTestCase(unittest.TestCase):
         for nm in transform.__all__:
 
             trans = getattr(transform, nm)()
-            nparams = trans.nparams
+            nparams = trans.params.nval
 
             for sample in range(500):
                 # generate x sample
                 x = np.random.normal(size=100, loc=5, scale=20)
                 # Generate parameters
-                params = trans.mins+np.random.uniform(0., 4, size=nparams)
+                params = trans.params.mins+np.random.uniform(0., 4, size=nparams)
                 params[np.isinf(params)] = 0.
-                trans.params = params
+                trans.params.values = params
 
                 # Handle specific cases
                 if nm == 'Log':
@@ -177,11 +205,11 @@ class TransformTestCase(unittest.TestCase):
         delta = 1e-5
         for nm in transform.__all__:
             trans = getattr(transform, nm)()
-            nparams = trans.nparams
+            nparams = trans.params.nval
 
             for sample in range(100):
                 x = np.random.normal(size=100, loc=5, scale=20)
-                trans.params = trans.mins+np.random.uniform(1e-3, 2, size=nparams)
+                trans.params.values = trans.params.mins+np.random.uniform(1e-3, 2, size=nparams)
 
                 if nm in ['Log', 'BoxCox']:
                     x = np.clip(x, 1e-1, np.inf)
@@ -245,7 +273,7 @@ class TransformTestCase(unittest.TestCase):
 
         for nm in transform.__all__:
             trans = getattr(transform, nm)()
-            nparams = trans.nparams
+            nparams = trans.params.nval
 
             xx = x
             if nm == 'Softmax':
@@ -255,7 +283,7 @@ class TransformTestCase(unittest.TestCase):
             fig, ax = plt.subplots()
             for pp in [-20., 0, 20.]:
                 trans.reset()
-                trans.params = trans.defaults * (1.+pp/100)
+                trans.params.values = trans.params.defaults * (1.+pp/100)
                 y = trans.forward(xx)
 
                 xp, yp = xx, y
