@@ -85,13 +85,13 @@ class VectorTestCases(unittest.TestCase):
                 raise Exception('Problem with error generation')
 
             dct = vect.to_dict()
-            self.assertEqual(dct, {'hitbounds':False, 'data':[], 'nval':0})
+            self.assertEqual(dct, {'check_hitbounds':False, \
+                                        'hitbounds':False, 'data':[], 'nval':0})
 
 
     def test_tofromdict(self):
         vect = Vector(['a', 'b'], [0.5]*2, [0]*2, [1]*2)
         dct = vect.to_dict()
-
         vect2 = Vector.from_dict(dct)
         dct2 = vect2.to_dict()
         self.assertEqual(dct, dct2)
@@ -132,20 +132,37 @@ class VectorTestCases(unittest.TestCase):
 
         vect.a = 0.8
         self.assertTrue(np.allclose(vect.values, [0.8, 0.5, 0.5]))
-        self.assertTrue(~vect.hitbounds)
+        self.assertTrue(np.allclose(vect['a'], 0.8))
 
-        self.assertTrue(vect.hitbounds)
         vect.a = 2.
         self.assertTrue(np.allclose(vect.values, [1., 0.5, 0.5]))
-        self.assertTrue(vect.hitbounds)
+        self.assertTrue(np.allclose(vect['a'], 1.))
+
+        vect.a = -2.
+        self.assertTrue(np.allclose(vect.values, [0., 0.5, 0.5]))
+        self.assertTrue(np.allclose(vect['a'], 0.))
 
 
     def test_hitbounds(self):
-        vect = Vector(['a', 'b'], [0.5]*2, [0]*2, [1]*2)
+        # Test vector with active hitbounds checking
+        vect = Vector(['a', 'b'], [0.5]*2, [0]*2, [1]*2, True)
         self.assertTrue(~vect.hitbounds)
 
         vect.values = [2]*2
         self.assertTrue(vect.hitbounds)
+
+        vect.reset()
+        self.assertTrue(~vect.hitbounds)
+
+        vect.values = [-2]*2
+        self.assertTrue(vect.hitbounds)
+
+        # Test vector with not hitbound checking
+        vect = Vector(['a', 'b'], [0.5]*2, [0]*2, [1]*2, False)
+        self.assertTrue(~vect.hitbounds)
+
+        vect.values = [2]*2
+        self.assertTrue(~vect.hitbounds)
 
 
     def test_values(self):

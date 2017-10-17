@@ -9,10 +9,11 @@ class Vector(object):
     ''' Vector data container. Implements min, max and default values. '''
 
     def __init__(self, names, defaults=None, mins=None, maxs=None, \
-            hitbounds=False,
-            post_setter_args=None):
+            check_hitbounds=False):
 
-        self._hitbounds = bool(hitbounds)
+        # Record bounds hitting or not (useful for optimizers)
+        self._check_hitbounds = bool(check_hitbounds)
+        self._hitbounds = False
 
         # Set parameter names
         if names is None:
@@ -77,16 +78,16 @@ class Vector(object):
             maxs.append(dct['data'][i]['max'])
             values.append(dct['data'][i]['value'])
 
-        vect = Vector(names, defaults, mins, maxs)
-        vect.values = values
+        vect = Vector(names, defaults, mins, maxs, bool(dct['check_hitbounds']))
         vect._hitbounds = bool(dct['hitbounds'])
+        vect.values = values
 
         return vect
 
 
     def __getattribute__(self, name):
         # Except _names and _hitbounds to avoid infinite recursion
-        if name in ['_names', '_hitbounds']:
+        if name in ['_names', '_check_hitbounds', '_hitbounds']:
             return super(Vector, self).__getattribute__(name)
 
         if name in self._names:
@@ -98,7 +99,7 @@ class Vector(object):
 
     def __setattr__(self, name, value):
         # Except _names and _hitbounds to avoid infinite recursion
-        if name in ['_names', '_hitbounds']:
+        if name in ['_names', '_check_hitbounds', '_hitbounds']:
             super(Vector, self).__setattr__(name, value)
             return
 
@@ -108,8 +109,14 @@ class Vector(object):
                 raise ValueError('Cannot set value to nan')
 
             idx = self._names_index[name]
-            self._hitbounds = (value < self._mins[idx]) or (value > self._maxs[idx])
+
+            # Check bounds if needed
+            if self.check_hitbounds:
+                self._hitbounds = (value < self._mins[idx]) or (value > self._maxs[idx])
+
+            # Store clipped value
             self.values[idx] = min(max(value, self.mins[idx]), self.maxs[idx])
+
         else:
             super(Vector, self).__setattr__(name, value)
 
@@ -119,7 +126,7 @@ class Vector(object):
                                     for key in self.names]) + ']'
 
 
-    def __checkvalues__(self, val, hitbounds=False):
+    def __checkvalues__(self, val, check_hitbounds):
         ''' Check vector is of proper length and contains no nan'''
 
         val = np.atleast_1d(val).flatten().astype(np.float64)
@@ -131,10 +138,12 @@ class Vector(object):
         if np.any(np.isnan(val)):
             raise ValueError('Cannot process values with NaN')
 
+        # Record hit bound if needed
         hit = False
-        if hitbounds:
+        if check_hitbounds:
             hit = np.any((val < self._mins-EPS) | (val > self._maxs+EPS))
 
+        # returns clipped values
         val = np.clip(val, self._mins, self._maxs)
 
         return val, hit
@@ -159,6 +168,11 @@ class Vector(object):
     @property
     def nval(self):
         return self._nval
+
+
+    @property
+    def check_hitbounds(self):
+        return self._check_hitbounds
 
 
     @property
@@ -195,7 +209,8 @@ class Vector(object):
     @values.setter
     def values(self, val):
         ''' Set data '''
-        self._values, self._hitbounds = self.__checkvalues__(val, True)
+        self._values, self._hitbounds = self.__checkvalues__(val, \
+                                            self._check_hitbounds)
 
 
     def reset(self):
@@ -206,9 +221,9 @@ class Vector(object):
     def clone(self):
         ''' Clone the vector '''
         clone = Vector(self.names, self.defaults, self.mins, \
-                    self.maxs)
+                    self.maxs, self.check_hitbounds)
 
-        clone.values = self.values
+        clone.values = self.values.copy()
 
         return clone
 
@@ -217,6 +232,7 @@ class Vector(object):
         ''' Write vector data to json format '''
 
         dct = {'nval': self.nval, 'hitbounds':self.hitbounds, \
+                    'check_hitbounds':self._check_hitbounds, \
                     'data':[]}
 
         for i in range(self.nval):
