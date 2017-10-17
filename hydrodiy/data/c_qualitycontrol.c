@@ -14,6 +14,9 @@ int c_islin(int nval, double thresh, double tol, int npoints,
     vcur = data[1];
     if(isnan(vcur)) vcur = thresh-1;
 
+	/* lintype = 1 (no problem) / =2 (linear strech) */
+	lintype = 1;
+
     count = 0;
     start = 0;
 
@@ -41,8 +44,10 @@ int c_islin(int nval, double thresh, double tol, int npoints,
             /* increment event duration */
             count += 1;
 
-            /* Define linear flag */
+            /* Define linear flag (default = 1, no problem) */
             lintype = 1;
+
+			/* Set lintype=2 if there is a linear strech */
             if(fabs(vnext-vprec)<tol) lintype = 2;
         }
         else
