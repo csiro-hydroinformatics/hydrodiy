@@ -435,7 +435,7 @@ def dscore(obs, sim, eps=1e-6):
     '''
     # Check data
     obs = np.atleast_1d(obs).astype(np.float64)
-    sim = np.atleast_1d(sim).astype(np.float64)
+    sim = np.atleast_2d(sim).astype(np.float64)
     eps = np.float64(eps)
 
     if sim.ndim != 2:
