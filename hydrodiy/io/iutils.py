@@ -280,6 +280,9 @@ def get_logger(name, level='INFO', \
 
         sys.excepthook = catcherr
 
+    # Close all handlers
+    [h.close() for h in logger.handlers]
+
     return logger
 
 
