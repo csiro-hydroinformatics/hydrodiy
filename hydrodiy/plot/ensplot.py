@@ -237,9 +237,10 @@ class MonthlyEnsplot(object):
 
         # Decorate
         if ymin is None:
-            rmin = qobs[qobs>0].min()
+            ymin = qobs[qobs>0].min()
         if ymax is None:
             ymax = qobs.max() * 1.2
+
         ax.set_ylim((ymin, ymax))
         ax.set_ylabel(self.ylabel)
 
