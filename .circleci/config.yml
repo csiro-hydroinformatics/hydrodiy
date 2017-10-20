@@ -45,7 +45,17 @@ jobs:
           command: |
             . venv/bin/activate
             python setup.py install
-            nosetests hydrodiy
+
+            # Running selected tests
+            nosetests hydrodiy/data/tests
+            nosetests hydrodiy/stat/tests
+            nosetests hydrodiy/io/tests
+
+            nosetests hydrodiy/gis/tests/test_hygis_gutils.py
+            nosetests hydrodiy/gis/tests/test_hygis_grid.py
+            nosetests hydrodiy/gis/tests/test_hygis_points_inside_polygon.py
+
+            # No tests on plots... matplotlib has issue in circleci
 
       - store_artifacts:
           path: test-reports
