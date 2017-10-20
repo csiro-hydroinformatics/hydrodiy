@@ -5,7 +5,6 @@ import sys, os, re, json, math
 import numpy as np
 import pandas as pd
 
-import zipfile
 from datetime import datetime
 from dateutil.relativedelta import relativedelta as delta
 
@@ -21,11 +20,13 @@ from hydrodiy.io import csv, iutils
 #----------------------------------------------------------------------
 source_file = os.path.abspath(__file__)
 froot = os.path.dirname(source_file)
+#froot = os.path.join(os.path.dirname(source_file), '..')
 
-fdata = froot #os.path.join(froot, 'data')
+fdata = froot
+#fdata = os.path.join(froot, 'data')
 
 fout = froot # os.path.join(froot, 'outputs')
-if not os.path.exists(fout): os.mkdir(fout)
+os.makedirs(fout, exist_ok=True)
 
 basename = re.sub('\\.py.*', '', os.path.basename(source_file))
 LOGGER = iutils.get_logger(basename)
