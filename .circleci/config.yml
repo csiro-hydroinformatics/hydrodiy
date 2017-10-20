@@ -46,7 +46,7 @@ jobs:
             . venv/bin/activate
 
             # Install package and build binaries
-            python setup.py install
+            python setup.py build_ext --inplace --force
 
             # Running tests
             nosetests hydrodiy/data
@@ -54,7 +54,6 @@ jobs:
             nosetests hydrodiy/plot
             nosetests hydrodiy/gis/tests/test_hygis_gutils.py
             nosetests hydrodiy/gis/tests/test_hygis_grid.py
-            nosetests hydrodiy/gis/tests/test_hygis_points_inside_polygon.py
 
       - store_artifacts:
           path: test-reports
