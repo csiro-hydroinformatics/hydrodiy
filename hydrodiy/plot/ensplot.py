@@ -198,7 +198,8 @@ class MonthlyEnsplot(object):
 
 
 
-    def monthplot(self, month, pit=False, ax=None, xgrid=True, medline=True, \
+    def monthplot(self, month, pit=False, scatter=False, \
+                ax=None, xgrid=True, medline=True, \
                 ymin=None, ymax=None):
         ''' Draw ensemble forecasts for a specific month
 
@@ -208,6 +209,8 @@ class MonthlyEnsplot(object):
             Month used to select data
         pit : bool
             Insert pit plot or not
+        scatter : bool
+            Insert median scatter plot or not
         xgrid : bool
             Draw x grid
         medline : bool
@@ -276,8 +279,24 @@ class MonthlyEnsplot(object):
             pitplot(pits, alpha, crps_ss, ax=axi, \
                 labelaxis=False)
 
+        if scatter:
+            axi2 = inset_axes(ax, width='30%', height='30%', loc=2)
+            axi2.plot(qmed, qobs, 'o')
+            putils.line(axi2, 1, 1, 0, 0, '-', linewidth=1, color='grey')
 
-    def yearplot(self):
+            # Create regression line
+            theta, _, _, _ = np.linalg.lstsq(np.column_stack([qmed*0+1, qmed]), qobs)
+            putils.line(axi2, 1, theta[1], 0, theta[0], 'k--')
+
+            axi2.text(0.95, 0.05, 'Sim', ha='right', transform=axi2.transAxes)
+            axi2.text(0.05, 0.95, 'Obs', va='top', transform=axi2.transAxes)
+
+            axi2.set_xticks([])
+            axi2.set_yticks([])
+            axi2.patch.set_alpha(0.4)
+
+
+    def yearplot(self, show_scatter=True, show_pit=True, medline=True):
         ''' Draw a figure with forecast data for all months '''
 
         # Initialise matplotlib objects
@@ -291,13 +310,15 @@ class MonthlyEnsplot(object):
                 ax = self.fig.add_subplot(gs[(month-1)%3, (month-1)//3])
 
             # Draw monthly plot
-            self.monthplot(month, pit=month>0, ax=ax, xgrid=month==0, \
-                medline=False)
+            self.monthplot(month, pit=month>0 and show_pit, \
+                    scatter=month>0 and show_scatter, \
+                    ax=ax, xgrid=month==0, \
+                    medline=medline)
 
         self.gridspec = gs
 
 
-    def savefig(self, filename, figsize=(25, 18)):
+    def savefig(self, filename, figsize=(26, 18)):
         ''' Save figure at the right resolution '''
 
         if self.gridspec is None:
