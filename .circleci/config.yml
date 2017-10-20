@@ -49,7 +49,12 @@ jobs:
             python setup.py install
 
             # Running tests
-            nosetests hydrodiy
+            nosetests hydrodiy/data
+            nosetests hydrodiy/stat
+            nosetests hydrodiy/plot
+            nosetests hydrodiy/gis/tests/test_hygis_gutils.py
+            nosetests hydrodiy/gis/tests/test_hygis_grid.py
+            nosetests hydrodiy/gis/tests/test_hygis_points_inside_polygon.py
 
       - store_artifacts:
           path: test-reports

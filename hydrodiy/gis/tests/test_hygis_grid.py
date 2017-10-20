@@ -12,6 +12,9 @@ from hydrodiy.gis.grid import get_mask
 
 from hydrodiy.io import csv
 
+import matplotlib
+matplotlib.use('Agg')
+
 import matplotlib.pyplot as plt
 
 try:
