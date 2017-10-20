@@ -69,9 +69,7 @@ snowballstemmer==1.2.1
 sphinx==1.6.2
 sphinxcontrib-websupport==1.0.1
 sqlacodegen==1.1.5
-tables==3.2.2
 testpath==0.3
-tornado==4.5.1
 traitlets==4.3.2
 urllib3==1.21.1
 wcwidth==0.1.7
