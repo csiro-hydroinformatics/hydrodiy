@@ -126,6 +126,15 @@ class MonthlyEnsplot(object):
             Matplotlib figure to draw on
         ylabel : str
             Label of y axis
+
+        Examples
+        -----------
+        >>> obs = np.random.uniform(0, 1, 100)
+        >>> ens = np.random.uniform(0, 1, (100, 50))
+        >>> ep = MonthlyEnsplot(obs, ens)
+        >>> # Create a yearly ensemble plot
+        >>> ep.yearplot()
+
         '''
 
         # Check inputs
