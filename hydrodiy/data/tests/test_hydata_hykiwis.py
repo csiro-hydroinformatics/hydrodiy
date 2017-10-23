@@ -16,10 +16,10 @@ class HyKiwisTestCase(unittest.TestCase):
 
     def test_getsites(self):
         ''' Test get sites '''
-
         sites, url = hykiwis.get_sites()
         self.assertTrue(not sites is None)
         self.assertTrue(isinstance(sites, pd.core.frame.DataFrame))
+        self.assertTrue(sites.shape[0]>25000)
 
 
     def test_getattrs(self):

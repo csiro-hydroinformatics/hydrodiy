@@ -1,5 +1,7 @@
 import re
+import json
 import requests
+import warnings
 from datetime import datetime
 import numpy as np
 import pandas as pd
@@ -13,6 +15,7 @@ from hydrodiy.data.qualitycontrol import islinear
 
 KIWIS_URL_EXT = 'http://www.bom.gov.au/waterdata/KiWIS/KiWIS'
 KIWIS_URL_INT ='http://ccfvp-wadiapp04:8080/KiWIS/KiWIS'
+KIWIS_URL_SITES = 'http://wiski-04:8080/KiWIS/KiWIS'
 
 # Base parameters for Kiwis server request
 BASE_PARAMS = {\
@@ -40,12 +43,17 @@ def __testjson(req):
         out = req.json()
         return out
 
-    except ValueError as err:
+    except json.decoder.JSONDecodeError as jerr:
+        warnings.warn('Repairing json text')
+        txt = re.sub(r'(?<!\\)\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})', r'', req.text)
+        return json.loads(txt)
+
+    except Exception as err:
         warnings.warn('Formatting of json data return {0}'.format(err))
         return None
 
 
-def get_sites(external=False):
+def get_sites(external=True):
     ''' Get list of BoM Kiwis stations
 
     Parameters
@@ -64,26 +72,28 @@ def get_sites(external=False):
 
     # Download site list
     params = dict(BASE_PARAMS)
-    params.update({
-                'request': 'getStationList',
-                'returnfields':'station_no,station_id,'
-                    'station_latitude,station_longitude'
+    params.update({ \
+                'request': 'getStationList', \
+                'returnfields':'station_no,station_name,station_longname,station_id,' +\
+                    'object_type,station_latitude,station_longitude' \
     })
-    url = KIWIS_URL_EXT if external else KIWIS_URL_INT
+
+    # TODO: check this url works for external
+    url = KIWIS_URL_SITES
     req = requests.get(url, params=params)
 
     # Format list of sites
     sites = __testjson(req)
     if sites is None or re.search('No matches', ' '.join(sites[0])):
-        raise ValueError('No data')
+        raise ValueError('Request returns no data. URL={0}'.format(req.url))
 
     sites = pd.DataFrame(sites[1:], columns = sites[0])
 
-    return sites, url
+    return sites, req.url
 
 
 def get_tsattrs(siteid, ts_name='daily_9am_qa', external=True):
-    ''' Retrieve time series ID from site ID
+    ''' Retrieve time series meta data from site ID
 
     Parameters
     -----------
@@ -128,17 +138,17 @@ def get_tsattrs(siteid, ts_name='daily_9am_qa', external=True):
 
     tsattrs = __testjson(req)
     if tsattrs is None or re.search('No matches', ''.join(tsattrs[0])):
-        raise ValueError('No data')
+        raise ValueError('Request returns no data. URL={0}'.format(req.url))
 
     # Format attributes
     tsattrs = {k:v for k, v in zip(tsattrs[0], tsattrs[1])}
     tsattrs['ts_name'] = ts_name
 
-    return tsattrs, url
+    return tsattrs, req.url
 
 
 def get_data(tsattrs, start=None, end=None, external=True, keep_timezone=False):
-    ''' Download Kiwis data
+    ''' Download time series  data from meta data info
 
     Parameters
     -----------
@@ -185,7 +195,7 @@ def get_data(tsattrs, start=None, end=None, external=True, keep_timezone=False):
     js = __testjson(req)
 
     if js is None or len(js[0]['data']) == 0:
-        ts = pd.Series([])
+        raise ValueError('Request returns no data. URL={0}'.format(req.url))
 
     else:
         d = pd.DataFrame(js[0]['data'], columns=['time', 'value'])
@@ -200,5 +210,5 @@ def get_data(tsattrs, start=None, end=None, external=True, keep_timezone=False):
         ts = d.set_index(time)['value']
         ts.name = '%s[%s]' % (tsattrs['ts_id'], tsattrs['ts_unitsymbol'])
 
-    return ts, url
+    return ts, req.url
 
