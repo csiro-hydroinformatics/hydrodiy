@@ -49,7 +49,7 @@ froot = os.path.dirname(source_file)
 
 fdata = os.path.join(froot, 'data')
 fimg = os.path.join(froot, 'images')
-if not os.path.exists(fimg): os.mkdir(fimg)
+os.makedirs(fimg, exist_ok=True)
 
 # Set instance of logger
 basename = re.sub('\\.py.*', '', os.path.basename(source_file))
