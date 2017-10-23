@@ -194,11 +194,13 @@ def script_template(filename, comment,
     txt = txt[:3] + meta + txt[3:]
 
     if PYVERSION == 2:
-        txt = re.sub('os.makedirs(fimg, exist_ok=True)', \
-            'if not os.path.exists(fimg): os.makedirs(fimg)', txt)
+        txt = [re.sub('os\.makedirs\(fimg, exist_ok\=True\)', \
+            'if not os.path.exists(fimg): os.makedirs(fimg)', line) \
+                    for line in txt]
 
-        txt = re.sub('os.makedirs(fout, exist_ok=True)', \
-            'if not os.path.exists(fout): os.makedirs(fout)', txt)
+        txt = [re.sub('os\.makedirs\(fout, exist_ok=True\)', \
+            'if not os.path.exists(fout): os.makedirs(fout)', line) \
+                    for line in txt]
 
     with open(filename, 'w') as fs:
         fs.writelines(txt)
