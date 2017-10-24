@@ -119,9 +119,13 @@ def xdate(ax, interval='M', by=None, format='%b\n%Y'):
     ax : matplotlib.axes
         Axe to draw the line on
     interval : str
-        Interval between two tick marks. Intervals are coded as XY
-        where X is the frequency (D for days or M for months) and Y
+        Interval between two tick marks. Intervals are coded as Xn
+        where X is the frequency (D for days, M for months or Y for years) and n
         is the number of periods. For example 6D is 6 days.
+    by : list
+        Number of the month or day of the month where the ticks should be
+        place. For example by=[1, 7] with internal='M' will place a tick for
+        Jan and July.
     format : str
         Date format
     '''
@@ -148,8 +152,23 @@ def xdate(ax, interval='M', by=None, format='%b\n%Y'):
 
         loc = mdates.DayLocator(interval=interv, bymonthday=by)
 
+    elif interval.endswith('Y'):
+        if interval == 'Y':
+            interv = 1
+        else:
+            interv = int(interval[:-1])
+
+        if by is None:
+            by = [1]
+
+        if len(by)>1:
+            raise ValueError(('Expected by of length one for'+\
+                ' internal=Y, got {0}').format(len(by)))
+
+        loc = mdates.YearLocator(base=interv, month=by[0])
+
     else:
-        raise ValueError('Expected interval to end with D or M, '+\
+        raise ValueError('Expected interval to end with D, M or Y, '+\
             'got {0}'.format(interval))
 
     ax.xaxis.set_major_locator(loc)

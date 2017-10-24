@@ -217,10 +217,11 @@ class UtilsTestCase(unittest.TestCase):
         mpl.rcdefaults()
 
 
-    def test_xdate(self):
-        ''' Test formatting xaxis with dates '''
+    def test_xdate_monthly(self):
+        ''' Test formatting xaxis with monthly dates '''
 
-        putils.set_mpl(font_size=10)
+        #putils.set_mpl(font_size=10)
+        mpl.rcdefaults()
 
         x = np.random.normal(size=200)
         dt = pd.date_range('1990-01-01', periods=len(x))
@@ -229,27 +230,62 @@ class UtilsTestCase(unittest.TestCase):
         fig, ax = plt.subplots()
         ax.plot(dt, x)
         putils.xdate(ax)
-        fp = os.path.join(self.ftest, 'xdate1.png')
+        fp = os.path.join(self.ftest, 'xdate_monthly1.png')
         fig.savefig(fp)
 
         fig, ax = plt.subplots()
         ax.plot(dt, x)
         putils.xdate(ax, '3M')
-        fp = os.path.join(self.ftest, 'xdate2.png')
+        fp = os.path.join(self.ftest, 'xdate_monthly2.png')
         fig.savefig(fp)
 
         fig, ax = plt.subplots()
         ax.plot(dt, x)
         putils.xdate(ax, 'M', [2, 4, 5])
-        fp = os.path.join(self.ftest, 'xdate3.png')
+        fp = os.path.join(self.ftest, 'xdate_monthly3.png')
         fig.savefig(fp)
+
+
+    def test_xdate_daily(self):
+        ''' Test formatting xaxis with daily dates '''
+
+        #putils.set_mpl(font_size=10)
+        mpl.rcdefaults()
+
+        x = np.random.normal(size=200)
+        dt = pd.date_range('1990-01-01', periods=len(x))
+
+        plt.close('all')
 
         fig, ax = plt.subplots()
         ax.plot(dt, x)
         putils.xdate(ax, 'D', by=[1, 15], format='%d\n%b\n%y')
-        fp = os.path.join(self.ftest, 'xdate4.png')
+        fp = os.path.join(self.ftest, 'xdate_daily.png')
         fig.savefig(fp)
 
+
+    def test_xdate_yearly(self):
+        ''' Test formatting xaxis with yearly dates '''
+
+        #putils.set_mpl(font_size=10)
+        mpl.rcdefaults()
+
+        x = np.random.normal(size=2000)
+        dt = pd.date_range('1990-01-01', periods=len(x))
+
+        plt.close('all')
+
+        fig, ax = plt.subplots()
+        ax.plot(dt, x)
+        putils.xdate(ax, 'Y', by=[1], format='%b\n%y')
+        fp = os.path.join(self.ftest, 'xdate_yearl1.png')
+        fig.savefig(fp)
+
+        fig, ax = plt.subplots()
+        ax.plot(dt, x)
+        putils.xdate(ax, '3Y', by=[7], format='%b\n%y')
+        fp = os.path.join(self.ftest, 'xdate_yearl2.png')
+        fig.savefig(fp)
 
 if __name__ == "__main__":
     unittest.main()
