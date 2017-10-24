@@ -6,7 +6,7 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 
-from hydordiy import PYVERSION
+from hydrodiy import PYVERSION
 
 if PYVERSION == 3:
     from json.decoder import JSONDecodeError
