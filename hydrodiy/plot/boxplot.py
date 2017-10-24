@@ -78,7 +78,7 @@ class BoxplotItem(object):
     def __init__(self, \
         linestyle='-', \
         alpha=1., \
-        linewidth=3, \
+        linewidth=2, \
         linecolor='k', \
         facecolor='none', \
         width=0.2, \
@@ -231,6 +231,7 @@ class Boxplot(object):
                 style='default', by=None, \
                 showtext=True, \
                 centertext=False, \
+                linewidth=2, \
                 width_from_count=False,
                 digitnumber=2, \
                 box_coverage=50.,
@@ -253,6 +254,8 @@ class Boxplot(object):
             Display summary statistics values
         centertext : bool
             Center the text within the boxplot instead of on the side
+        linewidth : int
+            Plot lines width in points
         width_from_count : bool
             Use counts to define the boxplot width
         digitnumber : int
@@ -311,19 +314,23 @@ class Boxplot(object):
             self.median = BoxplotItem(linecolor=COLORS[3], \
                             fontcolor=COLORS[3], fontsize=9, \
                             marker='none',\
+                            linewidth=linewidth, \
                             showtext=showtext)
 
             self.whiskers = BoxplotItem(linecolor=COLORS[0], \
                                 facecolor=COLORS[0], \
+                                linewidth=linewidth, \
                                 width=0.)
 
             self.caps = BoxplotItem(linecolor=COLORS[0], \
+                            linewidth=linewidth, \
                             width=0.3, fontcolor=COLORS[0])
 
             self.box = BoxplotItem(linecolor=COLORS[0], \
                             width=0.7, fontcolor=COLORS[0], \
                             textformat = '%0.{0}f'.format(digitnumber), \
                             fontsize=8, \
+                            linewidth=linewidth, \
                             showtext=showtext)
 
 
