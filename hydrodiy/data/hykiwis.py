@@ -22,8 +22,7 @@ from hydrodiy.data.qualitycontrol import islinear
 #
 
 KIWIS_URL_EXT = 'http://www.bom.gov.au/waterdata/KiWIS/KiWIS'
-KIWIS_URL_INT ='http://ccfvp-wadiapp04:8080/KiWIS/KiWIS'
-KIWIS_URL_SITES = 'http://wiski-04:8080/KiWIS/KiWIS'
+KIWIS_URL_INT = 'http://wiski-04:8080/KiWIS/KiWIS'
 
 # Base parameters for Kiwis server request
 BASE_PARAMS = {\
@@ -86,8 +85,11 @@ def get_sites(external=True):
                     'object_type,station_latitude,station_longitude' \
     })
 
-    # TODO: check this url works for external
-    url = KIWIS_URL_SITES
+    if external:
+        raise ValueError(('get_sites only works from internal'+\
+            ' access, and external={0}').format(external))
+
+    url = KIWIS_URL_INT
     req = requests.get(url, params=params)
 
     # Format list of sites

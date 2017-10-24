@@ -16,7 +16,7 @@ class HyKiwisTestCase(unittest.TestCase):
 
     def test_getsites(self):
         ''' Test get sites '''
-        sites, url = hykiwis.get_sites()
+        sites, url = hykiwis.get_sites(external=False)
         self.assertTrue(not sites is None)
         self.assertTrue(isinstance(sites, pd.core.frame.DataFrame))
         self.assertTrue(sites.shape[0]>25000)
@@ -50,6 +50,28 @@ class HyKiwisTestCase(unittest.TestCase):
         start = '2001-01-01'+attrs['to'][10:]
         end = '2001-01-05'+attrs['to'][10:]
         ts_data2, url = hykiwis.get_data(attrs, start, end)
+
+        index = ts_data2.index + pd.tseries.offsets.DateOffset(hours=-9)
+        expected = pd.date_range('2001-01-01', '2001-01-05')
+
+        v1 = index.values.astype(float)
+        v2 = expected.values.astype(float)
+        self.assertTrue(np.allclose(v1, v2))
+
+
+    def test_getdata_internal(self):
+        ''' Test download data from internal '''
+
+        # Full download
+        attrs, url = hykiwis.get_tsattrs('410001', external=False)
+        ts_data1, url = hykiwis.get_data(attrs, external=False)
+        self.assertTrue(isinstance(ts_data1, pd.core.series.Series))
+        self.assertEqual(ts_data1.index[0].year, hykiwis.START_YEAR)
+
+        # Restricted download
+        start = '2001-01-01'+attrs['to'][10:]
+        end = '2001-01-05'+attrs['to'][10:]
+        ts_data2, url = hykiwis.get_data(attrs, start, end, external=False)
 
         index = ts_data2.index + pd.tseries.offsets.DateOffset(hours=-9)
         expected = pd.date_range('2001-01-01', '2001-01-05')
