@@ -6,6 +6,14 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 
+from hydordiy import PYVERSION
+
+if PYVERSION == 3:
+    from json.decoder import JSONDecodeError
+elif PYVERSION == 2:
+    # Replace decode error by value error
+    JSONDecodeError = ValueError
+
 from hydrodiy.data.qualitycontrol import islinear
 
 #
@@ -43,7 +51,7 @@ def __testjson(req):
         out = req.json()
         return out
 
-    except json.decoder.JSONDecodeError as jerr:
+    except JSONDecodeError as jerr:
         warnings.warn('Repairing json text')
         txt = re.sub(r'(?<!\\)\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})', r'', req.text)
         return json.loads(txt)
@@ -194,8 +202,12 @@ def get_data(tsattrs, start=None, end=None, external=True, keep_timezone=False):
     # Convert to pandas series
     js = __testjson(req)
 
-    if js is None or len(js[0]['data']) == 0:
+    if js is None:
         raise ValueError('Request returns no data. URL={0}'.format(req.url))
+
+    elif re.search('error', str(js)):
+        raise ValueError('Request returns error: {1}. URL={0}'.format(\
+                req.url, str(js)))
 
     else:
         d = pd.DataFrame(js[0]['data'], columns=['time', 'value'])
