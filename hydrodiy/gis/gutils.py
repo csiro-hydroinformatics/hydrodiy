@@ -209,9 +209,13 @@ def georef(name):
     lon = geo['location']['lng']
     lat = geo['location']['lat']
 
-    bnd = geo['bounds']
-    xlim = (bnd['southwest']['lng'], bnd['northeast']['lng'])
-    ylim = (bnd['southwest']['lat'], bnd['northeast']['lat'])
+    if 'bounds' in geo:
+        bnd = geo['bounds']
+        xlim = (bnd['southwest']['lng'], bnd['northeast']['lng'])
+        ylim = (bnd['southwest']['lat'], bnd['northeast']['lat'])
+    else:
+        xlim = None
+        ylim = None
 
     return lon, lat, xlim, ylim, info
 
