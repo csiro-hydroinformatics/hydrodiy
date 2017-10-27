@@ -169,6 +169,10 @@ def georef(name):
         Longitude of the first georeferenced item
     lat : float
         Latitude of the first georeferenced item
+    xlim : tuple
+        Longitude boundaries of the bounding box
+    ylim : tuple
+        Latitude boundaries of the bounding box
     info : dict
         Georeference query result. Note that there could be multiple
         object returned by the query. The list of georeferenced objects
