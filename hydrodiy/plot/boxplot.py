@@ -242,8 +242,6 @@ class Boxplot(object):
         -----------
         data : pandas.Series, pandas.DataFrame, numpy.ndarray
             Data to be plotted
-        ax : matplotlib.axes
-            Axe to draw the boxplot on
         style : str
             Boxplot style. Possible:
             * default : Standard boxplot
