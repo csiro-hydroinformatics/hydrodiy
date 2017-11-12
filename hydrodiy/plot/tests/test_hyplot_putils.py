@@ -287,5 +287,20 @@ class UtilsTestCase(unittest.TestCase):
         fp = os.path.join(self.ftest, 'xdate_yearl2.png')
         fig.savefig(fp)
 
+
+    def test_get_fig_axs(self):
+        ''' Test generation of fig and axs '''
+
+        fig, axs = putils.get_fig_axs()
+        self.assertTrue(isinstance(axs, mpl.axes.Axes))
+
+        fig, axs = putils.get_fig_axs(nrows=2, ncols=2)
+        self.assertTrue(isinstance(axs, np.ndarray))
+        self.assertTrue(np.allclose(axs.shape, (4, )))
+
+        fig, axs = putils.get_fig_axs(nrows=2, ncols=2, ravel=False)
+        self.assertTrue(isinstance(axs, np.ndarray))
+        self.assertTrue(np.allclose(axs.shape, (2, 2)))
+
 if __name__ == "__main__":
     unittest.main()

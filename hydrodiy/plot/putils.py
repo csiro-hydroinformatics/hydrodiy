@@ -495,3 +495,41 @@ def qqplot(ax, data, addline=False, censor=None, *args, **kwargs):
         a, b, r2 = [np.nan] * 3
 
     return a, b, r2
+
+
+def get_fig_axs(nrows=1, ncols=1, ravel=True, close=True):
+    ''' Create a figure and a set of axes.
+    Ravel the set of axes if required.
+    Close all figures if required.
+
+    Parameters
+    -----------
+    nrows : int
+        Number of rows in the set of axes
+    ncols : int
+        Number of columns in the set of axes
+    ravel : bool
+        Ravel the set of axes or not
+    addline : bool
+        Add the line of OLS fit
+    censor : float
+        Compute the OLS line above censor threshold
+
+    Returns
+    -----------
+    fig : matplotlib.figure.Figure
+        Figure
+    axs : numpy.ndarray
+        Array containing matplotlib.axes.Axes. The array has dimensions
+        [nrows, ncols] if ravel is True, [nrows x ncols, ] if not.
+    '''
+
+    if close:
+        plt.close('all')
+
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols)
+
+    if ravel and ncols*nrows>1:
+        axs = axs.ravel()
+
+    return fig, axs
