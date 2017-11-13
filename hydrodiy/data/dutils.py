@@ -407,3 +407,55 @@ def hourly2daily(se, start_hour=9, timestamp_end=True, how='mean'):
     return sed
 
 
+def ratfunc_approx(x, xi, fi, eps=1e-8):
+    ''' Approximation by rational function using a barycentric
+    expression following
+
+    J.-P. Berrut, Rational functions for guaranteed and experimentally wellconditioned
+    global interpolation, Comput. Math. Appl. 15 (1988), no. 1, 1-16.
+
+    Parameters
+    -----------
+    x : numpy.ndarray
+        Interpolation points
+    xi : numpy.ndarray
+        Interpolant abscissae
+    fi : numpy.ndarray
+        Interpolant values
+    eps : float
+        Small shift added to the difference between x and xi
+        to avoid numerical error when inversing the difference.
+
+    Returns
+    -----------
+    y : numpy.ndarray
+        Interpolated values
+   '''
+
+    # Check inputs
+    xi = np.atleast_1d(xi)
+    fi = np.atleast_1d(fi)
+    x = np.atleast_1d(x)
+
+    nxi = len(xi)
+    if len(fi) != nxi:
+        raise ValueError('Expected fi of length {0}, got {1}'.format(\
+            nxi, len(fi)))
+
+    # Difference between x and xi
+    # including the +1/-1 weighting
+    w = np.ones(nxi)
+    w[::2] = -1
+    d = x[:, None]-xi[None, :]+eps
+    d *= w[None, :]
+
+    # function values
+    f = np.repeat(fi[None, :], len(x), 0)
+
+    # Results
+    num = np.sum(f/d, axis=1)
+    denom = np.sum(1/d, axis=1)
+
+    return num/denom
+
+

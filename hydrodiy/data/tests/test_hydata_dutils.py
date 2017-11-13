@@ -332,5 +332,25 @@ class UtilsTestCase(unittest.TestCase):
                 self.assertTrue(ck)
 
 
+    def test_ratfunc_approx(self):
+
+        # Check interpolation goest through points
+        xi = np.linspace(-1, 1, 10)
+        x = xi
+        yi = 1/(1+10*xi)
+        y = dutils.ratfunc_approx(x, xi, yi)
+
+        self.assertTrue(len(y) == len(x))
+        self.assertTrue(np.allclose(y, yi))
+
+        # Test error
+        try:
+            y = dutils.ratfunc_approx(x, xi, yi[:-1])
+        except ValueError as err:
+            self.assertTrue(str(err).startswith('Expected fi'))
+        else:
+            raise ValueError('Problem with error handling')
+
+
 if __name__ == "__main__":
     unittest.main()
