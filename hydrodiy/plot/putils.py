@@ -510,10 +510,6 @@ def get_fig_axs(nrows=1, ncols=1, ravel=True, close=True):
         Number of columns in the set of axes
     ravel : bool
         Ravel the set of axes or not
-    addline : bool
-        Add the line of OLS fit
-    censor : float
-        Compute the OLS line above censor threshold
 
     Returns
     -----------
