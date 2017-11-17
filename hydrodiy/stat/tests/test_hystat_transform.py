@@ -23,6 +23,47 @@ class TransformTestCase(unittest.TestCase):
         self.ftest = os.path.dirname(source_file)
         self.xx = np.exp(np.linspace(-8, 5, 10))
 
+    def test_get_transform(self):
+        ''' Test get transform function '''
+
+        for nm in transform.__all__:
+            # Get transform
+            trans = transform.get_transform(nm)
+
+            # Get transform and set parameters
+            nparams = trans.params.nval
+            names = trans.params.names
+            kwargs = {k:1 for k in names}
+            trans = transform.get_transform(nm, **kwargs)
+
+            x = np.linspace(0, 1, 100)
+            x /= 1.5*np.sum(x)
+            y = trans.forward(x)
+
+            self.assertEqual(nm, trans.name)
+            if nparams>0:
+                self.assertEqual(1, trans.params.values[0])
+
+    def test_get_transform_errors(self):
+        ''' Test errors in get transform '''
+        try:
+            trans = transform.get_transform('bidule')
+        except ValueError as err:
+            self.assertTrue(str(err).startswith('Expected transform name'))
+        else:
+            raise ValueError('Problem in error handling')
+
+        # This should work
+        trans = transform.get_transform('BoxCox', lam=1)
+
+        try:
+            trans = transform.get_transform('BoxCox', g=1)
+        except ValueError as err:
+            self.assertTrue(str(err).startswith('Expected parameter name'))
+        else:
+            raise ValueError('Problem in error handling')
+
+
     def test_transform_class(self):
         ''' Test the class transform '''
 
@@ -262,6 +303,30 @@ class TransformTestCase(unittest.TestCase):
                     print(('Transform {0} failing the'+\
                         ' numerical Jacobian test').format(trans.name))
 
+                self.assertTrue(ck)
+
+
+    def test_transform_censored(self):
+        ''' Test censored forward transform '''
+
+        for nm in transform.__all__:
+            if nm in ['Softmax']:
+                continue
+
+            trans = transform.get_transform(nm)
+
+            for censor in [0.1, 0.5]:
+                tcensor = trans.forward(censor)
+                xt = np.linspace(tcensor-1, tcensor+1, 100)
+                x = trans.backward(xt)
+
+                xc = trans.backward_censored(xt, censor)
+
+                idx = x>censor
+                ck = np.allclose(xc[(~idx) & ~np.isnan(xc)], censor)
+                self.assertTrue(ck)
+
+                ck = np.allclose(xc[idx], x[idx])
                 self.assertTrue(ck)
 
 

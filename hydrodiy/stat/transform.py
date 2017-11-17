@@ -1,4 +1,5 @@
 import math
+import sys
 import numpy as np
 from hydrodiy.data.containers import Vector
 
@@ -6,6 +7,32 @@ __all__ = ['Identity', 'Logit', 'Log', 'BoxCox', 'YeoJohnson', \
                 'LogSinh', 'Reciprocal', 'Softmax']
 
 EPS = 1e-10
+
+
+def get_transform(name, **kwargs):
+    ''' Return instance of transform.
+        The function can set parameter values by via kwargs.
+
+        Example:
+        >>> BC = get_transform("BoxCox", lam=0.2)
+    '''
+
+    if not name in __all__:
+        raise ValueError(('Expected transform name in {0}, '+\
+            'got {1}').format(__all__, name))
+
+    trans = getattr(sys.modules[__name__], name)()
+
+    if len(kwargs)>0:
+        # Set parameters
+        for pname in kwargs:
+            if not pname in trans.params.names:
+                raise ValueError('Expected parameter name to '+\
+                    'be in {0}, got {1}'.format(trans.params.names, \
+                        pname))
+            setattr(trans, pname, kwargs[pname])
+
+    return trans
 
 
 class Transform(object):
@@ -121,6 +148,17 @@ class Transform(object):
         raise NotImplementedError('Method jacobian_det not implemented')
 
 
+    def backward_censored(self, y, censor=0.):
+        ''' Returns the backward transform of x censored below
+            a censor value in the original space.
+
+            This function is useful when dealing with censoring
+            in transform space.
+        '''
+        tcensor = self.forward(censor)
+        yc = np.maximum(y, tcensor)
+        return self.backward(yc)
+
 
 class Identity(Transform):
 
@@ -190,7 +228,7 @@ class Log(Transform):
 class BoxCox(Transform):
 
     def __init__(self):
-        params = Vector(['shift', 'lambda'], [0., 1.], \
+        params = Vector(['shift', 'lam'], [0., 1.], \
                     [EPS, -3.], [np.inf, 3.])
 
         super(BoxCox, self).__init__('BoxCox', params)
@@ -235,6 +273,7 @@ class YeoJohnson(Transform):
 
     def forward(self, x):
         shift, scale, lam = self.params.values
+        x = np.atleast_1d(x)
         y = x*np.nan
         w = shift+x*scale
         ipos = w>=EPS
@@ -256,6 +295,7 @@ class YeoJohnson(Transform):
 
     def backward(self, y):
         shift, scale, lam = self.params.values
+        y = np.atleast_1d(y)
         x = y*np.nan
         ipos = y>=EPS
 
@@ -274,6 +314,7 @@ class YeoJohnson(Transform):
 
     def jacobian_det(self, x):
         shift, scale, lam = self.params.values
+        x = np.atleast_1d(x)
         j = x*np.nan
         w = shift+x*scale
         ipos = w>=EPS
@@ -324,14 +365,13 @@ class Reciprocal(Transform):
 
         super(Reciprocal, self).__init__('Reciprocal', params)
 
-
     def forward(self, x):
         shift = self.params.values
-        return np.where(x>-shift, 1./(shift+x), np.nan)
+        return np.where(x>-shift, -1./(shift+x), np.nan)
 
     def backward(self, y):
         shift = self.params.values
-        return np.where(y>EPS, 1./y-shift, np.nan)
+        return np.where(y<-EPS, -1./y-shift, np.nan)
 
     def jacobian_det(self, x):
         shift = self.params.values
