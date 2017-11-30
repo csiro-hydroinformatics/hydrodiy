@@ -25,23 +25,33 @@ class HyKiwisTestCase(unittest.TestCase):
     def test_getattrs(self):
         ''' Test get attributes '''
 
-        attrs, url = hykiwis.get_tsattrs('410001')
+        attrs, url = hykiwis.get_tsattrs('410001', 'daily_9am')
+        attrs = attrs[0]
         self.assertTrue(isinstance(attrs, dict))
         self.assertEqual(attrs['station_name'], 'M/BIDGEE R @ WAGGA')
-        self.assertEqual(attrs['ts_unitsymbol'], 'Ml/d')
+        self.assertEqual(attrs['ts_unitsymbol'], 'cumec')
         self.assertEqual(attrs['station_no'], '410001')
 
-        attrs, url = hykiwis.get_tsattrs('613002')
+        attrs, url = hykiwis.get_tsattrs('613002', 'daily_9am')
+        attrs = attrs[0]
         self.assertEqual(attrs['station_name'], 'DINGO ROAD')
-        self.assertEqual(attrs['ts_unitsymbol'], 'Ml/d')
+        self.assertEqual(attrs['ts_unitsymbol'], 'cumec')
         self.assertEqual(attrs['station_no'], '613002')
+
+
+    def test_getattrs_multiple_series(self):
+        ''' Test get attributes for sites with multiple series '''
+
+        attrs, url = hykiwis.get_tsattrs('412010', 'as_stored')
+        self.assertEqual(len(attrs), 6)
 
 
     def test_getdata(self):
         ''' Test download data '''
 
         # Full download
-        attrs, url = hykiwis.get_tsattrs('410001')
+        attrs, url = hykiwis.get_tsattrs('410001', 'daily_9am')
+        attrs = attrs[0]
         ts_data1, url = hykiwis.get_data(attrs)
         self.assertTrue(isinstance(ts_data1, pd.core.series.Series))
         self.assertEqual(ts_data1.index[0].year, hykiwis.START_YEAR)
@@ -63,7 +73,8 @@ class HyKiwisTestCase(unittest.TestCase):
         ''' Test download data from internal '''
 
         # Full download
-        attrs, url = hykiwis.get_tsattrs('410001', external=False)
+        attrs, url = hykiwis.get_tsattrs('410001', 'daily_9am', external=False)
+        attrs = attrs[0]
         ts_data1, url = hykiwis.get_data(attrs, external=False)
         self.assertTrue(isinstance(ts_data1, pd.core.series.Series))
         self.assertEqual(ts_data1.index[0].year, hykiwis.START_YEAR)

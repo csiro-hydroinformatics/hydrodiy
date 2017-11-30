@@ -102,7 +102,7 @@ def get_sites(external=True):
     return sites, req.url
 
 
-def get_tsattrs(siteid, ts_name='daily_9am_qa', external=True):
+def get_tsattrs(siteid, ts_name, external=True):
     ''' Retrieve time series meta data from site ID
 
     Parameters
@@ -122,8 +122,8 @@ def get_tsattrs(siteid, ts_name='daily_9am_qa', external=True):
 
     Returns
     -----------
-    tsattrs : dict
-        Kiwis attributes
+    tsattrs_list : list
+        List of Kiwis attributes
     url : str
         Url used to query the Kiwis server
     '''
@@ -146,15 +146,26 @@ def get_tsattrs(siteid, ts_name='daily_9am_qa', external=True):
     url = KIWIS_URL_EXT if external else KIWIS_URL_INT
     req = requests.get(url, params=params)
 
-    tsattrs = __testjson(req)
-    if tsattrs is None or re.search('No matches', ''.join(tsattrs[0])):
-        raise ValueError('Request returns no data. URL={0}'.format(req.url))
+    js_data = __testjson(req)
+
+    # Check outputs
+    mess = 'Request returns no data. URL={0}'.format(req.url)
+
+    if js_data is None:
+        raise ValueError(mess)
+    if 'type' in js_data:
+        if js_data['type'] == 'error':
+            raise ValueError(mess)
+    if re.search('No matches', ''.join(js_data[0])):
+        raise ValueError(mess)
 
     # Format attributes
-    tsattrs = {k:v for k, v in zip(tsattrs[0], tsattrs[1])}
-    tsattrs['ts_name'] = ts_name
+    tsattrs_list = [{k:v for k, v in zip(js_data[0], js_data[k+1])} \
+                    for k in range(len(js_data)-1)]
+    for att in tsattrs_list:
+        att['ts_name'] = ts_name
 
-    return tsattrs, req.url
+    return tsattrs_list, req.url
 
 
 def get_data(tsattrs, start=None, end=None, external=True, keep_timezone=False):
