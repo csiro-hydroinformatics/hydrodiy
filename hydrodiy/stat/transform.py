@@ -155,9 +155,19 @@ class Transform(object):
             This function is useful when dealing with censoring
             in transform space.
         '''
+
+        # Select y to get values above censor only
+        # This avoids nan in backward operation
         tcensor = self.forward(censor)
         yc = np.maximum(y, tcensor)
-        return self.backward(yc)
+
+        # Second filtering to ensure that results is
+        # equal or greater than  censor
+        # (numerical errors of previous operation
+        # could compromise that)
+        xc = np.maximum(self.backward(yc), censor)
+
+        return xc
 
 
 class Identity(Transform):
