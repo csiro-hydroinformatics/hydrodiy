@@ -60,6 +60,12 @@ class MetricsTestCase(unittest.TestCase):
             'potential':c2[4]
         }
 
+        self.transforms = [
+            transform.Identity(),
+            transform.Log(),
+            transform.Reciprocal()
+        ]
+
 
     def test_alpha(self):
         nval = 100
@@ -173,72 +179,36 @@ class MetricsTestCase(unittest.TestCase):
     def test_bias(self):
         obs = np.arange(0, 200)
 
-        for name in ['Identity', 'Log', 'Reciprocal']:
-            trans = metrics.get_transform(name)
-            tobs = trans.forward(obs)
-            tsim = tobs + 2
-            sim = trans.backward(tsim)
-            bias = metrics.bias(obs, sim, name)
+        for trans in self.transforms:
+            if trans.params.nval > 0:
+                trans.params.values[0] = np.mean(obs)*1e-2
 
-            expected = 2./np.mean(tobs)
+            tobs = trans.forward(obs)
+            tsim = tobs - 2
+            sim = trans.backward(tsim)
+            bias = metrics.bias(obs, sim, trans)
+
+            expected = -2./np.mean(tobs)
+            ck = np.allclose(bias, expected)
             self.assertTrue(np.allclose(bias, expected))
 
 
-    def test_nse_deterministic(self):
-        ''' Testing regular deterministic NSE '''
+    def test_nse(self):
+        ''' Testing  NSE '''
         obs = np.arange(0, 200)+100.
-        bias = 1.
+        bias = -1.
 
-        for name in ['Identity', 'Log', 'Reciprocal']:
-            trans = metrics.get_transform(name)
+        for trans in self.transforms:
+            if trans.params.nval > 0:
+                trans.params.values[0] = np.mean(obs)*1e-2
+
             tobs = trans.forward(obs)
             tsim = tobs + bias
             sim = trans.backward(tsim)
-            nse, accur, sharp = metrics.nse(obs, sim, name)
+            nse = metrics.nse(obs, sim, trans)
 
             expected = 1-bias**2*len(obs)/np.sum((tobs-np.mean(tobs))**2)
             self.assertTrue(np.allclose(nse, expected))
-            self.assertTrue(np.allclose(accur, expected))
-            self.assertTrue(np.allclose(sharp, 1.))
-
-
-    def test_nse_probabilistic(self):
-        ''' Testing probabilistic NSE '''
-        nens = 10000
-        nval = 200
-        obs = np.linspace(0.1, 0.2, nval)
-
-        bias = 1.
-        sig = 0.5
-        ff = sutils.ppos(nval)
-
-        for name in ['Identity', 'Log', 'Reciprocal']:
-            trans = metrics.get_transform(name)
-            tobs = trans.forward(obs)
-            ens = norm.ppf(ff)
-            me = np.mean(ens)
-            se = np.std(ens)
-            ens = (ens-me)/se
-            tsim = tobs[:, None]+bias+sig*ens[None, :]
-            sim = trans.backward(tsim)
-            nse, accur, sharp = metrics.nse(obs, sim, name)
-
-            sso = np.sum((tobs-np.mean(tobs))**2)
-            expected_accur = 1-nval*bias**2/sso
-            expected_sharp = 1-nval*sig**2/sso
-            expected_nse = 1-nval*(sig**2+bias**2)/sso
-
-            ck = np.allclose(nse, expected_nse, atol=1e-3)
-            self.assertTrue(ck)
-
-            ck = np.allclose(accur, expected_accur, atol=1e-3)
-            self.assertTrue(ck)
-
-            ck = np.allclose(sharp, expected_sharp, atol=1e-3)
-            self.assertTrue(ck)
-
-            self.assertTrue(accur>nse)
-            self.assertTrue(sharp>nse)
 
 
     def test_ensrank_weigel_data(self):

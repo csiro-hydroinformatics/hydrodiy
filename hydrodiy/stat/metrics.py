@@ -24,28 +24,6 @@ CVQQ = CVTABLE.index.values
 CVTABLE = CVTABLE.values
 
 
-def get_transform(name):
-    ''' Get transfrom by name from transform library '''
-
-    if name == 'Identity':
-        trans = transform.Identity()
-
-    elif name =='Log':
-        trans = transform.Log()
-        trans.params.values[0] = 1.
-
-    elif name =='Reciprocal':
-        trans = transform.Reciprocal()
-        trans.params.values[0] = 1.
-
-    else:
-        expected = ['Identity', 'Log', 'Reciprocal']
-        raise ValueError('Expected transform in {0}, got {1}'.format(\
-            expected, name))
-
-    return trans
-
-
 def __check_ensemble_data(obs, ens):
     ''' Check dimensions of obs and ens data '''
 
@@ -55,7 +33,8 @@ def __check_ensemble_data(obs, ens):
     nforc = obs.shape[0]
     nens = ens.shape[1]
     if ens.shape[0]!=nforc:
-        raise ValueError('Expected ens with first dim equal to {0}, got {1}'.format( \
+        raise ValueError('Expected ens with first dim equal to'+\
+            ' {0}, got {1}'.format( \
             nforc, ens.shape[0]))
 
     return obs, ens, nforc, nens
@@ -205,7 +184,8 @@ def alpha(obs, ens, cst=0.3, type='CV'):
         # Cramer Von-Mises test
         stat, pvalue = cramer_von_mises_test(pits)
     else:
-        raise ValueError('Expected test type in [CV/KS], got {0}'.format(type))
+        raise ValueError('Expected test type in [CV/KS],'+\
+                ' got {0}'.format(type))
 
     return stat, pvalue
 
@@ -233,8 +213,8 @@ def iqr(ens, ref, coverage=50.):
         - a value close to 100 indicates perfect IQR, or that the forecast is
           close to a deterministic ensemble
         - a value close to 0 indicates same IQR than climatology
-        - a value close to -100 indicates that climatologyis close to a deterministic
-          ensemble
+        - a value close to -100 indicates that climatologyis is close
+          to a deterministic ensemble
 
     score : float
         IQR score
@@ -250,8 +230,8 @@ def iqr(ens, ref, coverage=50.):
         - a value close to 0 indicates perfect IQR, or that the forecast is
           close to a deterministic ensemble
         - a value close to 1 indicates same IQR than climatology
-        - a value close to +infinity indicates that climatologyis close to a deterministic
-          ensemble
+        - a value close to +infinity indicates that climatology is close
+          to a deterministic ensemble
     '''
 
     # Check data
@@ -282,7 +262,7 @@ def iqr(ens, ref, coverage=50.):
     return skill, score, clim, ratio
 
 
-def bias(obs, sim, transform='Identity'):
+def bias(obs, sim, trans=transform.Identity()):
     ''' Compute simulation bias
 
     Parameters
@@ -304,11 +284,11 @@ def bias(obs, sim, transform='Identity'):
     sim = np.atleast_1d(sim)
 
     if obs.shape != sim.shape:
-        raise ValueError('Expected sim with dim equal to {0}, got{1}'.format( \
+        raise ValueError('Expected sim with dim equal '+\
+            'to {0}, got{1}'.format( \
             obs.shape, sim.shape))
 
     # Transform
-    trans = get_transform(transform)
     tobs = trans.forward(obs)
     tsim = trans.forward(sim)
 
@@ -321,24 +301,8 @@ def bias(obs, sim, transform='Identity'):
     return bias_value
 
 
-def nse(obs, sim, transform='Identity'):
-    ''' Compute Nash-Sucliffe efficiency. If the sim data is an
-    ensemble, uses the NSE probabilistic formulation introduced by
-    (find the reference)
-
-    First, the functions computes the mean of the SSE for a given time step
-    given the forecast PDF (x is the forecast, p(x) is the forecast PDF and o
-    is the obs):
-
-    s = int (x-o)^2 p(x) dx
-      = [mean(x)-o]^2 + var(x)
-
-    Consequently, NSE for a set of ensemble forecasts {x1, x2, ..., xn} is:
-    N = 1- sum([mean(xi)-oi]^2+var(xi))/sum( [mean(o)-oi]^2)
-
-    Two additional terms are also computed
-    * Nacc = 1- sum([mean(xi)-oi]^2)/sum( [mean(o)-oi]^2)  -> NSE related to accuracy
-    * Nsharp = 1- sum(var(xi))/sum( [mean(o)-oi]^2)        -> NSE related to sharpness
+def nse(obs, sim, trans=transform.Identity()):
+    ''' Compute Nash-Sucliffe efficiency.
 
     Parameters
     -----------
@@ -346,17 +310,13 @@ def nse(obs, sim, transform='Identity'):
         obs data, [n] or [n,1] array
     sim : numpy.ndarray
         simulated data, [n], [n,1], or [n,p] array
-    transform : str
-        Name of data transformation: Identity, Log or Reciprocal
+    trans : hydrodiy.stat.transform.Transform
+        Data transform function
 
     Returns
     -----------
     value : float
         Nash-Sutcliffe efficiency (N)
-    accur : float
-        Accuracy component of Nast-Sutcliffe efficiency (Nacc)
-    sharp : float
-        Sharpness component of Nast-Sutcliffe efficiency (Nacc)
 
     '''
     # Check data
@@ -364,51 +324,27 @@ def nse(obs, sim, transform='Identity'):
     sim = np.atleast_1d(sim)
 
     if obs.shape[0] != sim.shape[0]:
-        raise ValueError('Expected sim with dim equal to {0}, got {1}'.format( \
+        raise ValueError('Expected sim with dim equal '+\
+            'to {0}, got {1}'.format( \
             obs.shape[0], sim.shape[0]))
 
-    # Check if sim is an ensemble
-    ens = False
-    if sim.ndim>1:
-        if sim.shape[1]>1:
-            ens = True
-
     # Transform
-    trans = get_transform(transform)
     tobs = trans.forward(obs)
     tsim = trans.forward(sim)
 
     # Select non null obs data
     idx = pd.notnull(tobs)
 
-    if ens:
-        # Ensures that at least 1 simulated value is not null
-        idx = idx & ~np.all(pd.isnull(tsim), axis=1)
-
-        # Ensemble means
-        ms = np.mean(tsim[idx], 1)
-
-        # Ensemble variance
-        vs = np.var(tsim[idx], 1)
-
-        # Compute probabilistic SSE
-        errs_accur = np.sum((ms-tobs[idx])**2)
-        errs_sharp = np.sum(vs)
-
-    else:
-        # Compute standard SSE
-        idx = idx & pd.notnull(tsim)
-        errs_accur = np.sum((tsim[idx]-tobs[idx])**2)
-        errs_sharp = 0.
+    # SSE
+    idx = idx & pd.notnull(tsim)
+    errs = np.sum((tsim[idx]-tobs[idx])**2)
 
     mo = np.mean(tobs[idx])
     erro = np.sum((mo-tobs[idx])**2)
 
-    value = 1-(errs_sharp+errs_accur)/erro
-    accur = 1-errs_accur/erro
-    sharp = 1-errs_sharp/erro
+    value = 1-errs/erro
 
-    return value, accur, sharp
+    return value
 
 
 def dscore(obs, sim, eps=1e-6):
@@ -431,7 +367,12 @@ def dscore(obs, sim, eps=1e-6):
     Returns
     -----------
     D : float
-        D score value
+        D score value:
+        * D=0.0 means that the model as an inverse discrimination (i.e.
+                forecasting high when obs is low)
+        * D=0.5 means that the model is not discriminating
+        * D=1.0 means that the model is perfectly discriminating
+
     '''
     # Check data
     obs = np.atleast_1d(obs).astype(np.float64)
