@@ -207,9 +207,7 @@ class TransformTestCase(unittest.TestCase):
                 # generate x sample
                 x = np.random.normal(size=100, loc=5, scale=20)
                 # Generate parameters
-                params = trans.params.mins+np.random.uniform(0., 4, size=nparams)
-                params[np.isinf(params)] = 0.
-                trans.params.values = params
+                trans.params.values = np.random.uniform(1e-3, 2, size=nparams)
 
                 # Handle specific cases
                 if nm == 'Log':
@@ -218,7 +216,8 @@ class TransformTestCase(unittest.TestCase):
                     x = np.random.uniform(0., 1., size=100)
                     trans.reset()
                 elif nm == 'LogSinh':
-                    trans._params.values += 0.1
+                    trans.params.values += 0.1
+                    trans.constants.values = 5.
                 elif nm == 'Softmax':
                     x = np.random.uniform(0, 1, size=(100, 5))
                     x = x/(0.1+np.sum(x, axis=1)[:, None])
@@ -252,7 +251,7 @@ class TransformTestCase(unittest.TestCase):
 
             for sample in range(100):
                 x = np.random.normal(size=100, loc=5, scale=20)
-                trans.params.values = trans.params.mins+np.random.uniform(1e-3, 2, size=nparams)
+                trans.params.values = np.random.uniform(1e-3, 2, size=nparams)
 
                 if nm in ['Log', 'BoxCox']:
                     x = np.clip(x, 1e-1, np.inf)
@@ -266,8 +265,8 @@ class TransformTestCase(unittest.TestCase):
                     x = x/(0.1+np.sum(x, axis=1)[:, None])
                     trans.reset()
 
-                #elif nm == 'LogSinh':
-                #    trans._params += 0.1
+                elif nm == 'LogSinh':
+                    trans.constants.values = 5.
 
                 # Compute first order approx of jac
                 y = trans.forward(x)

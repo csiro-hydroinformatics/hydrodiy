@@ -348,24 +348,31 @@ class LogSinh(Transform):
 
     def __init__(self):
         params = Vector(['a', 'b'], [0., 1.], [EPS, EPS])
+        cst = Vector(['x0'], [1.], [EPS])
 
-        super(LogSinh, self).__init__('LogSinh', params)
-
+        super(LogSinh, self).__init__('LogSinh', \
+            params, cst)
 
     def forward(self, x):
         a, b = self.params.values
-        w = a + b*x
-        return np.where(x>-a/b+EPS, (w+np.log((1.-np.exp(-2.*w))/2.))/b, np.nan)
+        x0 = self.constants.values
+        xn = x/x0
+        w = a + b*xn
+        return np.where(xn>-a/b+EPS, \
+            (w+np.log((1.-np.exp(-2.*w))/2.))/b, np.nan)
 
     def backward(self, y):
         a, b = self.params.values
+        x0 = self.constants.values
         w = b*y
-        return y + (np.log(1.+np.sqrt(1.+np.exp(-2.*w)))-a)/b
+        return x0*(y + (np.log(1.+np.sqrt(1.+np.exp(-2.*w)))-a)/b)
 
     def jacobian_det(self, x):
         a, b = self.params.values
-        w = a + b*x
-        return np.where(x>-a/b+EPS, 1./np.tanh(w), np.nan)
+        x0 = self.constants.values
+        xn = x/x0
+        w = a+b*xn
+        return 1./x0*np.where(xn>-a/b+EPS, 1./np.tanh(w), np.nan)
 
 
 class Reciprocal(Transform):
