@@ -161,7 +161,7 @@ def params2mucov(params):
 
     if abs(nvars-round(nvars))>1e-8:
         raise ValueError('Expected integer solution for '+\
-                'the number of parameters, got {0}'.format(nparams))
+                'the number of parameters, got {0}'.format(nvars))
     else:
         nvars = int(round(nvars))
 
