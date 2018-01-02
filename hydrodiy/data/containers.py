@@ -28,7 +28,8 @@ class Vector(object):
         self._nval = nval
 
         # Define names indexes
-        self._names_index = {nm:i for nm, i in zip(self._names,  np.arange(nval))}
+        self._names_index = {nm:i for nm, i \
+                        in zip(self._names,  np.arange(nval))}
 
         # Set mins and maxs
         self._mins = -np.inf * np.ones(nval)
@@ -78,7 +79,8 @@ class Vector(object):
             maxs.append(dct['data'][i]['max'])
             values.append(dct['data'][i]['value'])
 
-        vect = Vector(names, defaults, mins, maxs, bool(dct['check_hitbounds']))
+        vect = Vector(names, defaults, mins, maxs, \
+                            bool(dct['check_hitbounds']))
         vect._hitbounds = bool(dct['hitbounds'])
         vect.values = values
 
@@ -112,7 +114,8 @@ class Vector(object):
 
             # Check bounds if needed
             if self.check_hitbounds:
-                self._hitbounds = (value < self._mins[idx]) or (value > self._maxs[idx])
+                self._hitbounds = (value < self._mins[idx]) \
+                                            or (value > self._maxs[idx])
 
             # Store clipped value
             self.values[idx] = min(max(value, self.mins[idx]), self.maxs[idx])
