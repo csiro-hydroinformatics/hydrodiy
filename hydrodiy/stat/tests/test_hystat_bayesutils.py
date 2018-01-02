@@ -9,6 +9,7 @@ np.random.seed(0)
 
 class MCMCStatTestCase(unittest.TestCase):
 
+
     def setUp(self):
         print('\t=> MCMCStatTestCase (hystat)')
         source_file = os.path.abspath(__file__)
@@ -58,6 +59,10 @@ class MCMCStatTestCase(unittest.TestCase):
         # Compute LDL decomposition
         L, D = bayesutils.ldl_decomp(A)
 
+        self.assertTrue(np.allclose(np.diag(L), 1.))
+        self.assertTrue(L.shape == (nvar, nvar))
+        self.assertTrue(D.shape == (nvar, ))
+
         A2 = np.dot(L, np.dot(np.diag(D), L.T))
         self.assertTrue(np.allclose(A, A2))
 
@@ -90,15 +95,16 @@ class MCMCStatTestCase(unittest.TestCase):
         params = np.random.uniform(-2, 2, nval)
 
         mu, cov, sigs2, coefs = bayesutils.params2mucov(params)
-        params2 = bayesutils.mucov2params(mu, cov)
+
+        params2, sigs2b, coefsb = bayesutils.mucov2params(mu, cov)
 
         self.assertTrue(np.allclose(params, params2))
 
-        mub, covb, sigs2b, coefsb = bayesutils.params2mucov(params2)
-        self.assertTrue(np.allclose(mu, mub))
-        self.assertTrue(np.allclose(cov, covb))
-        self.assertTrue(np.allclose(sigs2b, sigs2b))
-        self.assertTrue(np.allclose(coefs, coefsb))
+        muc, covc, sigs2c, coefsc = bayesutils.params2mucov(params2)
+        self.assertTrue(np.allclose(mu, muc))
+        self.assertTrue(np.allclose(cov, covc))
+        self.assertTrue(np.allclose(sigs2b, sigs2c))
+        self.assertTrue(np.allclose(coefs, coefsc))
 
 
     def test_gelman(self):

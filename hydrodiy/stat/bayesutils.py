@@ -49,10 +49,11 @@ def ldl_decomp(matrix):
         raise ValueError('Expected matrix to be semi-definite positive')
 
     # extract the D matrix
-    Dmat = np.diag(Tmat)
+    diag = np.diag(Tmat)
+    Dmat = diag*diag
 
     # extract L matrix
-    Lmat = np.dot(Tmat, np.diag(1./np.sqrt(Dmat)))
+    Lmat = np.dot(Tmat, np.diag(1./diag))
 
     return Lmat, Dmat
 
@@ -99,6 +100,10 @@ def mucov2params(mu, cov):
     -----------
     params : numpy.ndarray
         1D parameter vector
+    sigs2 : numpy.ndarray
+        Squared standard deviation of random errors
+    coefs : numpy.ndarray
+        Regression coefficients
     '''
 
     # Check covariance matrix size
@@ -116,15 +121,15 @@ def mucov2params(mu, cov):
 
     # LDL decomposition of precision matrix
     precis = np.linalg.inv(cov)
-    Lmat, sigs2 = ldl_decomp(precis)
+    coefs, sigs2 = ldl_decomp(precis)
 
     # Store standard deviation squared
     params[nvars:2*nvars] = np.log(sigs2)
 
     # Store regression coefficients
-    params[2*nvars:] = Lmat[np.tril_indices(nvars, -1)]
+    params[2*nvars:] = coefs[np.tril_indices(nvars, -1)]
 
-    return params
+    return params, sigs2, coefs
 
 
 def params2mucov(params):
@@ -169,6 +174,8 @@ def params2mucov(params):
     # Extract regression coefficients
     coefs = np.eye(nvars)
     coefs[np.tril_indices(nvars, -1)] = params[2*nvars:]
+
+    # Build precision matrix
     precis = np.dot(coefs, np.dot(np.diag(sigs2), coefs.T))
 
     # Get covariance matrix
