@@ -24,7 +24,7 @@ BOM_SOI_DIR = 'anon/home/ncc/www/sco/soi'
 BOM_SOI_FILE = 'soiplaintext.html'
 
 INDEX_NAMES = ['nao', 'pdo', 'soi', 'pna', \
-                'nino12', 'nino34', 'nino4', 'ao', 'amo']
+                'nino12', 'nino34', 'nino4', 'ao']
 
 def get_data(index, timeout=300):
     ''' Download climate indices time series from NOAA and BoM
@@ -33,7 +33,7 @@ def get_data(index, timeout=300):
     -----------
     index : str
         Climate index name : nao, pdo, soi, pna,
-        nino12, nino34m nino4, ao, amo
+        nino12, nino34m nino4, ao
     timeout : int
         Timeout is seconds
 
