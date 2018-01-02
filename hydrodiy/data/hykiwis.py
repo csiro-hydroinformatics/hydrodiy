@@ -60,14 +60,26 @@ def __testjson(req):
         return None
 
 
+def has_internal_access():
+    ''' Test if internal access is possible '''
+
+    req = requests.get(re.sub('KiWIS$', '', KIWIS_URL_INT))
+    try:
+        req.raise_for_status()
+        return True
+    except Exception as err:
+        return False
+
+
 def get_sites(external=True):
     ''' Get list of BoM Kiwis stations
 
     Parameters
     -----------
     external : bool
-        Use Bureau of Meterology external Kiwis server. If False, use Bureau internal
-        server (accessible within Bureau network only).
+        Use Bureau of Meterology external Kiwis server.
+        If False, use Bureau internal server
+        (accessible within Bureau network only).
 
     Returns
     -----------
@@ -81,7 +93,8 @@ def get_sites(external=True):
     params = dict(BASE_PARAMS)
     params.update({ \
                 'request': 'getStationList', \
-                'returnfields':'station_no,station_name,station_longname,station_id,' +\
+                'returnfields':'station_no,station_name,'+\
+                    'station_longname,station_id,' +\
                     'object_type,station_latitude,station_longitude' \
     })
 
@@ -117,8 +130,9 @@ def get_tsattrs(siteid, ts_name, external=True):
         * as_stored : Series as provided by the data provider (e.g. streamflow
                                 data are continuous)
     external : bool
-        Use Bureau of Meterology external Kiwis server. If False, use Bureau internal
-        server (accessible within Bureau network only).
+        Use Bureau of Meterology external Kiwis server.
+        If False, use Bureau internal server
+        (accessible within Bureau network only).
 
     Returns
     -----------
@@ -132,6 +146,12 @@ def get_tsattrs(siteid, ts_name, external=True):
     if not ts_name in TS_NAMES:
         raise ValueError('Expected ts_name in {0}, got {1}'.format(\
             list(TS_NAMES.keys()), ts_name))
+
+    if not external:
+        if not has_internal_access():
+            warnings.warn('Cannot get internal access. '+\
+                'Switching to external')
+            external = False
 
     # Download attributes
     params = dict(BASE_PARAMS)
@@ -168,7 +188,8 @@ def get_tsattrs(siteid, ts_name, external=True):
     return tsattrs_list, req.url
 
 
-def get_data(tsattrs, start=None, end=None, external=True, keep_timezone=False):
+def get_data(tsattrs, start=None, end=None, external=True, \
+    keep_timezone=False):
     ''' Download time series  data from meta data info
 
     Parameters
@@ -182,8 +203,9 @@ def get_data(tsattrs, start=None, end=None, external=True, keep_timezone=False):
         End date of the requested time series including time zone. If None,
         uses the 'to' field from tsattrs.
     external : bool
-        Use Bureau of Meterology external Kiwis server. If False, use Bureau internal
-        server (accessible within Bureau network only).
+        Use Bureau of Meterology external Kiwis server.
+        If False, use Bureau internal server
+        (accessible within Bureau network only).
     keep_timezone : bool
         Keep time zone information in date parsing
 
@@ -194,6 +216,14 @@ def get_data(tsattrs, start=None, end=None, external=True, keep_timezone=False):
     url : str
         Url used to query the Kiwis server
     '''
+
+    # Check inputs
+    if not external:
+        if not has_internal_access():
+            warnings.warn('Cannot get internal access. '+\
+                'Switching to external')
+            external = False
+
     # Download data
     if start is None:
         start = '{0}-01-01'.format(START_YEAR) + tsattrs['from'][10:]

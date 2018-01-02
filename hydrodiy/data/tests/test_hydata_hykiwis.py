@@ -16,6 +16,10 @@ class HyKiwisTestCase(unittest.TestCase):
 
     def test_getsites(self):
         ''' Test get sites '''
+
+        if not hykiwis.has_internal_access():
+            return
+
         sites, url = hykiwis.get_sites(external=False)
         self.assertTrue(not sites is None)
         self.assertTrue(isinstance(sites, pd.core.frame.DataFrame))
@@ -70,10 +74,15 @@ class HyKiwisTestCase(unittest.TestCase):
 
 
     def test_getdata_internal(self):
-        ''' Test download data from internal '''
+        ''' Test download data from internal. Skipped if not internal access '''
+
+        if not hykiwis.has_internal_access():
+            return
 
         # Full download
-        attrs, url = hykiwis.get_tsattrs('410001', 'daily_9am', external=False)
+        attrs, url = hykiwis.get_tsattrs('410001', 'daily_9am', \
+                            external=False)
+
         attrs = attrs[0]
         ts_data1, url = hykiwis.get_data(attrs, external=False)
         self.assertTrue(isinstance(ts_data1, pd.core.series.Series))
