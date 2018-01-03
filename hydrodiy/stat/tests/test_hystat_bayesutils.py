@@ -88,20 +88,19 @@ class MCMCStatTestCase(unittest.TestCase):
         self.assertTrue(np.allclose(np.diag(corr), 1))
 
 
-    def test_mucov2params(self):
+    def test_mucov2vect(self):
         ''' Test transformation from  parameter vector to mu/cov '''
         nvars = 5
-        nval = nvars+nvars*(nvars+1)//2
-        params = np.random.uniform(-2, 2, nval)
+        nval = nvars+nvars*(nvars-1)//2
+        vect = np.random.uniform(-2, 2, nval)
 
-        mu, cov, sigs2, coefs = bayesutils.params2mucov(params)
+        cov, sigs2, coefs = bayesutils.vect2cov(vect)
 
-        params2, sigs2b, coefsb = bayesutils.mucov2params(mu, cov)
+        vect2, sigs2b, coefsb = bayesutils.cov2vect(cov)
 
-        self.assertTrue(np.allclose(params, params2))
+        self.assertTrue(np.allclose(vect, vect2))
 
-        muc, covc, sigs2c, coefsc = bayesutils.params2mucov(params2)
-        self.assertTrue(np.allclose(mu, muc))
+        covc, sigs2c, coefsc = bayesutils.vect2cov(vect2)
         self.assertTrue(np.allclose(cov, covc))
         self.assertTrue(np.allclose(sigs2b, sigs2c))
         self.assertTrue(np.allclose(coefs, coefsc))

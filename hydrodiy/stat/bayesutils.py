@@ -82,23 +82,22 @@ def cov2sigscorr(cov):
     return sigs, corr
 
 
-def mucov2params(mu, cov):
-    ''' Convert a mean vector and covariance matrix to
-    a parameter vector. Covariance matrix is inverted to get the
+def cov2vect(cov):
+    ''' Convert a covariance matrix to a parameter vector.
+
+    Covariance matrix is inverted to get the
     precision matrix, which is further decomposed
     using the LDL Cholesky decomposition. The D vector is finally
     converted to log and the of-diagonal element of L are extracted.
 
     Parameters
     -----------
-    mu : numpy.ndarray
-        Mean vector
     cov : numpy.ndarray
         Covariance matrix
 
     Returns
     -----------
-    params : numpy.ndarray
+    vect : numpy.ndarray
         1D parameter vector
     sigs2 : numpy.ndarray
         Squared standard deviation of random errors
@@ -107,46 +106,38 @@ def mucov2params(mu, cov):
     '''
 
     # Check covariance matrix size
-    nvars = len(mu)
-
-    if cov.shape != (nvars, nvars):
-        raise ValueError('Expected covariance matrix dimensions '+\
-            'to be ({0}, {0}), got {1}'.format(nvars, cov.shape))
+    nvars, _ = cov.shape
 
     # Initialise
-    params = np.zeros(nvars+nvars*(nvars+1)//2)
-
-    # Set mu
-    params[:nvars] = mu
+    vect = np.zeros(nvars+nvars*(nvars-1)//2)
 
     # LDL decomposition of precision matrix
     precis = np.linalg.inv(cov)
     coefs, sigs2 = ldl_decomp(precis)
 
     # Store standard deviation squared
-    params[nvars:2*nvars] = np.log(sigs2)
+    vect[:nvars] = np.log(sigs2)
 
     # Store regression coefficients
-    params[2*nvars:] = coefs[np.tril_indices(nvars, -1)]
+    vect[nvars:] = coefs[np.tril_indices(nvars, -1)]
 
-    return params, sigs2, coefs
+    return vect, sigs2, coefs
 
 
-def params2mucov(params):
-    ''' Convert a parameter vector to a mean vector and
-    covariance matrix. The parameter vector stores the mean and element
+def vect2cov(vect):
+    ''' Convert a parameter vector to a covariance matrix.
+
+    The parameter vector stores the elements
     of the LDL Cholesky decomposition of the covariance matrix.
     The D matrix is stored in log transformed form.
 
     Parameters
     -----------
-    params : numpy.ndarray
+    vect : numpy.ndarray
         1D parameter vector
 
     Returns
     -----------
-    mu : numpy.ndarray
-        Mean vector
     cov : numpy.ndarray
         Covariance matrix
     sigs2 : numpy.ndarray
@@ -154,10 +145,10 @@ def params2mucov(params):
     coefs : numpy.ndarray
         Regression coefficients
     '''
-    nval = len(params)
+    nval = len(vect)
 
     # Compute the number of variables
-    nvars = -3./2+math.sqrt(9./4+2*nval)
+    nvars = (math.sqrt(1+8*nval)-1)/2
 
     if abs(nvars-round(nvars))>1e-8:
         raise ValueError('Expected integer solution for '+\
@@ -165,15 +156,12 @@ def params2mucov(params):
     else:
         nvars = int(round(nvars))
 
-    # Extract mean
-    mu = params[:nvars]
-
     # Extract sigs
-    sigs2 = np.exp(params[nvars:2*nvars])
+    sigs2 = np.exp(vect[:nvars])
 
     # Extract regression coefficients
     coefs = np.eye(nvars)
-    coefs[np.tril_indices(nvars, -1)] = params[2*nvars:]
+    coefs[np.tril_indices(nvars, -1)] = vect[nvars:]
 
     # Build precision matrix
     precis = np.dot(coefs, np.dot(np.diag(sigs2), coefs.T))
@@ -181,7 +169,7 @@ def params2mucov(params):
     # Get covariance matrix
     cov = np.linalg.inv(precis)
 
-    return mu, cov, sigs2, coefs
+    return cov, sigs2, coefs
 
 
 def gelman(samples):

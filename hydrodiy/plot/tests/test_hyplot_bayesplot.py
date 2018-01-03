@@ -40,7 +40,8 @@ class BayesPlotTestCase(unittest.TestCase):
         # MVT log posterior for the first chain
         def logpost(theta):
             ''' Mvt logpost '''
-            mu, cov, _, _ = bayesutils.params2mucov(theta)
+            mu = theta[:self.nparams]
+            cov, _, _ = bayesutils.vect2cov(theta[self.nparams:])
             loglike = mvt.logpdf(self.samples[0, :, :].T, mean=mu, cov=cov)
             # Jeffreys' prior
             logprior = -(mu.shape[0]+1)/2*math.log(np.linalg.det(cov))
@@ -53,7 +54,8 @@ class BayesPlotTestCase(unittest.TestCase):
         ''' Plot log post slice 2d '''
 
         fig, ax = putils.get_fig_axs()
-        params, _, _ = bayesutils.mucov2params(self.mu, self.cov)
+        vect, _, _ = bayesutils.cov2vect(self.cov)
+        params = np.concatenate([self.mu, vect])
         bayesplot.slice2d(ax, self.logpost, params, \
                                     0, 1, 2, 2)
         fp = os.path.join(self.ftest, 'slice_2d.png')
