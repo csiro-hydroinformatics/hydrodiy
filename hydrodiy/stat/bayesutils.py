@@ -172,7 +172,7 @@ def vect2cov(vect):
     return cov, sigs2, coefs
 
 
-def gelman(samples):
+def gelman_convergence(samples):
     ''' Compute the convergence statistic advocated by Gelman
 
     Parameters

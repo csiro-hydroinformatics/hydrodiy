@@ -101,7 +101,7 @@ def plotchains(fig, samples, accept):
         ranges[i, 1] = smp.max()
 
     # Get convergence stats
-    Rc = bayesutils.gelman(samples)
+    Rc = bayesutils.gelman_convergence(samples)
     acf = bayesutils.laggedcorr(samples, maxlag=1)
 
     # Loop through parameters

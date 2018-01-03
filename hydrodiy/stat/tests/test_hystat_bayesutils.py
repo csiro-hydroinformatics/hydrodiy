@@ -106,9 +106,9 @@ class MCMCStatTestCase(unittest.TestCase):
         self.assertTrue(np.allclose(coefs, coefsc))
 
 
-    def test_gelman(self):
+    def test_gelman_convergence(self):
         ''' Test Gelman convergence stat '''
-        Rc = bayesutils.gelman(self.samples)
+        Rc = bayesutils.gelman_convergence(self.samples)
         self.assertTrue(Rc.shape == (self.nparams, ))
         self.assertTrue(np.all((Rc>1) & (Rc<1.001)))
 
