@@ -147,8 +147,8 @@ def plotchains(fig, samples, accept):
             xy = np.column_stack([x, y])
             kd = gaussian_kde(xy.T)
 
-            xg = np.linspace(*ranges[j, :], 30)
-            yg = np.linspace(*ranges[i, :], 30)
+            xg = np.linspace(ranges[j, 0], ranges[j, 1], 30)
+            yg = np.linspace(ranges[i, 0], ranges[i, 1], 30)
             xx, yy = np.meshgrid(xg, yg)
             zz = kd(np.vstack([xx.ravel(), yy.ravel()]))
             zz = zz.reshape(xx.shape)
