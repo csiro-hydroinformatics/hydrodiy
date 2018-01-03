@@ -110,7 +110,7 @@ class MCMCStatTestCase(unittest.TestCase):
         ''' Test Gelman convergence stat '''
         Rc = bayesutils.gelman_convergence(self.samples)
         self.assertTrue(Rc.shape == (self.nparams, ))
-        self.assertTrue(np.all((Rc>1) & (Rc<1.002)))
+        self.assertTrue(np.all((Rc>1) & (Rc<1.001)))
 
 
     def test_laggedcorr(self):

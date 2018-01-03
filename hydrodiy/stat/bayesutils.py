@@ -209,11 +209,11 @@ def gelman_convergence(samples):
 
     within = np.mean(stats[:, :, 1], axis=0)
 
-    var_est = nsamples/(nsamples-1)*within\
-                +(nchains+1)/(nchains*nsamples)*between
+    var_est = float(nsamples)/(nsamples-1.)*within\
+                +(nchains+1.)/(nchains*nsamples)*between
 
     degfree = nsamples-nparams
-    gelmanR = np.sqrt((degfree+3)/(degfree+1)*var_est/within)
+    gelmanR = np.sqrt((degfree+3.)/(degfree+1.)*var_est/within)
 
     return gelmanR
 
