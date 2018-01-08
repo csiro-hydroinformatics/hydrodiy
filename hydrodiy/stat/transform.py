@@ -2,6 +2,7 @@ import math
 import sys
 import numpy as np
 from hydrodiy.data.containers import Vector
+from hydrodiy.stat import sutils
 
 __all__ = ['Identity', 'Logit', 'Log', 'BoxCox', 'YeoJohnson', \
                 'LogSinh', 'Reciprocal', 'Softmax']
@@ -155,7 +156,6 @@ class Transform(object):
             This function is useful when dealing with censoring
             in transform space.
         '''
-
         # Select y to get values above censor only
         # This avoids nan in backward operation
         tcensor = self.forward(censor)
@@ -168,6 +168,21 @@ class Transform(object):
         xc = np.maximum(self.backward(yc), censor)
 
         return xc
+
+
+    def sample_params(self, nsamples=500, minval=-10., maxval=10.):
+        ''' Sample parameters with latin hypercube
+            minval and maxval are used to cap the sampling for parameters
+            with infinite bounds
+
+        '''
+        pmins = self.params.mins
+        pmins[np.isinf(pmins)] = minval
+
+        pmaxs = self.params.maxs
+        pmaxs[np.isinf(pmaxs)] = maxval
+
+        return sutils.lhs(nsamples, pmins, pmaxs)
 
 
 class Identity(Transform):
@@ -194,23 +209,43 @@ class Logit(Transform):
 
         super(Logit, self).__init__('Logit', params)
 
+    def check_upper_lower(self):
+        ''' Check that lower <= upper '''
+        lower, upper = self.params.values
+        if upper<=lower+1e-8:
+            raise ValueError('Expected lower<upper, '+\
+                'got {0} and {1}'.format(lower, upper))
 
     def forward(self, x):
+        self.check_upper_lower()
         lower, upper = self.params.values
         value = (x-lower)/(upper-lower)
         return np.log(1./(1-value)-1)
 
     def backward(self, y):
+        self.check_upper_lower()
         lower, upper = self.params.values
         bnd = 1-1./(1+np.exp(y))
         return bnd*(upper-lower) + lower
 
     def jacobian_det(self, x):
+        self.check_upper_lower()
         lower, upper = self.params.values
         value = (x-lower)/(upper-lower)
         return  np.where((x>lower+EPS) & (x<upper-EPS), \
                     1./(upper-lower)/value/(1-value), np.nan)
 
+
+    def sample_params(self, nsamples=500, minval=-10., maxval=10.):
+        ''' Sample parameters with latin hypercube '''
+
+        pmins = [minval, 0]
+        pmaxs = [maxval, 1]
+
+        samples = sutils.lhs(nsamples, pmins, pmaxs)
+        samples[:, 1] = np.sum(samples, axis=1)
+
+        return samples
 
 
 class Log(Transform):
@@ -232,6 +267,14 @@ class Log(Transform):
     def jacobian_det(self, x):
         shift = self.shift
         return np.where(x+shift>EPS, 1./(x+shift), np.nan)
+
+
+    def sample_params(self, nsamples=500, minval=-6., maxval=0.):
+        # Generate parameters samples in log space
+        samples = np.random.uniform(minval, maxval, nsamples)
+        samples = np.exp(samples)[:, None]
+
+        return samples
 
 
 
@@ -265,9 +308,21 @@ class BoxCox(Transform):
         shift, lam = self.params.values
 
         if abs(lam)>EPS:
-            return np.where(x+shift>EPS, np.exp(np.log(x+shift)*(lam-1.)), np.nan)
+            return np.where(x+shift>EPS, \
+                    np.exp(np.log(x+shift)*(lam-1.)), np.nan)
         else:
             return np.where(x+shift>EPS, 1./(x+shift), np.nan)
+
+
+    def sample_params(self, nsamples=500, minval=-6., maxval=0.):
+        pmins = [minval, -3]
+        pmaxs = [maxval, 3]
+
+        # Generate parameters samples in log space
+        samples = sutils.lhs(nsamples, pmins, pmaxs)
+        samples[:, 0] = np.exp(samples[:, 0])
+
+        return samples
 
 
 
@@ -344,6 +399,7 @@ class YeoJohnson(Transform):
         return j*scale
 
 
+
 class LogSinh(Transform):
 
     def __init__(self):
@@ -375,6 +431,17 @@ class LogSinh(Transform):
         return 1./x0*np.where(xn>-a/b+EPS, 1./np.tanh(w), np.nan)
 
 
+    def sample_params(self, nsamples=500, minval=-7., maxval=0.):
+        pmins = [minval]*2
+        pmaxs = [maxval]*2
+
+        # Generate parameters samples in log space
+        samples = sutils.lhs(nsamples, pmins, pmaxs)
+        samples = np.exp(samples)
+
+        return samples
+
+
 class Reciprocal(Transform):
 
     def __init__(self):
@@ -393,6 +460,14 @@ class Reciprocal(Transform):
     def jacobian_det(self, x):
         shift = self.params.values
         return np.where(x>-shift, 1./(shift+x)**2, np.nan)
+
+    def sample_params(self, nsamples=500, minval=-7., maxval=0.):
+        # Generate parameters samples in log space
+        samples = np.random.uniform(minval, maxval, nsamples)
+        samples = np.exp(samples)[:, None]
+
+        return samples
+
 
 
 class Softmax(Transform):

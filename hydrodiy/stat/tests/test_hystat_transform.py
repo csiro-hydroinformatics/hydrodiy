@@ -34,6 +34,10 @@ class TransformTestCase(unittest.TestCase):
             nparams = trans.params.nval
             names = trans.params.names
             kwargs = {k:1 for k in names}
+
+            if nm == 'Logit':
+                kwargs['upper'] = 2.
+
             trans = transform.get_transform(nm, **kwargs)
 
             x = np.linspace(0, 1, 100)
@@ -189,7 +193,7 @@ class TransformTestCase(unittest.TestCase):
     def test_print(self):
         ''' Test print method '''
         for nm in transform.__all__:
-            trans = getattr(transform, nm)()
+            trans = transform.get_transform(nm)
             nparams = trans.params.nval
             trans.params.values = np.random.uniform(-5, 5, size=nparams)
             str(trans)
@@ -200,7 +204,7 @@ class TransformTestCase(unittest.TestCase):
 
         for nm in transform.__all__:
 
-            trans = getattr(transform, nm)()
+            trans = transform.get_transform(nm)
             nparams = trans.params.nval
 
             for sample in range(500):
@@ -246,7 +250,7 @@ class TransformTestCase(unittest.TestCase):
 
         delta = 1e-5
         for nm in transform.__all__:
-            trans = getattr(transform, nm)()
+            trans = transform.get_transform(nm)
             nparams = trans.params.nval
 
             for sample in range(100):
@@ -338,7 +342,7 @@ class TransformTestCase(unittest.TestCase):
         xs = np.column_stack([xs, (1-xs)*xs])
 
         for nm in transform.__all__:
-            trans = getattr(transform, nm)()
+            trans = transform.get_transform(nm)
             nparams = trans.params.nval
 
             xx = x
@@ -356,11 +360,31 @@ class TransformTestCase(unittest.TestCase):
                 if nm == 'Softmax':
                     xp, yp = xx[:, 0], y[:, 0]
 
-                ax.plot(xp, yp, label='params = default {0}% (rp={1})'.format(pp,
-                                        trans.params))
+                ax.plot(xp, yp, \
+                    label='params = default {0}% (rp={1})'.format(pp,
+                            trans.params))
             ax.legend(loc=4)
             ax.set_title(nm)
             fig.savefig(os.path.join(ftest, 'transform_'+nm+'.png'))
+
+
+    def test_params_samples(self):
+        ''' Test parameter sampling '''
+
+        nsamples = 1000
+
+        for nm in transform.__all__:
+            if nm == 'Identity':
+                continue
+
+            trans = transform.get_transform(nm)
+            samples = trans.sample_params(nsamples)
+            self.assertEqual(samples.shape, (nsamples, trans.params.nval))
+
+            mins = trans.params.mins
+            self.assertTrue(np.all(samples>=mins[None, :]))
+            maxs = trans.params.maxs
+            self.assertTrue(np.all(samples<=maxs[None, :]))
 
 
 if __name__ == "__main__":
