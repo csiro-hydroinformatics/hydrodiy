@@ -315,8 +315,8 @@ class BoxCox(Transform):
 
 
     def sample_params(self, nsamples=500, minval=-6., maxval=0.):
-        pmins = [minval, -3]
-        pmaxs = [maxval, 3]
+        pmins = [minval, 0]
+        pmaxs = [maxval, 1]
 
         # Generate parameters samples in log space
         samples = sutils.lhs(nsamples, pmins, pmaxs)
