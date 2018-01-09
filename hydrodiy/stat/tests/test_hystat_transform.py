@@ -382,7 +382,8 @@ class TransformTestCase(unittest.TestCase):
             self.assertEqual(samples.shape, (nsamples, trans.params.nval))
 
             mins = trans.params.mins
-            self.assertTrue(np.all(samples>=mins[None, :]))
+            self.assertTrue(np.all(samples>=mins[None, :]-1e-20))
+
             maxs = trans.params.maxs
             self.assertTrue(np.all(samples<=maxs[None, :]))
 

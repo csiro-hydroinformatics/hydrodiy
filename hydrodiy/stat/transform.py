@@ -431,13 +431,17 @@ class LogSinh(Transform):
         return 1./x0*np.where(xn>-a/b+EPS, 1./np.tanh(w), np.nan)
 
 
-    def sample_params(self, nsamples=500, minval=-7., maxval=0.):
-        pmins = [minval]*2
-        pmaxs = [maxval]*2
+    def sample_params(self, nsamples=500, loga_scale=3., logb_sig=1.):
+        ''' Sample from informative prior '''
 
-        # Generate parameters samples in log space
-        samples = sutils.lhs(nsamples, pmins, pmaxs)
-        samples = np.exp(samples)
+        # Generate parameters samples from informative prior
+        loga = -np.random.exponential(scale=loga_scale, size=nsamples)
+        loga = np.maximum(loga, math.log(self.params.mins[0]))
+
+        logb = np.random.normal(loc=0., scale=logb_sig, size=nsamples)
+        logb = np.maximum(logb, math.log(self.params.mins[1]))
+
+        samples = np.exp(np.column_stack([loga, logb]))
 
         return samples
 
