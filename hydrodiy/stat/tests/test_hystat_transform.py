@@ -387,6 +387,10 @@ class TransformTestCase(unittest.TestCase):
             maxs = trans.params.maxs
             self.assertTrue(np.all(samples<=maxs[None, :]))
 
+            # Check that all parameters are valid
+            for smp in samples:
+                trans.params.values = smp
+
 
 if __name__ == "__main__":
     unittest.main()
