@@ -29,6 +29,14 @@ cdef extern from 'c_dscore.h':
     int c_ensrank(double eps, int nval, int ncol, double* sim,
         double * fmat, double * ranks);
 
+cdef extern from 'c_andersondarling.h':
+    int c_ad_probexactinf(int nval, double *data, double *prob)
+
+    int c_ad_probn(int nval, int nsample, double *data, double *prob)
+
+    int c_ad_probapproxinf(int nval, double *data, double *prob)
+
+
 def __cinit__(self):
     pass
 
@@ -135,6 +143,51 @@ def ensrank(double eps,
             <double*> np.PyArray_DATA(sim),
             <double*> np.PyArray_DATA(fmat),
             <double*> np.PyArray_DATA(ranks))
+
+    return ierr
+
+
+def ad_probexactinf(np.ndarray[double, ndim=1, mode='c'] data not None,
+        np.ndarray[double, ndim=1, mode='c'] prob not None):
+
+    cdef int ierr
+
+    # check dimensions
+    assert data.shape[0]==prob.shape[0]
+
+    ierr = c_ad_probexactinf(data.shape[0],
+            <double*> np.PyArray_DATA(data),
+            <double*> np.PyArray_DATA(prob))
+
+    return ierr
+
+
+def ad_probn(int nsample, np.ndarray[double, ndim=1, mode='c'] data not None,
+        np.ndarray[double, ndim=1, mode='c'] prob not None):
+
+    cdef int ierr
+
+    # check dimensions
+    assert data.shape[0]==prob.shape[0]
+
+    ierr = c_ad_probn(data.shape[0], nsample,
+            <double*> np.PyArray_DATA(data),
+            <double*> np.PyArray_DATA(prob))
+
+    return ierr
+
+
+def ad_probapproxinf(np.ndarray[double, ndim=1, mode='c'] data not None,
+        np.ndarray[double, ndim=1, mode='c'] prob not None):
+
+    cdef int ierr
+
+    # check dimensions
+    assert data.shape[0]==prob.shape[0]
+
+    ierr = c_ad_probapproxinf(data.shape[0],
+            <double*> np.PyArray_DATA(data),
+            <double*> np.PyArray_DATA(prob))
 
     return ierr
 

@@ -116,6 +116,30 @@ def crps(obs, ens):
     return decompos, table
 
 
+def andersondarling_test(data):
+    ''' Compute the Anderson Darling (AD) test statistic for a
+    uniformly distributed variable and its pvalue using the code
+    provided by Marsaglia and Marsaglia (2004):
+    Marsaglia, G., & Marsaglia, J. (2004).
+    Evaluating the Anderson-Darling Distribution. Journal of Statistical
+    Software, 9(2), 1 - 5. doi:http://dx.doi.org/10.18637/jss.v009.i02
+
+    Parameters
+    -----------
+    data : numpy.ndarray
+        1d data vector
+
+    Returns
+    -----------
+    pvalue : float
+        AD test pvalue
+    adstat : float
+        AD test statistic
+    '''
+
+
+
+
 def cramer_von_mises_test(data):
     ''' Perform the Cramer-Von Mises test using a uniform
     distribution as a null hypothesis. The pvalue are computed
