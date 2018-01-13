@@ -18,10 +18,10 @@ EPS = 1e-10
 # Reads Cramer-Von Mises table
 CVPATH = pkg_resources.resource_filename(__name__, \
                     os.path.join('data', 'cramer_von_mises_test_pvalues.zip'))
-CVTABLE, _ = csv.read_csv(CVPATH, index_col=0)
-CVNSAMPLE  = CVTABLE.columns.values.astype(int)
-CVQQ = CVTABLE.index.values
-CVTABLE = CVTABLE.values
+CVM_TABLE, _ = csv.read_csv(CVPATH, index_col=0)
+CVM_NSAMPLE  = CVM_TABLE.columns.values.astype(int)
+CVM_QQ = CVM_TABLE.index.values
+CVM_TABLE = CVM_TABLE.values
 
 
 def __check_ensemble_data(obs, ens):
@@ -95,15 +95,18 @@ def crps(obs, ens):
     obs, ens, nforc, nens = __check_ensemble_data(obs, ens)
 
     # set weights to zero and switch off use of weights
-    weights = np.zeros(nforc)
+    weights = np.zeros(nforc, dtype=np.float64)
     use_weights = 0
 
     # run C code via cython
-    table = np.zeros((nens+1, 7))
-    decompos = np.zeros(5)
+    table = np.zeros((nens+1, 7), dtype=np.float64)
+    decompos = np.zeros(5, dtype=np.float64)
     is_sorted = 0
     ierr = c_hydrodiy_stat.crps(use_weights, is_sorted, obs, ens,
                     weights, table, decompos)
+
+    if ierr!=0:
+        raise ValueError('c_crps returns %d'%ierr)
 
     table = pd.DataFrame(table)
     table.columns = ['freq', 'a', 'b', 'g', 'rank',
@@ -116,7 +119,7 @@ def crps(obs, ens):
     return decompos, table
 
 
-def andersondarling_test(data):
+def anderson_darling_test(unifdata):
     ''' Compute the Anderson Darling (AD) test statistic for a
     uniformly distributed variable and its pvalue using the code
     provided by Marsaglia and Marsaglia (2004):
@@ -126,8 +129,8 @@ def andersondarling_test(data):
 
     Parameters
     -----------
-    data : numpy.ndarray
-        1d data vector
+    unifdata : numpy.ndarray
+        1d data vector in [0, 1]
 
     Returns
     -----------
@@ -137,7 +140,22 @@ def andersondarling_test(data):
         AD test statistic
     '''
 
+    # Check data
+    unifdata = np.atleast_1d(unifdata).astype(np.float64)
 
+    # set function outputs
+    outputs = np.zeros(2, dtype=np.float64)
+
+    # run C code via cython
+    ierr = c_hydrodiy_stat.ad_test(unifdata, outputs)
+
+    if ierr!=0:
+        raise ValueError('ad_test returns %d'%ierr)
+
+    adstat = outputs[0]
+    pvalue = outputs[1]
+
+    return adstat, pvalue
 
 
 def cramer_von_mises_test(data):
@@ -164,11 +182,11 @@ def cramer_von_mises_test(data):
     cvstat = 1./12/nsample + np.sum((unif-np.sort(data))**2)
 
     # Find closest sample population
-    idx = np.argmin(np.abs(nsample-CVNSAMPLE))
-    cdf = CVTABLE[:, idx]
+    idx = np.argmin(np.abs(nsample-CVM_NSAMPLE))
+    cdf = CVM_TABLE[:, idx]
 
     # Interpolate pvalue
-    pvalue = np.interp(cvstat, CVQQ, cdf)
+    pvalue = np.interp(cvstat, CVM_QQ, cdf)
 
     return cvstat, pvalue
 

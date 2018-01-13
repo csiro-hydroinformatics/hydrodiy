@@ -11,6 +11,8 @@ import os, sys
 import numpy as np
 import pandas as pd
 
+from scipy.stats import kstest
+
 from rpy2 import robjects
 import rpy2.robjects.numpy2ri
 rpy2.robjects.numpy2ri.activate()
@@ -53,23 +55,30 @@ def run_test(x, test):
     return stat, pv
 
 cc  = ['x{0:02d}'.format(i) for i in range(nval)]
-res = pd.DataFrame(np.zeros((nsamples, nval+4)), \
-                    columns=cc+['CVM_stat', 'CVM_pvalue', 'AD_stat', 'AD_pvalue'])
+res = pd.DataFrame(np.zeros((nsamples, nval+6)), \
+                    columns=cc+['CVM_stat', 'CVM_pvalue', \
+                                        'AD_stat', 'AD_pvalue',
+                                        'KS_stat', 'KS_pvalue'])
 for isample in range(nsamples):
     # Sample data
     unif = np.random.uniform(0, 1, nval)
     res.loc[isample, cc] = unif
 
-    # Run test
+    # Run tests
     for test in ['AD', 'CVM']:
         st, pv = run_test(unif, test)
         res.loc[isample, test+'_stat'] = st
         res.loc[isample, test+'_pvalue'] = pv
 
+    st, pv = kstest(unif, 'uniform')
+    res.loc[isample, 'KS_stat'] = st
+    res.loc[isample, 'KS_pvalue'] = pv
+
 fr = os.path.join(froot, 'testdata_AD_CVM.csv')
 comments = {'comment': 'Test data for Anderson-Darling (AD) and '+\
         'Cramer-Von Mises (CVM) test of uniformity generated from '+\
         'the goftest R package'}
-csv.write_csv(res, fr, comments, source_file, compress=False)
+csv.write_csv(res, fr, comments, source_file, compress=False, \
+                float_format='%0.12f')
 
 

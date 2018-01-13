@@ -1,4 +1,4 @@
-import os
+import os, re
 import unittest
 import numpy as np
 import pandas as pd
@@ -107,6 +107,7 @@ class MetricsTestCase(unittest.TestCase):
 
 
     def test_pit(self):
+        ''' Test pit computation '''
         nforc = 100
         nens = 200
 
@@ -118,8 +119,10 @@ class MetricsTestCase(unittest.TestCase):
 
 
     def test_cramer_von_mises(self):
+        ''' test Cramer Von-Mises test '''
 
-        fd = os.path.join(self.ftest, 'data','cramer_von_mises_test_data.csv')
+        fd = os.path.join(self.ftest, 'data',\
+                    'cramer_von_mises_test_data.csv')
         data = pd.read_csv(fd, skiprows=15).values
 
         fe = os.path.join(self.ftest, \
@@ -142,6 +145,55 @@ class MetricsTestCase(unittest.TestCase):
                 ck2 = abs(pv1-pv2)<1e-2
 
                 self.assertTrue(ck1 and ck2)
+
+
+    def test_cramer_von_mises2(self):
+        ''' Second test of Cramer Von Mises test '''
+
+        fd = os.path.join(self.ftest, 'data',\
+                        'testdata_AD_CVM.csv')
+        data = pd.read_csv(fd, skiprows=15)
+        cc = [cn for cn in data.columns if re.search('^x', cn)]
+
+        for _, row in data.iterrows():
+            unifdata = row[cc]
+            st1 = row['CVM_stat']
+            pv1 = row['CVM_pvalue']
+            st2, pv2 = metrics.cramer_von_mises_test(unifdata)
+            ck = np.allclose([st1, pv1], [st2, pv2], atol=1e-3)
+            self.assertTrue(ck)
+
+
+    def test_anderson_darling(self):
+        ''' test Anderson Darling test '''
+
+        fd = os.path.join(self.ftest, 'data',\
+                        'testdata_AD_CVM.csv')
+        data = pd.read_csv(fd, skiprows=15)
+        cc = [cn for cn in data.columns if re.search('^x', cn)]
+
+        for _, row in data.iterrows():
+            unifdata = row[cc]
+            st1 = row['AD_stat']
+            pv1 = row['AD_pvalue']
+            st2, pv2 = metrics.anderson_darling_test(unifdata)
+
+            ck = np.allclose([st1, pv1], [st2, pv2])
+            self.assertTrue(ck)
+
+
+    def test_anderson_darling_error(self):
+        ''' test Anderson Darling test errors '''
+
+        nval = 20
+        unifdata = np.random.uniform(0, 1,  size=nval)
+        unifdata[-1] = 10
+        try:
+            st, pv = metrics.anderson_darling_test(unifdata)
+        except ValueError as err:
+            self.assertTrue(str(err).startswith('ad_test'))
+        else:
+            raise ValueError('Problem in error handling')
 
 
     def test_alpha(self):
