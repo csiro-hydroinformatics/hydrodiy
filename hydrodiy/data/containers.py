@@ -29,7 +29,7 @@ class Vector(object):
 
         # Define names indexes
         self._names_index = {nm:i for nm, i \
-                        in zip(self._names,  np.arange(nval))}
+                        in zip(self._names, np.arange(nval))}
 
         # Set mins and maxs
         self._mins = -np.inf * np.ones(nval)
@@ -118,7 +118,8 @@ class Vector(object):
                                             or (value > self._maxs[idx])
 
             # Store clipped value
-            self.values[idx] = min(max(value, self.mins[idx]), self.maxs[idx])
+            self.values[idx] = min(max(value, \
+                                    self.mins[idx]), self.maxs[idx])
 
         else:
             super(Vector, self).__setattr__(name, value)
@@ -135,7 +136,8 @@ class Vector(object):
         val = np.atleast_1d(val).flatten().astype(np.float64)
 
         if val.shape[0] != self.nval:
-            raise ValueError('Expected vector of length {0}, got {1}'.format(\
+            raise ValueError('Expected vector of length '+\
+                    '{0}, got {1}'.format(\
                     self.nval, val.shape[0]))
 
         if np.any(np.isnan(val)):
@@ -170,36 +172,43 @@ class Vector(object):
 
     @property
     def nval(self):
+        ''' Number of values in vector '''
         return self._nval
 
 
     @property
     def check_hitbounds(self):
+        ''' Are the bounds checked or not '''
         return self._check_hitbounds
 
 
     @property
     def hitbounds(self):
+        ''' Has the boundaries been reached when setting data ? '''
         return self._hitbounds
 
 
     @property
     def names(self):
+        ''' Names of vector elements '''
         return self._names
 
 
     @property
     def mins(self):
+        ''' Minimum values of vector elements '''
         return self._mins
 
 
     @property
     def maxs(self):
+        ''' Maximum values of vector elements '''
         return self._maxs
 
 
     @property
     def defaults(self):
+        ''' Default values of vector elements '''
         return self._defaults
 
 
@@ -247,5 +256,4 @@ class Vector(object):
             dct['data'].append(elem)
 
         return dct
-
 

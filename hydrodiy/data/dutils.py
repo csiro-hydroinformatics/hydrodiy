@@ -1,9 +1,7 @@
-import re
-import math
+''' Utility functions to process data '''
 
 from datetime import datetime
 from dateutil.relativedelta import relativedelta as delta
-import calendar
 
 import numpy as np
 import pandas as pd
@@ -16,12 +14,12 @@ from hydrodiy import PYVERSION
 import c_hydrodiy_data
 
 
-def aggmonths(ts, nmonths=3, ngapmax=6, ngapcontmax=3):
+def aggmonths(tseries, nmonths=3, ngapmax=6, ngapcontmax=3):
     ''' Convert time series to aggregated monthly time steps
 
     Parameters
     -----------
-    ts : pandas.core.series.Series
+    tseries : pandas.core.series.Series
         Input time series
     nmonths : int
         Number of months used for aggregation
@@ -58,7 +56,7 @@ def aggmonths(ts, nmonths=3, ngapmax=6, ngapcontmax=3):
     '''
 
     # Resample to monthly
-    tsmm = ts.groupby(ts.index.month).mean()
+    tsmm = tseries.groupby(tseries.index.month).mean()
 
     def _sum(x):
         # Count gaps
@@ -66,7 +64,7 @@ def aggmonths(ts, nmonths=3, ngapmax=6, ngapcontmax=3):
 
         # Count continuous gaps
         ngapcont = 0
-        if ngap > 0 :
+        if ngap > 0:
             y = []
             for i in range(ngapcontmax+1):
                 y.append(x.shift(i))
@@ -87,7 +85,7 @@ def aggmonths(ts, nmonths=3, ngapmax=6, ngapcontmax=3):
             xx = x.fillna(mv)
             return xx.sum()
 
-    tsm = ts.resample('MS', how=_sum)
+    tsm = tseries.resample('MS', how=_sum)
 
     # Shift series
     tss = []
@@ -164,8 +162,9 @@ def aggregate(aggindex, inputs, oper=0, maxnan=0):
     ierr = c_hydrodiy_data.aggregate(oper, maxnan, aggindex, \
                 inputs, outputs, iend)
 
-    if ierr>0:
-        raise ValueError('c_hydrodiy_data.aggregate returns {0}'.format(ierr))
+    if ierr > 0:
+        raise ValueError('c_hydrodiy_data.aggregate'+\
+                            ' returns {0}'.format(ierr))
 
     # Truncate the outputs to keep only the valid part of the vector
     outputs = outputs[:iend[0]]
@@ -199,9 +198,9 @@ def lag(data, lag):
 
     # Lagg data
     lagged = np.roll(data, lag, axis=0)
-    if lag<0:
+    if lag < 0:
         lagged[lag:] = np.nan
-    elif lag>0:
+    elif lag > 0:
         lagged[:lag] = np.nan
     else:
         lagged = data.copy()
@@ -243,7 +242,7 @@ def monthly2daily(se, interpolation='flat', minthreshold=0.):
         # Convert to daily
         sed = sec.resample('D').fillna(method='pad')
         sed /= sed.index.days_in_month
-        sed[sed<minthreshold] = np.nan
+        sed[sed < minthreshold] = np.nan
 
         # Drop last values
         sed = sed.iloc[:-1]
@@ -295,7 +294,7 @@ def monthly2daily(se, interpolation='flat', minthreshold=0.):
         # Evaluate polynomials
         xxt = np.repeat(np.arange(32)[None, :], len(y), 0).astype(float)
         xxt = xxt/ndays[:, None]
-        xxt[xxt>1] = np.nan
+        xxt[xxt > 1] = np.nan
 
         yyc = np.array([poly.polyval(t, c) for c, t in zip(coefs, xxt)])
         yy = np.diff(yyc, axis=1).ravel()
@@ -359,7 +358,7 @@ def var2h(se, maxgapsec=5*86400, display=False):
     ierr = c_hydrodiy_data.var2h(maxgapsec, hstartsec, display, \
                 varsec, varvalues, hvalues)
 
-    if ierr>0:
+    if ierr > 0:
         raise ValueError('c_hydrodiy_data.var2h returns {0}'.format(ierr))
 
     # Convert to hourly series
@@ -398,7 +397,7 @@ def hourly2daily(se, start_hour=9, timestamp_end=True, how='mean'):
     sel = se.shift(lag)
 
     # Aggregate to daily
-    aggfun = np.mean if how=='mean' else np.sum
+    aggfun = np.mean if how == 'mean' else np.sum
     if PYVERSION == 2:
         sed = sel.resample('D', how)
     elif PYVERSION == 3:
@@ -411,7 +410,8 @@ def ratfunc_approx(x, xi, fi, eps=1e-8):
     ''' Approximation by rational function using a barycentric
     expression following
 
-    J.-P. Berrut, Rational functions for guaranteed and experimentally wellconditioned
+    J.-P. Berrut, Rational functions for guaranteed
+    and experimentally wellconditioned
     global interpolation, Comput. Math. Appl. 15 (1988), no. 1, 1-16.
 
     Parameters
@@ -457,5 +457,6 @@ def ratfunc_approx(x, xi, fi, eps=1e-8):
     denom = np.sum(1/d, axis=1)
 
     return num/denom
+
 
 
