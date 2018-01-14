@@ -170,7 +170,7 @@ def write2zip(archive, arcname, txt):
         compress_type=zipfile.ZIP_DEFLATED)
 
 
-def write_csv(data, filename, comment,
+def write_csv(data, filename, comment,\
         source_file,\
         author=None,\
         write_index=False,\
@@ -247,7 +247,7 @@ def write_csv(data, filename, comment,
             fobj.write(line+'\n')
 
     # Write data itself
-    txt = data.to_csv(fobj, index=write_index,
+    txt = data.to_csv(fobj, index=write_index,\
         float_format=float_format, \
         **kwargs)
 
