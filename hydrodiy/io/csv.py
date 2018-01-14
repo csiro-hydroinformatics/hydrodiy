@@ -1,17 +1,18 @@
-import sys, os, re, string
+''' Module to read and write csv data with comments '''
+
+import sys, os, re
 
 from datetime import datetime
 
 import gzip
 import zipfile
-import tarfile
 import pandas as pd
 import numpy as np
 
 from hydrodiy import PYVERSION
 
 # Tailor string handling depending on python version
-if PYVERSION==2:
+if PYVERSION == 2:
     from StringIO import StringIO
     UNICODE = unicode
 
@@ -20,11 +21,11 @@ elif PYVERSION == 3:
     UNICODE = str
 
 # Check distutils available for python folders
-has_distutils = False
+HAS_DISTUTILS = False
 try:
     from distutils.sysconfig import get_python_inc
     from distutils.sysconfig import get_python_lib
-    has_distutils = True
+    HAS_DISTUTILS = True
 except ImportError:
     pass
 
@@ -33,24 +34,23 @@ KEY_LENGTH_MAX = 30
 
 
 def _header2comment(header):
+    ''' Format header data into a comment string '''
     comment = {}
     i = 1
 
-    for s in header:
+    for elem in header:
+        if not bool(re.search('-{10}', elem)):
+            key = re.sub('\:.*$', '', elem)
+            val = elem[len(key)+1:].strip()
+            key = re.sub(' +', '_', key.strip().lower())
 
-        if not bool(re.search('-{10}', s)):
-
-            k = re.sub('\:.*$', '', s)
-            val = s[len(k)+1:].strip()
-            k = re.sub(' +', '_', k.strip().lower())
-
-            if not bool(re.search('\:', s[:KEY_LENGTH_MAX])):
-                k = 'comment_{0:02d}'.format(i)
-                val = s
+            if not bool(re.search('\:', elem[:KEY_LENGTH_MAX])):
+                key = 'comment_{0:02d}'.format(i)
+                val = elem
                 i += 1
 
             if val != '':
-                comment[k] = val
+                comment[key] = val
 
     return comment
 
@@ -64,8 +64,8 @@ def _csvhead(nrow, ncol, comment, source_file, author=None):
 
     elif isinstance(comment, list):
         comments = {}
-        for i in range(len(comment)):
-            comments['comment%2.2d' % i] = comment[i]
+        for i, com in enumerate(comment):
+            comments['comment%2.2d' % i] = com
 
     elif isinstance(comment, dict):
         comments = {}
@@ -75,20 +75,20 @@ def _csvhead(nrow, ncol, comment, source_file, author=None):
     else:
         comment = list(comment)
         comments = {}
-        for i in range(len(comment)):
-            comments['comment%2.2d' % i] = comment[i]
+        for i, com in enumerate(comment):
+            comments['comment%2.2d' % i] = com
 
     # Generate file header
-    h = []
-    h.append('# --------------------------------------------------')
-    h.append('# nrow : {0}'.format(nrow))
-    h.append('# ncol : {0}'.format(ncol))
+    head = []
+    head.append('# --------------------------------------------------')
+    head.append('# nrow : {0}'.format(nrow))
+    head.append('# ncol : {0}'.format(ncol))
 
     for key in sorted(comments):
-        h.append('# {0} : {1}'.format(key, comments[key]))
+        head.append('# {0} : {1}'.format(key, comments[key]))
 
     now = datetime.now()
-    h.append('# time_generated : ' + \
+    head.append('# time_generated : ' + \
         '{0}-{1:02d}-{2:02d} {3:02d}:{4:02d}:{5:02d}'.format(\
             now.year, now.month, now.day, now.hour, now.minute,
             now.second))
@@ -97,28 +97,28 @@ def _csvhead(nrow, ncol, comment, source_file, author=None):
     if author is None:
         try:
             author = os.getlogin()
-        except:
+        except Exception:
             author = 'unknown'
 
-    h.append('# author : ' + author)
+    head.append('# author : ' + author)
 
     # seek source file
-    h.append('# source_file : ' + source_file)
+    head.append('# source_file : ' + source_file)
 
     # Python config
-    h.append('# work_dir : ' + os.getcwd())
-    h.append('# python_environment : ' + os.name)
-    h.append('# python_version : ' + sys.version.replace('\n',' '))
-    h.append('# pandas_version : ' + pd.__version__)
-    h.append('# numpy_version : ' + np.__version__)
+    head.append('# work_dir : ' + os.getcwd())
+    head.append('# python_environment : ' + os.name)
+    head.append('# python_version : ' + sys.version.replace('\n', ' '))
+    head.append('# pandas_version : ' + pd.__version__)
+    head.append('# numpy_version : ' + np.__version__)
 
-    if has_distutils:
-        h.append('# python_inc : ' + get_python_inc())
-        h.append('# python_lib : ' + get_python_lib())
+    if HAS_DISTUTILS:
+        head.append('# python_inc : ' + get_python_inc())
+        head.append('# python_lib : ' + get_python_lib())
 
-    h.append('# --------------------------------------------------')
+    head.append('# --------------------------------------------------')
 
-    return h
+    return head
 
 
 def _check_name(filename):
@@ -133,16 +133,16 @@ def _check_name(filename):
         filename_full = re.sub('csv$', 'gz', filename)
 
     if not os.path.exists(filename_full):
-        filename_full = filename + '.gz'
+        filename_full = '{0}.gz'.format(filename)
 
     if not os.path.exists(filename_full):
         filename_full = re.sub('csv$', 'zip', filename)
 
     if not os.path.exists(filename_full):
-        filename_full = filename + '.zip'
+        filename_full = '{0}.zip'.format(filename)
 
     if not os.path.exists(filename_full):
-        raise ValueError('Cannot find file {0} (filename={1})'.format( + \
+        raise ValueError('Cannot find file {0} (filename={1})'.format(\
             filename_full, filename))
 
     return filename_full
@@ -171,12 +171,12 @@ def write2zip(archive, arcname, txt):
 
 
 def write_csv(data, filename, comment,
-        source_file,
-        author=None,
-        write_index=False,
-        compress=True,
-        float_format='%0.3f',
-        archive=None,
+        source_file,\
+        author=None,\
+        write_index=False,\
+        compress=True,\
+        float_format='%0.3f',\
+        archive=None,\
         **kwargs):
     ''' write a pandas dataframe to csv with comments in header
 
@@ -216,9 +216,9 @@ def write_csv(data, filename, comment,
     data = pd.DataFrame(data)
 
     # Generate head
-    head = _csvhead(data.shape[0], data.shape[1],
-                comment,
-                source_file = source_file,
+    head = _csvhead(data.shape[0], data.shape[1],\
+                comment,\
+                source_file=source_file,\
                 author=author)
 
     # Check source_file exists
@@ -304,16 +304,16 @@ def read_csv(filename, has_colnames=True, archive=None, \
 
             # Open proper file type
             if filename_full.endswith('gz'):
-                with gzip.open(filename_full, 'rb') as fg:
-                    uni = UNICODE(fg.read(), encoding=encoding)
+                with gzip.open(filename_full, 'rb') as gzipfile:
+                    uni = UNICODE(gzipfile.read(), encoding=encoding)
                     fobj = StringIO(uni)
 
             elif filename_full.endswith('zip'):
                 # Extract the data from archive
                 # assumes that file is stored at base level
-                with zipfile.ZipFile(filename_full, 'r') as archive:
+                with zipfile.ZipFile(filename_full, 'r') as zarchive:
                     fbase = re.sub('zip$', 'csv', os.path.basename(filename))
-                    uni = UNICODE(archive.read(fbase), encoding=encoding)
+                    uni = UNICODE(zarchive.read(fbase), encoding=encoding)
                     fobj = StringIO(uni)
 
             else:
@@ -322,7 +322,7 @@ def read_csv(filename, has_colnames=True, archive=None, \
                 elif PYVERSION == 2:
                     fobj = open(filename_full, 'r')
 
-        except TypeError as err:
+        except TypeError:
             import warnings
             warnings.warn(('Failed to open {0} as a text file. '+\
                 'Will now try to open it as a buffer').format(filename), \
@@ -353,16 +353,16 @@ def read_csv(filename, has_colnames=True, archive=None, \
         comment = _header2comment(header)
 
         # Generate column headers
-        if not 'names' in kwargs:
+        if 'names' not in kwargs:
             # deals with multi-index columns
             # reformat columns like (idx1-idx2-...)
-            se = re.findall('\"\([^\(]*\)\"', line)
+            search = re.findall('\"\([^\(]*\)\"', line)
             linecols = line
 
-            if se:
-                for cn in se:
-                    cn2 = re.sub('\(|\)|\"|\'','',cn)
-                    cn2 = re.sub(', *','-',cn2)
+            if search:
+                for cn in search:
+                    cn2 = re.sub('\(|\)|\"|\'', '', cn)
+                    cn2 = re.sub(', *', '-', cn2)
                     linecols = re.sub(re.escape(cn), cn2, linecols)
 
             cns = linecols.strip().split(',')
@@ -374,8 +374,8 @@ def read_csv(filename, has_colnames=True, archive=None, \
         data = pd.read_csv(fobj, names=cns, \
                     encoding=encoding, **kwargs)
 
-        data.columns = [re.sub('\\.','_',cn)
-                        for cn in data.columns]
+        data.columns = [re.sub('\\.', '_', cn)\
+                                        for cn in data.columns]
 
     else:
         # Reads data frame without header

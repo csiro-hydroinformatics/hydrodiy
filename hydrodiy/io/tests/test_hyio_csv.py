@@ -88,17 +88,6 @@ class CsvTestCase(unittest.TestCase):
         self.assertTrue(np.allclose(data.iloc[:, 1:4].values, -99))
 
 
-    def test_read_csv_error(self):
-        ''' Test error for read_csv '''
-        fcsv = '%s/latin_2.zip'%self.ftest
-        try:
-            data, comment = csv.read_csv(fcsv)
-        except ValueError as err:
-            self.assertTrue(str(err).startswith('File object is not readable'))
-        else:
-            raise Exception('Problem with error handling')
-
-
     def test_write_csv1(self):
         nval = 100
         nc = 5
