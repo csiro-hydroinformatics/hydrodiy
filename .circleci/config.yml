@@ -49,6 +49,7 @@ jobs:
             python setup.py build_ext --inplace --force
 
             # Running tests
+            nosetests hydrodiy/io
             nosetests hydrodiy/data
             nosetests hydrodiy/stat
             nosetests hydrodiy/plot
