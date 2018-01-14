@@ -52,7 +52,8 @@ def __testjson(req):
 
     except JSONDecodeError as jerr:
         warnings.warn('Repairing json text')
-        txt = re.sub(r'(?<!\\)\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})', r'', req.text)
+        txt = re.sub(r'(?<!\\)\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})', \
+                                r'', req.text)
         return json.loads(txt)
 
     except Exception as err:
@@ -63,8 +64,9 @@ def __testjson(req):
 def has_internal_access():
     ''' Test if internal access is possible '''
 
-    req = requests.get(re.sub('KiWIS$', '', KIWIS_URL_INT))
+    url = re.sub('KiWIS$', '', KIWIS_URL_INT)
     try:
+        req = requests.get(url)
         req.raise_for_status()
         return True
     except Exception as err:
