@@ -23,7 +23,6 @@ class HyKiwisTestCase(unittest.TestCase):
         sites, url = hykiwis.get_sites(external=False)
         self.assertTrue(not sites is None)
         self.assertTrue(isinstance(sites, pd.core.frame.DataFrame))
-        self.assertTrue(sites.shape[0]>25000)
 
 
     def test_getstorages(self):
@@ -83,7 +82,9 @@ class HyKiwisTestCase(unittest.TestCase):
 
 
     def test_getdata_internal(self):
-        ''' Test download data from internal. Skipped if not internal access '''
+        ''' Test download data from internal.
+            Skipped if there is no internal access to BOM Kiwis server
+        '''
 
         if not hykiwis.has_internal_access():
             return
