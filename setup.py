@@ -106,7 +106,9 @@ setup(
     url = 'https://bitbucket.org/jlerat/hydrodiy',
     packages = find_packages(),
     package_data = {
-        "hydrodiy": ["gis/data/*.gz", "stat/data/*.zip"],
+        "hydrodiy": ["gis/data/*.gz", \
+            "stat/data/*.zip",\
+            "stat/data/*.csv"],
     },
     requires= [
         "pandas (>=0.14.0)",

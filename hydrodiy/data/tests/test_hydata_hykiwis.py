@@ -26,9 +26,18 @@ class HyKiwisTestCase(unittest.TestCase):
         self.assertTrue(sites.shape[0]>25000)
 
 
+    def test_getstorages(self):
+        ''' Test get storages '''
+        storages = hykiwis.get_storages()
+        self.assertEqual(storages.shape, (305, 18))
+
+        cc = ['name', 'capacity[ML]', 'longitude', 'latitude']
+        ck = np.all([cn in storages.columns for cn in cc])
+        self.assertTrue(ck)
+
+
     def test_getattrs(self):
         ''' Test get attributes '''
-
         attrs, url = hykiwis.get_tsattrs('410001', 'daily_9am')
         attrs = attrs[0]
         self.assertTrue(isinstance(attrs, dict))
@@ -50,8 +59,8 @@ class HyKiwisTestCase(unittest.TestCase):
         self.assertEqual(len(attrs), 6)
 
 
-    def test_getdata(self):
-        ''' Test download data '''
+    def test_getdata_flow(self):
+        ''' Test download flow data '''
 
         # Full download
         attrs, url = hykiwis.get_tsattrs('410001', 'daily_9am')
@@ -99,6 +108,19 @@ class HyKiwisTestCase(unittest.TestCase):
         v1 = index.values.astype(float)
         v2 = expected.values.astype(float)
         self.assertTrue(np.allclose(v1, v2))
+
+
+    def test_getdata_storages(self):
+        ''' Test download data - storage '''
+
+        storages = hykiwis.get_storages()
+        storages = storages[::40]
+
+        for kiwisid, row in storages.iterrows():
+            attrs, url = hykiwis.get_tsattrs(kiwisid, 'daily_12pm')
+            attrs = attrs[0]
+            ts_data1, url = hykiwis.get_data(attrs)
+            self.assertTrue(isinstance(ts_data1, pd.core.series.Series))
 
 
 if __name__ == "__main__":

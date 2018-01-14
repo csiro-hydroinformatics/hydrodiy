@@ -1,4 +1,4 @@
-import re
+import os, re
 import json
 import requests
 import warnings
@@ -15,6 +15,10 @@ elif PYVERSION == 2:
     JSONDecodeError = ValueError
 
 from hydrodiy.data.qualitycontrol import islinear
+from hydrodiy.io import csv
+
+DATA_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), \
+                        'data')
 
 #
 # This code is largely pasted from the kiwis_py package
@@ -36,7 +40,8 @@ BASE_PARAMS = {\
 TS_NAMES = {\
     'as_stored': 'DMQaQc.Merged.AsStored.1', \
     'daily_9am': 'DMQaQc.Merged.DailyMean.09HR', \
-    'daily_9am_qa': 'PR01QaQc.Merged.DailyMean.09HR'
+    'daily_9am_qa': 'PR01QaQc.Merged.DailyMean.09HR', \
+    'daily_12pm': 'PR02AVQaQc.Merged.DailyMean.24HR'
 }
 
 # Default start year for data download
@@ -71,6 +76,19 @@ def has_internal_access():
         return True
     except Exception as err:
         return False
+
+
+def get_storages():
+    ''' Get list of storages in Australia
+
+    Returns
+    -----------
+    storages : pandas.core.frame.DataFrame
+        List of storages
+    '''
+    fs = os.path.join(DATA_FOLDER, 'storages.csv')
+    storages, _ = csv.read_csv(fs, index_col='kiwisid')
+    return storages
 
 
 def get_sites(external=True):
