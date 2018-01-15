@@ -89,7 +89,17 @@ def get_data(index, timeout=300):
     else:
         # Convert to dataframe (tried read_csv but failed)
         stream = StringIO(txt)
-        data = pd.read_csv(stream, skiprows=11, sep='   ', engine='python')
+        if re.search('nino', index):
+            colspecs = [[0, 5], [5, 14]]+\
+                            [[14+8*m, 14+8*(m+1)] for m in range(11)]
+            data = pd.read_fwf(stream, colspecs)
+
+            # Remove last lines
+            data = data.iloc[:-6, :]
+
+        else:
+            data = pd.read_csv(stream, skiprows=11, \
+                                        sep='   ', engine='python')
 
         # Build time series
         data.columns = ['year'] + [months[i] for i in range(1, 13)]
@@ -99,12 +109,15 @@ def get_data(index, timeout=300):
         def fun(x):
             return '1 {0} {1}'.format(x['variable'], x['year'])
 
-        series['month'] = pd.to_datetime(
-                            series[['year', 'variable']].apply(fun, axis=1))
+        day = series.loc[:, ['year', 'variable']].apply(fun, axis=1)
+        series['month'] = pd.to_datetime(day)
         series = series.sort_values(by='month')
         series = series.set_index('month')
         series = series['value']
         series.name = '{0}[{1}]'.format(index, url)
+
+    # Make sure series is float
+    series = series.astype(float)
 
     return series, url
 
