@@ -40,7 +40,7 @@ def get_data(varname, vartype, timestep, date):
         vartype : str
             Variable type (see hydrodiy.grid.VARIABLES)
         timestep : str
-            Variable time step [daily|monthly]
+            Variable time step [day|month]
         date : datetime.datetime
             Desired date
 
@@ -64,7 +64,7 @@ def get_data(varname, vartype, timestep, date):
 
     if not timestep in TIMESTEPS:
         raise ValueError(('timestep(%s) not'+ \
-            ' recognised (should be %s)') % (varname, \
+            ' recognised (should be %s)') % (timestep, \
                 ', '.join(TIMESTEPS)))
 
     if not isinstance(date, datetime.datetime):
