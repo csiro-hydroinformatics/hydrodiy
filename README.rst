@@ -38,6 +38,8 @@ Basic use
        # Show sample count 
        bp.show_count()
 
+A set of examples is provided in the folder 'examples'.
+
 License
 ~~~~~~~~~
 
