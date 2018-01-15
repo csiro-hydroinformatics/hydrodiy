@@ -119,5 +119,10 @@ def get_data(index, timeout=300):
     # Make sure series is float
     series = series.astype(float)
 
+    # Set missing values to missing
+    if re.search('nino', index):
+        idx = np.abs(series+99.99)<1e-8
+        series[idx] = np.nan
+
     return series, url
 
