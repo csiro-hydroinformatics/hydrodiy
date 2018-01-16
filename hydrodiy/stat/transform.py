@@ -1,3 +1,5 @@
+''' Module providing various data transforms '''
+
 import math
 import sys
 import numpy as np
@@ -24,7 +26,7 @@ def get_transform(name, **kwargs):
 
     trans = getattr(sys.modules[__name__], name)()
 
-    if len(kwargs)>0:
+    if len(kwargs) > 0:
         # Set parameters
         for pname in kwargs:
             if not pname in trans.params.names:
@@ -39,9 +41,9 @@ def get_transform(name, **kwargs):
 class Transform(object):
     ''' Transform base class '''
 
-    def __init__(self, name,
-        params=Vector([]), \
-        constants=Vector([])):
+    def __init__(self, name,\
+                        params=Vector([]), \
+                        constants=Vector([])):
         """
         Create instance of a data transform object
 
@@ -99,7 +101,6 @@ class Transform(object):
             else:
                 self._constants[key] = value
 
-
     def __getitem__(self, key):
         if self._constants.nval == 0:
             return self._params[key]
@@ -148,7 +149,6 @@ class Transform(object):
         ''' Returns the transformation jacobian_detobian d[forward(x)]/dx '''
         raise NotImplementedError('Method jacobian_det not implemented')
 
-
     def backward_censored(self, y, censor=0.):
         ''' Returns the backward transform of x censored below
             a censor value in the original space.
@@ -169,7 +169,6 @@ class Transform(object):
 
         return xc
 
-
     def sample_params(self, nsamples=500, minval=-10., maxval=10.):
         ''' Sample parameters with latin hypercube
             minval and maxval are used to cap the sampling for parameters
@@ -185,7 +184,9 @@ class Transform(object):
         return sutils.lhs(nsamples, pmins, pmaxs)
 
 
+
 class Identity(Transform):
+    ''' Identity transform '''
 
     def __init__(self):
         super(Identity, self).__init__('Identity')
@@ -202,6 +203,7 @@ class Identity(Transform):
 
 
 class Logit(Transform):
+    ''' Logit transform y = log(x/(1-x))'''
 
     def __init__(self):
         params = Vector(['lower', 'upper'], \
@@ -212,7 +214,7 @@ class Logit(Transform):
     def check_upper_lower(self):
         ''' Check that lower <= upper '''
         lower, upper = self.params.values
-        if upper<=lower+1e-8:
+        if upper <= lower+1e-8:
             raise ValueError('Expected lower<upper, '+\
                 'got {0} and {1}'.format(lower, upper))
 
@@ -232,9 +234,8 @@ class Logit(Transform):
         self.check_upper_lower()
         lower, upper = self.params.values
         value = (x-lower)/(upper-lower)
-        return  np.where((x>lower+EPS) & (x<upper-EPS), \
+        return  np.where((x > lower+EPS) & (x < upper-EPS), \
                     1./(upper-lower)/value/(1-value), np.nan)
-
 
     def sample_params(self, nsamples=500, minval=-10., maxval=10.):
         ''' Sample parameters with latin hypercube '''
@@ -248,13 +249,14 @@ class Logit(Transform):
         return samples
 
 
+
 class Log(Transform):
+    ''' Log transform y = log(x+shift) '''
 
     def __init__(self):
         params = Vector(['shift'], defaults=[1], mins=[EPS])
 
         super(Log, self).__init__('Log', params)
-
 
     def forward(self, x):
         shift = self.shift
@@ -266,8 +268,7 @@ class Log(Transform):
 
     def jacobian_det(self, x):
         shift = self.shift
-        return np.where(x+shift>EPS, 1./(x+shift), np.nan)
-
+        return np.where(x+shift > EPS, 1./(x+shift), np.nan)
 
     def sample_params(self, nsamples=500, minval=-6., maxval=0.):
         # Generate parameters samples in log space
@@ -279,6 +280,7 @@ class Log(Transform):
 
 
 class BoxCox2(Transform):
+    ''' BoxCox transform with 2 parameters y = ((shift+x)^lambda-1)/lambda '''
 
     def __init__(self):
         params = Vector(['shift', 'lam'], [0., 1.], \
@@ -286,10 +288,9 @@ class BoxCox2(Transform):
 
         super(BoxCox2, self).__init__('BoxCox2', params)
 
-
     def forward(self, x):
         shift, lam = self.params.values
-        if abs(lam)>EPS:
+        if abs(lam) > EPS:
             return (np.exp(np.log(x+shift)*lam)-1)/lam
         else:
             return np.log(x+shift)
@@ -297,22 +298,20 @@ class BoxCox2(Transform):
     def backward(self, y):
         shift, lam = self.params.values
 
-        if abs(lam)>EPS:
+        if abs(lam) > EPS:
             u = lam*y+1
             return np.exp(np.log(u)/lam)-shift
         else:
             return np.exp(y)-shift
 
-
     def jacobian_det(self, x):
         shift, lam = self.params.values
 
-        if abs(lam)>EPS:
-            return np.where(x+shift>EPS, \
+        if abs(lam) > EPS:
+            return np.where(x+shift > EPS, \
                     np.exp(np.log(x+shift)*(lam-1.)), np.nan)
         else:
-            return np.where(x+shift>EPS, 1./(x+shift), np.nan)
-
+            return np.where(x+shift > EPS, 1./(x+shift), np.nan)
 
     def sample_params(self, nsamples=500, minval=-6., maxval=0.):
         pmins = [minval, 0]
@@ -326,7 +325,48 @@ class BoxCox2(Transform):
 
 
 
+class BoxCox1(Transform):
+    ''' BoxCox transform y = ((x0+x)^lambda-1)/lambda
+        with normalisation constant x0 = max(x)/5
+    '''
+    def __init__(self):
+        params = Vector(['lam'], [1.], [-3.], [3.])
+
+        # Define the shift constant and set it to inf by default
+        # to force proper setup
+        constants = Vector(['x0'], [np.inf], [EPS], [np.inf])
+
+        super(BoxCox1, self).__init__('BoxCox1', params, constants)
+        self.BC = BoxCox2()
+
+    def forward(self, x):
+        x0 = self.constants.x0
+        if np.isinf(x0):
+            raise ValueError('x0 is inf. It must be set to a proper value')
+        self.BC.params.shift = [x0, self.params.lam]
+        return self.BC.forward(x)
+
+    def backward(self, y):
+        x0 = self.constants.x0
+        if np.isinf(x0):
+            raise ValueError('x0 is inf. It must be set to a proper value')
+        self.BC.params.shift = [x0, self.params.lam]
+        return self.BC.backward(y)
+
+    def jacobian_det(self, x):
+        x0 = self.constants.x0
+        if np.isinf(x0):
+            raise ValueError('x0 is inf. It must be set to a proper value')
+        self.BC.params.shift = [x0, self.params.lam]
+        return self.BC.jacobian_det(x)
+
+    def sample_params(self, nsamples=500, minval=0., maxval=1.):
+        return np.random.uniform(minval, maxval, size=nsamples)[:, None]
+
+
+
 class YeoJohnson(Transform):
+    ''' YeoJohnson transform '''
 
     def __init__(self):
         params = Vector(['shift', 'scale', 'lambda'],\
@@ -335,13 +375,12 @@ class YeoJohnson(Transform):
 
         super(YeoJohnson, self).__init__('YeoJohnson', params)
 
-
     def forward(self, x):
         shift, scale, lam = self.params.values
         x = np.atleast_1d(x)
         y = x*np.nan
         w = shift+x*scale
-        ipos = w>=EPS
+        ipos = w >= EPS
 
         if not np.isclose(lam, 0.0):
             y[ipos] = (np.power(w[ipos]+1, lam)-1)/lam
@@ -357,12 +396,11 @@ class YeoJohnson(Transform):
 
         return y
 
-
     def backward(self, y):
         shift, scale, lam = self.params.values
         y = np.atleast_1d(y)
         x = y*np.nan
-        ipos = y>=EPS
+        ipos = y >= EPS
 
         if not np.isclose(lam, 0.0):
             x[ipos] = np.power(lam*y[ipos]+1, 1./lam)-1
@@ -376,13 +414,12 @@ class YeoJohnson(Transform):
 
         return (x-shift)/scale
 
-
     def jacobian_det(self, x):
         shift, scale, lam = self.params.values
         x = np.atleast_1d(x)
         j = x*np.nan
         w = shift+x*scale
-        ipos = w>=EPS
+        ipos = w >= EPS
 
         if not np.isclose(lam, 0.0):
             j[ipos] = (w[ipos]+1)**(lam-1)
@@ -401,35 +438,50 @@ class YeoJohnson(Transform):
 
 
 class LogSinh(Transform):
+    ''' LogSinh transform with normalisation constant
+        x0 = max(x)/5
+        y=1/b*log(sinh(a+b*x/x0))
+    '''
 
     def __init__(self):
         params = Vector(['a', 'b'], [0., 1.], [EPS, EPS])
-        cst = Vector(['x0'], [1.], [EPS])
+
+        # Define the shift constant and set it to inf by default
+        # to force proper setup
+        constants = Vector(['x0'], [np.inf], [EPS], [np.inf])
 
         super(LogSinh, self).__init__('LogSinh', \
-            params, cst)
+            params, constants)
 
     def forward(self, x):
+        x0 = self.constants.x0
+        if np.isinf(x0):
+            raise ValueError('x0 is inf. It must be set to a proper value')
+
         a, b = self.params.values
-        x0 = self.constants.values
         xn = x/x0
         w = a + b*xn
-        return np.where(xn>-a/b+EPS, \
+        return np.where(xn > -a/b+EPS, \
             (w+np.log((1.-np.exp(-2.*w))/2.))/b, np.nan)
 
     def backward(self, y):
+        x0 = self.constants.x0
+        if np.isinf(x0):
+            raise ValueError('x0 is inf. It must be set to a proper value')
+
         a, b = self.params.values
-        x0 = self.constants.values
         w = b*y
         return x0*(y + (np.log(1.+np.sqrt(1.+np.exp(-2.*w)))-a)/b)
 
     def jacobian_det(self, x):
+        x0 = self.constants.x0
+        if np.isinf(x0):
+            raise ValueError('x0 is inf. It must be set to a proper value')
+
         a, b = self.params.values
-        x0 = self.constants.values
         xn = x/x0
         w = a+b*xn
-        return 1./x0*np.where(xn>-a/b+EPS, 1./np.tanh(w), np.nan)
-
+        return 1./x0*np.where(xn > -a/b+EPS, 1./np.tanh(w), np.nan)
 
     def sample_params(self, nsamples=500, loga_scale=3., logb_sig=1.):
         ''' Sample from informative prior '''
@@ -446,7 +498,9 @@ class LogSinh(Transform):
         return samples
 
 
+
 class Reciprocal(Transform):
+    ''' Reciprocal transform y=-1/(shift+x) '''
 
     def __init__(self):
         params = Vector(['shift'], [1.], [EPS])
@@ -455,15 +509,15 @@ class Reciprocal(Transform):
 
     def forward(self, x):
         shift = self.params.values
-        return np.where(x>-shift, -1./(shift+x), np.nan)
+        return np.where(x > -shift, -1./(shift+x), np.nan)
 
     def backward(self, y):
         shift = self.params.values
-        return np.where(y<-EPS, -1./y-shift, np.nan)
+        return np.where(y < -EPS, -1./y-shift, np.nan)
 
     def jacobian_det(self, x):
         shift = self.params.values
-        return np.where(x>-shift, 1./(shift+x)**2, np.nan)
+        return np.where(x > -shift, 1./(shift+x)**2, np.nan)
 
     def sample_params(self, nsamples=500, minval=-7., maxval=0.):
         # Generate parameters samples in log space
@@ -475,6 +529,7 @@ class Reciprocal(Transform):
 
 
 class Softmax(Transform):
+    ''' Softmax transform '''
 
     def __init__(self):
         super(Softmax, self).__init__('Softmax')
@@ -486,12 +541,12 @@ class Softmax(Transform):
         if x.ndim > 2:
             raise ValueError('Expected ndim 2, got {0}'.format(x.ndim))
 
-        if np.any(x<0):
+        if np.any(x < 0):
             raise ValueError('x < 0')
 
         # Sum along columns
         sx = np.sum(x, axis=1)
-        if np.any(sx>1-EPS):
+        if np.any(sx > 1-EPS):
             raise ValueError('sum(x) >= 1')
 
         return np.log(x/(1-sx[:, None]))
@@ -515,15 +570,13 @@ class Softmax(Transform):
         if x.ndim > 2:
             raise ValueError('Expected ndim 2, got {0}'.format(x.ndim))
 
-        if np.any(x<0):
+        if np.any(x < 0):
             raise ValueError('x < 0')
 
         sx = np.sum(x, axis=1)
-        if np.any(sx>1-EPS):
+        if np.any(sx > 1-EPS):
             raise ValueError('sum(x) >= 1')
 
         px = np.prod(x, axis=1)
         return (1+sx/(1-sx))/px
-
-
 
