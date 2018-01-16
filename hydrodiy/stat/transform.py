@@ -4,7 +4,7 @@ import numpy as np
 from hydrodiy.data.containers import Vector
 from hydrodiy.stat import sutils
 
-__all__ = ['Identity', 'Logit', 'Log', 'BoxCox', 'YeoJohnson', \
+__all__ = ['Identity', 'Logit', 'Log', 'BoxCox2', 'YeoJohnson', \
                 'LogSinh', 'Reciprocal', 'Softmax']
 
 EPS = 1e-10
@@ -15,7 +15,7 @@ def get_transform(name, **kwargs):
         The function can set parameter values by via kwargs.
 
         Example:
-        >>> BC = get_transform("BoxCox", lam=0.2)
+        >>> BC = get_transform("BoxCox2", lam=0.2)
     '''
 
     if not name in __all__:
@@ -278,13 +278,13 @@ class Log(Transform):
 
 
 
-class BoxCox(Transform):
+class BoxCox2(Transform):
 
     def __init__(self):
         params = Vector(['shift', 'lam'], [0., 1.], \
                     [EPS, -3.], [np.inf, 3.])
 
-        super(BoxCox, self).__init__('BoxCox', params)
+        super(BoxCox2, self).__init__('BoxCox2', params)
 
 
     def forward(self, x):

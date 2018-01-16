@@ -58,10 +58,10 @@ class TransformTestCase(unittest.TestCase):
             raise ValueError('Problem in error handling')
 
         # This should work
-        trans = transform.get_transform('BoxCox', lam=1)
+        trans = transform.get_transform('BoxCox2', lam=1)
 
         try:
-            trans = transform.get_transform('BoxCox', g=1)
+            trans = transform.get_transform('BoxCox2', g=1)
         except ValueError as err:
             self.assertTrue(str(err).startswith('Expected parameter name'))
         else:
@@ -257,7 +257,7 @@ class TransformTestCase(unittest.TestCase):
                 x = np.random.normal(size=100, loc=5, scale=20)
                 trans.params.values = np.random.uniform(1e-3, 2, size=nparams)
 
-                if nm in ['Log', 'BoxCox']:
+                if nm in ['Log', 'BoxCox2']:
                     x = np.clip(x, 1e-1, np.inf)
 
                 elif nm == 'Logit':
