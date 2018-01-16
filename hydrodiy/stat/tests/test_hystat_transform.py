@@ -30,13 +30,16 @@ class TransformTestCase(unittest.TestCase):
             # Get transform
             trans = transform.get_transform(nm)
 
-            # Get transform and set parameters
+            # get parameter names
             nparams = trans.params.nval
             names = trans.params.names
             kwargs = {k:1 for k in names}
 
+            # Set parameters
             if nm == 'Logit':
                 kwargs['upper'] = 2.
+            elif nm in ['BoxCox1', 'LogSinh']:
+                kwargs['x0'] = 1.
 
             trans = transform.get_transform(nm, **kwargs)
 
@@ -47,6 +50,7 @@ class TransformTestCase(unittest.TestCase):
             self.assertEqual(nm, trans.name)
             if nparams>0:
                 self.assertEqual(1, trans.params.values[0])
+
 
     def test_get_transform_errors(self):
         ''' Test errors in get transform '''
@@ -200,11 +204,17 @@ class TransformTestCase(unittest.TestCase):
 
 
     def test_forward_backward(self):
-        ''' Test if transform is stable when applying it forward then backward '''
-
+        ''' Test if transform is stable when applying it
+            forward then backward
+        '''
         for nm in transform.__all__:
 
             trans = transform.get_transform(nm)
+
+            # Set constants if needed
+            if 'x0' in trans.constants.names:
+                trans['x0'] = 1.
+
             nparams = trans.params.nval
 
             for sample in range(500):
@@ -246,11 +256,17 @@ class TransformTestCase(unittest.TestCase):
 
     def test_jacobian(self):
         ''' Test of transformation Jacobian is equal to its
-        first order numerical approx '''
-
+            first order numerical approx
+        '''
         delta = 1e-5
+
         for nm in transform.__all__:
             trans = transform.get_transform(nm)
+
+            # Set constants if needed
+            if 'x0' in trans.constants.names:
+                trans['x0'] = 1.
+
             nparams = trans.params.nval
 
             for sample in range(100):
@@ -318,6 +334,10 @@ class TransformTestCase(unittest.TestCase):
 
             trans = transform.get_transform(nm)
 
+            # Set constants if needed
+            if 'x0' in trans.constants.names:
+                trans['x0'] = 1.
+
             for censor in [0.1, 0.5]:
                 tcensor = trans.forward(censor)
                 xt = np.linspace(tcensor-1, tcensor+1, 100)
@@ -343,6 +363,11 @@ class TransformTestCase(unittest.TestCase):
 
         for nm in transform.__all__:
             trans = transform.get_transform(nm)
+
+            # Set constants if needed
+            if 'x0' in trans.constants.names:
+                trans['x0'] = 1.
+
             nparams = trans.params.nval
 
             xx = x

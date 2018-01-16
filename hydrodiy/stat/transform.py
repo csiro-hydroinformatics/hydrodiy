@@ -6,8 +6,9 @@ import numpy as np
 from hydrodiy.data.containers import Vector
 from hydrodiy.stat import sutils
 
-__all__ = ['Identity', 'Logit', 'Log', 'BoxCox2', 'YeoJohnson', \
-                'LogSinh', 'Reciprocal', 'Softmax']
+__all__ = ['Identity', 'Logit', 'Log', 'BoxCox2', 'BoxCox1',
+                'YeoJohnson',  'LogSinh', \
+                'Reciprocal', 'Softmax']
 
 EPS = 1e-10
 
@@ -27,13 +28,20 @@ def get_transform(name, **kwargs):
     trans = getattr(sys.modules[__name__], name)()
 
     if len(kwargs) > 0:
-        # Set parameters
-        for pname in kwargs:
-            if not pname in trans.params.names:
+        for vname in kwargs:
+            if not vname in trans.params.names and \
+                not vname in trans.constants.names:
                 raise ValueError('Expected parameter name to '+\
-                    'be in {0}, got {1}'.format(trans.params.names, \
-                        pname))
-            setattr(trans, pname, kwargs[pname])
+                    'be in {0} or {1}, got {2}'.format(trans.params.names, \
+                        trans.constants.names, vname))
+
+            # Set parameters
+            if vname in trans.params.names:
+                trans.params[vname] = kwargs[vname]
+
+            # Set constants
+            if vname in trans.constants.names:
+                trans.constants[vname] = kwargs[vname]
 
     return trans
 
@@ -343,21 +351,21 @@ class BoxCox1(Transform):
         x0 = self.constants.x0
         if np.isinf(x0):
             raise ValueError('x0 is inf. It must be set to a proper value')
-        self.BC.params.shift = [x0, self.params.lam]
+        self.BC.params.values = [x0, self.params.lam]
         return self.BC.forward(x)
 
     def backward(self, y):
         x0 = self.constants.x0
         if np.isinf(x0):
             raise ValueError('x0 is inf. It must be set to a proper value')
-        self.BC.params.shift = [x0, self.params.lam]
+        self.BC.params.values = [x0, self.params.lam]
         return self.BC.backward(y)
 
     def jacobian_det(self, x):
         x0 = self.constants.x0
         if np.isinf(x0):
             raise ValueError('x0 is inf. It must be set to a proper value')
-        self.BC.params.shift = [x0, self.params.lam]
+        self.BC.params.values = [x0, self.params.lam]
         return self.BC.jacobian_det(x)
 
     def sample_params(self, nsamples=500, minval=0., maxval=1.):
