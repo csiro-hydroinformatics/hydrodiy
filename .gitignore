@@ -19,6 +19,7 @@ build
 *.bil
 *.hdr
 .coverage
+examples/data/
 hydrodiy/gis/tests/*.png
 hydrodiy/gis/tests/*.png
 hydrodiy/gis/tests/*.kml
