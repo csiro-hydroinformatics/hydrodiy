@@ -259,24 +259,24 @@ class Logit(Transform):
 
 
 class Log(Transform):
-    ''' Log transform y = log(x+shift) '''
+    ''' Log transform y = log(x+nu) '''
 
     def __init__(self):
-        params = Vector(['shift'], defaults=[1], mins=[EPS])
+        params = Vector(['nu'], defaults=[1], mins=[EPS])
 
         super(Log, self).__init__('Log', params)
 
     def forward(self, x):
-        shift = self.shift
-        return np.log(x+shift)
+        nu = self.nu
+        return np.log(x+nu)
 
     def backward(self, y):
-        shift = self.shift
-        return np.exp(y)-shift
+        nu = self.nu
+        return np.exp(y)-nu
 
     def jacobian_det(self, x):
-        shift = self.shift
-        return np.where(x+shift > EPS, 1./(x+shift), np.nan)
+        nu = self.nu
+        return np.where(x+nu > EPS, 1./(x+nu), np.nan)
 
     def sample_params(self, nsamples=500, minval=-6., maxval=0.):
         # Generate parameters samples in log space
@@ -288,38 +288,38 @@ class Log(Transform):
 
 
 class BoxCox2(Transform):
-    ''' BoxCox transform with 2 parameters y = ((shift+x)^lambda-1)/lambda '''
+    ''' BoxCox transform with 2 parameters y = ((nu+x)^lambda-1)/lambda '''
 
     def __init__(self):
-        params = Vector(['shift', 'lam'], [0., 1.], \
+        params = Vector(['nu', 'lam'], [0., 1.], \
                     [EPS, -3.], [np.inf, 3.])
 
         super(BoxCox2, self).__init__('BoxCox2', params)
 
     def forward(self, x):
-        shift, lam = self.params.values
+        nu, lam = self.params.values
         if abs(lam) > EPS:
-            return (np.exp(np.log(x+shift)*lam)-1)/lam
+            return (np.exp(np.log(x+nu)*lam)-1)/lam
         else:
-            return np.log(x+shift)
+            return np.log(x+nu)
 
     def backward(self, y):
-        shift, lam = self.params.values
+        nu, lam = self.params.values
 
         if abs(lam) > EPS:
             u = lam*y+1
-            return np.exp(np.log(u)/lam)-shift
+            return np.exp(np.log(u)/lam)-nu
         else:
-            return np.exp(y)-shift
+            return np.exp(y)-nu
 
     def jacobian_det(self, x):
-        shift, lam = self.params.values
+        nu, lam = self.params.values
 
         if abs(lam) > EPS:
-            return np.where(x+shift > EPS, \
-                    np.exp(np.log(x+shift)*(lam-1.)), np.nan)
+            return np.where(x+nu > EPS, \
+                    np.exp(np.log(x+nu)*(lam-1.)), np.nan)
         else:
-            return np.where(x+shift > EPS, 1./(x+shift), np.nan)
+            return np.where(x+nu > EPS, 1./(x+nu), np.nan)
 
     def sample_params(self, nsamples=500, minval=-6., maxval=0.):
         pmins = [minval, 0]
@@ -340,7 +340,7 @@ class BoxCox1(Transform):
     def __init__(self):
         params = Vector(['lam'], [1.], [-3.], [3.])
 
-        # Define the shift constant and set it to inf by default
+        # Define the nu constant and set it to inf by default
         # to force proper setup
         constants = Vector(['x0'], [np.inf], [EPS], [np.inf])
 
@@ -377,17 +377,17 @@ class YeoJohnson(Transform):
     ''' YeoJohnson transform '''
 
     def __init__(self):
-        params = Vector(['shift', 'scale', 'lambda'],\
+        params = Vector(['nu', 'scale', 'lambda'],\
             [0., 1., 1.], [-np.inf, 1e-5, -1.],\
             [np.inf, np.inf, 3.])
 
         super(YeoJohnson, self).__init__('YeoJohnson', params)
 
     def forward(self, x):
-        shift, scale, lam = self.params.values
+        nu, scale, lam = self.params.values
         x = np.atleast_1d(x)
         y = x*np.nan
-        w = shift+x*scale
+        w = nu+x*scale
         ipos = w >= EPS
 
         if not np.isclose(lam, 0.0):
@@ -405,7 +405,7 @@ class YeoJohnson(Transform):
         return y
 
     def backward(self, y):
-        shift, scale, lam = self.params.values
+        nu, scale, lam = self.params.values
         y = np.atleast_1d(y)
         x = y*np.nan
         ipos = y >= EPS
@@ -420,13 +420,13 @@ class YeoJohnson(Transform):
         else:
             x[~ipos] = -np.exp(-y[~ipos])+1
 
-        return (x-shift)/scale
+        return (x-nu)/scale
 
     def jacobian_det(self, x):
-        shift, scale, lam = self.params.values
+        nu, scale, lam = self.params.values
         x = np.atleast_1d(x)
         j = x*np.nan
-        w = shift+x*scale
+        w = nu+x*scale
         ipos = w >= EPS
 
         if not np.isclose(lam, 0.0):
@@ -454,7 +454,7 @@ class LogSinh(Transform):
     def __init__(self):
         params = Vector(['a', 'b'], [0., 1.], [EPS, EPS])
 
-        # Define the shift constant and set it to inf by default
+        # Define the nu constant and set it to inf by default
         # to force proper setup
         constants = Vector(['x0'], [np.inf], [EPS], [np.inf])
 
@@ -508,24 +508,24 @@ class LogSinh(Transform):
 
 
 class Reciprocal(Transform):
-    ''' Reciprocal transform y=-1/(shift+x) '''
+    ''' Reciprocal transform y=-1/(nu+x) '''
 
     def __init__(self):
-        params = Vector(['shift'], [1.], [EPS])
+        params = Vector(['nu'], [1.], [EPS])
 
         super(Reciprocal, self).__init__('Reciprocal', params)
 
     def forward(self, x):
-        shift = self.params.values
-        return np.where(x > -shift, -1./(shift+x), np.nan)
+        nu = self.params.values
+        return np.where(x > -nu, -1./(nu+x), np.nan)
 
     def backward(self, y):
-        shift = self.params.values
-        return np.where(y < -EPS, -1./y-shift, np.nan)
+        nu = self.params.values
+        return np.where(y < -EPS, -1./y-nu, np.nan)
 
     def jacobian_det(self, x):
-        shift = self.params.values
-        return np.where(x > -shift, 1./(shift+x)**2, np.nan)
+        nu = self.params.values
+        return np.where(x > -nu, 1./(nu+x)**2, np.nan)
 
     def sample_params(self, nsamples=500, minval=-7., maxval=0.):
         # Generate parameters samples in log space
