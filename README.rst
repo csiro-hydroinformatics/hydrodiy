@@ -28,11 +28,11 @@ Basic use
        from hydrodiy.plot import boxplot
 
        data = np.random.normal(size=(200, 5))
-       plot.close('all')
+       plt.close('all')
        fig, ax = plt.subplots()
        
        # Draw a nice box plot
-       bp = boxplot.Boxplot(data, ax)
+       bp = boxplot.Boxplot(data)
        bp.draw()
 
        # Show sample count 
