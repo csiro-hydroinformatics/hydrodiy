@@ -79,16 +79,12 @@ def xy2kml(x, y, fkml, z=None, siteid=None, label=None,
     label : numpy.ndarray
         Label displayed for each site
 
-    Returns
-    -----------
-    pwd : str
-        Password
-
     Example
     -----------
     >>> x = np.linspace(0, 1, 10)
     >>> y = np.linspace(0, 1, 10)
-    >>> kml = gutils.xy2kml(x, y)
+    >>> fkml = 'kml_file.kml'
+    >>> gutils.xy2kml(x, y, fkml)
     '''
 
     nval = len(x)
