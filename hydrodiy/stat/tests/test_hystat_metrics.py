@@ -211,14 +211,15 @@ class MetricsTestCase(unittest.TestCase):
 
 
     def test_iqr(self):
+        ''' Testing IQR for normally distributed forecasts '''
         nforc = 100
         nens = 200
 
         ts = np.repeat(np.random.uniform(10, 20, nforc)[:, None], nens, 1)
         qq = sutils.ppos(nens)
         spread = 2*norm.ppf(qq)[None,:]
-
         ens = ts + spread
+
         # Double the spread. This should lead to iqr skill score of 33%
         # sk = (2*iqr-iqr)/(2*iqr+iqr) = 1./3
         ref = ts + spread*2
@@ -228,7 +229,20 @@ class MetricsTestCase(unittest.TestCase):
         self.assertTrue(np.allclose(iqr, expected, atol=1e-4))
 
 
+    def test_iqr_error(self):
+        ''' Testing IQR error '''
+        ens = np.random.uniform(0, 1, (100, 50))
+        ref = np.random.uniform(0, 1, (80, 50))
+        try:
+            iqr = metrics.iqr(ens, ref)
+        except ValueError as err:
+            self.assertTrue(str(err).startswith('Expected clim'))
+        else:
+            raise ValueError('Problem with error handling')
+
+
     def test_bias(self):
+        ''' Test bias '''
         obs = np.arange(0, 200)
 
         for trans in self.transforms:
@@ -243,6 +257,18 @@ class MetricsTestCase(unittest.TestCase):
             expected = -2./np.mean(tobs)
             ck = np.allclose(bias, expected)
             self.assertTrue(np.allclose(bias, expected))
+
+
+    def test_bias_error(self):
+        ''' Test bias error '''
+        obs = np.arange(0, 200)
+        sim = np.arange(0, 190)
+        try:
+            bias = metrics.bias(obs, sim)
+        except ValueError as err:
+            self.assertTrue(str(err).startswith('Expected sim'))
+        else:
+            raise ValueError('Problem with error handling')
 
 
     def test_nse(self):
@@ -261,6 +287,18 @@ class MetricsTestCase(unittest.TestCase):
 
             expected = 1-bias**2*len(obs)/np.sum((tobs-np.mean(tobs))**2)
             self.assertTrue(np.allclose(nse, expected))
+
+
+    def test_nse_error(self):
+        ''' Test bias error '''
+        obs = np.arange(0, 200)
+        sim = np.arange(0, 190)
+        try:
+            bias = metrics.nse(obs, sim)
+        except ValueError as err:
+            self.assertTrue(str(err).startswith('Expected sim'))
+        else:
+            raise ValueError('Problem with error handling')
 
 
     def test_ensrank_weigel_data(self):

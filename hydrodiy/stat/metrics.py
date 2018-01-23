@@ -281,6 +281,10 @@ def iqr(ens, ref, coverage=50.):
     ref = np.atleast_2d(ref)
     nforc, _ = ens.shape
 
+    if ref.shape[0] != nforc:
+        raise ValueError(('Expected clim to have {0} forecasts, '+\
+                        'got {1}').format(nforc, ens.shape[0]))
+
     # Initialise
     iqr = np.zeros((nforc, 3))
     iqr_clim = np.zeros((nforc, 3))
