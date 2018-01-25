@@ -204,7 +204,8 @@ def alpha(obs, ens, cst=0.3, type='CV'):
     cst : float
         Constant used in the computation of the plotting position
     type : str
-        Type of alpha score. CV is Cramer Von-Mises, KS is Kolmogorov-Smirnov
+        Type of alpha score. CV is Cramer Von-Mises, KS is Kolmogorov-Smirnov,
+        AD is Anderson Darling.
 
     Returns
     -----------
@@ -225,8 +226,11 @@ def alpha(obs, ens, cst=0.3, type='CV'):
     elif type == 'CV':
         # Cramer Von-Mises test
         stat, pvalue = cramer_von_mises_test(pits)
+    elif type == 'AD':
+        # Anderson Darlin test
+        stat, pvalue = anderson_darling_test(pits)
     else:
-        raise ValueError('Expected test type in [CV/KS],'+\
+        raise ValueError('Expected test type in [CV/KS/AD],'+\
                 ' got {0}'.format(type))
 
     return stat, pvalue
@@ -317,8 +321,8 @@ def bias(obs, sim, trans=transform.Identity()):
         obs data, [n] or [n,1] array
     sim : numpy.ndarray
         simulated data, [n] or [n,1] array
-    transform : str
-        Name of data transformation: Identity, Log or Reciprocal
+    transform : hydrodiy.stat.transform.Transform
+        Data transforma object
 
     Returns
     -----------
@@ -357,7 +361,7 @@ def nse(obs, sim, trans=transform.Identity()):
     sim : numpy.ndarray
         simulated data, [n], [n,1], or [n,p] array
     trans : hydrodiy.stat.transform.Transform
-        Data transform function
+        Data transform object
 
     Returns
     -----------

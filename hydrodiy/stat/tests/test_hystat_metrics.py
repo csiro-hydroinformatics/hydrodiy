@@ -40,7 +40,6 @@ class MetricsTestCase(unittest.TestCase):
             'potential':c1[4]
         }
 
-
         fd2 = os.path.join(ftest, 'data', 'crps_testdata_02.txt')
         data = np.loadtxt(fd2)
         self.obs2 = data[:,0].copy()
@@ -205,7 +204,7 @@ class MetricsTestCase(unittest.TestCase):
             obs = np.linspace(0, 1, nforc)
             ens = np.repeat(np.linspace(0, 1, nens)[None, :], nforc, 0)
 
-            for type in ['CV', 'KS']:
+            for type in ['CV', 'KS', 'AD']:
                 st, pv = metrics.alpha(obs, ens)
                 self.assertTrue(pv>1.-1e-3)
 
