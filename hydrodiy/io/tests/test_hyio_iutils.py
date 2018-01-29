@@ -62,7 +62,7 @@ class UtilsTestCase(unittest.TestCase):
                 hasError = bool(re.search('Error', stderr))
 
                 # Bypass install problems
-                if re.search('No module named.*hydrodiy'):
+                if re.search('No module named.*hydrodiy', stderr):
                     hasError = False
 
             if hasError:
