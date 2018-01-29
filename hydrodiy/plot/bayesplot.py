@@ -14,8 +14,11 @@ from hydrodiy.stat import bayesutils
 from hydrodiy.plot import putils
 
 
-def slice2d(ax, logpost, params, ip1, ip2, dval1, dval2, nval=30, \
-    cmap='Reds', linecolor='grey'):
+def slice2d(ax, logpost, params, ip1, ip2, dval1, dval2, \
+    scale1='abs', scale2='abs', nval=30, \
+    cmap='Reds', linecolor='grey', \
+    dlogpostmin=10, dlogpostmax=1e-1, \
+    nlevels=5):
     ''' Plot a 2d slice of a logposterior
 
     Parameters
@@ -34,21 +37,61 @@ def slice2d(ax, logpost, params, ip1, ip2, dval1, dval2, nval=30, \
         Amplitude of slice for the first parameter
     dval2 : float
         Amplitude of slice for the second parameter
+    scale1 : str
+        First parameter scale. Should be in  abs or log
+    scale2 : str
+        Second parameter scale. Should be in  abs or log
     nval : int
         Number of grid points for each parameter
     cmap : string
         Color map used to draw logposterior surface
     linecolor : string
         Color of contour lines
+    dlogpostmin : float
+        Difference between lowest contour level and max logpost value
+    dlogpostmax : float
+        Difference between highest contour level and max logpost value
+    nlevels : int
+        Number of contour lines
     '''
 
-    # Make sure dval are positive
-    dval1 = abs(dval1)
-    dval2 = abs(dval2)
+    # Make sure parameter indexes makes sense
+    ips = np.array([ip1, ip2])
+    if np.any((ips<0) | (ips >= len(params))):
+        raise ValueError(('Expected parameter indexes in [0, {0}[, '+\
+                'got ip1={1}, ip2={2}').format(len(params), ip1, ip2))
 
-    # Defines grid
-    x = np.linspace(params[ip1]-dval1, params[ip1]+dval1, nval)
-    y = np.linspace(params[ip2]-dval2, params[ip2]+dval2, nval)
+    # Make sure dval are positive
+    for idval, dval in enumerate([dval1, dval2]):
+        if dval < 1e-8:
+            raise ValueError(('Expected dval{0} greater than 0, '+\
+                    'got {1}').format(idval+1, dval))
+
+    # Make sure dlogpost are positive
+    for ilogp, dlogpost in enumerate([dlogpostmin, dlogpostmax]):
+        if dlogpost < 1e-8:
+            dlogpostname = 'min' if ilogp == 0 else 'max'
+            raise ValueError(('Expected dlogpost{0} greater than 0, '+\
+                    'got {1}').format(dlogpostname, dlogpost))
+
+    # Defines grid points
+    def get_grid(pvalue, dval, scale, nval):
+        if scale == 'abs':
+            x = pvalue + np.linspace(-dval, dval, nval)
+        elif scale == 'log':
+            if pvalue<1e-10:
+                raise ValueError('Expected parameter to be strictly '+\
+                                'positive, got {0:3.3e}'.format(pvalue))
+            x = pvalue * np.logspace(-dval, dval, nval)
+        else:
+            raise ValueError('Expected scale in [abs/log], got '+scale)
+
+        return x
+
+    x = get_grid(params[ip1], dval1, scale1, nval)
+    y = get_grid(params[ip2], dval1, scale1, nval)
+
+    # Plotting grid
     xx, yy = np.meshgrid(x, y)
 
     # Compute logpost on grid
@@ -59,15 +102,36 @@ def slice2d(ax, logpost, params, ip1, ip2, dval1, dval2, nval=30, \
         pp[ip2] = y[l]
         zz[k, l] = logpost(pp)
 
+    # Compute levels
+    maxzz = zz.max()
+    levels = None
+    if nlevels == 1:
+        levels = [maxzz-dlogpostmin]
+    elif nlevels>1:
+        levels = list(np.linspace(maxzz-dlogpostmin, \
+                        maxzz-dlogpostmax, nlevels))
+
     # plot surface
     ax.contourf(xx, yy, zz, cmap=cmap)
 
     # plot contour lines
-    original = mpl.rcParams['contour.negative_linestyle']
-    mpl.rcParams['contour.negative_linestyle'] = 'solid'
-    cs = ax.contour(xx, yy, zz, colors=linecolor)
-    mpl.rcParams['contour.negative_linestyle'] = original
-    plt.clabel(cs, inline=1, fontsize=10)
+    if nlevels > 0:
+        original = mpl.rcParams['contour.negative_linestyle']
+        mpl.rcParams['contour.negative_linestyle'] = 'solid'
+        cs = ax.contour(xx, yy, zz, levels=levels, colors=linecolor)
+
+        # Reformat levels
+        cs.levels = ['{0:2.2e}'.format(float(lev)) for lev in cs.levels]
+        plt.clabel(cs, inline=1, fontsize=10)
+
+        mpl.rcParams['contour.negative_linestyle'] = original
+
+    # log axis
+    if scale1 == 'log':
+        ax.set_xscale('log', nonposx='clip')
+
+    if scale2 == 'log':
+        ax.set_yscale('log', nonposy='clip')
 
     # plot parameter point
     ax.plot(params[ip1], params[ip2], 'ow')
@@ -77,6 +141,8 @@ def slice2d(ax, logpost, params, ip1, ip2, dval1, dval2, nval=30, \
     # Decoration
     ax.set_xlabel('Param {0}'.format(ip1))
     ax.set_ylabel('Param {0}'.format(ip2))
+
+    return xx, yy, zz
 
 
 def plotchains(fig, samples, accept):

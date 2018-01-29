@@ -20,7 +20,7 @@ class BayesPlotTestCase(unittest.TestCase):
 
         self.nchains = 3
         self.nparams = 4
-        self.nsamples = 5000
+        self.nsamples = 100
 
         # Generate mean vector
         self.mu = np.linspace(0, 1, self.nparams)
@@ -56,9 +56,66 @@ class BayesPlotTestCase(unittest.TestCase):
         fig, ax = putils.get_fig_axs()
         vect, _, _ = bayesutils.cov2vect(self.cov)
         params = np.concatenate([self.mu, vect])
-        bayesplot.slice2d(ax, self.logpost, params, \
-                                    0, 1, 2, 2)
+        zz, yy, zz = bayesplot.slice2d(ax, self.logpost, params, \
+                                    0, 1, 0.5, 0.5)
         fp = os.path.join(self.ftest, 'slice_2d.png')
+        fig.savefig(fp)
+
+
+    def test_slice2d_errors(self):
+        ''' Plot log post slice 2d with log spacing '''
+
+        fig, ax = putils.get_fig_axs()
+        vect, _, _ = bayesutils.cov2vect(self.cov)
+        params = np.concatenate([self.mu, vect])
+
+        try:
+            bayesplot.slice2d(ax, self.logpost, params, \
+                                    len(params), 1, 0.5, 0.5)
+        except ValueError as err:
+            self.assertTrue(str(err).startswith('Expected parameter indexes'))
+        else:
+            raise ValueError('Problem with error handling')
+
+
+        try:
+            bayesplot.slice2d(ax, self.logpost, params, \
+                                    0, 1, -0.5, 0.5)
+        except ValueError as err:
+            self.assertTrue(str(err).startswith('Expected dval1'))
+        else:
+            raise ValueError('Problem with error handling')
+
+
+        try:
+            bayesplot.slice2d(ax, self.logpost, params, \
+                                    0, 1, 0.5, 0.5, scale1='ll')
+        except ValueError as err:
+            self.assertTrue(str(err).startswith('Expected scale'))
+        else:
+            raise ValueError('Problem with error handling')
+
+
+        try:
+            bayesplot.slice2d(ax, self.logpost, params, \
+                                    0, 1, 0.5, 0.5, dlogpostmin=-1)
+        except ValueError as err:
+            self.assertTrue(str(err).startswith('Expected dlogpostmin'))
+        else:
+            raise ValueError('Problem with error handling')
+
+
+    def test_slice2d_log(self):
+        ''' Plot log post slice 2d with log spacing '''
+
+        fig, ax = putils.get_fig_axs()
+        vect, _, _ = bayesutils.cov2vect(self.cov)
+        params = np.concatenate([self.mu+0.01, vect])
+        bayesplot.slice2d(ax, self.logpost, params, \
+                                    0, 1, 0.5, 0.5, \
+                                    scale1='log', scale2='log', \
+                                    dlogpostmin=10, dlogpostmax=1e-2, nlevels=5)
+        fp = os.path.join(self.ftest, 'slice_2d_log.png')
         fig.savefig(fp)
 
 
