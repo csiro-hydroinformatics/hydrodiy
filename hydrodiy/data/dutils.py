@@ -148,7 +148,12 @@ def aggregate(aggindex, inputs, oper=0, maxnan=0):
     -----------
     outputs : numpy.ndarray
         Aggregated data
+
     '''
+    # Check inputs
+    if len(aggindex) != len(inputs):
+        raise ValueError('Expected inputs of length {0}, got {1}'.format(\
+                len(aggindex), len(inputs)))
 
     # Allocate arrays
     oper = np.int32(oper)
