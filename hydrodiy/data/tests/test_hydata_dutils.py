@@ -154,7 +154,10 @@ class UtilsTestCase(unittest.TestCase):
         se = pd.Series(np.exp(np.random.normal(size=nval)), index=dates)
 
         sed = dutils.monthly2daily(se)
-        se2 = sed.resample('MS', how='sum')
+        try:
+            se2 = sed.resample('MS').sum()
+        except Exception:
+            se2 = sed.resample('MS', how='sum')
         self.assertTrue(np.allclose(se.values, se2.values))
 
 
@@ -166,7 +169,10 @@ class UtilsTestCase(unittest.TestCase):
         se = pd.Series(np.exp(np.random.normal(size=nval)), index=dates)
 
         sed = dutils.monthly2daily(se, interpolation='cubic')
-        se2 = sed.resample('MS', how='sum')
+        try:
+            se2 = sed.resample('MS').sum()
+        except Exception:
+            se2 = sed.resample('MS', how='sum')
         self.assertTrue(np.allclose(se.values, se2.values))
 
 
