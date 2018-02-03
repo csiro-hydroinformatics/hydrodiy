@@ -8,6 +8,7 @@ import matplotlib as mpl
 mpl.use('Agg')
 
 import matplotlib.pyplot as plt
+from matplotlib import cm
 
 from hydrodiy.plot import putils
 from hydrodiy.gis import oz
@@ -31,6 +32,17 @@ class UtilsTestCase(unittest.TestCase):
         ax.pcolor(x, cmap=cmap, vmin=1, vmax=256)
         fp = os.path.join(self.ftest, 'cmap.png')
         fig.savefig(fp)
+
+
+    def test_cmap2colors(self):
+        ''' Test conversion between color sets and color maps '''
+
+        colors = putils.cmap2colors(ncols=10, cmap='Reds')
+        self.assertTrue(len(colors) == 10)
+
+        cmap = cm.get_cmap('Reds')
+        colors = putils.cmap2colors(ncols=10, cmap=cmap)
+        self.assertTrue(len(colors) == 10)
 
 
     def test_line(self):

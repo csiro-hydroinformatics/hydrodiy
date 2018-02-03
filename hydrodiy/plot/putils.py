@@ -60,8 +60,13 @@ def cmap2colors(ncols=10, cmap='Paired'):
         List of colors
     '''
 
-    cmapn = cm.get_cmap(cmap, ncols)
-    return [cmapn(i) for i in range(cmapn.N)]
+    if isinstance(cmap, str):
+        cmapn = cm.get_cmap(cmap, ncols)
+        return [cmapn(i) for i in range(cmapn.N)]
+    else:
+        ii = np.linspace(0, cmap.N, ncols+2)
+        ii = np.round(ii).astype(int)[1:-1]
+        return [cmap(i) for i in ii]
 
 
 def colors2cmap(colors, ncols=256):
