@@ -114,7 +114,7 @@ class GridplotConfig(object):
             cols = {1.:'#%02x%02x%02x' % (0, 0, 255),
                     0.5:'#%02x%02x%02x' % (255, 255, 255),
                     0.:'#%02x%02x%02x' % (255, 25, 25)}
-            self.cmap = putils.col2cmap(cols)
+            self.cmap = putils.colors2cmap(cols)
             self.norm = mpl.colors.Normalize(vmin=self.clevs[0], vmax=self.clevs[-1])
             self.legend = 'Rainfall deciles'
             self.show_ticks = False
@@ -125,7 +125,7 @@ class GridplotConfig(object):
             cols = {1.:'#%02x%02x%02x' % (255, 153, 0),
                     0.5:'#%02x%02x%02x' % (255, 255, 255),
                     0.:'#%02x%02x%02x' % (0, 153, 204)}
-            self.cmap = putils.col2cmap(cols)
+            self.cmap = putils.colors2cmap(cols)
             self.legend = 'Temperature deciles'
 
         if varname == 'decile-effective-rainfall':
@@ -134,7 +134,7 @@ class GridplotConfig(object):
             cols = {1.:'#%02x%02x%02x' % (1, 126, 123),
                     0.5:'#%02x%02x%02x' % (254, 254, 228),
                     0.:'#%02x%02x%02x' % (254, 118, 37)}
-            self.cmap = putils.col2cmap(cols)
+            self.cmap = putils.colors2cmap(cols)
             self.legend = 'Temperature deciles'
 
 
@@ -145,7 +145,7 @@ class GridplotConfig(object):
 
             cols = {0.:'#%02x%02x%02x' % (255, 229, 204),
                     1.:'#%02x%02x%02x' % (153, 76, 0)}
-            self.cmap = putils.col2cmap(cols)
+            self.cmap = putils.colors2cmap(cols)
             self.norm = mpl.colors.Normalize(vmin=clevs[0], vmax=clevs[-1])
             self.legend = 'Evapotranspiration'
 
@@ -156,7 +156,8 @@ class GridplotConfig(object):
                                                 for l in self.clevs_ticks]
             self.cmap = plt.cm.Blues
             self.linewidth = 0.
-            self.norm = mpl.colors.Normalize(vmin=self.clevs[0], vmax=self.clevs[-1])
+            self.norm = mpl.colors.Normalize(vmin=self.clevs[0], \
+                                vmax=self.clevs[-1])
             self.legend = 'Soil Moisture'
 
         elif varname == 'effective-rainfall':
@@ -168,9 +169,10 @@ class GridplotConfig(object):
             cols = {0.:'#%02x%02x%02x' % (255, 76, 0), \
                     0.5:'#%02x%02x%02x' % (255, 255, 255), \
                     1.:'#%02x%02x%02x' % (40, 178, 157)}
-            self.cmap = putils.col2cmap(cols)
+            self.cmap = putils.colors2cmap(cols)
             self.linewidth = 0
-            self.norm = mpl.colors.SymLogNorm(10., vmin=clevs[0], vmax=clevs[-1])
+            self.norm = mpl.colors.SymLogNorm(10., \
+                                vmin=clevs[0], vmax=clevs[-1])
             self.legend = 'Effective Rainfall'
 
         elif varname == 'rainfall':
@@ -179,7 +181,8 @@ class GridplotConfig(object):
             self.clevs_tick_labels = clevs[:-1] + ['']
 
             self.linewidth = 0
-            self.norm = mpl.colors.SymLogNorm(10., vmin=clevs[0], vmax=clevs[-1])
+            self.norm = mpl.colors.SymLogNorm(10., \
+                                vmin=clevs[0], vmax=clevs[-1])
             self.legend = 'Rainfall Totals'
 
         elif varname == 'temperature':

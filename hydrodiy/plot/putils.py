@@ -44,13 +44,27 @@ COLORS10 = [colors.rgb2hex([float(coo)/255 for coo in co]) for co in [ \
 
 
 
-def get_colors(ncols=10, palette='Paired'):
-    ''' generates a set of colors '''
-    cmap = cm.get_cmap(palette, ncols)
-    return [cmap(i) for i in range(cmap.N)]
+def cmap2colors(ncols=10, cmap='Paired'):
+    ''' generates a set of colors from colormap
+
+    Parameters
+    -----------
+    ncols : int
+        Number of colors
+    cmap : matplotlib.colormap or str
+        Colormap or colormap name
+
+    Returns
+    -----------
+    colors : list
+        List of colors
+    '''
+
+    cmapn = cm.get_cmap(cmap, ncols)
+    return [cmapn(i) for i in range(cmapn.N)]
 
 
-def col2cmap(colors, ncols=256):
+def colors2cmap(colors, ncols=256):
     ''' Define a linear color map from a set of colors
 
     Parameters
@@ -70,7 +84,7 @@ def col2cmap(colors, ncols=256):
     >>> import matplotlib.pyplot as plt
     >>> import numpy as np
     >>> colors = {0.:'#3399FF', 0.1:'#33FFFF', 1.0:'#33FF99'}
-    >>> cmap = putils.col2cmap(colors)
+    >>> cmap = putils.colors2cmap(colors)
     >>> nval = 500
     >>> x = np.random.normal(size=nval)
     >>> y = np.random.normal(size=nval)

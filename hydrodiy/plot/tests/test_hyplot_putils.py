@@ -19,12 +19,12 @@ class UtilsTestCase(unittest.TestCase):
         source_file = os.path.abspath(__file__)
         self.ftest = os.path.dirname(source_file)
 
-    def test_col2cmap(self):
+    def test_colors2cmap(self):
         ''' Test conversion between color sets and color maps '''
 
         mpl.rcdefaults()
         colors = {1:'#004C99', 0:'#FF9933', 0.3:'#FF99FF'}
-        cmap = putils.col2cmap(colors)
+        cmap = putils.colors2cmap(colors)
 
         x = np.arange(1, 257).reshape((1,256))
         fig, ax = plt.subplots()
@@ -84,7 +84,10 @@ class UtilsTestCase(unittest.TestCase):
         mpl.rcdefaults()
         tex = r'\begin{equation} y = ax+b \end{equation}'
         fp = os.path.join(self.ftest, 'equations1.png')
-        putils.equation(tex, fp)
+        try:
+            putils.equation(tex, fp)
+        except FileNotFoundError:
+            return
 
         tex = r'\begin{equation} y = \frac{\int_0^{+\infty} x\ \exp(-\alpha x)}{\pi} \end{equation}'
         fp = os.path.join(self.ftest, 'equations2.png')
@@ -140,7 +143,10 @@ class UtilsTestCase(unittest.TestCase):
         mpl.rcdefaults()
         putils.set_mpl(usetex=True)
         fp = os.path.join(self.ftest, 'set_mpl4.png')
-        plot(fp, True)
+        try:
+            plot(fp, True)
+        except FileNotFoundError:
+            pass
         mpl.rcdefaults()
 
     def test_kde(self):
@@ -176,7 +182,7 @@ class UtilsTestCase(unittest.TestCase):
         fig, ax = plt.subplots()
         ax.plot(xy[:, 0], xy[:, 1], '.', alpha=0.2, mfc='grey', mec='none')
 
-        colors = putils.get_colors(10, 'Reds')
+        colors = putils.cmap2colors(10, 'Reds')
 
         for i, pvalue in enumerate([0.5, 0.8, 0.9, 0.95, 0.99]):
             el = putils.cov_ellipse(mu, cov, pvalue, facecolor='none', \
@@ -191,7 +197,6 @@ class UtilsTestCase(unittest.TestCase):
         ''' Test qq plot '''
 
         mpl.rcdefaults()
-
         putils.set_mpl()
         x = np.random.normal(size=200)
 
