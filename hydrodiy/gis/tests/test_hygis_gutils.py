@@ -39,7 +39,7 @@ class GutilsTestCase(unittest.TestCase):
 
     def test_georef(self):
         ''' Test the georef function with canberra '''
-        lon, lat, xlim, ylim, info = gutils.georef('canberra')
+        lon, lat, xlim, ylim, info = gutils.georef('Canberra ACT 2601, Australia')
 
         fj = os.path.join(self.ftest, 'canberra.json')
         with open(fj, 'r') as fo:
