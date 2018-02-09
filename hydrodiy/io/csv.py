@@ -175,7 +175,7 @@ def write_csv(data, filename, comment,\
         author=None,\
         write_index=False,\
         compress=True,\
-        float_format='%0.3f',\
+        float_format='%0.5f',\
         archive=None,\
         **kwargs):
     ''' write a pandas dataframe to csv with comments in header

@@ -117,7 +117,7 @@ class CsvTestCase(unittest.TestCase):
         d = df1exp.index[0]
         self.assertTrue(isinstance(d, pd.tslib.Timestamp))
 
-        self.assertTrue(np.allclose(np.round(df1.values, 3), df1exp))
+        self.assertTrue(np.allclose(np.round(df1.values, 5), df1exp))
         self.assertTrue(np.allclose(df1, df2exp))
 
         os.remove(re.sub('csv', 'zip', fcsv1))
@@ -162,7 +162,7 @@ class CsvTestCase(unittest.TestCase):
                 parse_dates=[''], index_col=0)
         ds1exp = ds1exp.squeeze()
 
-        self.assertTrue(np.allclose(ds1.round(3), ds1exp))
+        self.assertTrue(np.allclose(ds1.round(5), ds1exp))
 
         os.remove(re.sub('csv', 'zip', fcsv1))
 
