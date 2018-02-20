@@ -108,7 +108,8 @@ class Simplot(object):
             if np.sum(idx) == 0:
                 continue
 
-            date_max = obs_tmp[idx].argmax()
+            omax = obs_tmp[idx].max()
+            date_max = dates[idx][obs_tmp[idx] > omax-1e-10][0]
             idx = dates >= date_max - delta(days=self.ndays_beforepeak)
             idx = idx & (dates <= date_max + delta(days=self.ndays_afterpeak))
 
@@ -204,7 +205,12 @@ class Simplot(object):
     def draw_monthlyres(self, ax, ax_letter='d'):
         ''' Draw the plot of monthly residuals '''
 
-        datam = self.data.loc[self.idx_all, :].resample('MS', how='sum')
+        # Handle old pandas syntax
+        try:
+            datam = self.data.loc[self.idx_all, :].resample('MS').sum()
+        except:
+            datam = self.data.loc[self.idx_all, :].resample('MS', how='sum')
+
         datam = datam.groupby(datam.index.month).mean()
         datam.columns = [self._getname(cn) for cn in  datam.columns]
 
@@ -286,7 +292,12 @@ class Simplot(object):
 
         # Compute annual time series
         ym = months[(self.wateryear_start-2)%12+1].upper()
-        datay = self.data.resample('A-'+ym, how='sum')
+
+        # Handle old Pandas syntax
+        try:
+            datay = self.data.resample('A-'+ym).sum()
+        except:
+            datay = self.data.resample('A-'+ym, how='sum')
 
         # plot - exclude first and last year to avoid missing values
         datay.iloc[1:-1, :].plot(ax=ax, color=COLORS, marker='o', lw=3)
@@ -326,11 +337,16 @@ class Simplot(object):
         ax.grid()
 
 
-    def savefig(self, filename, size=None):
+    def set_size_inches(self, size=None):
+        ''' Set figure size '''
         if size is None:
             size = (18, 10+5*((self.nfloods-1)/3+1))
 
         self.fig.set_size_inches(size)
         self.gs.tight_layout(self.fig)
+
+
+    def savefig(self, filename, size=None):
+        ''' Save figure to file '''
         self.fig.savefig(filename)
 
