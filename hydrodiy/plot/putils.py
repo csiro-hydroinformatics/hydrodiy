@@ -139,8 +139,8 @@ def xdate(ax, interval='M', by=None, format='%b\n%Y'):
         Axe to draw the line on
     interval : str
         Interval between two tick marks. Intervals are coded as Xn
-        where X is the frequency (D for days, M for months or Y for years) and n
-        is the number of periods. For example 6D is 6 days.
+        where X is the frequency (D for days, M for months or Y for years)
+        and n is the number of periods. For example 6D is 6 days.
     by : list
         Number of the month or day of the month where the ticks should be
         place. For example by=[1, 7] with internal='M' will place a tick for

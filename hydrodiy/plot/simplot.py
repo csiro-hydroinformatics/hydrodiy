@@ -348,5 +348,6 @@ class Simplot(object):
 
     def savefig(self, filename, size=None):
         ''' Save figure to file '''
+        self.set_size_inches(size)
         self.fig.savefig(filename)
 
