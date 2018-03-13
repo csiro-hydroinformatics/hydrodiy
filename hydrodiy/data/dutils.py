@@ -55,9 +55,7 @@ def aggmonths(tseries, nmonths=3, ngapmax=6, ngapcontmax=3):
     Freq: MS, dtype: float64
     '''
 
-    # Resample to monthly
-    tsmm = tseries.groupby(tseries.index.month).mean()
-
+    # Aggregation function
     def sumfun(x):
         # Count gaps
         ngap = np.sum(pd.isnull(x))
@@ -81,14 +79,15 @@ def aggmonths(tseries, nmonths=3, ngapmax=6, ngapcontmax=3):
             return x.sum()
 
         else:
-            mv = tsmm[x.index.month[0]]
-            xx = x.fillna(mv)
+            fill = np.mean(x[pd.notnull(x)])
+            xx = x.fillna(fill)
             return xx.sum()
 
-    # Account for new pandas syntax
-    try:
-        tsm = tseries.resample('MS').apply(sumfun)
-    except Exception:
+    # Use Pandas 1 syntax, but can handle Pandas 0 too
+    tsmr = tseries.resample('MS')
+    if len(tsmr) == len(tseries):
+        tsm = tsmr.apply(sumfun)
+    else:    
         tsm = tseries.resample('MS', how=sumfun)
 
     # Shift series

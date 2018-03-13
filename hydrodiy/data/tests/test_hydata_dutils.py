@@ -13,7 +13,33 @@ from hydrodiy.data import dutils
 
 import c_hydrodiy_data as chd
 
+# Utility function to aggregate data
+# using various version of pandas
+def agg_d2m(x, fun='mean'):
+    assert fun in ['mean', 'sum']
 
+    # Define aggregation function
+    if fun == 'mean':
+        aggfun = lambda y: np.mean(y.values) 
+    else:
+        aggfun = lambda y: np.sum(y.values) 
+    
+    # Run aggregation
+    try:
+        xa = x.resample('MS').apply(aggfun)
+
+        # To handle case where old pandas syntax runs
+        # but produces a single values
+        if (len(xa) == 1 and len(np.unique(x.index.month)) > 1):
+            raise ValueError
+
+    except Exception:
+        xa = x.resample('MS', how=aggfun)
+
+    return xa
+
+
+# Tests
 class UtilsTestCase(unittest.TestCase):
 
     def setUp(self):
@@ -59,20 +85,13 @@ class UtilsTestCase(unittest.TestCase):
         out2 = dutils.aggmonths(u, nmonths=3)
 
         # Test
-        def _sum(x):
-             return np.sum(x.values)
-
-        expected1 = u.resample('MS', how=_sum)
+        expected1 = agg_d2m(u, 'sum')
         expected2 = out1 + out1.shift(-1) + out1.shift(-2)
 
-        idxe = pd.notnull(expected1)
-        self.assertTrue(np.allclose(expected1[idxe], out1[idxe]))
+        idxo = pd.notnull(expected1)
+        self.assertTrue(np.allclose(out1[idxo], expected1[idxo]))
 
-        idxe = pd.isnull(out1)
-        idxo = (out1.index.month == 3) | (out1.index.month == 5)
-        self.assertTrue(np.allclose(idxe, idxo))
-
-        idxo = pd.notnull(out2)
+        idxo = pd.notnull(expected2)
         self.assertTrue(np.allclose(out2[idxo], expected2[idxo]))
 
 
@@ -98,11 +117,11 @@ class UtilsTestCase(unittest.TestCase):
 
         aggindex = dt.year * 100 + dt.month
 
-        obsm = obs.resample('MS', how='sum')
+        obsm = agg_d2m(obs, fun='sum')
         obsm2 = dutils.aggregate(aggindex, obs.values)
         self.assertTrue(np.allclose(obsm.values, obsm2))
 
-        obsm = obs.resample('MS', how='mean')
+        obsm = agg_d2m(obs, fun='mean')
         obsm2 = dutils.aggregate(aggindex, obs.values, oper=1)
         self.assertTrue(np.allclose(obsm.values, obsm2))
 
@@ -154,10 +173,7 @@ class UtilsTestCase(unittest.TestCase):
         se = pd.Series(np.exp(np.random.normal(size=nval)), index=dates)
 
         sed = dutils.monthly2daily(se)
-        try:
-            se2 = sed.resample('MS').sum()
-        except Exception:
-            se2 = sed.resample('MS', how='sum')
+        se2 = agg_d2m(sed, fun='sum')
         self.assertTrue(np.allclose(se.values, se2.values))
 
 
@@ -168,11 +184,8 @@ class UtilsTestCase(unittest.TestCase):
         nval = len(dates)
         se = pd.Series(np.exp(np.random.normal(size=nval)), index=dates)
 
-        sed = dutils.monthly2daily(se, interpolation='cubic')
-        try:
-            se2 = sed.resample('MS').sum()
-        except Exception:
-            se2 = sed.resample('MS', how='sum')
+        sed = dutils.monthly2daily(se, interpolation='cubic', minthreshold=-np.inf)
+        se2 = agg_d2m(sed, fun='sum')
         self.assertTrue(np.allclose(se.values, se2.values))
 
 
