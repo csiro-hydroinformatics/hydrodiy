@@ -205,17 +205,21 @@ class Simplot(object):
     def draw_monthlyres(self, ax, ax_letter='d'):
         ''' Draw the plot of monthly residuals '''
 
-        # Handle old pandas syntax
-        try:
-            datam = self.data.loc[self.idx_all, :].resample('MS').sum()
-        except:
-            datam = self.data.loc[self.idx_all, :].resample('MS', how='sum')
+        # Quick aggregate
+        data = self.data
+        months = data.index.year * 100 + data.index.month
+        monthsu = pd.to_datetime(pd.np.unique(months), format='%Y%m')
+        lam = lambda x: pd.Series(dutils.aggregate(months, x.values), index=monthsu)
+        datam = self.data.apply(lam)
 
-        datam = datam.groupby(datam.index.month).mean()
-        datam.columns = [self._getname(cn) for cn in  datam.columns]
+        # Compute monthly means
+        mdatam = datam.groupby(datam.index.month).mean()
+        mdatam.columns = [self._getname(cn) for cn in  mdatam.columns]
 
-        datam.plot(ax=ax, color=COLORS, marker='o', lw=3)
+        # plot mean monthly
+        mdatam.plot(ax=ax, color=COLORS, marker='o', lw=3)
 
+        # decoration
         lines, labels = ax.get_legend_handles_labels()
         ax.legend(lines, labels, loc=2, frameon=False)
 
@@ -294,10 +298,13 @@ class Simplot(object):
         ym = months[(self.wateryear_start-2)%12+1].upper()
 
         # Handle old Pandas syntax
-        try:
-            datay = self.data.resample('A-'+ym).sum()
-        except:
-            datay = self.data.resample('A-'+ym, how='sum')
+        data = self.data
+        year = data.index.year
+        yearu = np.unique(year)
+        se = dutils.aggregate(year, data.iloc[:, 0].values)
+        lam = lambda x: pd.Series(dutils.aggregate(year, x.values), \
+                            index=yearu)
+        datay = data.apply(lam)
 
         # plot - exclude first and last year to avoid missing values
         datay.iloc[1:-1, :].plot(ax=ax, color=COLORS, marker='o', lw=3)
