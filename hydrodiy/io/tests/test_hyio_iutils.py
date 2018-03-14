@@ -226,14 +226,15 @@ class UtilsTestCase(unittest.TestCase):
         nbatch = 5
         nsites = 26
         idx = [iutils.get_ibatch(nsites, nbatch, ibatch) \
-                    for ibatch in range(nbatch+1)]
+                    for ibatch in range(nbatch)]
 
         for ii in idx[:-1]:
-            self.assertTrue(len(ii) == 5)
+            self.assertTrue(len(ii) == 6)
             self.assertTrue(np.all(np.diff(ii) == 1))
 
-        self.assertTrue(len(idx[-1]) == 1)
-        self.assertTrue(idx[-1][0] == 25)
+        self.assertTrue(len(idx[-1]) == 2)
+        self.assertTrue(idx[-1][0] == 24)
+        self.assertTrue(idx[-1][1] == 25)
 
         try:
             idx = iutils.get_ibatch(20, 40, 1)

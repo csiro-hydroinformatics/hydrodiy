@@ -324,7 +324,7 @@ def get_ibatch(nsites, nbatch, ibatch):
         raise ValueError('Number of sites lower than 1')
 
 
-    nsites_batch = (nsites-1)//nbatch
+    nsites_batch = nsites//(nbatch-1)
     if nsites_batch == 0:
         raise ValueError('Number of sites per batch is 0'+\
             ' (nsites={0}, nbatch={1})'.format(
@@ -338,8 +338,9 @@ def get_ibatch(nsites, nbatch, ibatch):
     start = nsites_batch * ibatch
     if start > nsites-1:
         raise ValueError(('Batch index({0}) is too large for '+\
-            ' the number of sites({1})').format(
-                ibatch, nsites))
+            ' the number of sites({1}) and number of sites '+\
+            'per batch ({2})').format(
+                ibatch, nsites, nsites_batch))
 
     idx = np.arange(start, start+nsites_batch)
     idx = list(idx[idx<nsites])
