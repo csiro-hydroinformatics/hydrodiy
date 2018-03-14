@@ -223,13 +223,31 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_get_ibatch(self):
-        idx = iutils.get_ibatch(20, 2, 1)
-        self.assertTrue(np.allclose(idx, np.arange(10, 20)))
+        nbatch = 5
+        nsites = 26
+        idx = [iutils.get_ibatch(nsites, nbatch, ibatch) \
+                    for ibatch in range(nbatch+1)]
+
+        for ii in idx[:-1]:
+            self.assertTrue(len(ii) == 5)
+            self.assertTrue(np.all(np.diff(ii) == 1))
+
+        self.assertTrue(len(idx[-1]) == 1)
+        self.assertTrue(idx[-1][0] == 25)
 
         try:
             idx = iutils.get_ibatch(20, 40, 1)
         except ValueError as err:
-            self.assertTrue(str(err).startswith('Number of sites per batch is 0'))
+            self.assertTrue(str(err).startswith(\
+                            'Number of sites per batch is 0'))
+        else:
+            raise Exception('Problem with error handling')
+
+        try:
+            idx = iutils.get_ibatch(40, 5, 7)
+        except ValueError as err:
+            self.assertTrue(str(err).startswith(\
+                    'Batch index'))
         else:
             raise Exception('Problem with error handling')
 
