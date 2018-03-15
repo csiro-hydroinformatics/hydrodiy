@@ -180,7 +180,7 @@ def get_tsattrs(siteid, ts_name, external=True):
             'ts_name': TS_NAMES[ts_name],
             'station_no':siteid,
             'returnfields':'ts_id,ts_unitname,ts_unitsymbol,'
-                'station_no,station_name,coverage'
+                'station_no,station_name,coverage,parametertype_name'
         })
 
     url = KIWIS_URL_EXT if external else KIWIS_URL_INT
