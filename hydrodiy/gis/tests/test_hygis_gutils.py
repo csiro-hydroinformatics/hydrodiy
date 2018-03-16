@@ -39,7 +39,8 @@ class GutilsTestCase(unittest.TestCase):
 
     def test_georef(self):
         ''' Test the georef function with canberra '''
-        lon, lat, xlim, ylim, info = gutils.georef('Canberra ACT 2601, Australia')
+        lon, lat, xlim, ylim, info = gutils.georef(\
+                            'Canberra ACT 2601, Australia')
 
         fj = os.path.join(self.ftest, 'canberra.json')
         with open(fj, 'r') as fo:
@@ -50,6 +51,30 @@ class GutilsTestCase(unittest.TestCase):
         self.assertTrue(np.allclose([lon, lat], [149.1300092, -35.2809368]))
         self.assertTrue(np.allclose(xlim, (149.1207312, 149.1376675)))
         self.assertTrue(np.allclose(ylim, (-35.2873252, -35.2752841)))
+
+
+    def test_georef_error(self):
+        ''' Test error for georef '''
+
+        try:
+            out = gutils.georef('bidule, australia')
+        except ValueError as err:
+            self.assertTrue(str(err) == 'No results')
+        else:
+            raise ValueError('Problem with error handling')
+
+
+    def test_georef_error_repeated(self):
+        ''' Test repeated georef query '''
+
+        try:
+            for i in range(100):
+                out = gutils.georef(\
+                        'Canberra ACT 2601, Australia')
+        except ValueError as err:
+            self.assertTrue(str(err) in ['No results', 'Info is None'])
+        else:
+            raise ValueError('Problem with error handling')
 
 
 if __name__ == "__main__":

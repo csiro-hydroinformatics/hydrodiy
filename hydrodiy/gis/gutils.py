@@ -3,6 +3,7 @@ import math
 import matplotlib.image as mpimg
 
 import requests
+import time
 
 from hydrodiy.stat import sutils
 
@@ -151,13 +152,17 @@ def xy2kml(x, y, fkml, z=None, siteid=None, label=None,
         f.write('</kml>\n')
 
 
-def georef(name):
+def georef(name, nattempts=5, pause=2):
     ''' Extract georeference data from Google map web api
 
     Parameters
     -----------
     name : str
         Georeference point name
+    nattempts : int
+        Number of attempts
+    pause : int
+        Number of seconds to pause between attempts
 
     Returns
     -----------
@@ -185,15 +190,24 @@ def georef(name):
     params = {'address':name}
     req = requests.get(url, params=params)
 
-    try:
-        info = req.json()
-    except ValueError as err:
-        raise ValueError('Cannot obtain georeference info: {0}'.format(\
-            str(err)))
+    def test_response(info):
+        if info is None:
+            raise ValueError('Info is None')
+        if len(info['results'])==0:
+            raise ValueError('No results')
 
-    if info is None:
-        raise ValueError('Cannot obtain georeference info: result is None')
+    attempts = 0
+    while attempts < nattempts:
+        try:
+            info = req.json()
+            test_response(info)
+            break
 
+        except ValueError as err:
+            attempts += 1
+            time.sleep(pause)
+
+    test_response(info)
     info['url'] = req.url
 
     # Extract coordinates
