@@ -321,13 +321,15 @@ class UtilsTestCase(unittest.TestCase):
 
         try:
             ax.plot(dt, x)
+            xticks = ax.get_xticks()
             putils.xdate(ax, 'Y', by=[1], format='%b\n%y')
             fp = os.path.join(self.fimg, 'xdate_yearl1.png')
             fig.savefig(fp)
         except ValueError as err:
             self.assertTrue(str(err).startswith('xaxis does not seem'))
         else:
-            raise ValueError('Problem with error handling')
+            if np.any(xticks > 1e7):
+                raise ValueError('Problem with error handling (python 3 only)')
 
 
     def test_get_fig_axs(self):
