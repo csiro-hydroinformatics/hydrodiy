@@ -94,6 +94,7 @@ for i in range(fnrows*fncols):
     #om = Oz(ax=ax)
 
     x = pd.date_range('2001-01-01', freq='MS', periods=nval)
+    x = x.to_pydatetime()
     y = np.random.uniform(size=nval)
 
     # Scatter plot
@@ -125,7 +126,8 @@ fig.text(0.05, 0.010, label, color='#595959', ha='left', fontsize=9)
 fig.set_size_inches(float(fncols * awidth)/fdpi,
                 float(fnrows * aheight)/fdpi)
 
-gs.tight_layout(fig)
+# Resize the grid slightly to avoid overlap with the fig title
+gs.tight_layout(fig, rect=[0, 0., 1, 0.95])
 
 fp = os.path.join(fimg, 'image.{0}'.format(imgext))
 fig.savefig(fp, dpi=fdpi)

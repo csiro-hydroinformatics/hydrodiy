@@ -18,7 +18,10 @@ class UtilsTestCase(unittest.TestCase):
     def setUp(self):
         print('\t=> UtilsTestCase (hyplot)')
         source_file = os.path.abspath(__file__)
-        self.ftest = os.path.dirname(source_file)
+        self.test = os.path.dirname(source_file)
+        self.fimg = os.path.join(self.test, 'images')
+        if not os.path.exists(self.fimg):
+            os.mkdir(self.fimg)
 
     def test_colors2cmap(self):
         ''' Test conversion between color sets and color maps '''
@@ -30,7 +33,7 @@ class UtilsTestCase(unittest.TestCase):
         x = np.arange(1, 257).reshape((1,256))
         fig, ax = plt.subplots()
         ax.pcolor(x, cmap=cmap, vmin=1, vmax=256)
-        fp = os.path.join(self.ftest, 'cmap.png')
+        fp = os.path.join(self.fimg, 'cmap.png')
         fig.savefig(fp)
 
 
@@ -62,7 +65,7 @@ class UtilsTestCase(unittest.TestCase):
         putils.line(ax, 1, 0.4, 0, 0, ':')
         putils.line(ax, 1, 0.2, 1., 2, '-.')
 
-        fp = os.path.join(self.ftest, 'lines.png')
+        fp = os.path.join(self.fimg, 'lines.png')
         fig.savefig(fp)
 
 
@@ -83,7 +86,7 @@ class UtilsTestCase(unittest.TestCase):
         putils.line(ax, 1, 0, x0, 0, '--')
         putils.line(ax, 1, 0.4, x0, 0, ':')
 
-        fp = os.path.join(self.ftest, 'lines_date.png')
+        fp = os.path.join(self.fimg, 'lines_date.png')
         fig.savefig(fp)
 
 
@@ -95,23 +98,23 @@ class UtilsTestCase(unittest.TestCase):
         plt.close('all')
         mpl.rcdefaults()
         tex = r'\begin{equation} y = ax+b \end{equation}'
-        fp = os.path.join(self.ftest, 'equations1.png')
+        fp = os.path.join(self.fimg, 'equations1.png')
         try:
             putils.equation(tex, fp)
         except FileNotFoundError:
             return
 
         tex = r'\begin{equation} y = \frac{\int_0^{+\infty} x\ \exp(-\alpha x)}{\pi} \end{equation}'
-        fp = os.path.join(self.ftest, 'equations2.png')
+        fp = os.path.join(self.fimg, 'equations2.png')
         putils.equation(tex, fp)
 
         tex = r'\begin{eqnarray} y & = & ax+b \\ z & = & \zeta \end{eqnarray}'
-        fp = os.path.join(self.ftest, 'equations3.png')
+        fp = os.path.join(self.fimg, 'equations3.png')
         putils.equation(tex, fp)
 
         tex = r'\begin{equation} y = \begin{bmatrix} 1 & 0 & 0 \\ ' +\
             r'0 & 1 & 0 \\ 0 & 0 & 1\end{bmatrix} \end{equation}'
-        fp = os.path.join(self.ftest, 'equations4.png')
+        fp = os.path.join(self.fimg, 'equations4.png')
         putils.equation(tex, fp, height=500)
 
 
@@ -139,22 +142,22 @@ class UtilsTestCase(unittest.TestCase):
         plt.close('all')
         mpl.rcdefaults()
         putils.set_mpl()
-        fp = os.path.join(self.ftest, 'set_mpl1.png')
+        fp = os.path.join(self.fimg, 'set_mpl1.png')
         plot(fp)
 
         mpl.rcdefaults()
         putils.set_mpl(color_theme='white')
-        fp = os.path.join(self.ftest, 'set_mpl2.png')
+        fp = os.path.join(self.fimg, 'set_mpl2.png')
         plot(fp)
 
         mpl.rcdefaults()
         putils.set_mpl(font_size=25)
-        fp = os.path.join(self.ftest, 'set_mpl3.png')
+        fp = os.path.join(self.fimg, 'set_mpl3.png')
         plot(fp)
 
         mpl.rcdefaults()
         putils.set_mpl(usetex=True)
-        fp = os.path.join(self.ftest, 'set_mpl4.png')
+        fp = os.path.join(self.fimg, 'set_mpl4.png')
         try:
             plot(fp, True)
         except FileNotFoundError:
@@ -177,7 +180,7 @@ class UtilsTestCase(unittest.TestCase):
         cont = ax.contourf(xx, yy, zz, cmap='Blues')
         ax.contour(cont, colors='grey')
         ax.plot(xy[:, 0], xy[:, 1], '.', alpha=0.2, mfc='grey', mec='none')
-        fp = os.path.join(self.ftest, 'kde.png')
+        fp = os.path.join(self.fimg, 'kde.png')
         fig.savefig(fp)
 
 
@@ -201,7 +204,7 @@ class UtilsTestCase(unittest.TestCase):
                         edgecolor=colors[i])
             ax.add_patch(el)
 
-        fp = os.path.join(self.ftest, 'ellipse.png')
+        fp = os.path.join(self.fimg, 'ellipse.png')
         fig.savefig(fp)
 
 
@@ -215,20 +218,20 @@ class UtilsTestCase(unittest.TestCase):
         plt.close('all')
         fig, ax = plt.subplots()
         putils.qqplot(ax, x)
-        fp = os.path.join(self.ftest, 'qpplot1.png')
+        fp = os.path.join(self.fimg, 'qpplot1.png')
         fig.savefig(fp)
 
         fig, ax = plt.subplots()
         putils.qqplot(ax, x, True)
         ax.legend(loc=2)
-        fp = os.path.join(self.ftest, 'qpplot2.png')
+        fp = os.path.join(self.fimg, 'qpplot2.png')
         fig.savefig(fp)
 
         fig, ax = plt.subplots()
         xc = np.maximum(x, 1)
         putils.qqplot(ax, xc, True, 1)
         ax.legend(loc=2)
-        fp = os.path.join(self.ftest, 'qpplot3.png')
+        fp = os.path.join(self.fimg, 'qpplot3.png')
         fig.savefig(fp)
 
         mpl.rcdefaults()
@@ -237,72 +240,94 @@ class UtilsTestCase(unittest.TestCase):
     def test_xdate_monthly(self):
         ''' Test formatting xaxis with monthly dates '''
 
-        #putils.set_mpl(font_size=10)
         mpl.rcdefaults()
 
         x = np.random.normal(size=200)
         dt = pd.date_range('1990-01-01', periods=len(x))
+        dt = dt.to_pydatetime()
 
         plt.close('all')
         fig, ax = plt.subplots()
         ax.plot(dt, x)
         putils.xdate(ax)
-        fp = os.path.join(self.ftest, 'xdate_monthly1.png')
+        fp = os.path.join(self.fimg, 'xdate_monthly1.png')
         fig.savefig(fp)
 
         fig, ax = plt.subplots()
         ax.plot(dt, x)
         putils.xdate(ax, '3M')
-        fp = os.path.join(self.ftest, 'xdate_monthly2.png')
+        fp = os.path.join(self.fimg, 'xdate_monthly2.png')
         fig.savefig(fp)
 
         fig, ax = plt.subplots()
         ax.plot(dt, x)
         putils.xdate(ax, 'M', [2, 4, 5])
-        fp = os.path.join(self.ftest, 'xdate_monthly3.png')
+        fp = os.path.join(self.fimg, 'xdate_monthly3.png')
         fig.savefig(fp)
 
 
     def test_xdate_daily(self):
         ''' Test formatting xaxis with daily dates '''
 
-        #putils.set_mpl(font_size=10)
         mpl.rcdefaults()
 
         x = np.random.normal(size=200)
         dt = pd.date_range('1990-01-01', periods=len(x))
+        dt = dt.to_pydatetime()
 
         plt.close('all')
 
         fig, ax = plt.subplots()
         ax.plot(dt, x)
         putils.xdate(ax, 'D', by=[1, 15], format='%d\n%b\n%y')
-        fp = os.path.join(self.ftest, 'xdate_daily.png')
+        fp = os.path.join(self.fimg, 'xdate_daily.png')
         fig.savefig(fp)
 
 
     def test_xdate_yearly(self):
         ''' Test formatting xaxis with yearly dates '''
 
-        #putils.set_mpl(font_size=10)
         mpl.rcdefaults()
 
         x = np.random.normal(size=2000)
         dt = pd.date_range('1990-01-01', periods=len(x))
+        dt = dt.to_pydatetime()
 
         plt.close('all')
 
         fig, ax = plt.subplots()
         ax.plot(dt, x)
         putils.xdate(ax, 'Y', by=[1], format='%b\n%y')
-        fp = os.path.join(self.ftest, 'xdate_yearl1.png')
+        fp = os.path.join(self.fimg, 'xdate_yearl1.png')
         fig.savefig(fp)
 
         fig, ax = plt.subplots()
         ax.plot(dt, x)
         putils.xdate(ax, '3Y', by=[7], format='%b\n%y')
-        fp = os.path.join(self.ftest, 'xdate_yearl2.png')
+        fp = os.path.join(self.fimg, 'xdate_yearl2.png')
         fig.savefig(fp)
+
+
+    def test_xdate_error(self):
+        ''' Test xdate error with wrong x axis data '''
+
+        mpl.rcdefaults()
+
+        x = np.random.normal(size=2000)
+        dt = pd.date_range('1990-01-01', periods=len(x))
+
+        plt.close('all')
+        fig, ax = plt.subplots()
+
+        try:
+            ax.plot(dt, x)
+            putils.xdate(ax, 'Y', by=[1], format='%b\n%y')
+            fp = os.path.join(self.fimg, 'xdate_yearl1.png')
+            fig.savefig(fp)
+        except ValueError as err:
+            self.assertTrue(str(err).startswith('xaxis does not seem'))
+        else:
+            raise ValueError('Problem with error handling')
 
 
     def test_get_fig_axs(self):

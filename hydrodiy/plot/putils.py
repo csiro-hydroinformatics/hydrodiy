@@ -149,6 +149,14 @@ def xdate(ax, interval='M', by=None, format='%b\n%Y'):
         Date format
     '''
 
+    # Check ax x data seems reasonable
+    xticks = ax.get_xticks()
+    if np.any(xticks > 1e7):
+        raise ValueError('xaxis does not seem to contain python datetime '+
+            'values. If plotting pandas data, use the to_pydatetime() '+
+            'function')
+
+    # Compute locator parameter
     if interval.endswith('M'):
         if interval == 'M':
             interv = 1
@@ -193,7 +201,6 @@ def xdate(ax, interval='M', by=None, format='%b\n%Y'):
     ax.xaxis.set_major_locator(loc)
     fmt = mdates.DateFormatter(format)
     ax.xaxis.set_major_formatter(fmt)
-
 
 
 def line(ax, vx=0., vy=1., x0=0., y0=0., *args, **kwargs):
