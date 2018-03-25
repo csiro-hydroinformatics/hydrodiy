@@ -111,7 +111,8 @@ class Simplot(object):
             omax = obs_tmp[idx].max()
             date_max = dates[idx][obs_tmp[idx] > omax-1e-10][0]
             idx = dates >= date_max - delta(days=self.ndays_beforepeak)
-            idx = idx & (dates <= date_max + delta(days=self.ndays_afterpeak))
+            idx = idx & (dates <= date_max \
+                                + delta(days=self.ndays_afterpeak))
 
             if np.any(self.idx_all[idx]):
                 self.flood_idx.append({'index':idx, 'date_max':date_max})
@@ -172,7 +173,8 @@ class Simplot(object):
         '''
         # Draw water balance
         axb = plt.subplot(self.gs[0, 0])
-        self.draw_balance(axb)
+        #self.draw_balance(axb)
+        self.draw_loglog(axb)
 
         # Draw annual time series
         axa = plt.subplot(self.gs[0, 1:])
@@ -209,7 +211,8 @@ class Simplot(object):
         data = self.data
         months = data.index.year * 100 + data.index.month
         monthsu = pd.to_datetime(pd.np.unique(months), format='%Y%m')
-        lam = lambda x: pd.Series(dutils.aggregate(months, x.values), index=monthsu)
+        lam = lambda x: pd.Series(dutils.aggregate(months, x.values),\
+                                        index=monthsu)
         datam = self.data.apply(lam)
 
         # Compute monthly means
@@ -313,7 +316,8 @@ class Simplot(object):
         ax.legend(lines, labels, loc=2, frameon=False)
 
         month = datetime(1900, self.wateryear_start, 1).strftime('%B')
-        title = '({0}) Annual time series - Start of water year in {1}'.format( \
+        title = ('({0}) Annual time series - '+\
+                    'Start of water year in {1}').format( \
                     ax_letter, month)
         ax.set_title(title)
         ax.set_ylabel('({0}) Annual flow'.format(ax_letter))
@@ -329,7 +333,8 @@ class Simplot(object):
         freq = data.index.freqstr
         freqfact = {'H':24*365.25, 'D':365.25, 'MS':12, 'ME':12}
         if freq not in freqfact:
-            warnings.warn('Frequency [{0}] not recognised, assuming daily'.format(freq))
+            warnings.warn(('Frequency [{0}] not recognised, '+\
+                            'assuming daily').format(freq))
             fact = freqfact['D']
         else:
             fact = freqfact[freq]
@@ -341,6 +346,23 @@ class Simplot(object):
 
         ax.set_ylabel('Mean annual')
         ax.set_title('({0}) Water Balance'.format(ax_letter))
+        ax.grid()
+
+
+    def draw_loglog(self, ax, ax_letter='a'):
+        ''' Draw a log-log plot of sorted sim vs obs '''
+        data = self.data
+        obs = np.sort(data.loc[self.idx_all, data.columns[0]])
+        for icn, cn in enumerate(data.columns[1:]):
+            sim = np.sort(data.loc[self.idx_all, cn])
+            label = self._getname(cn)
+            line = ax.loglog(sim, obs, label=label, color=COLORS[icn+1])
+
+        putils.line(ax, 1, 1, 1, 1, 'k--')
+        ax.set_xlabel('Simulation')
+        ax.set_ylabel('Observation')
+        ax.legend(loc=4, fontsize='x-small')
+        ax.set_title('({0}) Sim vs obs'.format(ax_letter))
         ax.grid()
 
 
