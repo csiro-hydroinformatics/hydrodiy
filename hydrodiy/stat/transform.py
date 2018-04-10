@@ -7,8 +7,8 @@ from hydrodiy.data.containers import Vector
 from hydrodiy.stat import sutils
 
 __all__ = ['Identity', 'Logit', 'Log', 'BoxCox2', 'BoxCox1',
-                'YeoJohnson',  'LogSinh', \
-                'Reciprocal', 'Softmax']
+                'YeoJohnson', 'Reciprocal', 'Softmax', 'AbsLog', \
+                'LogSinh']
 
 EPS = 1e-10
 
@@ -587,4 +587,33 @@ class Softmax(Transform):
 
         px = np.prod(x, axis=1)
         return (1+sx/(1-sx))/px
+
+
+class AbsLog(Transform):
+    ''' Absolute log transform y=sign(x) * log(cst+abs(x))-log(cst) '''
+
+    def __init__(self):
+        params = Vector(['nu'], [1e-10], [1e-10], [np.inf])
+        super(AbsLog, self).__init__('AbsLog', params)
+
+    def forward(self, x):
+        nu = self.params.values
+        return np.sign(x)*(np.log(nu+np.abs(x))-math.log(nu))
+
+    def backward(self, y):
+        nu = self.params.values
+        return np.sign(y)*(np.exp(np.abs(y)+math.log(nu))-nu)
+
+    def jacobian_det(self, x):
+        nu = self.params.values
+        return 1./(nu+np.abs(x))
+
+    def sample_params(self, nsamples=500, minval=-7., maxval=0.):
+        # Generate parameters samples in log space
+        samples = np.random.uniform(minval, maxval, nsamples)
+        samples = np.exp(samples)[:, None]
+
+        return samples
+
+
 
