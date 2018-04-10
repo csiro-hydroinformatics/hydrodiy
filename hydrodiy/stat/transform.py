@@ -377,7 +377,7 @@ class YeoJohnson(Transform):
     ''' YeoJohnson transform '''
 
     def __init__(self):
-        params = Vector(['nu', 'scale', 'lambda'],\
+        params = Vector(['nu', 'scale', 'lam'],\
             [0., 1., 1.], [-np.inf, 1e-5, -1.],\
             [np.inf, np.inf, 3.])
 
