@@ -223,6 +223,7 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_get_ibatch(self):
+        ''' Test get_ibatch for small batches '''
         nbatch = 5
         nsites = 26
         idx = [iutils.get_ibatch(nsites, nbatch, ibatch) \
@@ -240,7 +241,7 @@ class UtilsTestCase(unittest.TestCase):
             idx = iutils.get_ibatch(20, 40, 1)
         except ValueError as err:
             self.assertTrue(str(err).startswith(\
-                            'Number of sites per batch is 0'))
+                            'Number of sites lower'))
         else:
             raise Exception('Problem with error handling')
 
@@ -248,9 +249,23 @@ class UtilsTestCase(unittest.TestCase):
             idx = iutils.get_ibatch(40, 5, 7)
         except ValueError as err:
             self.assertTrue(str(err).startswith(\
-                    'Batch index'))
+                    'Expected ibatch in'))
         else:
             raise Exception('Problem with error handling')
+
+
+    def test_get_ibatch_large(self):
+        ''' Test get_ibatch for large batches '''
+        nbatch = 6
+        nsites = 502
+        idx = [iutils.get_ibatch(nsites, nbatch, ibatch) \
+                    for ibatch in range(nbatch)]
+
+        for ii in idx[:-1]:
+            self.assertTrue(len(ii) == 84)
+            self.assertTrue(np.all(np.diff(ii) == 1))
+
+        self.assertTrue(len(idx[-1]) == 82)
 
 
     def test_download(self):

@@ -323,29 +323,32 @@ def get_ibatch(nsites, nbatch, ibatch):
     if nsites < 1:
         raise ValueError('Number of sites lower than 1')
 
+    if nsites < nbatch:
+        raise ValueError('Number of sites lower than number of batches')
 
-    nsites_batch = nsites//(nbatch-1)
-    if nsites_batch == 0:
+    if ibatch < 0 or ibatch >= nbatch:
+        raise ValueError('Expected ibatch in [0, {0}], got {1}'.format(\
+            nbatch-1, ibatch))
+
+    nsites_per_batch = nsites//nbatch+1
+    if nsites_per_batch == 0:
         raise ValueError('Number of sites per batch is 0'+\
             ' (nsites={0}, nbatch={1})'.format(
                 nsites, nbatch))
 
-    if nsites_batch > nsites:
+    if nsites_per_batch > nsites:
         raise ValueError(('Number of sites per batch({0})'+\
             ' is greater than nsites({1}))').format(
-                nsites_batch, nsites))
+                nsites_per_batch, nsites))
 
-    start = nsites_batch * ibatch
+    start = nsites_per_batch * ibatch
     if start > nsites-1:
         raise ValueError(('Batch index({0}) is too large for '+\
             ' the number of sites({1}) and number of sites '+\
             'per batch ({2})').format(
-                ibatch, nsites, nsites_batch))
+                ibatch, nsites, nsites_per_batch))
 
-    idx = np.arange(start, start+nsites_batch)
-    idx = list(idx[idx<nsites])
-
-    return idx
+    return np.arange(start, min(nsites, start+nsites_per_batch))
 
 
 def download(url, filename=None, logger=None, nprint=5, \
