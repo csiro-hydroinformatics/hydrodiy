@@ -13,6 +13,30 @@ __all__ = ['Identity', 'Logit', 'Log', 'BoxCox2', 'BoxCox1',
 EPS = 1e-10
 
 
+def cast(x, y):
+    ''' Cast y to the type of x.
+
+        Useful to make sure that a function returns an output that has
+        the same type than the input.
+    '''
+    # Check dtype of inputs if any
+    xdtype = x.dtype if hasattr(x, 'dtype') else None
+    ydtype = y.dtype if hasattr(y, 'dtype') else None
+
+    # Cast depending on the nature of x and y
+    if xdtype is None:
+        # x is a basic data type
+        # this should work even if y is a
+        # 1d or 0d numpy array
+        ycast = type(x)(y)
+
+    else:
+        # x is a numpy array
+        ycast = np.array(y, dtype=xdtype)
+
+    return ycast
+
+
 def get_transform(name, **kwargs):
     ''' Return instance of transform.
         The function can set parameter values by via kwargs.
@@ -50,8 +74,8 @@ class Transform(object):
     ''' Transform base class '''
 
     def __init__(self, name,\
-                        params=Vector([]), \
-                        constants=Vector([])):
+                    params=Vector([]), \
+                    constants=Vector([])):
         """
         Create instance of a data transform object
 
@@ -143,19 +167,37 @@ class Transform(object):
         self._params.reset()
 
 
+    def _forward(self, x):
+        ''' internal forward method (no cast)'''
+        raise NotImplementedError('Method _forward not implemented')
+
+
+    def _backward(self, y):
+        ''' internal backward method (no cast)'''
+        raise NotImplementedError('Method _backward not implemented')
+
+
+    def _jacobian_det(self, x):
+        ''' internal jacobian_det method (no cast)'''
+        raise NotImplementedError('Method _jacobian_det not implemented')
+
+
     def forward(self, x):
         ''' Returns the forward transform of x '''
-        raise NotImplementedError('Method forward not implemented')
+        return cast(x, self._forward(x))
 
 
     def backward(self, y):
-        ''' Returns the backward transform of x '''
-        raise NotImplementedError('Method backward not implemented')
+        ''' Returns the backward transform of y after cast '''
+        return cast(y, self._backward(y))
 
 
     def jacobian_det(self, x):
-        ''' Returns the transformation jacobian_detobian d[forward(x)]/dx '''
-        raise NotImplementedError('Method jacobian_det not implemented')
+        ''' Returns the transformation jacobian_detobian d[forward(x)]/dx
+            after cast
+        '''
+        return cast(x, self._jacobian_det(x))
+
 
     def backward_censored(self, y, censor=0.):
         ''' Returns the backward transform of x censored below
@@ -199,13 +241,13 @@ class Identity(Transform):
     def __init__(self):
         super(Identity, self).__init__('Identity')
 
-    def forward(self, x):
+    def _forward(self, x):
         return x
 
-    def backward(self, y):
+    def _backward(self, y):
         return y
 
-    def jacobian_det(self, x):
+    def _jacobian_det(self, x):
         return np.ones_like(x)
 
 
@@ -226,19 +268,19 @@ class Logit(Transform):
             raise ValueError('Expected lower<upper, '+\
                 'got {0} and {1}'.format(lower, upper))
 
-    def forward(self, x):
+    def _forward(self, x):
         self.check_upper_lower()
         lower, upper = self.params.values
         value = (x-lower)/(upper-lower)
         return np.log(1./(1-value)-1)
 
-    def backward(self, y):
+    def _backward(self, y):
         self.check_upper_lower()
         lower, upper = self.params.values
         bnd = 1-1./(1+np.exp(y))
         return bnd*(upper-lower) + lower
 
-    def jacobian_det(self, x):
+    def _jacobian_det(self, x):
         self.check_upper_lower()
         lower, upper = self.params.values
         value = (x-lower)/(upper-lower)
@@ -266,15 +308,15 @@ class Log(Transform):
 
         super(Log, self).__init__('Log', params)
 
-    def forward(self, x):
+    def _forward(self, x):
         nu = self.nu
         return np.log(x+nu)
 
-    def backward(self, y):
+    def _backward(self, y):
         nu = self.nu
         return np.exp(y)-nu
 
-    def jacobian_det(self, x):
+    def _jacobian_det(self, x):
         nu = self.nu
         return np.where(x+nu > EPS, 1./(x+nu), np.nan)
 
@@ -296,14 +338,14 @@ class BoxCox2(Transform):
 
         super(BoxCox2, self).__init__('BoxCox2', params)
 
-    def forward(self, x):
+    def _forward(self, x):
         nu, lam = self.params.values
         if abs(lam) > EPS:
             return (np.exp(np.log(x+nu)*lam)-1)/lam
         else:
             return np.log(x+nu)
 
-    def backward(self, y):
+    def _backward(self, y):
         nu, lam = self.params.values
 
         if abs(lam) > EPS:
@@ -312,7 +354,7 @@ class BoxCox2(Transform):
         else:
             return np.exp(y)-nu
 
-    def jacobian_det(self, x):
+    def _jacobian_det(self, x):
         nu, lam = self.params.values
 
         if abs(lam) > EPS:
@@ -347,21 +389,21 @@ class BoxCox1(Transform):
         super(BoxCox1, self).__init__('BoxCox1', params, constants)
         self.BC = BoxCox2()
 
-    def forward(self, x):
+    def _forward(self, x):
         x0 = self.constants.x0
         if np.isinf(x0):
             raise ValueError('x0 is inf. It must be set to a proper value')
         self.BC.params.values = [x0, self.params.lam]
         return self.BC.forward(x)
 
-    def backward(self, y):
+    def _backward(self, y):
         x0 = self.constants.x0
         if np.isinf(x0):
             raise ValueError('x0 is inf. It must be set to a proper value')
         self.BC.params.values = [x0, self.params.lam]
         return self.BC.backward(y)
 
-    def jacobian_det(self, x):
+    def _jacobian_det(self, x):
         x0 = self.constants.x0
         if np.isinf(x0):
             raise ValueError('x0 is inf. It must be set to a proper value')
@@ -383,7 +425,7 @@ class YeoJohnson(Transform):
 
         super(YeoJohnson, self).__init__('YeoJohnson', params)
 
-    def forward(self, x):
+    def _forward(self, x):
         nu, scale, lam = self.params.values
         x = np.atleast_1d(x)
         y = x*np.nan
@@ -404,7 +446,7 @@ class YeoJohnson(Transform):
 
         return y
 
-    def backward(self, y):
+    def _backward(self, y):
         nu, scale, lam = self.params.values
         y = np.atleast_1d(y)
         x = y*np.nan
@@ -422,7 +464,7 @@ class YeoJohnson(Transform):
 
         return (x-nu)/scale
 
-    def jacobian_det(self, x):
+    def _jacobian_det(self, x):
         nu, scale, lam = self.params.values
         x = np.atleast_1d(x)
         j = x*np.nan
@@ -461,7 +503,7 @@ class LogSinh(Transform):
         super(LogSinh, self).__init__('LogSinh', \
             params, constants)
 
-    def forward(self, x):
+    def _forward(self, x):
         x0 = self.constants.x0
         if np.isinf(x0):
             raise ValueError('x0 is inf. It must be set to a proper value')
@@ -472,7 +514,7 @@ class LogSinh(Transform):
         return np.where(xn > -a/b+EPS, \
             (w+np.log((1.-np.exp(-2.*w))/2.))/b, np.nan)
 
-    def backward(self, y):
+    def _backward(self, y):
         x0 = self.constants.x0
         if np.isinf(x0):
             raise ValueError('x0 is inf. It must be set to a proper value')
@@ -481,7 +523,7 @@ class LogSinh(Transform):
         w = b*y
         return x0*(y + (np.log(1.+np.sqrt(1.+np.exp(-2.*w)))-a)/b)
 
-    def jacobian_det(self, x):
+    def _jacobian_det(self, x):
         x0 = self.constants.x0
         if np.isinf(x0):
             raise ValueError('x0 is inf. It must be set to a proper value')
@@ -515,15 +557,15 @@ class Reciprocal(Transform):
 
         super(Reciprocal, self).__init__('Reciprocal', params)
 
-    def forward(self, x):
+    def _forward(self, x):
         nu = self.params.values
         return np.where(x > -nu, -1./(nu+x), np.nan)
 
-    def backward(self, y):
+    def _backward(self, y):
         nu = self.params.values
         return np.where(y < -EPS, -1./y-nu, np.nan)
 
-    def jacobian_det(self, x):
+    def _jacobian_det(self, x):
         nu = self.params.values
         return np.where(x > -nu, 1./(nu+x)**2, np.nan)
 
@@ -543,7 +585,7 @@ class Softmax(Transform):
         super(Softmax, self).__init__('Softmax')
 
 
-    def forward(self, x):
+    def _forward(self, x):
         # Check inputs
         x = np.atleast_2d(x)
         if x.ndim > 2:
@@ -559,7 +601,7 @@ class Softmax(Transform):
 
         return np.log(x/(1-sx[:, None]))
 
-    def backward(self, y):
+    def _backward(self, y):
         # Check inputs
         y = np.atleast_2d(y)
         if y.ndim > 2:
@@ -569,7 +611,7 @@ class Softmax(Transform):
         x = np.exp(y)
         return x/(1+np.sum(x, axis=1)[:, None])
 
-    def jacobian_det(self, x):
+    def _jacobian_det(self, x):
         ''' See
         https://en.wikipedia.org/wiki/Determinant#Sylvester.27s_determinant_theorem
         '''
@@ -589,6 +631,7 @@ class Softmax(Transform):
         return (1+sx/(1-sx))/px
 
 
+
 class AbsLog(Transform):
     ''' Absolute log transform y=sign(x) * log(cst+abs(x))-log(cst) '''
 
@@ -596,15 +639,15 @@ class AbsLog(Transform):
         params = Vector(['nu'], [1e-10], [1e-10], [np.inf])
         super(AbsLog, self).__init__('AbsLog', params)
 
-    def forward(self, x):
+    def _forward(self, x):
         nu = self.params.values
         return np.sign(x)*(np.log(nu+np.abs(x))-math.log(nu))
 
-    def backward(self, y):
+    def _backward(self, y):
         nu = self.params.values
         return np.sign(y)*(np.exp(np.abs(y)+math.log(nu))-nu)
 
-    def jacobian_det(self, x):
+    def _jacobian_det(self, x):
         nu = self.params.values
         return 1./(nu+np.abs(x))
 

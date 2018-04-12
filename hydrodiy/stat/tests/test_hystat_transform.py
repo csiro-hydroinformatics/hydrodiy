@@ -14,6 +14,66 @@ import warnings
 
 np.random.seed(0)
 
+class CastTestCase(unittest.TestCase):
+
+    def setUp(self):
+        print('\t=> CastTestCase (hystat)')
+
+    def test_cast_scalar(self):
+        ''' Test scalar casts '''
+        x = 0.6
+        y = 0.7
+        ycast = transform.cast(x, y)
+        self.assertTrue(isinstance(ycast, type(x)))
+        self.assertTrue(np.isclose(ycast, 0.7))
+
+        x = 0.6
+        y = np.array([0.7])
+        ycast = transform.cast(x, y)
+        self.assertTrue(isinstance(ycast, type(x)))
+        self.assertTrue(np.isclose(ycast, 0.7))
+
+        x = 0.6
+        y = 7
+        ycast = transform.cast(x, y)
+        self.assertTrue(isinstance(ycast, type(x)))
+        self.assertTrue(np.isclose(ycast, 7.))
+
+        # we convert a float to int here
+        x = 6
+        y = np.array([0.7])
+        ycast = transform.cast(x, y)
+        self.assertTrue(isinstance(ycast, type(x)))
+        self.assertTrue(np.isclose(ycast, 0))
+
+
+    def test_cast_scalar_error(self):
+        ''' Test scalar cast errors '''
+        x = 6
+        y = np.array([0.7, 0.8])
+        try:
+            ycast = transform.cast(x, y)
+        except TypeError as err:
+            self.assertTrue(str(err).startswith('only length-1 arrays'))
+        else:
+            raise ValueError('Problem in error handling')
+
+
+    def test_cast_array(self):
+        ''' Test array cast '''
+        x = np.array([0.6, 0.7])
+        y = np.array([0.7, 0.8])
+        ycast = transform.cast(x, y)
+        self.assertTrue(isinstance(ycast, type(x)))
+        self.assertTrue(np.allclose(ycast, y))
+
+        x = np.array([0.6, 0.7])
+        y = np.array([7, 8])
+        ycast = transform.cast(x, y)
+        self.assertTrue(isinstance(ycast, type(x)))
+        self.assertTrue(np.allclose(ycast, y))
+
+
 
 class TransformTestCase(unittest.TestCase):
 
@@ -156,8 +216,8 @@ class TransformTestCase(unittest.TestCase):
             raise Exception('Problem with error handling')
 
 
-    def test_transform_class_methods(self):
-        ''' Test the methods of the class transform '''
+    def test_transform_class_not_implemented(self):
+        ''' Test the error generation for not implemented methods '''
 
         params = Vector(['a'], [0.5], [0.], [1.])
         trans = transform.Transform('test', params)
@@ -167,21 +227,21 @@ class TransformTestCase(unittest.TestCase):
         try:
             trans.forward(x)
         except NotImplementedError as err:
-            self.assertTrue(str(err).startswith('Method forward'))
+            self.assertTrue(str(err).startswith('Method _forward'))
         else:
             raise Exception('Problem with error handling')
 
         try:
             trans.backward(x)
         except NotImplementedError as err:
-            self.assertTrue(str(err).startswith('Method backward'))
+            self.assertTrue(str(err).startswith('Method _backward'))
         else:
             raise Exception('Problem with error handling')
 
         try:
             trans.jacobian_det(x)
         except NotImplementedError as err:
-            self.assertTrue(str(err).startswith('Method jacobian_det'))
+            self.assertTrue(str(err).startswith('Method _jacobian_det'))
         else:
             raise Exception('Problem with error handling')
 
