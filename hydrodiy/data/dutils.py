@@ -14,6 +14,31 @@ from hydrodiy import PYVERSION
 import c_hydrodiy_data
 
 
+def cast(x, y):
+    ''' Cast y to the type of x.
+
+        Useful to make sure that a function returns an output that has
+        the same type than the input (e.g. to avoid mixing float with
+        numpy.array 0d).
+    '''
+    # Check dtype of inputs if any
+    xdtype = x.dtype if hasattr(x, 'dtype') else None
+    ydtype = y.dtype if hasattr(y, 'dtype') else None
+
+    # Cast depending on the nature of x and y
+    if xdtype is None:
+        # x is a basic data type
+        # this should work even if y is a
+        # 1d or 0d numpy array
+        ycast = type(x)(y)
+
+    else:
+        # x is a numpy array
+        ycast = np.array(y, dtype=xdtype)
+
+    return ycast
+
+
 def aggmonths(tseries, nmonths=3, ngapmax=6, ngapcontmax=3):
     ''' Convert time series to aggregated monthly time steps
 
@@ -87,7 +112,7 @@ def aggmonths(tseries, nmonths=3, ngapmax=6, ngapcontmax=3):
     tsmr = tseries.resample('MS')
     if len(tsmr) == len(tseries):
         tsm = tsmr.apply(sumfun)
-    else:    
+    else:
         tsm = tseries.resample('MS', how=sumfun)
 
     # Shift series

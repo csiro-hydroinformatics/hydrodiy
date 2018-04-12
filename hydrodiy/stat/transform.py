@@ -3,7 +3,9 @@
 import math
 import sys
 import numpy as np
+
 from hydrodiy.data.containers import Vector
+from hydrodiy.data import dutils
 from hydrodiy.stat import sutils
 
 __all__ = ['Identity', 'Logit', 'Log', 'BoxCox2', 'BoxCox1',
@@ -11,30 +13,6 @@ __all__ = ['Identity', 'Logit', 'Log', 'BoxCox2', 'BoxCox1',
                 'LogSinh']
 
 EPS = 1e-10
-
-
-def cast(x, y):
-    ''' Cast y to the type of x.
-
-        Useful to make sure that a function returns an output that has
-        the same type than the input.
-    '''
-    # Check dtype of inputs if any
-    xdtype = x.dtype if hasattr(x, 'dtype') else None
-    ydtype = y.dtype if hasattr(y, 'dtype') else None
-
-    # Cast depending on the nature of x and y
-    if xdtype is None:
-        # x is a basic data type
-        # this should work even if y is a
-        # 1d or 0d numpy array
-        ycast = type(x)(y)
-
-    else:
-        # x is a numpy array
-        ycast = np.array(y, dtype=xdtype)
-
-    return ycast
 
 
 def get_transform(name, **kwargs):
@@ -184,19 +162,19 @@ class Transform(object):
 
     def forward(self, x):
         ''' Returns the forward transform of x '''
-        return cast(x, self._forward(x))
+        return dutils.cast(x, self._forward(x))
 
 
     def backward(self, y):
         ''' Returns the backward transform of y after cast '''
-        return cast(y, self._backward(y))
+        return dutils.cast(y, self._backward(y))
 
 
     def jacobian_det(self, x):
         ''' Returns the transformation jacobian_detobian d[forward(x)]/dx
             after cast
         '''
-        return cast(x, self._jacobian_det(x))
+        return dutils.cast(x, self._jacobian_det(x))
 
 
     def backward_censored(self, y, censor=0.):

@@ -20,10 +20,10 @@ def agg_d2m(x, fun='mean'):
 
     # Define aggregation function
     if fun == 'mean':
-        aggfun = lambda y: np.mean(y.values) 
+        aggfun = lambda y: np.mean(y.values)
     else:
-        aggfun = lambda y: np.sum(y.values) 
-    
+        aggfun = lambda y: np.sum(y.values)
+
     # Run aggregation
     try:
         xa = x.resample('MS').apply(aggfun)
@@ -40,6 +40,73 @@ def agg_d2m(x, fun='mean'):
 
 
 # Tests
+class CastTestCase(unittest.TestCase):
+
+    def setUp(self):
+        print('\t=> CastTestCase (hystat)')
+
+    def test_cast_scalar(self):
+        ''' Test scalar casts '''
+        x = 0.6
+        y = 0.7
+        ycast = dutils.cast(x, y)
+        self.assertTrue(isinstance(ycast, type(x)))
+        self.assertTrue(np.isclose(ycast, 0.7))
+
+        x = 0.6
+        y = np.array(0.7) # 0d np.array
+        ycast = dutils.cast(x, y)
+        self.assertTrue(isinstance(ycast, type(x)))
+        self.assertTrue(np.isclose(ycast, 0.7))
+
+        x = 0.6
+        y = np.array([0.7]) # 1d np.array
+        ycast = dutils.cast(x, y)
+        self.assertTrue(isinstance(ycast, type(x)))
+        self.assertTrue(np.isclose(ycast, 0.7))
+
+        x = 0.6
+        y = 7
+        ycast = dutils.cast(x, y)
+        self.assertTrue(isinstance(ycast, type(x)))
+        self.assertTrue(np.isclose(ycast, 7.))
+
+        # we convert a float to int here
+        x = 6
+        y = np.array([0.7])
+        ycast = dutils.cast(x, y)
+        self.assertTrue(isinstance(ycast, type(x)))
+        self.assertTrue(np.isclose(ycast, 0))
+
+
+    def test_cast_scalar_error(self):
+        ''' Test scalar cast errors '''
+        x = 6
+        y = np.array([0.7, 0.8])
+        try:
+            ycast = dutils.cast(x, y)
+        except TypeError as err:
+            self.assertTrue(str(err).startswith('only length-1 arrays'))
+        else:
+            raise ValueError('Problem in error handling')
+
+
+    def test_cast_array(self):
+        ''' Test array cast '''
+        x = np.array([0.6, 0.7])
+        y = np.array([0.7, 0.8])
+        ycast = dutils.cast(x, y)
+        self.assertTrue(isinstance(ycast, type(x)))
+        self.assertTrue(np.allclose(ycast, y))
+
+        x = np.array([0.6, 0.7])
+        y = np.array([7, 8])
+        ycast = dutils.cast(x, y)
+        self.assertTrue(isinstance(ycast, type(x)))
+        self.assertTrue(np.allclose(ycast, y))
+
+
+
 class UtilsTestCase(unittest.TestCase):
 
     def setUp(self):
