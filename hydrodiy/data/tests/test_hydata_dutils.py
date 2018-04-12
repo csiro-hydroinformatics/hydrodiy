@@ -59,6 +59,12 @@ class CastTestCase(unittest.TestCase):
         self.assertTrue(isinstance(ycast, type(x)))
         self.assertTrue(np.isclose(ycast, 0.7))
 
+        x = np.float64(0.6) # numpy float type
+        y = np.array(0.7) # 0d np.array
+        ycast = dutils.cast(x, y)
+        self.assertTrue(isinstance(ycast, type(x)))
+        self.assertTrue(np.isclose(ycast, 0.7))
+
         x = 0.6
         y = np.array([0.7]) # 1d np.array
         ycast = dutils.cast(x, y)

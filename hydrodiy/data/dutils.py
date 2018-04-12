@@ -21,9 +21,13 @@ def cast(x, y):
         the same type than the input (e.g. to avoid mixing float with
         numpy.array 0d).
     '''
-    # Check dtype of inputs if any
-    xdtype = x.dtype if hasattr(x, 'dtype') else None
-    ydtype = y.dtype if hasattr(y, 'dtype') else None
+    # Check if x is an nxd numpy array (n>0)
+    # then collect is type
+    xdtype = None
+    if hasattr(x, 'dtype'):
+        # prevent the use of dtype for 0d array
+        if x.ndim > 0:
+            xdtype = x.dtype
 
     # Cast depending on the nature of x and y
     if xdtype is None:
