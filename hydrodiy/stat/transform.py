@@ -9,7 +9,7 @@ from hydrodiy.data import dutils
 from hydrodiy.stat import sutils
 
 __all__ = ['Identity', 'Logit', 'Log', 'BoxCox2', 'BoxCox1',
-                'YeoJohnson', 'Reciprocal', 'Softmax', 'AbsLog', \
+                'YeoJohnson', 'Reciprocal', 'Softmax', 'Sinh', \
                 'LogSinh']
 
 EPS = 1e-10
@@ -610,29 +610,32 @@ class Softmax(Transform):
 
 
 
-class AbsLog(Transform):
-    ''' Absolute log transform y=sign(x) * log(cst+abs(x))-log(cst) '''
+class Sinh(Transform):
+    ''' Sinh transform y=arcsinh((x-sign(x) * log(cst+abs(x))-log(cst) '''
 
     def __init__(self):
-        params = Vector(['nu'], [1e-10], [1e-10], [np.inf])
-        super(AbsLog, self).__init__('AbsLog', params)
+        params = Vector(['nu', 'scale'], [0., 1.], [-np.inf, 1e-10], \
+                                                [np.inf, np.inf])
+        super(Sinh, self).__init__('Sinh', params)
 
     def _forward(self, x):
-        nu = self.params.values
-        return np.sign(x)*(np.log(nu+np.abs(x))-math.log(nu))
+        nu, scale = self.params.values
+        u = (x-nu)*scale
+        return np.arcsinh(u)
 
     def _backward(self, y):
-        nu = self.params.values
-        return np.sign(y)*(np.exp(np.abs(y)+math.log(nu))-nu)
+        nu, scale = self.params.values
+        return np.sinh(y)/scale+nu
 
     def _jacobian_det(self, x):
-        nu = self.params.values
-        return 1./(nu+np.abs(x))
+        nu, scale = self.params.values
+        u = (x-nu)*scale
+        return scale/np.sqrt(1+u*u)
 
     def sample_params(self, nsamples=500, minval=-7., maxval=0.):
         # Generate parameters samples in log space
-        samples = np.random.uniform(minval, maxval, nsamples)
-        samples = np.exp(samples)[:, None]
+        samples = np.random.uniform(minval, maxval, (nsamples, 2))
+        samples[:, 1] = np.exp(samples[:, 1])
 
         return samples
 
