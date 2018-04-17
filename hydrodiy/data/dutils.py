@@ -20,6 +20,14 @@ def cast(x, y):
         Useful to make sure that a function returns an output that has
         the same type than the input (e.g. to avoid mixing float with
         numpy.array 0d).
+
+
+    Parameters
+    -----------
+    x : object
+        First object
+    y : object
+        Second object
     '''
     # Check if x is an nxd numpy array (n>0)
     # then collect is type
@@ -34,11 +42,16 @@ def cast(x, y):
         # x is a basic data type
         # this should work even if y is a
         # 1d or 0d numpy array
+
+        # Except unsafe cast
+        if isinstance(x, int) and isinstance(y, float):
+            raise TypeError('Cannot cast value from float to int')
+
         ycast = type(x)(y)
 
     else:
         # x is a numpy array
-        ycast = np.array(y, dtype=xdtype)
+        ycast = np.array(y).astype(xdtype, casting='safe')
 
     return ycast
 

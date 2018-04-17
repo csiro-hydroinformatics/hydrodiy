@@ -242,7 +242,7 @@ class MetricsTestCase(unittest.TestCase):
 
     def test_bias(self):
         ''' Test bias '''
-        obs = np.arange(0, 200)
+        obs = np.arange(0, 200).astype(float)
 
         for trans in self.transforms:
             if trans.params.nval > 0:
@@ -255,7 +255,7 @@ class MetricsTestCase(unittest.TestCase):
 
             expected = -2./np.mean(tobs)
             ck = np.allclose(bias, expected)
-            self.assertTrue(np.allclose(bias, expected))
+            self.assertTrue(ck)
 
 
     def test_bias_error(self):

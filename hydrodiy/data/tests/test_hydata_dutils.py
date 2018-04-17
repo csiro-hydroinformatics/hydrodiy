@@ -88,6 +88,15 @@ class CastTestCase(unittest.TestCase):
     def test_cast_scalar_error(self):
         ''' Test scalar cast errors '''
         x = 6
+        y = 7.
+        try:
+            ycast = dutils.cast(x, y)
+        except TypeError as err:
+            self.assertTrue(str(err).startswith('Cannot cast'))
+        else:
+            raise ValueError('Problem in error handling')
+
+        x = 6
         y = np.array([0.7, 0.8])
         try:
             ycast = dutils.cast(x, y)
@@ -110,6 +119,36 @@ class CastTestCase(unittest.TestCase):
         ycast = dutils.cast(x, y)
         self.assertTrue(isinstance(ycast, type(x)))
         self.assertTrue(np.allclose(ycast, y))
+
+        x = np.array([0.6, 0.7])
+        y = 7.
+        ycast = dutils.cast(x, y)
+        self.assertTrue(isinstance(ycast, type(x)))
+        self.assertTrue(np.allclose(ycast, y))
+
+
+
+    def test_cast_array_error(self):
+        ''' Test scalar cast errors '''
+        x = np.array([6, 7])
+        y = np.array([7., 8.])
+        try:
+            ycast = dutils.cast(x, y)
+
+        except TypeError as err:
+            self.assertTrue(str(err).startswith('Cannot cast'))
+        else:
+            raise ValueError('Problem in error handling')
+
+        x = 6.
+        y = np.array([7., 8.])
+        try:
+            ycast = dutils.cast(x, y)
+
+        except TypeError as err:
+            self.assertTrue(str(err).startswith('only '))
+        else:
+            raise ValueError('Problem in error handling')
 
 
 
