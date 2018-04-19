@@ -494,25 +494,26 @@ def kge(obs, sim, trans=transform.Identity()):
     tsim = trans.forward(sim)
 
     # Select non null obs data
-    idx = pd.notnull(tobs)
+    idx = pd.notnull(tobs) & pd.notnull(tsim)
+    tobs = tobs[idx]
+    tsim = tsim[idx]
 
     # Means
-    idx = idx & pd.notnull(tsim)
-    meano = np.mean(tobs[idx])
+    meano = np.mean(tobs)
     if abs(meano) < EPS:
         warnings.warn(('Mean value of obs is close to '+\
                 'zero ({0:3.3e}), returning nan').format(\
                     meano))
         return np.nan
 
-    means = np.mean(tsim[idx])
+    means = np.mean(tsim)
 
     # Standard deviations
-    stdo = np.std(tobs[idx])
-    stds = np.std(tsim[idx])
+    stdo = np.std(tobs)
+    stds = np.std(tsim)
 
     # Correlation
-    corr = np.corrcoef(tobs[idx], tsim[idx])[0, 1]
+    corr = np.corrcoef(tobs, tsim)[0, 1]
 
     # KGE
     value = 1-math.sqrt((1-means/meano)**2+(1-stds/stdo)**2+(1-corr**2))
