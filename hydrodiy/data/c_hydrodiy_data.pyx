@@ -16,7 +16,6 @@ cdef extern from 'c_dutils.h':
     int c_aggregate(int nval, int oper, int maxnan, int * aggindex,
         double * inputs, double * outputs, int * iend)
 
-cdef extern from 'c_dutils.h':
     long long c_combi(int n, int k)
 
 cdef extern from 'c_qualitycontrol.h':
@@ -31,6 +30,11 @@ cdef extern from 'c_var2h.h':
         int hstartsec,
         double * hvalues)
 
+cdef extern from 'c_baseflow.h':
+    int c_eckhardt(int nval, int timestep_type,
+        double thresh, double tau, double BFI_max,
+        double* inputs,
+        double* outputs)
 
 def __cinit__(self):
     pass
@@ -168,3 +172,19 @@ def var2h(int maxgapsec, int hstartsec, int display,
     return ierr
 
 
+def eckhard(int timestep_type,
+        double thresh, double tau, double BFI_max,
+        np.ndarray[double, ndim=1, mode='c'] inputs not None,
+        np.ndarray[double, ndim=1, mode='c'] outputs not None):
+
+    cdef int ierr
+
+    # check dimensions
+    assert inputs.shape[0] == outputs.shape[0]
+
+    ierr = c_eckhardt(inputs.shape[0],
+            timestep_type, thresh, tau, BFI_max,
+            <double*> np.PyArray_DATA(inputs),
+            <double*> np.PyArray_DATA(outputs))
+
+    return ierr
