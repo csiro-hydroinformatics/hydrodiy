@@ -2,51 +2,53 @@
 import numpy as np
 import pandas as pd
 
-import c_hydrodiydev_data
+import c_hydrodiy_data
 
-def baseflow(inputs, params, method=1):
-    ''' Compute baseflow time series using the algorithms defined
-    by Chapman (1999)
+def eckhardt(flow, thresh=0.95, tau=20, BFI_max=0.8, timestep_type=1):
+    ''' Compute the baseflow component based on Eckhardt algorithm
+    Eckhardt K. (2005) How to construct recursive digital filters for baseflow separation. Hydrological processes 19:507-515.
+
+    C code was translated from R code provided by
+    Jose Manuel Tunqui Neira, IRSTEA, 2018 (jose.tunqui@irstea.fr)
 
     Parameters
     -----------
-    inputs : numpy.array
+    flow : numpy.array
         Streamflow data
-    params : list
-        Algorightm parameters. Has 1 item for method 1, 2 for method
-        2 and 3 for method 3.
-    method : int
-        Method selected. 1=Chapman, 2=Boughton, 3=IHACRES
+    thresh : float
+        Percentage from which the base flow should be considered as total flow
+    tau : float
+        Characteristic drainage timescale (hours)
+    BFI_max : float
+        See Eckhardt (2005)
+    timestep_type : int
+        Type of time step: 0=hourly, 1=daily
 
     Returns
     -----------
-    outputs : numpy.array
+    bflow : numpy.array
         Baseflow time series
 
     Example
     -----------
     >>> import numpy as np
     >>> q = np.random.uniform(0, 100, size=1000)
-    >>> baseflow.baseflow(q, [0.99])
-    'A04567'
+    >>> baseflow.baseflow(q)
 
     '''
-
-    # Check params length
-    if method >= 2 and len(params)<2:
-        raise ValueError('method=%d and len(params)<2' % method)
-
-    if method == 3 and len(params)<3:
-        raise ValueError('method=%d and len(params)<3' % method)
-
     # run C code via cython
-    method = int(method)
-    outputs = np.zeros(len(inputs), np.float64)
-    params = np.array(params, float)
+    thresh = np.float64(thresh)
+    tau = np.float64(tau)
+    BFI_max = np.float64(BFI_max)
+    timestep_type = np.int32(timestep_type)
 
-    ierr = c_hydrodiydev_data.baseflow(method, params, inputs, outputs)
+    flow = np.array(flow).astype(np.float64)
+    bflow = np.zeros(len(flow), np.float64)
+
+    ierr = c_hydrodiy_data.eckhardt(timestep_type, \
+                thresh, tau, BFI_max, flow, bflow)
 
     if ierr!=0:
-        raise ValueError('c_hydata.baseflow returns %d'%ierr)
+        raise ValueError('c_hydata.eckhardt returns %d'%ierr)
 
-    return outputs
+    return bflow

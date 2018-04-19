@@ -172,19 +172,19 @@ def var2h(int maxgapsec, int hstartsec, int display,
     return ierr
 
 
-def eckhard(int timestep_type,
+def eckhardt(int timestep_type,
         double thresh, double tau, double BFI_max,
-        np.ndarray[double, ndim=1, mode='c'] inputs not None,
-        np.ndarray[double, ndim=1, mode='c'] outputs not None):
+        np.ndarray[double, ndim=1, mode='c'] flow not None,
+        np.ndarray[double, ndim=1, mode='c'] bflow not None):
 
     cdef int ierr
 
     # check dimensions
-    assert inputs.shape[0] == outputs.shape[0]
+    assert flow.shape[0] == bflow.shape[0]
 
-    ierr = c_eckhardt(inputs.shape[0],
+    ierr = c_eckhardt(flow.shape[0],
             timestep_type, thresh, tau, BFI_max,
-            <double*> np.PyArray_DATA(inputs),
-            <double*> np.PyArray_DATA(outputs))
+            <double*> np.PyArray_DATA(flow),
+            <double*> np.PyArray_DATA(bflow))
 
     return ierr

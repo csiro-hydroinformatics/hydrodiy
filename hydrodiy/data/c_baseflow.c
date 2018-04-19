@@ -8,11 +8,14 @@
 * Compute the baseflow component based on Eckhardt algorithm
 * Eckhardt K. (2005) How to construct recursive digital filters for baseflow separation. Hydrological processes 19:507-515.
 *
+* C code was translated from R code provided by
+* Jose Manuel Tunqui Neira, IRSTEA, 2018 (jose.tunqui@irstea.fr)
+*
 * nval : length of input vectors (number of values)
 * timestep_type : 0=hourly, 1=daily
 * thresh : percentage from which the base flow should be considered as total flow
 * tau : characteristic drainage timescale (hours) -> to calculate this parameter see [2,3,4]
-* BFI_max : see reference
+* BFI_max : see Eckhardt (2005)
 * inputs : flow time series
 * outputs : baseflow series
 *
@@ -36,8 +39,8 @@ int c_eckhardt(int nval, int timestep_type,
     if(BFI_max <0 || BFI_max > 1)
         return EDOM;
 
-    /* Time step duration in days */
-    timestep_length = timestep_type == 0 ? 1./24 : 1.;
+    /* Time step duration in hours */
+    timestep_length = timestep_type == 0 ? 1 : 24;
 
     /* Filter constants */
     alpha = exp(-timestep_length/tau);
@@ -60,6 +63,7 @@ int c_eckhardt(int nval, int timestep_type,
 
 	    /* baseflow values */
         bf1 = (C1*bf1 + C2*q)/C3;
+        bf2 = bf1 > q ? q : bf1;
         bf2 = bf1 > thresh*q ? q : bf1;
 
         /* Store data */
