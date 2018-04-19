@@ -1,11 +1,12 @@
-
-import re, os
+import re, os, math
 import pkg_resources
 
 import numpy as np
 import pandas as pd
 
 from scipy.stats import kstest
+
+import warnings
 
 from hydrodiy.stat import transform
 from hydrodiy.stat import sutils
@@ -344,9 +345,15 @@ def bias(obs, sim, trans=transform.Identity()):
 
     # Compute
     idx = pd.notnull(tobs) & pd.notnull(tsim)
-    mo = np.mean(tobs[idx])
-    ms = np.mean(tsim[idx])
-    bias_value = (ms-mo)/mo
+    meano = np.mean(tobs[idx])
+    if abs(meano) < EPS:
+        warnings.warn(('Mean value of obs is close to '+\
+                'zero ({0:3.3e}), returning nan').format(\
+                    meano))
+        return np.nan
+
+    means = np.mean(tsim[idx])
+    bias_value = (means-meano)/meano
 
     return bias_value
 
@@ -453,4 +460,63 @@ def dscore(obs, sim, eps=1e-6):
     D = (np.corrcoef(oranks, franks)[0, 1]+1)/2
 
     return D
+
+
+def kge(obs, sim, trans=transform.Identity()):
+    ''' Compute Kling-Gupta efficiency.
+
+    Parameters
+    -----------
+    obs : numpy.ndarray
+        obs data, [n] or [n,1] array
+    sim : numpy.ndarray
+        simulated data, [n], [n,1], or [n,p] array
+    trans : hydrodiy.stat.transform.Transform
+        Data transform object
+
+    Returns
+    -----------
+    value : float
+        Nash-Sutcliffe efficiency (N)
+
+    '''
+    # Check data
+    obs = np.atleast_1d(obs)
+    sim = np.atleast_1d(sim)
+
+    if obs.shape[0] != sim.shape[0]:
+        raise ValueError('Expected sim with dim equal '+\
+            'to {0}, got {1}'.format( \
+            obs.shape[0], sim.shape[0]))
+
+    # Transform
+    tobs = trans.forward(obs)
+    tsim = trans.forward(sim)
+
+    # Select non null obs data
+    idx = pd.notnull(tobs)
+
+    # Means
+    idx = idx & pd.notnull(tsim)
+    meano = np.mean(tobs[idx])
+    if abs(meano) < EPS:
+        warnings.warn(('Mean value of obs is close to '+\
+                'zero ({0:3.3e}), returning nan').format(\
+                    meano))
+        return np.nan
+
+    means = np.mean(tsim[idx])
+
+    # Standard deviations
+    stdo = np.std(tobs[idx])
+    stds = np.std(tsim[idx])
+
+    # Correlation
+    corr = np.corrcoef(tobs[idx], tsim[idx])[0, 1]
+
+    # KGE
+    value = 1-math.sqrt((1-means/meano)**2+(1-stds/stdo)**2+(1-corr**2))
+
+    return value
+
 

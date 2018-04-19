@@ -1,4 +1,4 @@
-import os, re
+import os, re, math
 import unittest
 import numpy as np
 import pandas as pd
@@ -285,7 +285,7 @@ class MetricsTestCase(unittest.TestCase):
             nse = metrics.nse(obs, sim, trans)
 
             expected = 1-bias**2*len(obs)/np.sum((tobs-np.mean(tobs))**2)
-            self.assertTrue(np.allclose(nse, expected))
+            self.assertTrue(np.isclose(nse, expected))
 
 
     def test_nse_error(self):
@@ -454,6 +454,35 @@ class MetricsTestCase(unittest.TestCase):
 
         # Max 3 sec to compute this
         self.assertTrue(t1-t0<100)
+
+
+    def test_kge(self):
+        ''' Testing  KGE '''
+        obs = np.arange(0, 200)+100.
+        bias = 0.1
+
+        for trans in self.transforms:
+            if trans.params.nval > 0:
+                trans.params.values[0] = np.mean(obs)*1e-2
+
+            # First trial - multiplicative bias
+            tobs = trans.forward(obs)
+            tsim = tobs*(1+bias)
+            sim = trans.backward(tsim)
+            kge = metrics.kge(obs, sim, trans)
+
+            expected = 1-math.sqrt(2)*bias
+            self.assertTrue(np.isclose(kge, expected))
+
+            # Second trial - additive bias
+            tsim = tobs - bias
+            sim = trans.backward(tsim)
+            kge = metrics.kge(obs, sim, trans)
+
+            expected = 1-bias/abs(np.mean(tobs))
+            self.assertTrue(np.isclose(kge, expected))
+
+
 
 
 if __name__ == "__main__":
