@@ -482,6 +482,17 @@ class MetricsTestCase(unittest.TestCase):
             expected = 1-bias/abs(np.mean(tobs))
             self.assertTrue(np.isclose(kge, expected))
 
+            # Third trial - random error
+            tsim = tobs + 1e-2*np.mean(tobs)*np.random.uniform(-1, 1, size=len(tobs))
+            sim = trans.backward(tsim)
+            kge = metrics.kge(obs, sim, trans)
+
+            bias = np.mean(tsim)/np.mean(tobs)
+            rstd = np.std(tsim)/np.std(tobs)
+            corr = np.corrcoef(tobs, tsim)[0, 1]
+            expected = 1-math.sqrt((1-bias)**2+(1-rstd)**2+(1-corr)**2)
+            self.assertTrue(np.isclose(kge, expected))
+
 
 
 

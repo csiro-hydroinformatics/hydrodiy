@@ -516,7 +516,7 @@ def kge(obs, sim, trans=transform.Identity()):
     corr = np.corrcoef(tobs, tsim)[0, 1]
 
     # KGE
-    value = 1-math.sqrt((1-means/meano)**2+(1-stds/stdo)**2+(1-corr**2))
+    value = 1-math.sqrt((1-means/meano)**2+(1-stds/stdo)**2+(1-corr)**2)
 
     return value
 
