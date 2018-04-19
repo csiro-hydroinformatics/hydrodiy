@@ -9,7 +9,7 @@
 * Eckhardt K. (2005) How to construct recursive digital filters for baseflow separation. Hydrological processes 19:507-515.
 *
 * C code was translated from R code provided by
-* Jose Manuel Tunqui Neira, IRSTEA, 2018 (jose.tunqui@irstea.fr)
+* Jose Manuel Tunqui Neira and Vazken Andreassian, IRSTEA
 *
 * nval : length of input vectors (number of values)
 * timestep_type : 0=hourly, 1=daily

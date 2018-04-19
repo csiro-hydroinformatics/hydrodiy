@@ -9,7 +9,7 @@ def eckhardt(flow, thresh=0.95, tau=20, BFI_max=0.8, timestep_type=1):
     Eckhardt K. (2005) How to construct recursive digital filters for baseflow separation. Hydrological processes 19:507-515.
 
     C code was translated from R code provided by
-    Jose Manuel Tunqui Neira, IRSTEA, 2018 (jose.tunqui@irstea.fr)
+    Jose Manuel Tunqui Neira and Vazken Andreassian, IRSTEA
 
     Parameters
     -----------
