@@ -1,4 +1,4 @@
-import os
+import os, re
 import unittest
 import numpy as np
 from datetime import datetime
@@ -46,7 +46,8 @@ class HyKiwisTestCase(unittest.TestCase):
 
         attrs, url = hykiwis.get_tsattrs('613002', 'daily_9am')
         attrs = attrs[0]
-        self.assertEqual(attrs['station_name'], 'DINGO ROAD')
+        self.assertTrue(re.search('DINGO R', attrs['station_name'], \
+                            re.IGNORECASE))
         self.assertEqual(attrs['ts_unitsymbol'], 'cumec')
         self.assertEqual(attrs['station_no'], '613002')
 
