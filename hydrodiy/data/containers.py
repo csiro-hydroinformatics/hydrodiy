@@ -9,7 +9,7 @@ class Vector(object):
     ''' Vector data container. Implements min, max and default values. '''
 
     def __init__(self, names, defaults=None, mins=None, maxs=None, \
-            check_hitbounds=False):
+            check_hitbounds=False, accept_nan=False):
 
         # Set parameter names
         if names is None:
@@ -17,6 +17,9 @@ class Vector(object):
 
         self._names = np.atleast_1d(names).flatten().astype(str).copy()
         nval = self._names.shape[0]
+
+        # Accept nan or not
+        self._accept_nan = accept_nan
 
         # Record bounds hitting or not (useful for optimizers)
         self._check_hitbounds = bool(check_hitbounds)
@@ -107,7 +110,7 @@ class Vector(object):
 
         if name in self._names:
             value = np.float64(value)
-            if np.isnan(value):
+            if np.isnan(value) and not self._accept_nan:
                 raise ValueError('Cannot set value to nan')
 
             idx = self._names_index[name]
@@ -186,6 +189,12 @@ class Vector(object):
     def hitbounds(self):
         ''' Has the boundaries been reached when setting data ? '''
         return self._hitbounds
+
+
+    @property
+    def accept_nan(self):
+        ''' Accept nan values '''
+        return self._accept_nan
 
 
     @property
