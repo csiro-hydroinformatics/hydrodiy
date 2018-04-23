@@ -8,7 +8,8 @@ from hydrodiy.data.containers import Vector
 from hydrodiy.data import dutils
 from hydrodiy.stat import sutils
 
-__all__ = ['Identity', 'Logit', 'Log', 'BoxCox2', 'BoxCox1',
+__all__ = ['Identity', 'Logit', 'Log', 'BoxCox2', \
+                'BoxCox1lam','BoxCox1nu', \
                 'YeoJohnson', 'Reciprocal', 'Softmax', 'Sinh', \
                 'LogSinh']
 
@@ -312,7 +313,7 @@ class BoxCox2(Transform):
     ''' BoxCox transform with 2 parameters y = ((nu+x)^lambda-1)/lambda '''
 
     def __init__(self):
-        params = Vector(['nu', 'lam'], [0., 1.], \
+        params = Vector(['nu', 'lam'], [EPS, 1.], \
                     [EPS, -3.], [np.inf, 3.])
 
         super(BoxCox2, self).__init__('BoxCox2', params)
@@ -354,43 +355,83 @@ class BoxCox2(Transform):
 
 
 
-class BoxCox1(Transform):
-    ''' BoxCox transform y = ((x0+x)^lambda-1)/lambda
-        with normalisation constant x0 = max(x)/5
+class BoxCox1lam(Transform):
+    ''' boxcox transform y = ((nu+x)^lambda-1)/lambda
+        with shift parameter nu fixed
     '''
     def __init__(self):
         params = Vector(['lam'], [1.], [-3.], [3.])
 
-        # Define the nu constant and set it to inf by default
+        # define the nu constant and set it to inf by default
         # to force proper setup
-        constants = Vector(['x0'], [np.inf], [EPS], [np.inf])
+        constants = Vector(['nu'], [np.inf], [EPS], [np.inf])
 
-        super(BoxCox1, self).__init__('BoxCox1', params, constants)
+        super(BoxCox1lam, self).__init__('BoxCox1lam', params, constants)
         self.BC = BoxCox2()
 
     def _forward(self, x):
-        x0 = self.constants.x0
-        if np.isinf(x0):
-            raise ValueError('x0 is inf. It must be set to a proper value')
-        self.BC.params.values = [x0, self.params.lam]
+        nu = self.constants.values[0]
+        if np.isinf(nu):
+            raise ValueError('nu is inf. it must be set to a proper value')
+        self.BC.params.values = [nu, self.params.values[0]]
         return self.BC.forward(x)
 
     def _backward(self, y):
-        x0 = self.constants.x0
-        if np.isinf(x0):
-            raise ValueError('x0 is inf. It must be set to a proper value')
-        self.BC.params.values = [x0, self.params.lam]
+        nu = self.constants.values[0]
+        if np.isinf(nu):
+            raise ValueError('nu is inf. it must be set to a proper value')
+        self.BC.params.values = [nu, self.params.values[0]]
         return self.BC.backward(y)
 
     def _jacobian_det(self, x):
-        x0 = self.constants.x0
-        if np.isinf(x0):
-            raise ValueError('x0 is inf. It must be set to a proper value')
-        self.BC.params.values = [x0, self.params.lam]
+        nu = self.constants.values[0]
+        if np.isinf(nu):
+            raise ValueError('nu is inf. it must be set to a proper value')
+        self.BC.params.values = [nu, self.params.values[0]]
         return self.BC.jacobian_det(x)
 
     def sample_params(self, nsamples=500, minval=0., maxval=1.):
-        return np.random.uniform(minval, maxval, size=nsamples)[:, None]
+        return self.BC.sample_params(nsamples, minval, maxval)[:, 1][:, None]
+
+
+
+class BoxCox1nu(Transform):
+    ''' BoxCox transform y = ((nu+x)^lambda-1)/lambda
+        with lambda exponent fixed
+    '''
+    def __init__(self):
+        params = Vector(['nu'], [1.], [EPS], [np.inf])
+
+        # Define the nu constant and set it to inf by default
+        # to force proper setup
+        constants = Vector(['lam'], [np.nan], [-3], [3], accept_nan=True)
+
+        super(BoxCox1nu, self).__init__('BoxCox1nu', params, constants)
+        self.BC = BoxCox2()
+
+    def _forward(self, x):
+        lam = self.constants.values[0]
+        if np.isnan(lam):
+            raise ValueError('lam is nan. it must be set to a proper value')
+        self.BC.params.values = [self.params.values[0], lam]
+        return self.BC.forward(x)
+
+    def _backward(self, y):
+        lam = self.constants.values[0]
+        if np.isnan(lam):
+            raise ValueError('lam is nan. it must be set to a proper value')
+        self.BC.params.values = [self.params.values[0], lam]
+        return self.BC.backward(y)
+
+    def _jacobian_det(self, x):
+        lam = self.constants.values[0]
+        if np.isnan(lam):
+            raise ValueError('lam is nan. it must be set to a proper value')
+        self.BC.params.values = [self.params.values[0], lam]
+        return self.BC.jacobian_det(x)
+
+    def sample_params(self, nsamples=500, minval=0., maxval=1.):
+        return self.BC.sample_params(nsamples, minval, maxval)[:, 0][:, None]
 
 
 

@@ -20,13 +20,15 @@ class TransformTestCase(unittest.TestCase):
         print('\t=> TransformTestCase (hystat)')
         source_file = os.path.abspath(__file__)
         self.ftest = os.path.dirname(source_file)
+        self.fimg = os.path.join(self.ftest, 'images')
+        if not os.path.exists(self.fimg):
+            os.mkdir(self.fimg)
+
         self.xx = np.exp(np.linspace(-8, 5, 10))
 
-    def test_get_transform(self):
-        ''' Test get transform function '''
 
-        for nm in transform.__all__:
-            # Get transform
+        def fun(nm):
+            ''' Get transformation '''
             trans = transform.get_transform(nm)
 
             # get parameter names
@@ -37,10 +39,25 @@ class TransformTestCase(unittest.TestCase):
             # Set parameters
             if nm == 'Logit':
                 kwargs['upper'] = 2.
-            elif nm in ['BoxCox1', 'LogSinh']:
+            elif nm == 'LogSinh':
                 kwargs['x0'] = 1.
+            elif nm == 'BoxCox1lam':
+                kwargs['nu'] = 1.
+            elif nm == 'BoxCox1nu':
+                kwargs['lam'] = 0.2
 
-            trans = transform.get_transform(nm, **kwargs)
+            return transform.get_transform(nm, **kwargs)
+
+        self.get_transform = fun
+
+
+    def test_get_transform(self):
+        ''' Test get transform function '''
+
+        for nm in transform.__all__:
+            # Get transform
+            trans = self.get_transform(nm)
+            nparams = trans.params.nval
 
             x = np.linspace(0, 1, 100)
             x /= 1.5*np.sum(x)
@@ -196,7 +213,8 @@ class TransformTestCase(unittest.TestCase):
     def test_print(self):
         ''' Test print method '''
         for nm in transform.__all__:
-            trans = transform.get_transform(nm)
+            trans = self.get_transform(nm)
+
             nparams = trans.params.nval
             trans.params.values = np.random.uniform(-5, 5, size=nparams)
             str(trans)
@@ -207,13 +225,7 @@ class TransformTestCase(unittest.TestCase):
             forward then backward
         '''
         for nm in transform.__all__:
-
-            trans = transform.get_transform(nm)
-
-            # Set constants if needed
-            if 'x0' in trans.constants.names:
-                trans['x0'] = 1.
-
+            trans = self.get_transform(nm)
             nparams = trans.params.nval
 
             for sample in range(500):
@@ -260,12 +272,7 @@ class TransformTestCase(unittest.TestCase):
         delta = 1e-5
 
         for nm in transform.__all__:
-            trans = transform.get_transform(nm)
-
-            # Set constants if needed
-            if 'x0' in trans.constants.names:
-                trans['x0'] = 1.
-
+            trans = self.get_transform(nm)
             nparams = trans.params.nval
 
             for sample in range(100):
@@ -331,11 +338,7 @@ class TransformTestCase(unittest.TestCase):
             if nm in ['Softmax']:
                 continue
 
-            trans = transform.get_transform(nm)
-
-            # Set constants if needed
-            if 'x0' in trans.constants.names:
-                trans['x0'] = 1.
+            trans = self.get_transform(nm)
 
             for censor in [0.1, 0.5]:
                 tcensor = trans.forward(censor)
@@ -354,19 +357,13 @@ class TransformTestCase(unittest.TestCase):
 
     def test_transform_plot(self):
         ''' Plot transform '''
-        ftest = self.ftest
         x = np.linspace(-3, 10, 200)
 
         xs = np.linspace(0, 0.99, 200)
         xs = np.column_stack([xs, (1-xs)*xs])
 
         for nm in transform.__all__:
-            trans = transform.get_transform(nm)
-
-            # Set constants if needed
-            if 'x0' in trans.constants.names:
-                trans['x0'] = 1.
-
+            trans = self.get_transform(nm)
             nparams = trans.params.nval
 
             xx = x
@@ -389,7 +386,7 @@ class TransformTestCase(unittest.TestCase):
                             trans.params))
             ax.legend(loc=4)
             ax.set_title(nm)
-            fig.savefig(os.path.join(ftest, 'transform_'+nm+'.png'))
+            fig.savefig(os.path.join(self.fimg, 'transform_'+nm+'.png'))
 
 
     def test_params_samples(self):
