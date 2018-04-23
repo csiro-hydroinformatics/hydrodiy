@@ -214,6 +214,13 @@ class VectorTestCases(unittest.TestCase):
         self.assertTrue(np.allclose(vect.values, vect.defaults))
 
 
+    def test_accept_nan(self):
+        vect = Vector(['a', 'b'], [0.5]*2, [0]*2, [1]*2, \
+                    accept_nan = True)
+        vect.a = np.nan
+
+
+
 
 if __name__ == '__main__':
     unittest.main()
