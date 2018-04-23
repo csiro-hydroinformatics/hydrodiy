@@ -143,7 +143,7 @@ class Vector(object):
                     '{0}, got {1}'.format(\
                     self.nval, val.shape[0]))
 
-        if np.any(np.isnan(val)):
+        if np.any(np.isnan(val)) and not self._accept_nan:
             raise ValueError('Cannot process values with NaN')
 
         # Record hit bound if needed
