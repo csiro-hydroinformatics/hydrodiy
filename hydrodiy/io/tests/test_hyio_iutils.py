@@ -4,6 +4,8 @@ import unittest
 
 from string import ascii_letters as letters
 
+import warnings
+
 import pandas as pd
 import subprocess
 import numpy as np
@@ -322,13 +324,13 @@ class UtilsTestCase(unittest.TestCase):
     def test_run_command(self):
         ''' Test run_command '''
 
+        if not sys.platform.startswith('linux'):
+            warnings.warn('run_command not tested for platform '+sys.platform)
+            return
+
         # Define commands
-        if sys.platform.startswith('linux'):
-            cmd1 = 'ls -al {0}'.format(self.ftest)
-            cmd2 = 'ls -al {0}/bidule'.format(self.ftest)
-        elif sys.platform.startswith('win'):
-            cmd1 = 'DIR {0}'.format(self.ftest)
-            cmd2 = 'DIR {0}/bidule'.format(self.ftest)
+        cmd1 = 'ls -al {0}'.format(self.ftest)
+        cmd2 = 'ls -al {0}/bidule'.format(self.ftest)
 
         # Erase log file if any
         flog = os.path.join(self.ftest, 'run_command.log')
