@@ -1,4 +1,4 @@
-import os, re, json
+import os, re, json, sys
 
 import unittest
 
@@ -317,6 +317,45 @@ class UtilsTestCase(unittest.TestCase):
         url = 'https://www.google.com.au/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png'
         fn = os.path.join(self.ftest, 'google.png')
         iutils.download(url, fn, timeout=10)
+
+
+    def test_run_command(self):
+        ''' Test run_command '''
+
+        # Define commands
+        if sys.platform.startswith('linux'):
+            cmd1 = 'ls -al {0}'.format(self.ftest)
+            cmd2 = 'ls -al {0}/bidule'.format(self.ftest)
+        elif sys.platform.startswith('win'):
+            cmd1 = 'DIR {0}'.format(self.ftest)
+            cmd2 = 'DIR {0}/bidule'.format(self.ftest)
+
+        # Erase log file if any
+        flog = os.path.join(self.ftest, 'run_command.log')
+        if os.path.exists(flog):
+            os.remove(flog)
+
+        # First test - no error
+        logger1 = iutils.get_logger('bidule1', console=False, flog=flog)
+        iutils.run_command(cmd1, logger1)
+        self.assertTrue(os.path.exists(flog))
+
+        with open(flog, 'r') as fo:
+            logs1 = fo.read().splitlines()
+
+        ck = np.array([bool(re.search('test_hyio_(csv|iutils).py$', line)) \
+                            for line in logs1])
+        self.assertTrue(np.sum(ck) == 2)
+        os.remove(flog)
+
+        # Second test - with error
+        logger2 = iutils.get_logger('bidule2', console=False, flog=flog)
+        iutils.run_command(cmd2, logger2)
+        with open(flog, 'r') as fo:
+            logs2 = fo.read().splitlines()
+        self.assertTrue(bool(re.search('ERROR', logs2[0])))
+        os.remove(flog)
+
 
 
 if __name__ == "__main__":

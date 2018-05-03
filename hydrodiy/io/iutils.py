@@ -1,4 +1,8 @@
 import sys, os, re
+
+import shlex
+import subprocess
+
 from datetime import datetime
 import logging
 import stat
@@ -416,4 +420,42 @@ def download(url, filename=None, logger=None, nprint=5, \
             get_data(fobj)
 
         return None
+
+
+def run_command(cmd, logger, prefix='cmd ~ '):
+    ''' Run command line and save outputs to a logger
+
+    Parameters
+    -----------
+    cmd : str
+        Command line to execute
+    logger : logging.Logger
+        Logger to be used
+    prefix : str
+        Prefix to be added at the beginning of the log
+        messages
+
+    Returns
+    -----------
+    found : list
+        List of filenames
+    '''
+    # Start subprocess
+    args = shlex.split(cmd)
+    proc = subprocess.Popen(args, stdout=subprocess.PIPE, \
+                            stderr=subprocess.PIPE)
+
+    # Execute
+    while True:
+        log = proc.stdout.readline().decode().strip()
+        err = proc.stderr.readline().decode().strip()
+
+        if log == '' and proc.poll() is not None:
+            break
+        if log:
+            logger.info(prefix + log)
+
+        if err:
+            logger.error(prefix + err)
+
 
