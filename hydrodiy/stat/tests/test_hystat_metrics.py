@@ -3,13 +3,15 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from scipy.stats import norm
+from scipy.stats import norm, lognorm
 import time
 
 from hydrodiy.stat import metrics
 from hydrodiy.stat import transform, sutils
 
 import c_hydrodiy_stat
+
+from vrf_scores import crps_ecdf as crps_csiro
 
 np.random.seed(0)
 
@@ -75,6 +77,28 @@ class MetricsTestCase(unittest.TestCase):
 
         a, _ = metrics.alpha(obs, sim)
         self.assertTrue(np.allclose(a, 1.))
+
+
+    def test_crps_csiro(self):
+        ''' Compare CRPS calculation with code from CSIRO '''
+
+        nval = 100
+        nens = 1000
+        nrepeat = 100
+        sparam = 1
+        sign = 2
+
+        for irepeat in range(nrepeat):
+            obs = lognorm.rvs(size=nval, s=sparam, loc=0, scale=1)
+            noise = norm.rvs(size=(nval, nens), scale=sign)
+            trend = norm.rvs(size=nval, scale=sign*1.5)
+            ens = obs[:, None]+noise+trend[:, None]
+
+            cr, _ = metrics.crps(obs, ens)
+
+            # CSIRO computation
+            ccr = [crps_csiro(forc, o) for forc, o in zip(ens, obs)]
+            self.assertTrue(np.isclose(cr.crps, np.mean(ccr)))
 
 
     def test_crps_reliability_table1(self):
