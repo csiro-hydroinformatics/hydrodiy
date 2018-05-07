@@ -60,9 +60,9 @@ class GutilsTestCase(unittest.TestCase):
         ''' Test error for georef '''
 
         try:
-            out = gutils.georef('bidule, australia')
+            out = gutils.georef('zzz_xwyxzz')
         except ValueError as err:
-            self.assertTrue(str(err) == 'No results')
+            self.assertTrue(str(err) in ['No results', 'Info is None'])
         else:
             raise ValueError('Problem with error handling')
 
