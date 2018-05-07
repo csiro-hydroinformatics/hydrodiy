@@ -355,7 +355,8 @@ class UtilsTestCase(unittest.TestCase):
         iutils.run_command(cmd2, logger2)
         with open(flog, 'r') as fo:
             logs2 = fo.read().splitlines()
-        self.assertTrue(bool(re.search('ERROR', logs2[0])))
+        check = np.array([bool(re.search('ERROR', line)) for line in logs2])
+        self.assertTrue(np.sum(check) > 0)
         os.remove(flog)
 
 
