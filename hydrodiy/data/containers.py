@@ -9,7 +9,7 @@ class Vector(object):
     ''' Vector data container. Implements min, max and default values. '''
 
     def __init__(self, names, defaults=None, mins=None, maxs=None, \
-            check_hitbounds=False, accept_nan=False):
+            check_bounds=True, check_hitbounds=False, accept_nan=False):
 
         # Set parameter names
         if names is None:
@@ -22,7 +22,11 @@ class Vector(object):
         self._accept_nan = accept_nan
 
         # Record bounds hitting or not (useful for optimizers)
+        self._check_bounds = bool(check_bounds)
         self._check_hitbounds = bool(check_hitbounds)
+        if self._check_hitbounds and not self._check_bounds:
+            raise ValueError('check_hitbounds cannot be True while '+\
+                    'check_bounds is False')
         self._hitbounds = False
 
         # Set number of parameters
@@ -83,7 +87,9 @@ class Vector(object):
             values.append(dct['data'][i]['value'])
 
         vect = Vector(names, defaults, mins, maxs, \
-                            bool(dct['check_hitbounds']))
+                        check_bounds=bool(dct['check_bounds']), \
+                        check_hitbounds=bool(dct['check_hitbounds']),
+                        accept_nan=bool(dct['accept_nan']))
         vect._hitbounds = bool(dct['hitbounds'])
         vect.values = values
 
@@ -180,8 +186,14 @@ class Vector(object):
 
 
     @property
-    def check_hitbounds(self):
+    def check_bounds(self):
         ''' Are the bounds checked or not '''
+        return self._check_bounds
+
+
+    @property
+    def check_hitbounds(self):
+        ''' Is the hit to bounds checked or not '''
         return self._check_hitbounds
 
 
@@ -253,7 +265,9 @@ class Vector(object):
         ''' Write vector data to json format '''
 
         dct = {'nval': self.nval, 'hitbounds':self.hitbounds, \
-                    'check_hitbounds':self._check_hitbounds, \
+                    'check_bounds':self.check_bounds, \
+                    'check_hitbounds':self.check_hitbounds, \
+                    'accept_nan':self.accept_nan, \
                     'data':[]}
 
         for i in range(self.nval):

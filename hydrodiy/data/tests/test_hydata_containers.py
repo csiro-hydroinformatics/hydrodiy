@@ -67,7 +67,8 @@ class VectorTestCases(unittest.TestCase):
             raise Exception('Problem with error generation')
 
         try:
-            vect = Vector(['a', 'b'], defaults=[1]*2, mins=[0]*2, maxs=[0.5]*2)
+            vect = Vector(['a', 'b'], defaults=[1]*2, mins=[0]*2, \
+                                        maxs=[0.5]*2)
         except ValueError as err:
             self.assertTrue(str(err).startswith(('Expected defaults within')))
         else:
@@ -80,13 +81,18 @@ class VectorTestCases(unittest.TestCase):
             try:
                 vect.values = 0
             except ValueError as err:
-                self.assertTrue(str(err).startswith(('Expected vector of length')))
+                self.assertTrue(str(err).startswith(\
+                    'Expected vector of length'))
             else:
                 raise Exception('Problem with error generation')
 
             dct = vect.to_dict()
-            self.assertEqual(dct, {'check_hitbounds':False, \
-                                        'hitbounds':False, 'data':[], 'nval':0})
+
+            self.assertEqual(dct, {'check_bounds':True, \
+                                    'check_hitbounds':False, \
+                                    'accept_nan':False, \
+                                        'hitbounds':False, \
+                                        'data':[], 'nval':0})
 
 
     def test_tofromdict(self):
@@ -145,7 +151,8 @@ class VectorTestCases(unittest.TestCase):
 
     def test_hitbounds(self):
         # Test vector with active hitbounds checking
-        vect = Vector(['a', 'b'], [0.5]*2, [0]*2, [1]*2, True)
+        vect = Vector(['a', 'b'], [0.5]*2, [0]*2, [1]*2, \
+                    check_hitbounds=True)
         self.assertTrue(~vect.hitbounds)
 
         vect.values = [2]*2
