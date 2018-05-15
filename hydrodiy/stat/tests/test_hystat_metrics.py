@@ -517,6 +517,23 @@ class MetricsTestCase(unittest.TestCase):
             expected = 1-math.sqrt((1-bias)**2+(1-rstd)**2+(1-corr)**2)
             self.assertTrue(np.isclose(kge, expected))
 
+    def test_kge_error(self):
+        ''' Testing  KGE errors '''
+
+        obs = np.zeros(100)
+        sim = np.random.uniform(0, 1, size=100)
+        kge = metrics.kge(obs, sim)
+        self.assertTrue(np.isnan(kge))
+
+        obs = np.ones(100)
+        sim = np.random.uniform(0, 1, size=100)
+        kge = metrics.kge(obs, sim)
+        self.assertTrue(np.isnan(kge))
+
+        obs = np.random.uniform(0, 1, size=100)
+        sim = np.ones(100)
+        kge = metrics.kge(obs, sim)
+        self.assertTrue(np.isnan(kge))
 
 
 

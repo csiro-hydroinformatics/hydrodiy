@@ -485,7 +485,7 @@ def kge(obs, sim, trans=transform.Identity()):
     sim = np.atleast_1d(sim)
 
     if obs.shape[0] != sim.shape[0]:
-        raise ValueError('Expected sim with dim equal '+\
+        raise ValueError('KGE - Expected sim with dim equal '+\
             'to {0}, got {1}'.format( \
             obs.shape[0], sim.shape[0]))
 
@@ -501,7 +501,7 @@ def kge(obs, sim, trans=transform.Identity()):
     # Means
     meano = np.mean(tobs)
     if abs(meano) < EPS:
-        warnings.warn(('Mean value of obs is close to '+\
+        warnings.warn(('KGE - Mean value of obs is close to '+\
                 'zero ({0:3.3e}), returning nan').format(\
                     meano))
         return np.nan
@@ -512,8 +512,20 @@ def kge(obs, sim, trans=transform.Identity()):
     stdo = np.std(tobs)
     stds = np.std(tsim)
 
+    if abs(stdo) < EPS:
+        warnings.warn(('KGE - Standard dev of obs is close to '+\
+                'zero ({0:3.3e}), returning nan').format(\
+                    stdo))
+        return np.nan
+
     # Correlation
-    corr = np.corrcoef(tobs, tsim)[0, 1]
+    if abs(stds) > EPS:
+        corr = np.corrcoef(tobs, tsim)[0, 1]
+    else:
+        warnings.warn(('KGE - Standard dev of sim is close to '+\
+                'zero ({0:3.3e}), cannot compute correlation, '+\
+                'returning nan').format(stds))
+        return np.nan
 
     # KGE
     value = 1-math.sqrt((1-means/meano)**2+(1-stds/stdo)**2+(1-corr)**2)
