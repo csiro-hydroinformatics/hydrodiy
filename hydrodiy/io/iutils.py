@@ -433,17 +433,13 @@ def run_command(cmd, logger, prefix='cmd ~ ', shell=False):
         Logger to be used
     prefix : str
         Prefix to be added at the beginning of the log
-        messages
-
-    Returns
-    -----------
-    found : list
-        List of filenames
+        and err messages
     '''
     # Start subprocess
     args = shlex.split(cmd)
     proc = subprocess.Popen(args, stdout=subprocess.PIPE, \
                             stderr=subprocess.PIPE, shell=shell)
+
     # Execute
     while True:
         log = proc.stdout.readline().decode().strip()
@@ -451,6 +447,7 @@ def run_command(cmd, logger, prefix='cmd ~ ', shell=False):
 
         if log == '' and proc.poll() is not None:
             break
+
         if log:
             logger.info(prefix + log)
 
