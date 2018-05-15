@@ -53,7 +53,7 @@ class BayesPlotTestCase(unittest.TestCase):
     def test_slice2d(self):
         ''' Plot log post slice 2d '''
 
-        fig, ax = putils.get_fig_axs()
+        fig, ax = plt.subplots()
         vect, _, _ = bayesutils.cov2vect(self.cov)
         params = np.concatenate([self.mu, vect])
         zz, yy, zz = bayesplot.slice2d(ax, self.logpost, params, \
@@ -65,7 +65,7 @@ class BayesPlotTestCase(unittest.TestCase):
     def test_slice2d_errors(self):
         ''' Plot log post slice 2d with log spacing '''
 
-        fig, ax = putils.get_fig_axs()
+        fig, ax = plt.subplots()
         vect, _, _ = bayesutils.cov2vect(self.cov)
         params = np.concatenate([self.mu, vect])
 
@@ -108,7 +108,7 @@ class BayesPlotTestCase(unittest.TestCase):
     def test_slice2d_log(self):
         ''' Plot log post slice 2d with log spacing '''
 
-        fig, ax = putils.get_fig_axs()
+        fig, ax = plt.subplots()
         vect, _, _ = bayesutils.cov2vect(self.cov)
         params = np.concatenate([self.mu+0.01, vect])
         bayesplot.slice2d(ax, self.logpost, params, \
