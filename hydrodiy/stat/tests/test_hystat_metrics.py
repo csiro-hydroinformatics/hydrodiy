@@ -1,5 +1,6 @@
 import os, re, math
 import unittest
+import warnings
 import numpy as np
 import pandas as pd
 
@@ -507,7 +508,8 @@ class MetricsTestCase(unittest.TestCase):
             self.assertTrue(np.isclose(kge, expected))
 
             # Third trial - random error
-            tsim = tobs + 1e-2*np.mean(tobs)*np.random.uniform(-1, 1, size=len(tobs))
+            tsim = tobs + 1e-2*np.mean(tobs)*np.random.uniform(-1, 1, \
+                                                        size=len(tobs))
             sim = trans.backward(tsim)
             kge = metrics.kge(obs, sim, trans)
 
@@ -517,23 +519,39 @@ class MetricsTestCase(unittest.TestCase):
             expected = 1-math.sqrt((1-bias)**2+(1-rstd)**2+(1-corr)**2)
             self.assertTrue(np.isclose(kge, expected))
 
-    def test_kge_error(self):
-        ''' Testing  KGE errors '''
+    def test_kge_warnings(self):
+        ''' Testing KGE warnings '''
 
-        obs = np.zeros(100)
-        sim = np.random.uniform(0, 1, size=100)
-        kge = metrics.kge(obs, sim)
-        self.assertTrue(np.isnan(kge))
+        # Catch warnings
+        with warnings.catch_warnings():
+            warnings.filterwarnings('error')
 
-        obs = np.ones(100)
-        sim = np.random.uniform(0, 1, size=100)
-        kge = metrics.kge(obs, sim)
-        self.assertTrue(np.isnan(kge))
+            obs = np.zeros(100)
+            sim = np.random.uniform(0, 1, size=100)
+            try:
+                kge = metrics.kge(obs, sim)
+            except Warning as warn:
+                self.assertTrue(str(warn).startswith('KGE - Mean value'))
+            else:
+                raise ValueError('Problem in error handling')
 
-        obs = np.random.uniform(0, 1, size=100)
-        sim = np.ones(100)
-        kge = metrics.kge(obs, sim)
-        self.assertTrue(np.isnan(kge))
+            obs = np.ones(100)
+            sim = np.random.uniform(0, 1, size=100)
+            try:
+                kge = metrics.kge(obs, sim)
+            except Warning as warn:
+                self.assertTrue(str(warn).startswith('KGE - Standard dev'))
+            else:
+                raise ValueError('Problem in error handling')
+
+            obs = np.random.uniform(0, 1, size=100)
+            sim = np.ones(100)
+            try:
+                kge = metrics.kge(obs, sim)
+            except Warning as warn:
+                self.assertTrue(str(warn).startswith('KGE - Standard dev'))
+            else:
+                raise ValueError('Problem in error handling')
 
 
 
