@@ -324,7 +324,7 @@ class UtilsTestCase(unittest.TestCase):
     def test_run_command(self):
         ''' Test run_command '''
 
-        if not sys.platform.startswith('linux'):
+        if not sys.platform.startswith('linux') or PYVERSION < 3:
             warnings.warn('run_command not tested for platform '+sys.platform)
             return
 
