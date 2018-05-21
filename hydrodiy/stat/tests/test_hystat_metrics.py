@@ -6,9 +6,15 @@ import pandas as pd
 
 from scipy.stats import norm, lognorm
 import time
+import zipfile
+
+import matplotlib.pyplot as plt
 
 from hydrodiy.stat import metrics
+from hydrodiy.io import csv
 from hydrodiy.stat import transform, sutils
+
+from hydrodiy.plot import putils
 
 import c_hydrodiy_stat
 
@@ -23,6 +29,9 @@ class MetricsTestCase(unittest.TestCase):
         source_file = os.path.abspath(__file__)
         ftest = os.path.dirname(source_file)
         self.ftest = ftest
+        self.fimg = os.path.join(self.ftest, 'images')
+        if not os.path.exists(self.fimg):
+            os.mkdir(self.fimg)
 
         fd1 = os.path.join(ftest, 'data', 'crps_testdata_01.txt')
         data = np.loadtxt(fd1)
@@ -136,16 +145,53 @@ class MetricsTestCase(unittest.TestCase):
         nens = 200
         obs = np.linspace(0, 1, nforc)
         ens = np.repeat(np.linspace(0, 1, nens)[None, :], nforc, 0)
-        p = metrics.pit(obs, ens)
-        self.assertTrue(np.all(np.abs(obs-p)<8e-3))
+        pit = metrics.pit(obs, ens)
+        self.assertTrue(np.all(np.abs(obs-pit)<8e-3))
 
 
     def test_pit_hassan(self):
         ''' Test pit as per Hassan requirement '''
         obs = [3]
         ens = [0, 0, 0, 1, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4]
-        p = metrics.pit(obs, ens, random=False)
-        self.assertTrue(np.isclose(p, 0.5666666666666))
+
+        # using scipy func
+        pit = metrics.pit(obs, ens, random=False)
+        self.assertTrue(np.isclose(pit, 0.5666666666666))
+
+        # using randomisation
+        nrepeat = 1000
+        pits = np.array([metrics.pit(obs, ens, random=True) \
+                    for i in range(nrepeat)]).squeeze()
+        pits = pd.Series(pits).value_counts().sort_index()
+        self.assertTrue(np.allclose(pits.index, [0.33121, 0.394904, \
+                        0.458599, 0.522293, 0.585987, 0.649682, 0.713376]))
+        self.assertTrue((pits>100).all())
+
+
+    def test_pit_hassan_rpp(self):
+        ''' Test pit from Hassan's RPP data '''
+
+        frpp = os.path.join(self.ftest, 'data', 'rpp_data.zip')
+        with zipfile.ZipFile(frpp, 'r') as archive:
+            obs, _ = csv.read_csv('obs.csv', archive=archive, index_col=0, \
+                                                has_colnames=False)
+            ens, _ = csv.read_csv('rpp_ensemble.csv', archive=archive, \
+                                            index_col=0)
+        pit1 = metrics.pit(obs, ens, random=False)
+        pit2 = metrics.pit(obs, ens, random=True)
+
+        fig, ax = plt.subplots()
+        ff = sutils.ppos(len(pit1))
+        ax.plot(np.sort(pit1), ff, label='Scipy percentileofscore')
+        ax.plot(np.sort(pit2), ff, \
+            label='hydrodiy.metrics.pit using random=True')
+
+        ax.legend(loc=2)
+        ax.set_xlabel('PIT [-]')
+        ax.set_ylabel('ECDF [-]')
+
+        fp = os.path.join(self.fimg, 'pit_hassan.png')
+        fig.savefig(fp)
 
 
     def test_cramer_von_mises(self):

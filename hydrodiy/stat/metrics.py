@@ -29,6 +29,11 @@ def __check_ensemble_data(obs, ens):
     ''' Check dimensions of obs and ens data '''
 
     obs = np.atleast_1d(obs).astype(np.float64)
+    if obs.ndim > 1:
+        obs = obs.squeeze()
+    if obs.ndim > 1:
+        raise ValueError('obs is not 1D')
+
     ens = np.atleast_2d(ens).astype(np.float64)
 
     nforc = obs.shape[0]
