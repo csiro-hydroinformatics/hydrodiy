@@ -253,7 +253,7 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_lhs_norm(self):
         ''' Test lhs for mvt data '''
-        nsamples = 5000000
+        nsamples = 50000
         nvars = 5
         mean = np.linspace(1, 2, nvars)
         rho = 0.95
@@ -262,10 +262,12 @@ class UtilsTestCase(unittest.TestCase):
         samples = sutils.lhs_norm(nsamples, mean, cov)
         meanS = np.mean(samples, axis=0)
         covS = np.cov(samples.T)
-        self.assertTrue(np.allclose(mean, meanS, rtol=0, \
-                            atol=1e-5))
-        self.assertTrue(np.allclose(cov, covS, rtol=0, \
-                            atol=1e-3))
+
+        self.assertTrue(np.allclose(mean, meanS, atol=0, \
+                            rtol=1e-4))
+
+        self.assertTrue(np.allclose(cov, covS, atol=0, \
+                            rtol=1e-2))
 
 
 if __name__ == "__main__":
