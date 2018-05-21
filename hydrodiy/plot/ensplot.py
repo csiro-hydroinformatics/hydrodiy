@@ -21,7 +21,7 @@ OBSLINECOLOR = putils.COLORS10[3]
 OBSMARKERCOLOR = 'pink'
 
 
-def pitmetrics(obs, fcst):
+def pitmetrics(obs, fcst, random=False):
     ''' Compute metric data
 
     Parameters
@@ -53,12 +53,13 @@ def pitmetrics(obs, fcst):
     crps_ss = (1.-crps[0]/crps[3])*100
 
     # Compute pits
-    pits = metrics.pit(obs, fcst)
+    pits = metrics.pit(obs, fcst, random=random)
 
     return alpha, crps_ss, pits
 
 
-def pitplot(pits, alpha, crps_ss, ax=None, labelaxis=True, transp=0.4):
+def pitplot(pits, alpha, crps_ss, ax=None, labelaxis=True, transp=0.4, \
+                random=False):
     ''' Draw a pit plot
 
     Parameters
@@ -111,7 +112,7 @@ def pitplot(pits, alpha, crps_ss, ax=None, labelaxis=True, transp=0.4):
 class MonthlyEnsplot(object):
 
     def __init__(self, obs, fcst, fcdates, fig=None, \
-        ylabel='Flow [GL/month]'):
+        ylabel='Flow [GL/month]', randompit=False):
         ''' Object to draw monthly ensemble forecasts
 
         Parameters
@@ -126,6 +127,8 @@ class MonthlyEnsplot(object):
             Matplotlib figure to draw on
         ylabel : str
             Label of y axis
+        randompit : bool
+            Randomise pit computation (generate pseudo-pits)
 
         Examples
         -----------

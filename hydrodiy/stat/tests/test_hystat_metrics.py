@@ -134,12 +134,18 @@ class MetricsTestCase(unittest.TestCase):
         ''' Test pit computation '''
         nforc = 100
         nens = 200
-
         obs = np.linspace(0, 1, nforc)
         ens = np.repeat(np.linspace(0, 1, nens)[None, :], nforc, 0)
-
         p = metrics.pit(obs, ens)
         self.assertTrue(np.all(np.abs(obs-p)<8e-3))
+
+
+    def test_pit_hassan(self):
+        ''' Test pit as per Hassan requirement '''
+        obs = [3]
+        ens = [0, 0, 0, 1, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4]
+        p = metrics.pit(obs, ens, random=False)
+        self.assertTrue(np.isclose(p, 0.5666666666666))
 
 
     def test_cramer_von_mises(self):

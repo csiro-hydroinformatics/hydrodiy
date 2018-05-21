@@ -4,7 +4,7 @@ import pkg_resources
 import numpy as np
 import pandas as pd
 
-from scipy.stats import kstest
+from scipy.stats import kstest, percentileofscore
 
 import warnings
 
@@ -41,10 +41,10 @@ def __check_ensemble_data(obs, ens):
     return obs, ens, nforc, nens
 
 
-def pit(obs, ens, cst=0.3):
+def pit(obs, ens, random=False, cst=0.3, kind='rank'):
     """
     Compute probability integral transformed (PIT) values
-    for a single forecast
+    for ensemble forecasts.
 
     Parameters
     -----------
@@ -52,8 +52,12 @@ def pit(obs, ens, cst=0.3):
         obs data, [n] or [n,1] array
     ens : numpy.ndarray
         ensemble forecast data, [n,p] array
+    random : bool
+        Randomize forecast and obs to generate pseudo-pit
     cst : float
-        Constant used to compute plotting positions
+        Constant used to compute plotting positions if random is True
+    kind : str
+        Argument passed to percentileofscore function from scipy
 
     Returns
     -----------
@@ -65,9 +69,14 @@ def pit(obs, ens, cst=0.3):
     obs, ens, nforc, nens = __check_ensemble_data(obs, ens)
 
     # Compute pits
-    dobs = np.random.uniform(-EPS, EPS, size=nforc)
-    pits = (ens-(obs+dobs)[:, None]<0).astype(int)
-    pits = (np.sum(pits, 1)+0.5-cst)/(1.-cst+nens)
+    if random:
+        dobs = np.random.uniform(-EPS, EPS, size=nforc)
+        dens = np.random.uniform(-EPS, EPS, size=(nforc, nens))
+        pits = (ens+dens-(obs+dobs)[:, None]<0).astype(int)
+        pits = (np.sum(pits, 1)+0.5-cst)/(1.-cst+nens)
+    else:
+        pits = np.array([percentileofscore(ensval, obsval, kind)/100. \
+                    for ensval, obsval in zip(ens, obs)])
 
     return pits
 
