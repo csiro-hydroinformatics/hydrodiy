@@ -3,6 +3,8 @@ import math
 import numpy as np
 import pandas as pd
 
+from scipy.stats import norm
+
 import c_hydrodiy_stat
 
 
@@ -279,4 +281,31 @@ def lhs(nsamples, pmin, pmax):
         samples[:, i] = s
 
     return samples
+
+
+def lhs_norm(nsamples, mean, cov):
+    ''' Latin hypercube sampling from a multivariate normal
+    distribution.
+
+    Parameters
+    -----------
+    nsamples : int
+        Number of sample to draw
+    mean : numpy.ndarray
+        Mean vector
+    cov : numpy.ndarray
+        Covariance matrix
+
+    Returns
+    -----------
+    samples : numpy.ndarray
+        Parameter samples (nsamples x nvars)
+    '''
+    nvars = len(mean)
+    q = lhs(nsamples, [0]*nvars, [1]*nvars)
+    nsmp = norm.ppf(q)
+    S = np.linalg.cholesky(cov)
+    smp = mean[:, None] + np.dot(S, nsmp.T)
+    return smp.T
+
 

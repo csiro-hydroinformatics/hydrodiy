@@ -4,6 +4,7 @@ import unittest
 import numpy as np
 
 from scipy.special import kolmogorov
+from scipy.linalg import toeplitz
 
 import matplotlib.pyplot as plt
 
@@ -216,6 +217,7 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_lhs_error(self):
+        ''' Test latin-hypercube sampling errors '''
         nparams = 10
         nsamples = 50
         pmin = np.ones(nparams)
@@ -230,6 +232,7 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_lhs(self):
+        ''' Test latin-hypercube sampling '''
         nparams = 10
         nsamples = 50
         pmin = np.ones(nparams)
@@ -246,6 +249,23 @@ class UtilsTestCase(unittest.TestCase):
             p = kolmogorov(D*math.sqrt(nsamples))
 
             self.assertTrue(p>0.95)
+
+
+    def test_lhs_norm(self):
+        ''' Test lhs for mvt data '''
+        nsamples = 5000000
+        nvars = 5
+        mean = np.linspace(1, 2, nvars)
+        rho = 0.95
+        cov = toeplitz(rho**np.arange(nvars))
+
+        samples = sutils.lhs_norm(nsamples, mean, cov)
+        meanS = np.mean(samples, axis=0)
+        covS = np.cov(samples.T)
+        self.assertTrue(np.allclose(mean, meanS, rtol=0, \
+                            atol=1e-5))
+        self.assertTrue(np.allclose(cov, covS, rtol=0, \
+                            atol=1e-3))
 
 
 if __name__ == "__main__":
