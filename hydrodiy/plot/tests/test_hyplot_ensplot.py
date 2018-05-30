@@ -9,15 +9,15 @@ mpl.use('Agg')
 import matplotlib.pyplot as plt
 
 from hydrodiy.plot.ensplot import MonthlyEnsplot
-from hydrodiy.plot.ensplot import pitmetrics, pitplot
+from hydrodiy.plot.ensplot import pitmetrics, pitplot, tsplot
 
 # Reset matplotlib to default
 mpl.rcdefaults()
 
-class MonthlyEnsplotTestCase(unittest.TestCase):
+class EnsplotTestCase(unittest.TestCase):
 
     def setUp(self):
-        print('\t=> MonthlyEnsplotTestCase (hyplot)')
+        print('\t=> EnsplotTestCase (hyplot)')
         source_file = os.path.abspath(__file__)
         self.ftest = os.path.dirname(source_file)
         self.fimg = os.path.join(self.ftest, 'images')
@@ -51,6 +51,20 @@ class MonthlyEnsplotTestCase(unittest.TestCase):
         alpha, cr, pits, is_sudo = pitmetrics(self.obs_sudo, self.fcst_sudo)
         self.assertTrue(len(pits) == len(self.obs_sudo))
         self.assertTrue(np.sum(is_sudo) > 0)
+
+
+    def test_tsplot(self):
+        ''' Test tsplot '''
+        plt.close('all')
+        fig, ax = plt.subplots()
+        x = tsplot(self.obs, self.fcst, ax, \
+                    show_pit=True, show_scatter=True, \
+                    line='mean')
+
+        fig.set_size_inches((30, 7))
+        fig.tight_layout()
+        fp = os.path.join(self.fimg, 'tsplot.png')
+        fig.savefig(fp)
 
 
     def test_pitplot(self):

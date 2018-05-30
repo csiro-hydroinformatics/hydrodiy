@@ -75,7 +75,7 @@ print(bp.stats)
 # Plot it
 plt.close('all')
 
-fig, ax = putils.get_fig_axs()
+fig, ax = plt.subplots()
 bp.draw(ax)
 
 fig.tight_layout()
@@ -85,7 +85,7 @@ fig.savefig(fp)
 
 # Same boxplot with centered labels and sample count
 bp = boxplot.Boxplot(data, centertext=True)
-fig, ax = putils.get_fig_axs()
+fig, ax = plt.subplots()
 bp.draw(ax)
 bp.show_count()
 fig.tight_layout()
@@ -95,7 +95,7 @@ fig.savefig(fp)
 
 # Boxplot with large number of variables (e.g time series)
 bp = boxplot.Boxplot(tsdata, style='narrow')
-fig, ax = putils.get_fig_axs()
+fig, ax = plt.subplots()
 bp.draw(ax)
 
 # .. reformat x axis to help readability

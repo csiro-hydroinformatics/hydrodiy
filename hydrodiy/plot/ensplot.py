@@ -60,7 +60,7 @@ def pitmetrics(obs, fcst, random=True):
 
 
 def pitplot(pits, is_sudo, alpha, crps_ss, ax=None, labelaxis=True, \
-                transp=0.4, random=False):
+                transp=0.4, random=False, sudo_threshold=10):
     ''' Draw a pit plot
 
     Parameters
@@ -92,7 +92,8 @@ def pitplot(pits, is_sudo, alpha, crps_ss, ax=None, labelaxis=True, \
     spits = pits[kk]
     ssudo = is_sudo[kk]
 
-    color = PITCOLORS[alpha<5 or np.sum(ssudo)>5e-2*nval]
+    color = PITCOLORS[alpha<5 \
+                or np.sum(ssudo)>float(sudo_threshold)*nval/100]
 
     ax.plot(spits, pp, '-', color=color)
 
@@ -131,7 +132,7 @@ def pitplot(pits, is_sudo, alpha, crps_ss, ax=None, labelaxis=True, \
 
 def tsplot(obs, fcst, ax=None, \
             show_pit=False, show_scatter=False, \
-            line='mean'):
+            line='mean', sudo_threshold=10):
     ''' Draw ensemble forecasts timeseries
     Parameters
     -----------
@@ -147,6 +148,8 @@ def tsplot(obs, fcst, ax=None, \
         Draw x grid
     line : str
         Draw a line for mean (line=mean) or median (line=median)
+    sudo_threshold : int
+        Percent threshold for marking sudo pits as suspicious
    '''
     # Check inputs
     nval = len(obs)
@@ -186,20 +189,37 @@ def tsplot(obs, fcst, ax=None, \
         alpha, crps_ss, pits, is_sudo = pitmetrics(obs, fcst)
         axi = inset_axes(ax, width='30%', height='30%', loc=1)
         pitplot(pits, is_sudo, alpha, crps_ss, ax=axi, \
-            labelaxis=False)
+            labelaxis=False, sudo_threshold=sudo_threshold)
 
     if show_scatter:
+        color = PITCOLORS[0]
         axi2 = inset_axes(ax, width='30%', height='30%', loc=2)
         axi2.plot(qline, obs, 'o')
-        putils.line(axi2, 1, 1, 0, 0, '-', linewidth=1, color='grey')
+        #putils.line(axi2, 1, 1, 0, 0, '-', linewidth=1, color=color)
 
         # Create regression line
         theta, _, _, _ = np.linalg.lstsq(np.column_stack([qline*0+1, \
                                                         qline]), obs)
-        putils.line(axi2, 1, theta[1], 0, theta[0], 'k--')
+        R2 = np.corrcoef(obs, qline)[0, 1]
+        putils.line(axi2, 1, theta[1], 0, theta[0], '--', color=color, lw=1)
 
-        axi2.text(0.95, 0.05, 'Sim', ha='right', transform=axi2.transAxes)
-        axi2.text(0.05, 0.95, 'Obs', va='top', transform=axi2.transAxes)
+        t = axi2.text(0.95, 0.05, 'Sim', ha='right', \
+                            color=color, \
+                            transform=axi2.transAxes)
+        dd = {'facecolor':'w', 'edgecolor':'none', 'boxstyle': 'round', \
+                        'alpha':0.7, 'pad':0.1}
+        t.set_bbox(dd)
+
+        t = axi2.text(0.05, 0.95, 'Obs', va='top', \
+                            color=color, \
+                            transform=axi2.transAxes)
+        t.set_bbox(dd)
+
+        t = axi2.text(0.95, 0.95, r'R$^2$ {0:0.1f}'.format(R2), \
+                            va='top', ha='right', \
+                            color=color, \
+                            transform=axi2.transAxes)
+        t.set_bbox(dd)
 
         axi2.set_xticks([])
         axi2.set_yticks([])
