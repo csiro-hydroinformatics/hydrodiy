@@ -22,7 +22,7 @@ OBSLINECOLOR = 'darkred'
 OBSMARKERCOLOR = 'tomato'
 
 
-def pitmetrics(obs, fcst, random=True):
+def pitmetrics(obs, fcst, random_pit=True):
     ''' Compute metric data
 
     Parameters
@@ -31,6 +31,8 @@ def pitmetrics(obs, fcst, random=True):
         Observed data
     fcst : numpy.ndarray
         Forecast data
+    random_pit : bool
+        Randomise pit computation
 
     Returns
     -----------
@@ -54,13 +56,13 @@ def pitmetrics(obs, fcst, random=True):
     crps_ss = (1.-crps[0]/crps[3])*100
 
     # Compute pits
-    pits, is_sudo = metrics.pit(obs, fcst, random=random)
+    pits, is_sudo = metrics.pit(obs, fcst, random=random_pit)
 
     return alpha, crps_ss, pits, is_sudo
 
 
 def pitplot(pits, is_sudo, alpha, crps_ss, ax=None, labelaxis=True, \
-                transp=0.4, random=False, sudo_threshold=10):
+                transp=0.4, sudo_threshold=10):
     ''' Draw a pit plot
 
     Parameters
@@ -79,6 +81,8 @@ def pitplot(pits, is_sudo, alpha, crps_ss, ax=None, labelaxis=True, \
         Show labels on axis
     transp : float
         Ax transparency
+    sudo_threshold : int
+        Percentage threshold to flag sudo pit
     '''
 
     # Get axis
@@ -132,7 +136,8 @@ def pitplot(pits, is_sudo, alpha, crps_ss, ax=None, labelaxis=True, \
 
 def tsplot(obs, fcst, ax=None, \
             show_pit=False, show_scatter=False, \
-            line='mean', sudo_threshold=10):
+            line='mean', sudo_threshold=10, \
+            random_pit=True):
     ''' Draw ensemble forecasts timeseries
     Parameters
     -----------
@@ -150,6 +155,8 @@ def tsplot(obs, fcst, ax=None, \
         Draw a line for mean (line=mean) or median (line=median)
     sudo_threshold : int
         Percent threshold for marking sudo pits as suspicious
+    random_pit : bool
+        Randomise pit computation
    '''
     # Check inputs
     nval = len(obs)
@@ -186,7 +193,7 @@ def tsplot(obs, fcst, ax=None, \
             label='Obs')
 
     if show_pit:
-        alpha, crps_ss, pits, is_sudo = pitmetrics(obs, fcst)
+        alpha, crps_ss, pits, is_sudo = pitmetrics(obs, fcst, random_pit)
         axi = inset_axes(ax, width='30%', height='30%', loc=1)
         pitplot(pits, is_sudo, alpha, crps_ss, ax=axi, \
             labelaxis=False, sudo_threshold=sudo_threshold)
@@ -194,8 +201,8 @@ def tsplot(obs, fcst, ax=None, \
     if show_scatter:
         color = PITCOLORS[0]
         axi2 = inset_axes(ax, width='30%', height='30%', loc=2)
-        axi2.plot(qline, obs, 'o')
-        #putils.line(axi2, 1, 1, 0, 0, '-', linewidth=1, color=color)
+        axi2.plot(qline, obs, 'o', markeredgecolor=color, \
+                            markerfacecolor='w', markersize=4)
 
         # Create regression line
         theta, _, _, _ = np.linalg.lstsq(np.column_stack([qline*0+1, \
@@ -203,27 +210,27 @@ def tsplot(obs, fcst, ax=None, \
         R2 = np.corrcoef(obs, qline)[0, 1]
         putils.line(axi2, 1, theta[1], 0, theta[0], '--', color=color, lw=1)
 
-        t = axi2.text(0.95, 0.05, 'Sim', ha='right', \
-                            color=color, \
+        t = axi2.text(0.95, 0.05, 'FC '+line.title(), ha='right', \
+                            color=color, fontsize=12, \
                             transform=axi2.transAxes)
         dd = {'facecolor':'w', 'edgecolor':'none', 'boxstyle': 'round', \
-                        'alpha':0.7, 'pad':0.1}
+                        'alpha':0.9, 'pad':0.05}
         t.set_bbox(dd)
 
         t = axi2.text(0.05, 0.95, 'Obs', va='top', \
-                            color=color, \
+                            color=color, fontsize=12, \
                             transform=axi2.transAxes)
         t.set_bbox(dd)
 
         t = axi2.text(0.95, 0.95, r'R$^2$ {0:0.1f}'.format(R2), \
                             va='top', ha='right', \
-                            color=color, \
+                            color=color, fontsize=12, \
                             transform=axi2.transAxes)
         t.set_bbox(dd)
 
         axi2.set_xticks([])
         axi2.set_yticks([])
-        axi2.patch.set_alpha(0.3)
+        axi2.patch.set_alpha(0.6)
 
     return x
 

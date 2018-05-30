@@ -245,7 +245,7 @@ def alpha(obs, ens, cst=0.3, type='CV', sudo_perc_threshold=5):
     obs, ens, nforc, nens = __check_ensemble_data(obs, ens)
 
     # Compute pit
-    pits, is_sudo = pit(obs, ens)
+    pits, is_sudo = pit(obs, ens, random=True)
 
     # Warning if too much sudo pits
     if np.sum(is_sudo) > nforc*float(sudo_perc_threshold)/100:
