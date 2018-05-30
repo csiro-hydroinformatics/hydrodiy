@@ -46,7 +46,7 @@ def __check_ensemble_data(obs, ens):
     return obs, ens, nforc, nens
 
 
-def pit(obs, ens, random=False, cst=0.3, kind='rank'):
+def pit(obs, ens, random=False, cst=0.3, kind='rank', censor=0.):
     """
     Compute probability integral transformed (PIT) values
     for ensemble forecasts.
@@ -63,15 +63,25 @@ def pit(obs, ens, random=False, cst=0.3, kind='rank'):
         Constant used to compute plotting positions if random is True
     kind : str
         Argument passed to percentileofscore function from scipy
+    censor : float
+        Censoring threshold to compute sudo pit (i.e. when obs <= censor
+        and ens has members <= censor)
 
     Returns
     -----------
     pits : numpy.ndarray
         PIT value
+    is_sudo : numpy.ndarray
+         Tells if the pit is a sudo value
     """
     # Check data
     cst = min(0.5, cst)
     obs, ens, nforc, nens = __check_ensemble_data(obs, ens)
+
+    # Check sudo pits
+    is_sudo = np.zeros(nforc).astype(bool)
+    idx = (obs < censor+EPS) & (np.sum(ens < censor + EPS, axis=1) > 0)
+    is_sudo[idx] = True
 
     # Compute pits
     if random:
@@ -83,7 +93,7 @@ def pit(obs, ens, random=False, cst=0.3, kind='rank'):
         pits = np.array([percentileofscore(ensval, obsval, kind)/100. \
                     for ensval, obsval in zip(ens, obs)])
 
-    return pits
+    return pits, is_sudo
 
 
 def crps(obs, ens):
@@ -206,7 +216,7 @@ def cramer_von_mises_test(data):
     return cvstat, pvalue
 
 
-def alpha(obs, ens, cst=0.3, type='CV'):
+def alpha(obs, ens, cst=0.3, type='CV', sudo_perc_threshold=5):
     ''' Score computing the Pvalue of the Cramer Von-Mises test (CV) or
     Kolmogorov-Smirnov test (KS)
 
@@ -221,6 +231,8 @@ def alpha(obs, ens, cst=0.3, type='CV'):
     type : str
         Type of alpha score. CV is Cramer Von-Mises, KS is Kolmogorov-Smirnov,
         AD is Anderson Darling.
+    sudo_perc_threshold : float
+        Percentage threshold for warning about too many sudo pits
 
     Returns
     -----------
@@ -233,7 +245,12 @@ def alpha(obs, ens, cst=0.3, type='CV'):
     obs, ens, nforc, nens = __check_ensemble_data(obs, ens)
 
     # Compute pit
-    pits = pit(obs, ens)
+    pits, is_sudo = pit(obs, ens)
+
+    # Warning if too much sudo pits
+    if np.sum(is_sudo) > nforc*float(sudo_perc_threshold)/100:
+        warnings.warn(('More than {0}% sudo pits in pits'+\
+                        ' series').format(sudo_perc_threshold))
 
     if type == 'KS':
         # KS test

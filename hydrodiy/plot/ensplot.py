@@ -13,15 +13,16 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from hydrodiy.plot import putils, boxplot
 from  hydrodiy.stat import metrics, sutils
 
-PITCOLORS = ['black', 'red']
+PITCOLORS = ['dimgrey', 'darkmagenta']
 
-MEDIANLINECOLOR = putils.COLORS10[0]
+SIMLINECOLOR = 'midnightblue'
+SIMMARKERCOLOR = 'aqua'
 
-OBSLINECOLOR = putils.COLORS10[3]
-OBSMARKERCOLOR = 'pink'
+OBSLINECOLOR = 'darkred'
+OBSMARKERCOLOR = 'tomato'
 
 
-def pitmetrics(obs, fcst, random=False):
+def pitmetrics(obs, fcst, random=True):
     ''' Compute metric data
 
     Parameters
@@ -53,19 +54,21 @@ def pitmetrics(obs, fcst, random=False):
     crps_ss = (1.-crps[0]/crps[3])*100
 
     # Compute pits
-    pits = metrics.pit(obs, fcst, random=random)
+    pits, is_sudo = metrics.pit(obs, fcst, random=random)
 
-    return alpha, crps_ss, pits
+    return alpha, crps_ss, pits, is_sudo
 
 
-def pitplot(pits, alpha, crps_ss, ax=None, labelaxis=True, transp=0.4, \
-                random=False):
+def pitplot(pits, is_sudo, alpha, crps_ss, ax=None, labelaxis=True, \
+                transp=0.4, random=False):
     ''' Draw a pit plot
 
     Parameters
     -----------
     pits : numpy.ndarray
         Pit data
+    is_sudo : numpy.ndarray
+        Boolean series containing the check if pit values are sudo pits
     alpha : float
         Alpha score
     cprss_ss : float
@@ -83,11 +86,28 @@ def pitplot(pits, alpha, crps_ss, ax=None, labelaxis=True, transp=0.4, \
         ax = plt.gca()
 
     # Draw pits
-    color = PITCOLORS[alpha<5]
-    pp = sutils.ppos(len(pits))
-    ax.plot(np.sort(pits), pp, 'o-', \
-        markersize=5, \
-        color=color)
+    nval = len(pits)
+    pp = sutils.ppos(nval)
+    kk = np.argsort(pits)
+    spits = pits[kk]
+    ssudo = is_sudo[kk]
+
+    color = PITCOLORS[alpha<5 or np.sum(ssudo)>5e-2*nval]
+
+    ax.plot(spits, pp, '-', color=color)
+
+    ax.plot(spits[~ssudo], pp[~ssudo], 'o', \
+        markersize=5,  color=color, alpha=0.7, \
+        markeredgecolor=color, markerfacecolor=color)
+
+    prc_sudo = 100*float(np.sum(is_sudo))/len(pits)
+    if prc_sudo > 0:
+        ax.plot(spits[ssudo], pp[ssudo], 'o', \
+            markersize=5,  alpha=0.9, \
+            markeredgecolor=color, markerfacecolor='w')
+
+        ax.text(0.05, 0.95, 'SP {0:0.0f}%'.format(prc_sudo), \
+                va='top', ha='left', fontsize=12, color=color)
 
     # Decorate
     ax.set_xlim([0, 1])
@@ -96,7 +116,7 @@ def pitplot(pits, alpha, crps_ss, ax=None, labelaxis=True, transp=0.4, \
 
     ax.text(0.95, 0.05, 'A {0:0.0f}%\n C {1:0.1f}%'.format(\
             alpha, crps_ss), \
-            va='bottom', ha='right', fontsize=15, color=color)
+            va='bottom', ha='right', fontsize=12, color=color)
 
     if labelaxis:
         ax.set_xlabel('PIT [-]')
@@ -109,10 +129,90 @@ def pitplot(pits, alpha, crps_ss, ax=None, labelaxis=True, transp=0.4, \
 
 
 
+def tsplot(obs, fcst, ax=None, \
+            show_pit=False, show_scatter=False, \
+            line='mean'):
+    ''' Draw ensemble forecasts timeseries
+    Parameters
+    -----------
+    obs : numpy.ndarray
+        Observed data
+    fcst : numpy.ndarray
+        Forecast data
+    show_pit : bool
+        Insert pit plot or not
+    show_scatter : bool
+        Insert median scatter plot or not
+    xgrid : bool
+        Draw x grid
+    line : str
+        Draw a line for mean (line=mean) or median (line=median)
+   '''
+    # Check inputs
+    nval = len(obs)
+
+    if not line in ['mean', 'median']:
+        raise ValueError('Expected line option in [mean/median], got '+line)
+
+    # Get axis
+    if ax is None:
+        ax = plt.gca()
+
+    # Forecast boxplot
+    bp = boxplot.Boxplot(fcst.T, style='narrow')
+    bp.median.marker = 'none'
+    bp.draw(ax=ax)
+
+    # Mean and median forecast
+    if line == 'mean':
+        qline = bp.stats.loc['mean', :].values
+    else:
+        qline = bp.stats.loc['50.0%', :].values
+
+    x = np.arange(nval)
+    ax.plot(x, qline, 'o-', linewidth=1, \
+        color=SIMLINECOLOR, \
+        markerfacecolor=SIMMARKERCOLOR, \
+        markeredgecolor=SIMLINECOLOR)
+
+    # obs data
+    ax.plot(x, obs, '-o', linewidth=2, \
+            color=OBSLINECOLOR, \
+            markeredgecolor=OBSLINECOLOR, \
+            markerfacecolor=OBSMARKERCOLOR, \
+            label='Obs')
+
+    if show_pit:
+        alpha, crps_ss, pits, is_sudo = pitmetrics(obs, fcst)
+        axi = inset_axes(ax, width='30%', height='30%', loc=1)
+        pitplot(pits, is_sudo, alpha, crps_ss, ax=axi, \
+            labelaxis=False)
+
+    if show_scatter:
+        axi2 = inset_axes(ax, width='30%', height='30%', loc=2)
+        axi2.plot(qline, obs, 'o')
+        putils.line(axi2, 1, 1, 0, 0, '-', linewidth=1, color='grey')
+
+        # Create regression line
+        theta, _, _, _ = np.linalg.lstsq(np.column_stack([qline*0+1, \
+                                                        qline]), obs)
+        putils.line(axi2, 1, theta[1], 0, theta[0], 'k--')
+
+        axi2.text(0.95, 0.05, 'Sim', ha='right', transform=axi2.transAxes)
+        axi2.text(0.05, 0.95, 'Obs', va='top', transform=axi2.transAxes)
+
+        axi2.set_xticks([])
+        axi2.set_yticks([])
+        axi2.patch.set_alpha(0.3)
+
+    return x
+
+
+
 class MonthlyEnsplot(object):
 
     def __init__(self, obs, fcst, fcdates, fig=None, \
-        ylabel='Flow [GL/month]', randompit=False):
+        ylabel='Flow [GL/month]', randompit=False, line='mean'):
         ''' Object to draw monthly ensemble forecasts
 
         Parameters
@@ -129,6 +229,8 @@ class MonthlyEnsplot(object):
             Label of y axis
         randompit : bool
             Randomise pit computation (generate pseudo-pits)
+        line : str
+            Line option to show mean or median
 
         Examples
         -----------
@@ -158,6 +260,11 @@ class MonthlyEnsplot(object):
         self.fcdates = fcdates
         self.obs = obs
         self.fcst = fcst
+
+        if not line in ['mean', 'median']:
+            raise ValueError('Expected line option in [mean/median], got '\
+                                +line)
+        self.line = line
 
         # Config data
         if fig is None:
@@ -200,106 +307,40 @@ class MonthlyEnsplot(object):
         return qo, qf, dates
 
 
-
-    def monthplot(self, month, pit=False, scatter=False, \
-                ax=None, xgrid=True, medline=True, \
-                ymin=None, ymax=None):
-        ''' Draw ensemble forecasts for a specific month
-
-        Parameters
-        -----------
-        month : int
-            Month used to select data
-        pit : bool
-            Insert pit plot or not
-        scatter : bool
-            Insert median scatter plot or not
-        xgrid : bool
-            Draw x grid
-        medline : bool
-            Draw a line for median forecast
-        ymin : float
-            Minimum y axis lim
-        ymax : float
-            Maximum y axis lim
-        '''
-
+    def monthplot(self, month, ax, show_pit=True, \
+                show_scatter=True):
+        ''' Draw monthly plot '''
         # Select data
-        qobs, ens, dates = self.getdata(month)
-        nval = len(qobs)
+        obs, fcst, fcdates = self.getdata(month)
 
-        # Get axis
-        if ax is None:
-            ax = plt.gca()
-
-        # Forecast boxplot
-        bp = boxplot.Boxplot(ens.T, style='narrow')
-        bp.median.size = 3.5
-        bp.draw(ax=ax)
-
-        qmed = bp.stats.loc['50.0%', :].values
-        x = np.arange(nval)
-        if medline:
-            ax.plot(x, qmed, '-', linewidth=1, \
-                color=MEDIANLINECOLOR, \
-                markeredgecolor=MEDIANLINECOLOR)
-
-        ax.plot(x, qobs, '-o', linewidth=2, \
-                color=OBSLINECOLOR, \
-                markeredgecolor=OBSLINECOLOR, \
-                markerfacecolor=OBSMARKERCOLOR, \
-                label='Obs')
+        # Draw ts plot
+        x = tsplot(obs, fcst, ax, \
+                    show_pit, show_scatter, \
+                    self.line)
 
         # Decorate
-        if ymin is None:
-            ymin = qobs[qobs>0].min()
-        if ymax is None:
-            ymax = qobs.max() * 1.2
-
-        ax.set_ylim((ymin, ymax))
-        ax.set_ylabel(self.ylabel)
-
         if month == 0:
             title = 'All months'
-            idx = (dates.month == 1) | (dates.month == 6)
+            idx = (fcdates.month == 1) | (fcdates.month == 6)
             ax.set_xticks(x[idx])
             ax.set_xticklabels(\
-                [datetime.strftime(d, format='%b\n%y') for d in dates[idx]])
+                [datetime.strftime(d, format='%b\n%y') for d in fcdates[idx]])
             ax.legend(loc=1)
         else:
             title = month_abbr[month]
             ax.set_xticks(x[::3])
-            ax.set_xticklabels(dates.year[::3])
-
-        if xgrid:
-            ax.grid(axis='x')
+            ax.set_xticklabels(fcdates.year[::3])
 
         ax.set_title(title)
 
-        if pit:
-            alpha, crps_ss, pits = pitmetrics(qobs, ens)
-            axi = inset_axes(ax, width='30%', height='30%', loc=1)
-            pitplot(pits, alpha, crps_ss, ax=axi, \
-                labelaxis=False)
+        ymin = obs[obs>0].min()
+        ymax = obs.max() * 1.2
+        ax.set_ylim((ymin, ymax))
 
-        if scatter:
-            axi2 = inset_axes(ax, width='30%', height='30%', loc=2)
-            axi2.plot(qmed, qobs, 'o')
-            putils.line(axi2, 1, 1, 0, 0, '-', linewidth=1, color='grey')
-
-            # Create regression line
-            theta, _, _, _ = np.linalg.lstsq(np.column_stack([qmed*0+1, qmed]), qobs)
-            putils.line(axi2, 1, theta[1], 0, theta[0], 'k--')
-
-            axi2.text(0.95, 0.05, 'Sim', ha='right', transform=axi2.transAxes)
-            axi2.text(0.05, 0.95, 'Obs', va='top', transform=axi2.transAxes)
-
-            axi2.set_xticks([])
-            axi2.set_yticks([])
-            axi2.patch.set_alpha(0.4)
+        ax.set_ylabel(self.ylabel)
 
 
-    def yearplot(self, show_scatter=True, show_pit=True, medline=True):
+    def yearplot(self, show_scatter=True, show_pit=True):
         ''' Draw a figure with forecast data for all months '''
 
         # Initialise matplotlib objects
@@ -313,10 +354,9 @@ class MonthlyEnsplot(object):
                 ax = self.fig.add_subplot(gs[(month-1)%3, (month-1)//3])
 
             # Draw monthly plot
-            self.monthplot(month, pit=month>0 and show_pit, \
-                    scatter=month>0 and show_scatter, \
-                    ax=ax, xgrid=month==0, \
-                    medline=medline)
+            self.monthplot(month, ax, \
+                    show_pit = month>0 and show_pit, \
+                    show_scatter = month>0 and show_scatter)
 
         self.gridspec = gs
 

@@ -475,7 +475,8 @@ class Boxplot(object):
                     xshift = bw/2
 
                 medtext = formatter % med
-                ax.text(i+xshift+xoffset, med, medtext, fontsize=item.fontsize, \
+                ax.text(i+xshift+xoffset, med, medtext, \
+                        fontsize=item.fontsize, \
                         color=item.fontcolor, \
                         va=item.va, ha=item.ha, \
                         alpha=item.alpha)
@@ -528,7 +529,8 @@ class Boxplot(object):
                             alpha=item.alpha)
                     else:
                         # Draw box
-                        bbox = FancyBboxPatch([i-ww/2+xoffset, q1], ww, q2-q1, \
+                        bbox = FancyBboxPatch([i-ww/2+xoffset, q1], \
+                            ww, q2-q1, \
                             boxstyle=item.boxstyle, \
                             facecolor=item.facecolor, \
                             linewidth=item.linewidth, \
@@ -561,7 +563,9 @@ class Boxplot(object):
                 elif item.ha == 'center':
                     xshift = 0
 
-                values = [stats.loc[qq, colname] for qq in [bqq1txt, bqq2txt]]
+                values = [stats.loc[qq, colname] \
+                                    for qq in [bqq1txt, bqq2txt]]
+
                 for ivalue, value in enumerate(values):
                     valuetext = formatter % value
 
@@ -572,7 +576,8 @@ class Boxplot(object):
                         va = 'top' if ivalue == 0 else 'bottom'
 
                     # Draw text
-                    ax.text(i+xshift+xoffset, value, valuetext, fontsize=item.fontsize, \
+                    ax.text(i+xshift+xoffset, value, valuetext, \
+                        fontsize=item.fontsize, \
                         color=item.fontcolor, \
                         va=va, ha=ha, \
                         alpha=item.alpha)

@@ -145,8 +145,11 @@ class MetricsTestCase(unittest.TestCase):
         nens = 200
         obs = np.linspace(0, 1, nforc)
         ens = np.repeat(np.linspace(0, 1, nens)[None, :], nforc, 0)
-        pit = metrics.pit(obs, ens)
+        pit, sudo = metrics.pit(obs, ens)
+
         self.assertTrue(np.all(np.abs(obs-pit)<8e-3))
+        self.assertTrue(np.all(~sudo[1:]))
+        self.assertTrue(sudo[0])
 
 
     def test_pit_hassan(self):
@@ -155,12 +158,13 @@ class MetricsTestCase(unittest.TestCase):
         ens = [0, 0, 0, 1, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4]
 
         # using scipy func
-        pit = metrics.pit(obs, ens, random=False)
+        pit, sudo = metrics.pit(obs, ens, random=False)
         self.assertTrue(np.isclose(pit, 0.5666666666666))
+        self.assertTrue(np.all(~sudo))
 
         # using randomisation
         nrepeat = 1000
-        pits = np.array([metrics.pit(obs, ens, random=True) \
+        pits = np.array([metrics.pit(obs, ens, random=True)[0] \
                     for i in range(nrepeat)]).squeeze()
         pits = pd.Series(pits).value_counts().sort_index()
         self.assertTrue(np.allclose(pits.index, [0.33121, 0.394904, \
@@ -177,16 +181,37 @@ class MetricsTestCase(unittest.TestCase):
                                                 has_colnames=False)
             ens, _ = csv.read_csv('rpp_ensemble.csv', archive=archive, \
                                             index_col=0)
-        pit1 = metrics.pit(obs, ens, random=False)
-        pit2 = metrics.pit(obs, ens, random=True)
+        pit1, sudo1 = metrics.pit(obs, ens, random=False)
+        pit2, sudo2 = metrics.pit(obs, ens, random=True)
 
         fig, ax = plt.subplots()
         ff = sutils.ppos(len(pit1))
-        ax.plot(np.sort(pit1), ff, label='Scipy percentileofscore')
-        ax.plot(np.sort(pit2), ff, \
-            label='hydrodiy.metrics.pit using random=True')
 
-        ax.legend(loc=2)
+        kk = np.argsort(pit1)
+        p1 = pit1[kk]
+        s1 = sudo1[kk]
+        ax.plot(p1[s1], ff[s1], 'k.', \
+                    markersize=5, alpha=0.3, \
+                    label='Scipy percentileofscore (sudo)')
+        ax.plot(p1[~s1], ff[~s1], 'o',
+                    markeredgecolor='k', \
+                    markerfacecolor='k', \
+                    label='Scipy percentileofscore')
+
+
+        kk = np.argsort(pit2)
+        p2 = pit2[kk]
+        s2 = sudo2[kk]
+        ax.plot(p2[s2], ff[s2], 'r.', \
+                    markersize=5, alpha=0.5, \
+                    label='hydrodiy.metrics.pit using random=True (sudo)')
+
+        ax.plot(p2[~s2], ff[~s2], 'o', \
+                    markeredgecolor='r', \
+                    markerfacecolor='r', \
+                    label='hydrodiy.metrics.pit using random=True')
+
+        ax.legend(loc=2, framealpha=0.5)
         ax.set_xlabel('PIT [-]')
         ax.set_ylabel('ECDF [-]')
 
