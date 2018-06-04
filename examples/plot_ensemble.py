@@ -52,7 +52,7 @@ LOGGER = iutils.get_logger(basename)
 
 
 # Create a random set of forecasts
-fcst = np.random.normal(loc=2, size=(nval, nens))
+fcst = np.random.normal(loc=1, size=(nval, nens))
 fcst = fcst + 0.5*np.sin(np.linspace(-math.pi, math.pi, nval))[:, None]
 fcst = np.maximum(fcst, 0.)
 
@@ -61,6 +61,7 @@ fcst = pd.DataFrame(fcst, columns=['E{0}'.format(i) for i in range(nens)])
 
 # Create a random set of obs
 obs = fcst.mean(axis=1) + np.random.normal(size=nval)
+obs = np.maximum(obs, 0.)
 
 #----------------------------------------------------------------------
 # Process
@@ -75,7 +76,7 @@ fig, ax = plt.subplots()
 # Draw ensemble time series
 x = ensplot.tsplot(obs, fcst, ax, \
             show_pit=True, show_scatter=True, \
-            line='mean')
+            line='mean', random_pit=True)
 
 # Set x ticks
 xticks = np.where(pd.Series(days.day).isin([1, 10, 20]))[0]
