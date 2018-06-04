@@ -184,6 +184,29 @@ class UtilsTestCase(unittest.TestCase):
         fig.savefig(fp)
 
 
+    def test_kde_ties(self):
+        ''' Test kde generation with ties '''
+
+        mpl.rcdefaults()
+
+        xy = np.random.multivariate_normal( \
+            [1, 2], [[1, 0.9], [0.9, 1]], \
+            size=1000)
+
+        xy[:200, 0] = 1
+
+        xx, yy, zz = putils.kde(xy)
+
+        plt.close('all')
+        fig, ax = plt.subplots()
+        cont = ax.contourf(xx, yy, zz, cmap='Blues')
+        ax.contour(cont, colors='grey')
+        ax.plot(xy[:, 0], xy[:, 1], '.', alpha=0.2, mfc='grey', mec='none')
+        fp = os.path.join(self.fimg, 'kde_ties.png')
+        fig.savefig(fp)
+
+
+
     def test_ellipse(self):
         ''' Test ellipse plot '''
 

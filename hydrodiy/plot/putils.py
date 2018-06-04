@@ -402,7 +402,7 @@ def set_mpl(color_theme='black', font_size=18, usetex=False):
             mpl.rc('savefig', transparent=True)
 
 
-def kde(xy, ngrid=50):
+def kde(xy, ngrid=50, eps=1e-10):
     ''' Interpolate a 2d pdf from a set of x/y data points using
     a Gaussian KDE. The outputs can be used to plot the pdf
     with something like matplotlib.Axes.contourf
@@ -413,6 +413,9 @@ def kde(xy, ngrid=50):
         A set of x/y coordinates. Should be a 2d Nx2 array
     ngrid : int
         Size of grid generated
+    eps : float
+        Random error added to avoid singular matrix error
+        when x or y have ties.
 
     Returns
     -----------
@@ -429,6 +432,9 @@ def kde(xy, ngrid=50):
     x = np.linspace(xy[:, 0].min(), xy[:, 0].max(), ngrid)
     y = np.linspace(xy[:, 1].min(), xy[:, 1].max(), ngrid)
     xx, yy = np.meshgrid(x, y)
+
+    if eps > 0.:
+        xy += np.random.uniform(-eps, eps, size=xy.shape)
 
     kd = gaussian_kde(xy.T)
     zz = kd(np.vstack([xx.ravel(), yy.ravel()]))
