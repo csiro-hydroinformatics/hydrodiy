@@ -321,45 +321,6 @@ class UtilsTestCase(unittest.TestCase):
         iutils.download(url, fn, timeout=10)
 
 
-    def test_run_command(self):
-        ''' Test run_command '''
-
-        if not sys.platform.startswith('linux') or PYVERSION < 3:
-            warnings.warn('run_command not tested for platform '+sys.platform)
-            return
-
-        # Define commands
-        cmd1 = 'ls -al {0}'.format(self.ftest)
-        cmd2 = 'ls -al {0}/bidule'.format(self.ftest)
-
-        # Erase log file if any
-        flog = os.path.join(self.ftest, 'run_command.log')
-        if os.path.exists(flog):
-            os.remove(flog)
-
-        # First test - no error
-        logger1 = iutils.get_logger('bidule1', console=False, flog=flog)
-        iutils.run_command(cmd1, logger1)
-        self.assertTrue(os.path.exists(flog))
-
-        with open(flog, 'r') as fo:
-            logs1 = fo.read().splitlines()
-
-        ck = np.array([bool(re.search('test_hyio_(csv|iutils).py$', line)) \
-                            for line in logs1])
-        self.assertTrue(np.sum(ck) == 2)
-        os.remove(flog)
-
-        # Second test - with error
-        logger2 = iutils.get_logger('bidule2', console=False, flog=flog)
-        iutils.run_command(cmd2, logger2)
-        with open(flog, 'r') as fo:
-            logs2 = fo.read().splitlines()
-        check = np.array([bool(re.search('ERROR', line)) for line in logs2])
-        self.assertTrue(np.sum(check) > 0)
-        os.remove(flog)
-
-
 
 if __name__ == "__main__":
     unittest.main()
