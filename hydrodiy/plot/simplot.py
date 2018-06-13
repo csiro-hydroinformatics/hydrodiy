@@ -254,7 +254,7 @@ class Simplot(object):
         for cn in data.columns:
             value = np.sort(data.loc[idx, cn].values)[::-1]
             name = self._getname(cn)
-            ax.plot(ff, value, '+-', label=name,
+            ax.plot(ff, value, '-', label=name,
                 markersize=6,
                 color=COLORS[icol], lw=1)
             icol += 1
@@ -369,14 +369,18 @@ class Simplot(object):
     def set_size_inches(self, size=None):
         ''' Set figure size '''
         if size is None:
-            size = (18, 10+5*((self.nfloods-1)/3+1))
+            size = (20, 10+5*((self.nfloods-1)/3+1))
 
         self.fig.set_size_inches(size)
         self.gs.tight_layout(self.fig)
 
+        return size
+
 
     def savefig(self, filename, size=None):
         ''' Save figure to file '''
-        self.set_size_inches(size)
+        size = self.set_size_inches(size)
         self.fig.savefig(filename)
+
+        return size
 
