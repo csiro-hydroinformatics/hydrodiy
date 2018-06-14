@@ -21,6 +21,9 @@ class SimplotTestCase(unittest.TestCase):
         print('\t=> SimplotTestCase (hyplot)')
         source_file = os.path.abspath(__file__)
         self.ftest = os.path.dirname(source_file)
+        self.fimg = os.path.join(self.ftest, 'images')
+        if not os.path.exists(self.fimg):
+            os.mkdir(self.fimg)
 
 
     def test_sim_daily(self):
@@ -35,9 +38,32 @@ class SimplotTestCase(unittest.TestCase):
         sm = Simplot(obs, sim, sim_name='bidule')
 
         sm.add_sim(sim2, name='truc')
-        sm.draw()
+        axb, axa, axfd, axfdl, axs, axf = sm.draw()
 
-        fp = os.path.join(self.ftest, 'simplot_daily.png')
+        fp = os.path.join(self.fimg, 'simplot_daily.png')
+        sm.savefig(fp)
+
+
+    def test_sim_daily_samefloodyscale(self):
+        dt = pd.date_range('1970-01-01', '2015-12-01')
+        nval = len(dt)
+
+        obs = pd.Series(np.exp(np.random.normal(size=nval)), index=dt)
+        sim = pd.Series(np.exp(np.random.normal(size=nval)), index=dt)
+        sim2 = pd.Series(np.exp(np.random.normal(size=nval)), index=dt)
+
+        plt.close('all')
+        sm = Simplot(obs, sim, sim_name='bidule', samefloodyscale=True)
+
+        sm.add_sim(sim2, name='truc')
+        axb, axa, axfd, axfdl, axs, axf = sm.draw()
+        ylims = []
+        for ax in axf:
+            ylims.append(ax.get_ylim())
+        ylims = np.array(ylims)
+        self.assertTrue(np.all(np.std(ylims, 0) < 1e-10))
+
+        fp = os.path.join(self.fimg, 'simplot_daily_samefloodyscale.png')
         sm.savefig(fp)
 
 
@@ -52,9 +78,8 @@ class SimplotTestCase(unittest.TestCase):
         sm = Simplot(obs, sim, sim_name='bidule', nfloods=10)
         sm.draw()
 
-        fp = os.path.join(self.ftest, 'simplot_nfloods.png')
+        fp = os.path.join(self.fimg, 'simplot_nfloods.png')
         sm.savefig(fp)
-
 
 
     def test_sim_monthly(self):
@@ -68,7 +93,7 @@ class SimplotTestCase(unittest.TestCase):
         sm = Simplot(obs, sim)
         sm.draw()
 
-        fp = os.path.join(self.ftest, 'simplot_monthly.png')
+        fp = os.path.join(self.fimg, 'simplot_monthly.png')
         sm.savefig(fp)
 
 
@@ -92,7 +117,7 @@ class SimplotTestCase(unittest.TestCase):
         for ax in axf:
             ax.set_ylim([0, 1])
 
-        fp = os.path.join(self.ftest, 'simplot_axis.png')
+        fp = os.path.join(self.fimg, 'simplot_axis.png')
         sm.savefig(fp)
 
 
