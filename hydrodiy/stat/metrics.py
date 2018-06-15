@@ -28,6 +28,7 @@ CVM_TABLE = CVM_TABLE.values
 def __check_ensemble_data(obs, ens):
     ''' Check dimensions of obs and ens data '''
 
+    # Convert data to proper dimensions
     obs = np.atleast_1d(obs).astype(np.float64)
     if obs.ndim > 1:
         obs = obs.squeeze()
@@ -36,12 +37,23 @@ def __check_ensemble_data(obs, ens):
 
     ens = np.atleast_2d(ens).astype(np.float64)
 
-    nforc = obs.shape[0]
-    nens = ens.shape[1]
-    if ens.shape[0]!=nforc:
+    # Check dimensions
+    if ens.shape[0]!=obs.shape[0]:
         raise ValueError('Expected ens with first dim equal to'+\
             ' {0}, got {1}'.format( \
-            nforc, ens.shape[0]))
+            obs.shape[0], ens.shape[0]))
+
+    # Skip nan
+    idx = pd.notnull(obs)
+    idx = idx & pd.notnull(ens).any(axis=1)
+    if np.sum(idx) == 0:
+        raise ValueError('No valid data')
+    obs = obs[idx]
+    ens = ens[idx, :]
+
+    # Dimensions
+    nforc = obs.shape[0]
+    nens = ens.shape[1]
 
     return obs, ens, nforc, nens
 
@@ -87,6 +99,7 @@ def pit(obs, ens, random=False, cst=0.3, kind='rank', censor=0.):
     if random:
         dobs = np.random.uniform(-EPS, EPS, size=nforc)
         dens = np.random.uniform(-EPS, EPS, size=(nforc, nens))
+
         pits = (ens+dens-(obs+dobs)[:, None]<0).astype(int)
         pits = (np.sum(pits, 1)+0.5-cst)/(1.-cst+nens)
     else:
