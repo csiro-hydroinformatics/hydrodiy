@@ -67,28 +67,29 @@ obs = np.maximum(obs, 0.)
 # Process
 #----------------------------------------------------------------------
 
+for stat in ['mean', 'median']:
 
-# Create matplotlib objects
-plt.close('all')
+    # Create matplotlib objects
+    plt.close('all')
 
-fig, ax = plt.subplots()
+    fig, ax = plt.subplots()
 
-# Draw ensemble time series
-x = ensplot.tsplot(obs, fcst, ax, \
-            show_pit=True, show_scatter=True, \
-            line='mean', random_pit=True)
+    # Draw ensemble time series and get performance metrics
+    x, alpha, crps_ss, R2 = ensplot.tsplot(obs, fcst, ax, \
+                show_pit=True, show_scatter=True, \
+                line=stat, random_pit=True)
 
-# Set x ticks
-xticks = np.where(pd.Series(days.day).isin([1, 10, 20]))[0]
-xticklabels = [datetime.strftime(d, format='%d %b\n%Y') \
-                                    for d in days[xticks]]
-ax.set_xticks(xticks)
-ax.set_xticklabels(xticklabels)
+    # Set x ticks
+    xticks = np.where(pd.Series(days.day).isin([1, 10, 20]))[0]
+    xticklabels = [datetime.strftime(d, format='%d %b\n%Y') \
+                                        for d in days[xticks]]
+    ax.set_xticks(xticks)
+    ax.set_xticklabels(xticklabels)
 
-# Save figure
-fig.tight_layout()
-fp = os.path.join(fimg, 'ensemble_plot.png')
-fig.savefig(fp)
+    # Save figure
+    fig.tight_layout()
+    fp = os.path.join(fimg, 'ensemble_plot_{0}.png'.format(stat))
+    fig.savefig(fp)
 
 
 LOGGER.info('Process completed')

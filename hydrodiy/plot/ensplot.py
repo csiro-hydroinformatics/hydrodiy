@@ -22,7 +22,7 @@ OBSLINECOLOR = 'darkred'
 OBSMARKERCOLOR = 'tomato'
 
 
-def pitmetrics(obs, fcst, random_pit=True):
+def ensmetrics(obs, fcst, random_pit=True, stat='median'):
     ''' Compute metric data
 
     Parameters
@@ -33,6 +33,8 @@ def pitmetrics(obs, fcst, random_pit=True):
         Forecast data
     random_pit : bool
         Randomise pit computation
+    stat : str
+        Use mean or median for R2 computation
 
     Returns
     -----------
@@ -42,6 +44,11 @@ def pitmetrics(obs, fcst, random_pit=True):
         CRPS skill score
     pits : numpy.ndarray
         Pit data
+    is_sudo : numpy.ndarray
+        Boolean telling if the pit value is sudo or not (i.e. censored)
+    R2 : float
+        Pearson coefficient of correlation between obs and median or mean
+        forecast
     '''
     # Check data
     if obs.shape[0] != fcst.shape[0]:
@@ -58,7 +65,10 @@ def pitmetrics(obs, fcst, random_pit=True):
     # Compute pits
     pits, is_sudo = metrics.pit(obs, fcst, random=random_pit)
 
-    return alpha, crps_ss, pits, is_sudo
+    # Correlation
+    R2 = metrics.corr(obs, fcst, stat=stat)
+
+    return alpha, crps_ss, pits, is_sudo, R2
 
 
 def pitplot(pits, is_sudo, alpha, crps_ss, ax=None, labelaxis=True, \
@@ -193,8 +203,7 @@ def tsplot(obs, fcst, ax=None, \
             label='Obs')
 
     # performance metrics
-    alpha, crps_ss, pits, is_sudo = pitmetrics(obs, fcst, random_pit)
-    R2 = np.corrcoef(obs, qline)[0, 1]
+    alpha, crps_ss, pits, is_sudo, R2 = ensmetrics(obs, fcst, random_pit, line)
 
     # Draw figure
     if show_pit:

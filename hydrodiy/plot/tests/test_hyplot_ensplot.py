@@ -9,7 +9,7 @@ mpl.use('Agg')
 import matplotlib.pyplot as plt
 
 from hydrodiy.plot.ensplot import MonthlyEnsplot
-from hydrodiy.plot.ensplot import pitmetrics, pitplot, tsplot
+from hydrodiy.plot.ensplot import ensmetrics, pitplot, tsplot
 
 # Reset matplotlib to default
 mpl.rcdefaults()
@@ -39,16 +39,17 @@ class EnsplotTestCase(unittest.TestCase):
                                                 (nval, nens)), 0, 1)
 
 
-    def test_pitmetrics(self):
-        ''' Test pitmetrics '''
-        alpha, cr, pits, is_sudo = pitmetrics(self.obs, self.fcst)
+    def test_ensmetrics(self):
+        ''' Test ensmetrics '''
+        alpha, cr, pits, is_sudo, R2 = ensmetrics(self.obs, self.fcst)
         self.assertTrue(alpha>1)
+        self.assertTrue(R2<1 and R2>-1)
         self.assertTrue(len(pits) == len(self.obs))
 
 
-    def test_pitmetrics_sudo(self):
-        ''' Test pitmetrics with sudo pits '''
-        alpha, cr, pits, is_sudo = pitmetrics(self.obs_sudo, self.fcst_sudo)
+    def test_ensmetrics_sudo(self):
+        ''' Test ensmetrics with sudo pits '''
+        alpha, cr, pits, is_sudo, R2 = ensmetrics(self.obs_sudo, self.fcst_sudo)
         self.assertTrue(len(pits) == len(self.obs_sudo))
         self.assertTrue(np.sum(is_sudo) > 0)
 
@@ -69,7 +70,7 @@ class EnsplotTestCase(unittest.TestCase):
 
     def test_pitplot(self):
         ''' Test pitplot '''
-        alpha, cr, pits, sudo = pitmetrics(self.obs, self.fcst)
+        alpha, cr, pits, sudo, R2 = ensmetrics(self.obs, self.fcst)
 
         plt.close('all')
         fig, ax = plt.subplots()
@@ -81,7 +82,7 @@ class EnsplotTestCase(unittest.TestCase):
 
     def test_pitplot_sudo(self):
         ''' Test pitplot with sudo pits'''
-        alpha, cr, pits, sudo = pitmetrics(self.obs_sudo, self.fcst_sudo)
+        alpha, cr, pits, sudo, R2 = ensmetrics(self.obs_sudo, self.fcst_sudo)
 
         plt.close('all')
         fig, ax = plt.subplots()
