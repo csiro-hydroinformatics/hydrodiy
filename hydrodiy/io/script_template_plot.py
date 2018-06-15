@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import sys, os, re, json, math
+import argparse
 
 from datetime import datetime
 
@@ -20,15 +21,27 @@ import matplotlib.dates as mdates
 
 from hydrodiy.io import csv, iutils
 from hydrodiy.plot import putils
-from hydrodiy.gis.oz import Oz
 
+# Package to plot spatial data
+import pyproj
+from hydrodiy.gis.oz import Oz
 
 #----------------------------------------------------------------------
 # Config
 #----------------------------------------------------------------------
 
+parser = argparse.ArgumentParser(\
+    description='A plotting script')
+parser.add_argument('-e', '--extension', help='Image file extension', \
+                    type=str, default='png')
+parser.add_argument('-p', '--projection', \
+                    help='Spatial projection (GDA94=3112, WGS84=4326)', \
+                    type=int, default=3112)
+args = parser.parse_args()
+
+
 # Image file extension
-imgext = 'pdf'
+imgext = args.extension
 
 # Plot dimensions
 fnrows = 2
@@ -40,6 +53,16 @@ aheight = 1000
 # Set matplotlib options
 #mpl.rcdefaults() # to reset
 putils.set_mpl()
+
+# Manage projection
+proj = pyproj.Proj('+init=EPSG:{0}'.format(args.projection))
+
+def proj2map(x, y, map):
+    ''' Convert projected coordinate to basemap.map coordinates '''
+    coords = [map(*proj(xx, yy, inverse=True)) \
+                        for xx, yy in zip(x, y)]
+    x2, y2 = np.array(coords).T
+    return x2, y2
 
 #----------------------------------------------------------------------
 # Folders
@@ -104,6 +127,11 @@ for i in range(fnrows*fncols):
         mfc='pink',
         alpha=0.5,
         label='points')
+
+    # Spatial
+    #om = oz.Oz(ax=ax)
+    #x2, y2 = proj2map(x, y, om.map)
+    #ax.plot(x2, y2)
 
     # Decoration
     ax.legend(shadow=True,
