@@ -4,7 +4,7 @@ import pkg_resources
 import numpy as np
 import pandas as pd
 
-from scipy.stats import kstest, percentileofscore
+from scipy.stats import kstest, percentileofscore, spearmanr
 
 import warnings
 
@@ -56,6 +56,22 @@ def __check_ensemble_data(obs, ens):
     nens = ens.shape[1]
 
     return obs, ens, nforc, nens
+
+
+def __nonulldata(tobs, tsim):
+    ''' Exclude nan data from obs and sim '''
+
+    idx = pd.notnull(tobs) & pd.notnull(tsim)
+    if np.sum(idx) == 0:
+        raise ValueError('No valid data in transformed space')
+
+    nok = np.sum(idx)
+    nval = len(tobs)
+    if nok != nval:
+        warnings.warn(('There are {0} null values in'+\
+                ' transformed data').format(nval-nok))
+
+    return tobs[idx], tsim[idx]
 
 
 def pit(obs, ens, random=False, cst=0.3, kind='rank', censor=0.):
@@ -371,7 +387,7 @@ def bias(obs, sim, trans=transform.Identity()):
 
     Returns
     -----------
-    bias : float
+    bias_value : float
         Simulation bias
     '''
     # Check data
@@ -386,17 +402,17 @@ def bias(obs, sim, trans=transform.Identity()):
     # Transform
     tobs = trans.forward(obs)
     tsim = trans.forward(sim)
+    tobs, tsim =  __nonulldata(tobs, tsim)
 
     # Compute
-    idx = pd.notnull(tobs) & pd.notnull(tsim)
-    meano = np.mean(tobs[idx])
+    meano = np.mean(tobs)
     if abs(meano) < EPS:
         warnings.warn(('Mean value of obs is close to '+\
                 'zero ({0:3.3e}), returning nan').format(\
                     meano))
         return np.nan
 
-    means = np.mean(tsim[idx])
+    means = np.mean(tsim)
     bias_value = (means-meano)/meano
 
     return bias_value
@@ -416,7 +432,7 @@ def nse(obs, sim, trans=transform.Identity()):
 
     Returns
     -----------
-    value : float
+    nse_value : float
         Nash-Sutcliffe efficiency (N)
 
     '''
@@ -432,20 +448,17 @@ def nse(obs, sim, trans=transform.Identity()):
     # Transform
     tobs = trans.forward(obs)
     tsim = trans.forward(sim)
-
-    # Select non null obs data
-    idx = pd.notnull(tobs)
+    tobs, tsim =  __nonulldata(tobs, tsim)
 
     # SSE
-    idx = idx & pd.notnull(tsim)
-    errs = np.sum((tsim[idx]-tobs[idx])**2)
+    errs = np.sum((tsim-tobs)**2)
 
-    mo = np.mean(tobs[idx])
-    erro = np.sum((mo-tobs[idx])**2)
+    mo = np.mean(tobs)
+    erro = np.sum((mo-tobs)**2)
 
-    value = 1-errs/erro
+    nse_value = 1-errs/erro
 
-    return value
+    return nse_value
 
 
 def dscore(obs, sim, eps=1e-6):
@@ -507,7 +520,7 @@ def dscore(obs, sim, eps=1e-6):
 
 
 def kge(obs, sim, trans=transform.Identity()):
-    ''' Compute Kling-Gupta efficiency.
+    ''' Compute Kling-Gupta efficiency index.
 
     Parameters
     -----------
@@ -520,8 +533,8 @@ def kge(obs, sim, trans=transform.Identity()):
 
     Returns
     -----------
-    value : float
-        Nash-Sutcliffe efficiency (N)
+    kge_value : float
+        KGE index
 
     '''
     # Check data
@@ -536,11 +549,7 @@ def kge(obs, sim, trans=transform.Identity()):
     # Transform
     tobs = trans.forward(obs)
     tsim = trans.forward(sim)
-
-    # Select non null obs data
-    idx = pd.notnull(tobs) & pd.notnull(tsim)
-    tobs = tobs[idx]
-    tsim = tsim[idx]
+    tobs, tsim =  __nonulldata(tobs, tsim)
 
     # Means
     meano = np.mean(tobs)
@@ -572,8 +581,68 @@ def kge(obs, sim, trans=transform.Identity()):
         return np.nan
 
     # KGE
-    value = 1-math.sqrt((1-means/meano)**2+(1-stds/stdo)**2+(1-corr)**2)
+    kge_value = 1-math.sqrt((1-means/meano)**2+(1-stds/stdo)**2+(1-corr)**2)
 
-    return value
+    return kge_value
+
+
+def corr(obs, ens, trans=transform.Identity(), \
+                    stat='median', type='Pearson'):
+    ''' Compute correlation coefficient
+
+    Parameters
+    -----------
+    obs : numpy.ndarray
+        obs data, [n] or [n,1] array
+    ens : numpy.ndarray
+        simulated data, [n,p] array
+    transform : hydrodiy.stat.transform.Transform
+        Data transforma object
+    stat : str
+        Use median or mean from ensemble
+    type : str
+        Pearson or Spearman type of correlation
+
+    Returns
+    -----------
+    corr_value : float
+        Correlation coefficient
+    '''
+    # Check data
+    obs, ens, nforc, nens = __check_ensemble_data(obs, ens)
+
+    if not stat in ['median', 'mean']:
+        raise ValueError('Expected stat in [mean/median], got '+stat)
+
+    if not type in ['Pearson', 'Spearman']:
+        raise ValueError('Expected type in [Pearson/Spearman], got '\
+                            +type)
+
+    # Transform
+    tobs = trans.forward(obs)
+    tens = trans.forward(ens)
+
+    # Compute statistic
+    if stat == 'mean':
+        tsim = np.nanmean(tens, axis=1)
+    else:
+        tsim = np.nanmedian(tens, axis=1)
+
+    tobs, tsim =  __nonulldata(tobs, tsim)
+
+    # Check std
+    stdo = np.std(tobs)
+    if abs(stdo) < EPS:
+        warnings.warn(('CORR - Standard dev of obs is close to '+\
+                'zero ({0:3.3e}), returning nan').format(stdo))
+        return np.nan
+
+    # Compute
+    if type == 'Pearson':
+        corr_value = np.corrcoef(tobs, tsim)[0, 1]
+    else:
+        corr_value = spearmanr(tobs, tsim).correlation
+
+    return corr_value
 
 

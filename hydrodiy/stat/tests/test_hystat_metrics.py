@@ -3,8 +3,9 @@ import unittest
 import warnings
 import numpy as np
 import pandas as pd
+from itertools import product as prod
 
-from scipy.stats import norm, lognorm
+from scipy.stats import norm, lognorm, spearmanr
 import time
 import zipfile
 
@@ -356,7 +357,7 @@ class MetricsTestCase(unittest.TestCase):
             bias = metrics.bias(obs, sim, trans)
 
             expected = -2./np.mean(tobs)
-            ck = np.allclose(bias, expected)
+            ck = np.isclose(bias, expected)
             self.assertTrue(ck)
 
 
@@ -596,6 +597,7 @@ class MetricsTestCase(unittest.TestCase):
             expected = 1-math.sqrt((1-bias)**2+(1-rstd)**2+(1-corr)**2)
             self.assertTrue(np.isclose(kge, expected))
 
+
     def test_kge_warnings(self):
         ''' Testing KGE warnings '''
 
@@ -630,6 +632,37 @@ class MetricsTestCase(unittest.TestCase):
             else:
                 raise ValueError('Problem in error handling')
 
+
+    def test_corr(self):
+        ''' Test correlation '''
+        nval = 200
+        nens = 1000
+        obs = np.arange(0, nval).astype(float)
+
+        for trans, type, stat in prod(self.transforms, \
+                    ['Pearson', 'Spearman'], ['mean', 'median']):
+
+            if trans.params.nval > 0:
+                trans.params.values[0] = np.mean(obs)*1e-2
+
+            tobs = trans.forward(obs)
+            tens = tobs[:, None] - 2 \
+                        + np.random.uniform(-1, 1, size=(nval, nens))
+            ens = trans.backward(tens)
+            corr = metrics.corr(obs, ens, trans, stat, type)
+
+            if stat == 'mean':
+                tsim = np.nanmean(tens, 1)
+            else:
+                tsim = np.nanmedian(tens, 1)
+
+            if type == 'Pearson':
+                expected = np.corrcoef(tobs, tsim)[0, 1]
+            else:
+                expected = spearmanr(tobs, tsim).correlation
+
+            ck = np.isclose(corr, expected)
+            self.assertTrue(ck)
 
 
 if __name__ == "__main__":
