@@ -125,7 +125,11 @@ class EnsplotTestCase(unittest.TestCase):
         fig = plt.figure()
 
         mep = MonthlyEnsplot(self.obs, self.fcst, self.fcdates, fig)
-        mep.yearplot()
+        perf = mep.yearplot()
+
+        perf = pd.DataFrame(perf).T
+        self.assertEqual(perf.shape, (13, 3))
+        self.assertEqual(list(perf.columns), ['R2', 'alpha', 'crps_ss'])
 
         fp = os.path.join(self.fimg, 'yearplot.png')
         mep.savefig(fp)

@@ -192,8 +192,12 @@ def tsplot(obs, fcst, ax=None, \
             markerfacecolor=OBSMARKERCOLOR, \
             label='Obs')
 
+    # performance metrics
+    alpha, crps_ss, pits, is_sudo = pitmetrics(obs, fcst, random_pit)
+    R2 = np.corrcoef(obs, qline)[0, 1]
+
+    # Draw figure
     if show_pit:
-        alpha, crps_ss, pits, is_sudo = pitmetrics(obs, fcst, random_pit)
         axi = inset_axes(ax, width='30%', height='30%', loc=1)
         pitplot(pits, is_sudo, alpha, crps_ss, ax=axi, \
             labelaxis=False, sudo_threshold=sudo_threshold)
@@ -207,7 +211,6 @@ def tsplot(obs, fcst, ax=None, \
         # Create regression line
         theta, _, _, _ = np.linalg.lstsq(np.column_stack([qline*0+1, \
                                                         qline]), obs)
-        R2 = np.corrcoef(obs, qline)[0, 1]
         putils.line(axi2, 1, theta[1], 0, theta[0], '--', color=color, lw=1)
 
         t = axi2.text(0.95, 0.05, 'FC '+line.title(), ha='right', \
@@ -232,7 +235,7 @@ def tsplot(obs, fcst, ax=None, \
         axi2.set_yticks([])
         axi2.patch.set_alpha(0.6)
 
-    return x
+    return x, alpha, crps_ss, R2
 
 
 
@@ -341,7 +344,7 @@ class MonthlyEnsplot(object):
         obs, fcst, fcdates = self.getdata(month)
 
         # Draw ts plot
-        x = tsplot(obs, fcst, ax, \
+        x, alpha, crps_ss, R2 = tsplot(obs, fcst, ax, \
                     show_pit, show_scatter, \
                     self.line)
 
@@ -366,6 +369,15 @@ class MonthlyEnsplot(object):
 
         ax.set_ylabel(self.ylabel)
 
+        # Return performance metrics
+        perf = {\
+            'alpha': alpha, \
+            'crps_ss': crps_ss, \
+            'R2': R2
+        }
+
+        return perf
+
 
     def yearplot(self, show_scatter=True, show_pit=True):
         ''' Draw a figure with forecast data for all months '''
@@ -374,6 +386,7 @@ class MonthlyEnsplot(object):
         gs = GridSpec(nrows=4, ncols=4)
 
         # Loop through months
+        perf = {}
         for month in range(13):
             if month == 0:
                 ax = self.fig.add_subplot(gs[-1, :])
@@ -381,11 +394,15 @@ class MonthlyEnsplot(object):
                 ax = self.fig.add_subplot(gs[(month-1)%3, (month-1)//3])
 
             # Draw monthly plot
-            self.monthplot(month, ax, \
+            p = self.monthplot(month, ax, \
                     show_pit = month>0 and show_pit, \
                     show_scatter = month>0 and show_scatter)
 
+            perf[month] = p
+
         self.gridspec = gs
+
+        return perf
 
 
     def savefig(self, filename, figsize=(26, 18)):
