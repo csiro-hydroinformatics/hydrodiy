@@ -633,8 +633,8 @@ class MetricsTestCase(unittest.TestCase):
                 raise ValueError('Problem in error handling')
 
 
-    def test_corr(self):
-        ''' Test correlation '''
+    def test_corr2d(self):
+        ''' Test correlation for ensemble data '''
         nval = 200
         nens = 1000
         obs = np.arange(0, nval).astype(float)
@@ -660,6 +660,32 @@ class MetricsTestCase(unittest.TestCase):
                 expected = np.corrcoef(tobs, tsim)[0, 1]
             else:
                 expected = spearmanr(tobs, tsim).correlation
+
+            ck = np.isclose(corr, expected)
+            self.assertTrue(ck)
+
+
+    def test_corr1d(self):
+        ''' Test correlation  for deterministic data '''
+        nval = 200
+        obs = np.arange(0, nval).astype(float)
+
+        for trans, type, stat in prod(self.transforms, \
+                    ['Pearson', 'Spearman'], ['mean', 'median']):
+
+            if trans.params.nval > 0:
+                trans.params.values[0] = np.mean(obs)*1e-2
+
+            tobs = trans.forward(obs)
+            tens = tobs - 2 \
+                        + np.random.uniform(-1, 1, size=nval)
+            ens = trans.backward(tens)
+            corr = metrics.corr(obs, ens, trans, stat, type)
+
+            if type == 'Pearson':
+                expected = np.corrcoef(tobs, tens)[0, 1]
+            else:
+                expected = spearmanr(tobs, tens).correlation
 
             ck = np.isclose(corr, expected)
             self.assertTrue(ck)

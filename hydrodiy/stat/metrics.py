@@ -608,6 +608,11 @@ def corr(obs, ens, trans=transform.Identity(), \
     corr_value : float
         Correlation coefficient
     '''
+    # Convert ens to 2d
+    ens = np.atleast_2d(ens)
+    if ens.shape[0] == 1:
+        ens = ens.T
+
     # Check data
     obs, ens, nforc, nens = __check_ensemble_data(obs, ens)
 
