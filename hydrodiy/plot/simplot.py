@@ -31,7 +31,8 @@ class Simplot(object):
         nfloods = 3, \
         wateryear_start =7, \
         ndays_beforepeak = 30, \
-        ndays_afterpeak = 60):
+        ndays_afterpeak = 60, \
+        samefloodyscale=False):
         ''' Object to generate a diagnostic plot for flow simulations
 
         Parameters
@@ -52,14 +53,19 @@ class Simplot(object):
             Number of days preceeding the peak in flood plots
         ndays_afterpeak : int
             Number of days following the peak in flood plots
+        samefloodyscale : bool
+            Use the same yscale for flood plots
         '''
 
         # Properties
+        self.samefloodyscale = samefloodyscale
         self.wateryear_start = wateryear_start
 
         # data
         self.idx_obs = pd.notnull(obs) & (obs >= 0)
         obs.name = 'obs'
+        self.minobs = obs[self.idx_obs].min()
+        self.maxobs = obs[self.idx_obs].max()
         self.data = pd.DataFrame(obs)
         self.nsim = 0
         self.sim_names=[]
@@ -191,6 +197,8 @@ class Simplot(object):
         axs = plt.subplot(self.gs[1, 2])
         self.draw_monthlyres(axs, 'e')
 
+        # Same flood y scale if needed
+        ylim = (max(0, self.minobs*0.5), self.maxobs*1.2)
 
         # Draw flood events
         axf = []
@@ -199,6 +207,10 @@ class Simplot(object):
             iy = iflood%3
             ax = plt.subplot(self.gs[ix, iy])
             self.draw_floods(ax, iflood, letters[5+iflood])
+
+            if self.samefloodyscale:
+                ax.set_ylim(ylim)
+
             axf.append(ax)
 
         return axb, axa, axfd, axfdl, axs, axf
@@ -254,7 +266,7 @@ class Simplot(object):
         for cn in data.columns:
             value = np.sort(data.loc[idx, cn].values)[::-1]
             name = self._getname(cn)
-            ax.plot(ff, value, '+-', label=name,
+            ax.plot(ff, value, '-', label=name,
                 markersize=6,
                 color=COLORS[icol], lw=1)
             icol += 1
@@ -272,14 +284,16 @@ class Simplot(object):
         ax.grid()
 
 
-    def draw_floods(self, ax, iflood, ax_letter):
-
+    def draw_floods(self, ax, iflood, ax_letter, yminfactor=0.5, ymaxfactor=1.2):
+        ''' Draw a plot for a single flood event '''
+        # Select event
         data = self.data
         idx = self.flood_idx[iflood]['index']
 
         dataf = data.loc[idx, :]
         dataf.columns = [self._getname(cn) for cn in  data.columns]
 
+        # Draw flood plot
         dataf.plot(ax=ax, color=COLORS, lw=2, \
                 marker='o', legend=iflood==0)
 
@@ -295,7 +309,9 @@ class Simplot(object):
         ax.set_ylabel('Flow')
 
 
+
     def draw_annual(self, ax, ax_letter='b'):
+        ''' Draw plot for annual time series '''
 
         # Compute annual time series
         ym = months[(self.wateryear_start-2)%12+1].upper()
@@ -325,6 +341,7 @@ class Simplot(object):
 
 
     def draw_balance(self, ax, ax_letter='a'):
+        ''' Draw bar chart with mean annual data '''
         data = self.data
         cc = [self._getname(cn) for cn in  data.columns]
         datab = pd.Series(data.loc[self.idx_all, :].mean().values,
@@ -369,14 +386,18 @@ class Simplot(object):
     def set_size_inches(self, size=None):
         ''' Set figure size '''
         if size is None:
-            size = (18, 10+5*((self.nfloods-1)/3+1))
+            size = (20, 10+5*((self.nfloods-1)/3+1))
 
         self.fig.set_size_inches(size)
         self.gs.tight_layout(self.fig)
 
+        return size
+
 
     def savefig(self, filename, size=None):
         ''' Save figure to file '''
-        self.set_size_inches(size)
+        size = self.set_size_inches(size)
         self.fig.savefig(filename)
+
+        return size
 
