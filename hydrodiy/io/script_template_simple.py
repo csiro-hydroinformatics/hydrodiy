@@ -16,7 +16,8 @@ from hydrodiy.io import csv, iutils
 # Config
 #----------------------------------------------------------------------
 parser = argparse.ArgumentParser(\
-    description='A script')
+    description='A script', \
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('-p', '--pattern', help='Site selection pattern', \
                     type=str, default='')
 parser.add_argument('-i', '--ibatch', help='Batch process number', \
