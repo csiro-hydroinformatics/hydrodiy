@@ -4,8 +4,6 @@ import pandas as pd
 from datetime import datetime
 from calendar import month_abbr
 
-
-
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
@@ -203,7 +201,8 @@ def tsplot(obs, fcst, ax=None, \
             label='Obs')
 
     # performance metrics
-    alpha, crps_ss, pits, is_sudo, R2 = ensmetrics(obs, fcst, random_pit, line)
+    alpha, crps_ss, pits, is_sudo, R2 = ensmetrics(obs, fcst, \
+                                            random_pit, line)
 
     # Draw figure
     if show_pit:
@@ -218,8 +217,9 @@ def tsplot(obs, fcst, ax=None, \
                             markerfacecolor='w', markersize=4)
 
         # Create regression line
-        theta, _, _, _ = np.linalg.lstsq(np.column_stack([qline*0+1, \
-                                                        qline]), obs)
+        idx = ~np.isnan(obs) & ~np.isnan(qline)
+        theta, _, _, _ = np.linalg.lstsq(np.column_stack([qline[idx]*0+1, \
+                                                    qline[idx]]), obs[idx])
         putils.line(axi2, 1, theta[1], 0, theta[0], '--', color=color, lw=1)
 
         t = axi2.text(0.95, 0.05, 'FC '+line.title(), ha='right', \
@@ -349,6 +349,7 @@ class MonthlyEnsplot(object):
     def monthplot(self, month, ax, show_pit=True, \
                 show_scatter=True):
         ''' Draw monthly plot '''
+
         # Select data
         obs, fcst, fcdates = self.getdata(month)
 
@@ -372,8 +373,19 @@ class MonthlyEnsplot(object):
 
         ax.set_title(title)
 
-        ymin = obs[obs>0].min()
-        ymax = obs.max() * 1.2
+        # Min/max lims
+        idx = obs > 0
+        if np.sum(idx) > 0:
+            ymin = obs[idx].min()
+        else:
+            ymin = 0.
+
+        omax = obs.max()
+        if omax > 0:
+            ymax = obs.max() * 1.2
+        else:
+            ymax = np.nanmax(fcst)
+
         ax.set_ylim((ymin, ymax))
 
         ax.set_ylabel(self.ylabel)
