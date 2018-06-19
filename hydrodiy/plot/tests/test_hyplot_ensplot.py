@@ -41,7 +41,8 @@ class EnsplotTestCase(unittest.TestCase):
 
     def test_ensmetrics(self):
         ''' Test ensmetrics '''
-        alpha, cr, pits, is_sudo, R2 = ensmetrics(self.obs, self.fcst)
+        alpha, cr, pits, is_sudo, R2, bias = ensmetrics(self.obs, \
+                                            self.fcst)
         self.assertTrue(alpha>1)
         self.assertTrue(R2<1 and R2>-1)
         self.assertTrue(len(pits) == len(self.obs))
@@ -49,7 +50,8 @@ class EnsplotTestCase(unittest.TestCase):
 
     def test_ensmetrics_sudo(self):
         ''' Test ensmetrics with sudo pits '''
-        alpha, cr, pits, is_sudo, R2 = ensmetrics(self.obs_sudo, self.fcst_sudo)
+        alpha, cr, pits, is_sudo, R2, bias = ensmetrics(self.obs_sudo, \
+                                                    self.fcst_sudo)
         self.assertTrue(len(pits) == len(self.obs_sudo))
         self.assertTrue(np.sum(is_sudo) > 0)
 
@@ -70,11 +72,11 @@ class EnsplotTestCase(unittest.TestCase):
 
     def test_pitplot(self):
         ''' Test pitplot '''
-        alpha, cr, pits, sudo, R2 = ensmetrics(self.obs, self.fcst)
+        alpha, cr, pits, sudo, R2, bias = ensmetrics(self.obs, self.fcst)
 
         plt.close('all')
         fig, ax = plt.subplots()
-        pitplot(pits, sudo, alpha, cr, ax)
+        pitplot(pits, sudo, alpha, cr, bias, ax)
 
         fp = os.path.join(self.fimg, 'pitplot.png')
         fig.savefig(fp)
@@ -82,11 +84,12 @@ class EnsplotTestCase(unittest.TestCase):
 
     def test_pitplot_sudo(self):
         ''' Test pitplot with sudo pits'''
-        alpha, cr, pits, sudo, R2 = ensmetrics(self.obs_sudo, self.fcst_sudo)
+        alpha, cr, pits, sudo, R2, bias = ensmetrics(self.obs_sudo, \
+                                                self.fcst_sudo)
 
         plt.close('all')
         fig, ax = plt.subplots()
-        pitplot(pits, sudo, alpha, cr, ax)
+        pitplot(pits, sudo, alpha, cr, bias, ax)
 
         fp = os.path.join(self.fimg, 'pitplot_sudo.png')
         fig.savefig(fp)
@@ -129,8 +132,9 @@ class EnsplotTestCase(unittest.TestCase):
         perf = mep.yearplot()
 
         perf = pd.DataFrame(perf).T
-        self.assertEqual(perf.shape, (13, 3))
-        self.assertEqual(list(perf.columns), ['R2', 'alpha', 'crps_ss'])
+        self.assertEqual(perf.shape, (13, 4))
+        self.assertEqual(list(perf.columns), \
+                    ['R2', 'alpha', 'bias', 'crps_ss'])
 
         fp = os.path.join(self.fimg, 'yearplot.png')
         mep.savefig(fp)

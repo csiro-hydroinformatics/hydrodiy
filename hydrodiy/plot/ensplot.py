@@ -47,6 +47,8 @@ def ensmetrics(obs, fcst, random_pit=True, stat='median'):
     R2 : float
         Pearson coefficient of correlation between obs and median or mean
         forecast
+    bias : float
+        Bias obs and median or mean forecast
     '''
     # Check data
     if obs.shape[0] != fcst.shape[0]:
@@ -66,10 +68,18 @@ def ensmetrics(obs, fcst, random_pit=True, stat='median'):
     # Correlation
     R2 = metrics.corr(obs, fcst, stat=stat)
 
-    return alpha, crps_ss, pits, is_sudo, R2
+    # Bias
+    if stat == 'mean':
+        sim = np.nanmean(fcst, axis=1)
+    else:
+        sim = np.nanmedian(fcst, axis=1)
+
+    bias = metrics.bias(obs, sim)
+
+    return alpha, crps_ss, pits, is_sudo, R2, bias
 
 
-def pitplot(pits, is_sudo, alpha, crps_ss, ax=None, labelaxis=True, \
+def pitplot(pits, is_sudo, alpha, crps_ss, bias, ax=None, labelaxis=True, \
                 transp=0.4, sudo_threshold=10):
     ''' Draw a pit plot
 
@@ -83,6 +93,8 @@ def pitplot(pits, is_sudo, alpha, crps_ss, ax=None, labelaxis=True, \
         Alpha score
     cprss_ss : float
         CRPS skill score
+    bias : float
+        Forecast bias
     ax : matplotlib.Axes
         Matplotlib ax to draw on
     labelaxis : bool
@@ -127,9 +139,9 @@ def pitplot(pits, is_sudo, alpha, crps_ss, ax=None, labelaxis=True, \
     ax.set_ylim([0, 1])
     putils.line(ax, 1, 1, 0, 0 , 'k:', lw=0.5)
 
-    ax.text(0.95, 0.05, 'A {0:0.0f}%\n C {1:0.1f}%'.format(\
-            alpha, crps_ss), \
-            va='bottom', ha='right', fontsize=12, color=color)
+    ax.text(0.95, 0.05, 'A {0:0.0f}%\n C {1:0.1f}%\n B {2:0.1f}'.format(\
+            alpha, crps_ss, bias), \
+            va='bottom', ha='right', fontsize=10, color=color)
 
     if labelaxis:
         ax.set_xlabel('PIT [-]')
@@ -201,7 +213,7 @@ def tsplot(obs, fcst, ax=None, \
             label='Obs')
 
     # performance metrics
-    alpha, crps_ss, pits, is_sudo, R2 = ensmetrics(obs, fcst, \
+    alpha, crps_ss, pits, is_sudo, R2, bias = ensmetrics(obs, fcst, \
                                             random_pit, line)
 
     # Texty options
@@ -213,7 +225,7 @@ def tsplot(obs, fcst, ax=None, \
     # Draw figure
     if show_pit:
         axi = inset_axes(ax, width='30%', height='30%', loc=1)
-        pitplot(pits, is_sudo, alpha, crps_ss, ax=axi, \
+        pitplot(pits, is_sudo, alpha, crps_ss, bias, ax=axi, \
             labelaxis=False, sudo_threshold=sudo_threshold)
 
         t = axi.text(0.05, 0.95, 'PIT (ecdf)', va='top', \
@@ -244,9 +256,9 @@ def tsplot(obs, fcst, ax=None, \
                             transform=axi2.transAxes)
         t.set_bbox(box_config)
 
-        t = axi2.text(0.95, 0.95, r'R$^2$ {0:0.1f}'.format(R2), \
+        t = axi2.text(0.95, 0.95, 'R2 {0:0.1f}'.format(R2), \
                             va='top', ha='right', \
-                            color=txtcolor, fontsize=12, \
+                            color=txtcolor, fontsize=10, \
                             transform=axi2.transAxes)
         t.set_bbox(box_config)
 
@@ -254,7 +266,7 @@ def tsplot(obs, fcst, ax=None, \
         axi2.set_yticks([])
         axi2.patch.set_alpha(0.6)
 
-    return x, alpha, crps_ss, R2
+    return x, alpha, crps_ss, R2, bias
 
 
 
@@ -364,7 +376,7 @@ class MonthlyEnsplot(object):
         obs, fcst, fcdates = self.getdata(month)
 
         # Draw ts plot
-        x, alpha, crps_ss, R2 = tsplot(obs, fcst, ax, \
+        x, alpha, crps_ss, R2, bias = tsplot(obs, fcst, ax, \
                     show_pit, show_scatter, \
                     self.line)
 
@@ -404,7 +416,8 @@ class MonthlyEnsplot(object):
         perf = {\
             'alpha': alpha, \
             'crps_ss': crps_ss, \
-            'R2': R2
+            'R2': R2, \
+            'bias': bias
         }
 
         return perf
