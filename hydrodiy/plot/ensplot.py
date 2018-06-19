@@ -204,41 +204,51 @@ def tsplot(obs, fcst, ax=None, \
     alpha, crps_ss, pits, is_sudo, R2 = ensmetrics(obs, fcst, \
                                             random_pit, line)
 
+    # Texty options
+    box_config = {'facecolor':'w', 'edgecolor':'none', \
+                        'boxstyle': 'round', \
+                        'alpha':0.9, 'pad':0.05}
+    txtcolor = PITCOLORS[0]
+
     # Draw figure
     if show_pit:
         axi = inset_axes(ax, width='30%', height='30%', loc=1)
         pitplot(pits, is_sudo, alpha, crps_ss, ax=axi, \
             labelaxis=False, sudo_threshold=sudo_threshold)
 
+        t = axi.text(0.05, 0.95, 'PIT (ecdf)', va='top', \
+                            color=txtcolor, fontsize=12, \
+                            transform=axi.transAxes)
+        t.set_bbox(box_config)
+
+
     if show_scatter:
-        color = PITCOLORS[0]
         axi2 = inset_axes(ax, width='30%', height='30%', loc=2)
-        axi2.plot(qline, obs, 'o', markeredgecolor=color, \
+        axi2.plot(qline, obs, 'o', markeredgecolor=txtcolor, \
                             markerfacecolor='w', markersize=4)
 
         # Create regression line
         idx = ~np.isnan(obs) & ~np.isnan(qline)
         theta, _, _, _ = np.linalg.lstsq(np.column_stack([qline[idx]*0+1, \
                                                     qline[idx]]), obs[idx])
-        putils.line(axi2, 1, theta[1], 0, theta[0], '--', color=color, lw=1)
+        putils.line(axi2, 1, theta[1], 0, theta[0], '--', \
+                            color=txtcolor, lw=1)
 
-        t = axi2.text(0.95, 0.05, 'FC '+line.title(), ha='right', \
-                            color=color, fontsize=12, \
+        t = axi2.text(0.95, 0.05, 'Forc '+line.title(), ha='right', \
+                            color=txtcolor, fontsize=12, \
                             transform=axi2.transAxes)
-        dd = {'facecolor':'w', 'edgecolor':'none', 'boxstyle': 'round', \
-                        'alpha':0.9, 'pad':0.05}
-        t.set_bbox(dd)
+        t.set_bbox(box_config)
 
         t = axi2.text(0.05, 0.95, 'Obs', va='top', \
-                            color=color, fontsize=12, \
+                            color=txtcolor, fontsize=12, \
                             transform=axi2.transAxes)
-        t.set_bbox(dd)
+        t.set_bbox(box_config)
 
         t = axi2.text(0.95, 0.95, r'R$^2$ {0:0.1f}'.format(R2), \
                             va='top', ha='right', \
-                            color=color, fontsize=12, \
+                            color=txtcolor, fontsize=12, \
                             transform=axi2.transAxes)
-        t.set_bbox(dd)
+        t.set_bbox(box_config)
 
         axi2.set_xticks([])
         axi2.set_yticks([])
