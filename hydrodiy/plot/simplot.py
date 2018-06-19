@@ -268,7 +268,7 @@ class Simplot(object):
             name = self._getname(cn)
             ax.plot(ff, value, '-', label=name,
                 markersize=6,
-                color=COLORS[icol], lw=1)
+                color=COLORS[icol], lw=2)
             icol += 1
 
         ax.set_xlabel('Frequency')
@@ -305,7 +305,7 @@ class Simplot(object):
         title = r'({0}) Flood {1} - {2:%Y-%m}'.format(ax_letter, \
             iflood+1, date_max)
         ax.set_title(title)
-        ax.grid()
+        ax.xaxis.grid()
         ax.set_ylabel('Flow')
 
 
@@ -337,7 +337,7 @@ class Simplot(object):
                     ax_letter, month)
         ax.set_title(title)
         ax.set_ylabel('({0}) Annual flow'.format(ax_letter))
-        ax.grid()
+        ax.xaxis.grid()
 
 
     def draw_balance(self, ax, ax_letter='a'):
