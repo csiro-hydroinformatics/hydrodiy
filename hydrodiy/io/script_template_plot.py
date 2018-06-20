@@ -23,8 +23,8 @@ from hydrodiy.io import csv, iutils
 from hydrodiy.plot import putils
 
 # Package to plot spatial data
-import pyproj
 from hydrodiy.gis.oz import Oz
+#import pyproj
 
 #----------------------------------------------------------------------
 # Config
@@ -35,9 +35,9 @@ parser = argparse.ArgumentParser(\
     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('-e', '--extension', help='Image file extension', \
                     type=str, default='png')
-parser.add_argument('-p', '--projection', \
-                    help='Spatial projection (GDA94=3112, WGS84=4326)', \
-                    type=int, default=3112)
+#parser.add_argument('-p', '--projection', \
+#                    help='Spatial projection (GDA94=3112, WGS84=4326)', \
+#                    type=int, default=3112)
 args = parser.parse_args()
 
 
@@ -56,14 +56,14 @@ aheight = 1000
 putils.set_mpl()
 
 # Manage projection
-proj = pyproj.Proj('+init=EPSG:{0}'.format(args.projection))
-
-def proj2map(x, y, map):
-    ''' Convert projected coordinate to basemap.map coordinates '''
-    coords = [map(*proj(xx, yy, inverse=True)) \
-                        for xx, yy in zip(x, y)]
-    x2, y2 = np.array(coords).T
-    return x2, y2
+#proj = pyproj.Proj('+init=EPSG:{0}'.format(args.projection))
+#
+#def proj2map(x, y, map):
+#    ''' Convert projected coordinate to basemap.map coordinates '''
+#    coords = [map(*proj(xx, yy, inverse=True)) \
+#                        for xx, yy in zip(x, y)]
+#    x2, y2 = np.array(coords).T
+#    return x2, y2
 
 #----------------------------------------------------------------------
 # Folders
