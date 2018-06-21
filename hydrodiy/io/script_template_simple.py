@@ -42,6 +42,10 @@ os.makedirs(fout, exist_ok=True)
 basename = re.sub('\\.py.*', '', os.path.basename(source_file))
 LOGGER = iutils.get_logger(basename)
 
+for arg in vars(args):
+    LOGGER.info('{0} script argument {1} = {2}'.format(basename, \
+                            arg, getattr(args, arg)))
+
 #----------------------------------------------------------------------
 # Get data
 #----------------------------------------------------------------------
