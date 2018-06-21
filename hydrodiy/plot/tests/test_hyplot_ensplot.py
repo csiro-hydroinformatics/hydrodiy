@@ -45,6 +45,7 @@ class EnsplotTestCase(unittest.TestCase):
                                             self.fcst)
         self.assertTrue(alpha>1)
         self.assertTrue(R2<1 and R2>-1)
+        self.assertTrue(cr < 100)
         self.assertTrue(len(pits) == len(self.obs))
 
 
@@ -59,12 +60,37 @@ class EnsplotTestCase(unittest.TestCase):
     def test_tsplot(self):
         ''' Test tsplot '''
         plt.close('all')
-        fig, ax = plt.subplots()
-        x = tsplot(self.obs, self.fcst, ax, \
-                    show_pit=True, show_scatter=True, \
+        fig, axs = plt.subplots(nrows=2)
+
+        idx = self.fcdates.month == 1
+        x = tsplot(self.obs[idx], self.fcst[idx], axs[0], \
                     line='mean')
 
-        fig.set_size_inches((30, 7))
+        try:
+            x = tsplot(self.obs, self.fcst, axs[1], \
+                    loc_pit=1, loc_scatter=1, \
+                    line='mean')
+        except ValueError as err:
+            self.assertTrue(str(err).startswith('Cannot show'))
+        else:
+            raise ValueError('Problem with error handling')
+
+        try:
+            x = tsplot(self.obs, self.fcst, axs[1], \
+                    loc_pit=1, loc_scatter=20, \
+                    line='mean')
+        except ValueError as err:
+            self.assertTrue(str(err).startswith('Expected location'))
+        else:
+            raise ValueError('Problem with error handling')
+
+
+        x = tsplot(self.obs[idx], self.fcst[idx], axs[1], \
+                    loc_pit=2, loc_scatter=1, \
+                    loc_legend=10, \
+                    line='mean')
+
+        fig.set_size_inches((8, 14))
         fig.tight_layout()
         fp = os.path.join(self.fimg, 'tsplot.png')
         fig.savefig(fp)
@@ -99,10 +125,20 @@ class EnsplotTestCase(unittest.TestCase):
         ''' Test one month plot '''
 
         plt.close('all')
-        fig, ax = plt.subplots()
+        fig, axs = plt.subplots(nrows=2)
 
         mep = MonthlyEnsplot(self.obs, self.fcst, self.fcdates, fig)
-        mep.monthplot(month=1, ax=ax)
+        mep.monthplot(month=1, ax=axs[0])
+        mep.monthplot(month=1, ax=axs[1], loc_scatter=-1, \
+                        loc_legend=3)
+
+        try:
+            mep.monthplot(month=1, ax=axs[1], \
+                        loc_legend=1, loc_scatter=1)
+        except ValueError as err:
+            self.assertTrue(str(err).startswith('Cannot show'))
+        else:
+            raise ValueError('Problem with error handling')
 
         fp = os.path.join(self.fimg, 'monthplot.png')
         fig.savefig(fp)

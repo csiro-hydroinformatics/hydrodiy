@@ -155,7 +155,7 @@ def pitplot(pits, is_sudo, alpha, crps_ss, bias, ax=None, labelaxis=True, \
 
 
 def tsplot(obs, fcst, ax=None, \
-            show_pit=False, show_scatter=False, \
+            loc_pit=1, loc_scatter=2, loc_legend=-1, \
             line='mean', sudo_threshold=10, \
             random_pit=True):
     ''' Draw ensemble forecasts timeseries
@@ -165,10 +165,23 @@ def tsplot(obs, fcst, ax=None, \
         Observed data
     fcst : numpy.ndarray
         Forecast data
-    show_pit : bool
-        Insert pit plot or not
-    show_scatter : bool
-        Insert median scatter plot or not
+    loc_pit : int
+        Position of pit plot:
+        * upper right	1
+        * upper left	2
+        * lower left	3
+        * lower right	4
+        * right         5
+        * center left	6
+        * center right	7
+        * lower center	8
+        * upper center	9
+        * center	10
+        * not shown     -1
+    loc_scatter : int
+        Position of scatter plot (same options than loc_pit)
+    loc_legend : int
+        Position of legend (same options than loc_pit)
     xgrid : bool
         Draw x grid
     line : str
@@ -184,6 +197,20 @@ def tsplot(obs, fcst, ax=None, \
     if not line in ['mean', 'median']:
         raise ValueError('Expected line option in [mean/median], got '+line)
 
+    if loc_scatter == loc_legend and loc_scatter >= 0:
+        raise ValueError('Cannot show scatter and legend at the same place')
+
+    if loc_scatter == loc_pit and loc_scatter >= 0:
+        raise ValueError('Cannot show scatter and pit at the same place')
+
+    if loc_pit == loc_legend and loc_pit >= 0:
+        raise ValueError('Cannot show pit and legend at the same place')
+
+    for pos in [loc_pit, loc_scatter, loc_legend]:
+        if pos >= 0 and not pos in range(1, 11):
+            raise ValueError('Expected location in [1, 11], got {0}'.format(\
+                                pos))
+
     # Get axis
     if ax is None:
         ax = plt.gca()
@@ -192,6 +219,20 @@ def tsplot(obs, fcst, ax=None, \
     bp = boxplot.Boxplot(fcst.T, style='narrow')
     bp.median.marker = 'none'
     bp.draw(ax=ax)
+
+    # .. forecast legend
+    if loc_legend >= 0:
+        prc = (100.-bp.whiskers_coverage)/2
+        label = 'Forc. {0:0.0f}%-{1:0.0f}%'.format(prc, 100-prc)
+        ax.plot([], [], '-', linewidth=6, \
+            alpha=bp.whiskers.alpha, \
+            color=bp.whiskers.facecolor, label=label)
+
+        prc = (100.-bp.box_coverage)/2
+        label = 'Forc. {0:0.0f}%-{1:0.0f}%'.format(prc, 100-prc)
+        ax.plot([], [], '-', linewidth=6, \
+            alpha=bp.box.alpha, \
+            color=bp.box.facecolor, label=label)
 
     # Mean and median forecast
     if line == 'mean':
@@ -203,7 +244,8 @@ def tsplot(obs, fcst, ax=None, \
     ax.plot(x, qline, 'o-', linewidth=1, \
         color=SIMLINECOLOR, \
         markerfacecolor=SIMMARKERCOLOR, \
-        markeredgecolor=SIMLINECOLOR)
+        markeredgecolor=SIMLINECOLOR, \
+        label='Forc. '+line)
 
     # obs data
     ax.plot(x, obs, '-o', linewidth=2, \
@@ -216,15 +258,16 @@ def tsplot(obs, fcst, ax=None, \
     alpha, crps_ss, pits, is_sudo, R2, bias = ensmetrics(obs, fcst, \
                                             random_pit, line)
 
-    # Texty options
+    # Text options
     box_config = {'facecolor':'w', 'edgecolor':'none', \
                         'boxstyle': 'round', \
                         'alpha':0.9, 'pad':0.05}
     txtcolor = PITCOLORS[0]
 
     # Draw figure
-    if show_pit:
-        axi = inset_axes(ax, width='30%', height='30%', loc=1)
+    if loc_pit >=0:
+        axi = inset_axes(ax, width='30%', height='30%', \
+                    loc=loc_pit)
         pitplot(pits, is_sudo, alpha, crps_ss, bias, ax=axi, \
             labelaxis=False, sudo_threshold=sudo_threshold)
 
@@ -234,8 +277,9 @@ def tsplot(obs, fcst, ax=None, \
         t.set_bbox(box_config)
 
 
-    if show_scatter:
-        axi2 = inset_axes(ax, width='30%', height='30%', loc=2)
+    if loc_scatter >= 0:
+        axi2 = inset_axes(ax, width='30%', height='30%', \
+                            loc=loc_scatter)
         axi2.plot(qline, obs, 'o', markeredgecolor=txtcolor, \
                             markerfacecolor='w', markersize=4)
 
@@ -266,6 +310,9 @@ def tsplot(obs, fcst, ax=None, \
         axi2.set_yticks([])
         axi2.patch.set_alpha(0.6)
 
+    if loc_legend >= 0:
+        ax.legend(loc=loc_legend, framealpha=0.6, ncol=4)
+
     return x, alpha, crps_ss, R2, bias
 
 
@@ -273,7 +320,7 @@ def tsplot(obs, fcst, ax=None, \
 class MonthlyEnsplot(object):
 
     def __init__(self, obs, fcst, fcdates, fig=None, \
-        ylabel='Flow [GL/month]', randompit=False, line='mean'):
+        ylabel='Flow [GL/month]', random_pit=True, line='mean'):
         ''' Object to draw monthly ensemble forecasts
 
         Parameters
@@ -314,9 +361,9 @@ class MonthlyEnsplot(object):
                 obs.shape[0], fcst.shape[0]))
 
         if obs.shape[0] != fcdates.shape[0]:
-            raise ValueError('Expected obs and fcdates to have the '+\
-                'same number of rows, got {0} (obs) and {1} (fcdates)'.format(\
-                obs.shape[0], fcdates.shape[0]))
+            raise ValueError(('Expected obs and fcdates to have the '+\
+                'same number of rows, got {0} (obs) and'+\
+                    ' {1} (fcdates)').format(obs.shape[0], fcdates.shape[0]))
 
         self.fcdates = fcdates
         self.obs = obs
@@ -336,6 +383,8 @@ class MonthlyEnsplot(object):
         self.ylabel = ylabel
 
         self.gridspec = None
+
+        self.random_pit = random_pit
 
 
     def getdata(self, month):
@@ -368,26 +417,34 @@ class MonthlyEnsplot(object):
         return qo, qf, dates
 
 
-    def monthplot(self, month, ax, show_pit=True, \
-                show_scatter=True):
+    def monthplot(self, month, ax, loc_pit=1, \
+                loc_scatter=2, loc_legend=-1):
         ''' Draw monthly plot '''
 
         # Select data
         obs, fcst, fcdates = self.getdata(month)
 
+        # Overrides options for all month plot
+        if month == 0:
+            loc_scatter = -1
+            loc_pit = -1
+            loc_legend = 2
+
         # Draw ts plot
         x, alpha, crps_ss, R2, bias = tsplot(obs, fcst, ax, \
-                    show_pit, show_scatter, \
-                    self.line)
+                    loc_pit = loc_pit, \
+                    loc_scatter = loc_scatter, \
+                    loc_legend = loc_legend, \
+                    line = self.line, \
+                    random_pit=self.random_pit)
 
         # Decorate
         if month == 0:
             title = 'All months'
-            idx = (fcdates.month == 1) | (fcdates.month == 6)
+            idx = (fcdates.month == 1) | (fcdates.month == 7)
             ax.set_xticks(x[idx])
             ax.set_xticklabels(\
                 [datetime.strftime(d, format='%b\n%y') for d in fcdates[idx]])
-            ax.legend(loc=1)
         else:
             title = month_abbr[month]
             ax.set_xticks(x[::3])
@@ -426,6 +483,10 @@ class MonthlyEnsplot(object):
     def yearplot(self, show_scatter=True, show_pit=True):
         ''' Draw a figure with forecast data for all months '''
 
+        # Plot options
+        loc_pit = 1 if show_pit else -1
+        loc_scatter = 2 if show_scatter else -1
+
         # Initialise matplotlib objects
         gs = GridSpec(nrows=4, ncols=4)
 
@@ -438,11 +499,9 @@ class MonthlyEnsplot(object):
                 ax = self.fig.add_subplot(gs[(month-1)%3, (month-1)//3])
 
             # Draw monthly plot
-            p = self.monthplot(month, ax, \
-                    show_pit = month>0 and show_pit, \
-                    show_scatter = month>0 and show_scatter)
-
-            perf[month] = p
+            perf[month] = self.monthplot(month, ax, \
+                            loc_pit = loc_pit, \
+                            loc_scatter = loc_scatter)
 
         self.gridspec = gs
 
