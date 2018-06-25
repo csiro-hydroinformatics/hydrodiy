@@ -22,26 +22,23 @@ class OzTestCase(unittest.TestCase):
         source_file = os.path.abspath(__file__)
         self.ftest = os.path.dirname(source_file)
 
-    def test_set_lim_region(self):
-        plt.close('all')
-        fig, ax = plt.subplots()
-        om = Oz(ax=ax)
-        om.drawcoast()
-        om.drawstates()
+        self.fimg = os.path.join(self.ftest, 'images')
+        if not os.path.exists(self.fimg):
+            os.mkdir(self.fimg)
+
+
+    def test_region(self):
+        ''' Test set region boundaries '''
         for reg in REGIONS:
+            plt.close('all')
+            fig, ax = plt.subplots()
+            om = Oz(ax=ax)
+            om.drawcoast()
+            om.drawstates(linewidth=2)
+            om.drawdrainage(linewidth=1, linestyle='-', color='grey')
             om.set_lim_region(reg)
-
-        # Add points
-        xlim = [147.5, 155.]
-        ylim = [-38.5, -29.9]
-        x = np.random.uniform(xlim[0], xlim[1], 100)
-        y = np.random.uniform(ylim[0], ylim[1], 100)
-        om.plot(x, y, 'o')
-
-        om.set_lim_region('COASTALNSW')
-
-        fp = os.path.join(self.ftest, 'oz_region.png')
-        plt.savefig(fp)
+            fp = os.path.join(self.fimg, 'oz_region_{0}.png'.format(reg))
+            plt.savefig(fp)
 
 
     def test_set_lim(self):
