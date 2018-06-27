@@ -16,7 +16,12 @@ def ppos(nval, cst=0.3):
     nval : int
         Sample size
     cst : float
-        Plotting position constant
+        Plotting position constant. Suggested values are:
+        * 0.3: Value proposed by Benar and Bos-Levenbach (1953)
+        * 0.375: This is Blom's value to approximate the mean of normal
+                order statistics (Blom, 1958)
+        * 0.3175: This is Filliben's value to approximate the mode
+                of uniform order statistics (Filliben, 1975)
 
     Returns
     -----------
