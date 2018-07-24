@@ -2,6 +2,9 @@ import os
 import itertools
 import unittest
 import numpy as np
+
+from scipy.stats import norm
+
 from hydrodiy.data.containers import Vector
 from hydrodiy.stat import transform
 
@@ -473,6 +476,26 @@ class TransformTestCase(unittest.TestCase):
             trans = transform.get_transform(nm, mininu=-10)
             trans.nu = -5
             self.assertTrue(np.isclose(trans.nu, -5))
+
+
+    def test_params_logprior(self):
+        ''' Test log prior '''
+
+        nsamples = 1000
+        for nm in transform.__all__:
+            if nm == 'Identity':
+                continue
+
+            trans = transform.get_transform(nm)
+            samples = trans.params_sample(nsamples)
+
+            for smp in samples:
+                trans.params.values = smp
+                lp = trans.params_logprior()
+                if nm != 'LogSinh':
+                    self.assertTrue(np.isclose(lp, 0.))
+                else:
+                    self.assertTrue(np.isclose(lp, norm.logpdf(smp[1], 0, 0.3)))
 
 
 

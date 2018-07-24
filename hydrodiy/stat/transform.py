@@ -4,6 +4,8 @@ import math
 import sys
 import numpy as np
 
+from scipy.stats import norm
+
 from hydrodiy.data.containers import Vector
 from hydrodiy.data import dutils
 from hydrodiy.stat import sutils
@@ -225,6 +227,16 @@ class Transform(object):
         return sutils.lhs(nsamples, pmins, pmaxs)
 
 
+    def params_logprior(self):
+        ''' Flat log prior for transform parameters '''
+        val = self.params.values
+        mins = self.params.mins
+        maxs = self.params.maxs
+
+        ck = np.all((val-mins>=0) & (maxs-val>=0))
+        return 0 if ck else -np.inf
+
+
 
 class Identity(Transform):
     ''' Identity transform '''
@@ -242,38 +254,30 @@ class Identity(Transform):
         return np.ones_like(x)
 
 
-
 class Logit(Transform):
     ''' Logit transform y = log(x/(1-x))'''
 
     def __init__(self):
-        params = Vector(['lower', 'upper'], \
-                    defaults=[0, 1])
+        params = Vector(['lower', 'logdelta'], \
+                    [0., 0.], [-np.inf, -10], [np.inf, 10])
 
         super(Logit, self).__init__('Logit', params)
 
-    def check_upper_lower(self):
-        ''' Check that lower <= upper '''
-        lower, upper = self.params.values
-        if upper <= lower+1e-8:
-            raise ValueError('Expected lower<upper, '+\
-                'got {0} and {1}'.format(lower, upper))
-
     def _forward(self, x):
-        self.check_upper_lower()
-        lower, upper = self.params.values
+        lower, logdelta = self.params.values
+        upper = lower + math.exp(logdelta)
         value = (x-lower)/(upper-lower)
         return np.log(1./(1-value)-1)
 
     def _backward(self, y):
-        self.check_upper_lower()
-        lower, upper = self.params.values
+        lower, logdelta = self.params.values
+        upper = lower + math.exp(logdelta)
         bnd = 1-1./(1+np.exp(y))
         return bnd*(upper-lower) + lower
 
     def _jacobian_det(self, x):
-        self.check_upper_lower()
-        lower, upper = self.params.values
+        lower, logdelta = self.params.values
+        upper = lower + math.exp(logdelta)
         value = (x-lower)/(upper-lower)
         return  np.where((x > lower+EPS) & (x < upper-EPS), \
                     1./(upper-lower)/value/(1-value), np.nan)
@@ -281,14 +285,12 @@ class Logit(Transform):
     def params_sample(self, nsamples=500, minval=-10., maxval=10.):
         ''' Sample parameters with latin hypercube '''
 
-        pmins = [minval, 0]
-        pmaxs = [maxval, 1]
+        pmins = [-10, self.params.mins[1]]
+        pmaxs = [10, self.params.maxs[1]]
 
         samples = sutils.lhs(nsamples, pmins, pmaxs)
-        samples[:, 1] = np.sum(samples, axis=1)
 
         return samples
-
 
 
 class Log(Transform):
@@ -314,10 +316,9 @@ class Log(Transform):
     def params_sample(self, nsamples=500, minval=-6., maxval=0.):
         # Generate parameters samples in log space
         samples = np.random.uniform(minval, maxval, nsamples)
-        samples = np.exp(samples)[:, None]
+        samples = np.exp(samples)[:, None]+self.mininu
 
         return samples
-
 
 
 class BoxCox2(Transform):
@@ -361,10 +362,9 @@ class BoxCox2(Transform):
 
         # Generate parameters samples in log space
         samples = sutils.lhs(nsamples, pmins, pmaxs)
-        samples[:, 0] = np.exp(samples[:, 0])
+        samples[:, 0] = np.exp(samples[:, 0])+self.mininu
 
         return samples
-
 
 
 class BoxCox1lam(Transform):
@@ -581,6 +581,14 @@ class LogSinh(Transform):
         return np.column_stack([loga, logb])
 
 
+    def params_logprior(self):
+        ''' <0 prior for loga and N(0., 0.3) prior for logb '''
+        loga, logb = self.params.values
+        if loga > 0:
+            return -np.inf
+
+        return norm.logpdf(logb, loc=0., scale=0.3)
+
 
 class Reciprocal(Transform):
     ''' Reciprocal transform y=-1/(nu+x) '''
@@ -605,7 +613,7 @@ class Reciprocal(Transform):
     def params_sample(self, nsamples=500, minval=-7., maxval=0.):
         # Generate parameters samples in log space
         samples = np.random.uniform(minval, maxval, nsamples)
-        samples = np.exp(samples)[:, None]
+        samples = np.exp(samples)[:, None]+self.mininu
 
         return samples
 
