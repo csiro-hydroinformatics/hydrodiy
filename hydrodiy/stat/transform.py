@@ -202,13 +202,20 @@ class Transform(object):
         # Select y to get values above censor only
         # This avoids nan in backward operation
         tcensor = self.forward(censor)
-        yc = np.maximum(y, tcensor)
+        if np.isnan(tcensor):
+            yc = y
+        else:
+            yc = np.maximum(y, tcensor)
 
         # Second filtering to ensure that results is
         # equal or greater than  censor
         # (numerical errors of previous operation
         # could compromise that)
         xc = np.maximum(self.backward(yc), censor)
+
+        if np.any(np.isnan(xc)):
+            import pdb; pdb.set_trace()
+
 
         return xc
 
@@ -334,7 +341,7 @@ class BoxCox2(Transform):
     def _forward(self, x):
         nu, lam = self.params.values
         if abs(lam) > EPS:
-            return (np.exp(np.log(x+nu)*lam)-1)/lam
+            return (np.power(x+nu, lam)-1)/lam
         else:
             return np.log(x+nu)
 
@@ -343,7 +350,7 @@ class BoxCox2(Transform):
 
         if abs(lam) > EPS:
             u = lam*y+1
-            return np.exp(np.log(u)/lam)-nu
+            return np.power(u, 1./lam)-nu
         else:
             return np.exp(y)-nu
 
@@ -352,7 +359,7 @@ class BoxCox2(Transform):
 
         if abs(lam) > EPS:
             return np.where(x+nu > self.mininu, \
-                    np.exp(np.log(x+nu)*(lam-1.)), np.nan)
+                    np.power(x+nu, lam-1.), np.nan)
         else:
             return np.where(x+nu > self.mininu, 1./(x+nu), np.nan)
 

@@ -470,12 +470,38 @@ class TransformTestCase(unittest.TestCase):
 
     def test_mininu(self):
         ''' Test mini nu attribute '''
-        delta = 1e-5
+        mininu = -10.
 
         for nm in ['Log', 'BoxCox2',  'BoxCox1nu', 'Reciprocal']:
-            trans = transform.get_transform(nm, mininu=-10)
-            trans.nu = -5
-            self.assertTrue(np.isclose(trans.nu, -5))
+            trans = transform.get_transform(nm, mininu=mininu)
+            trans.nu = mininu+1
+            self.assertTrue(np.isclose(trans.nu, mininu+1))
+
+            trans.nu = mininu-1
+            self.assertTrue(np.isclose(trans.nu, mininu))
+
+            if hasattr(trans, 'lam'):
+                trans.lam = 0.2
+            if hasattr(trans, 'xmax'):
+                trans.xmax = -mininu+1
+
+            # Generate censored inputs
+            # ... raw inputs
+            nval = 100
+            trans.nu = mininu
+            x = np.linspace(-mininu-1, -mininu+1, nval)
+            y = trans.forward(x)
+            # ... fit censored normal dist
+            ff = (np.arange(nval)+0.7)/(nval+0.4)
+            idx = ~np.isnan(y)
+            M = np.column_stack([np.ones(np.sum(idx)), norm.ppf(ff[idx])])
+            theta, _, _, _ = np.linalg.lstsq(M, y[idx])
+            y[~idx] = theta[0] + theta[1]*norm.ppf(ff[~idx])
+            # ... back transform
+            x0 = trans.backward_censored(y)
+
+            # ... test no nan
+            self.assertTrue(np.all(~np.isnan(x0)))
 
 
     def test_params_logprior(self):
