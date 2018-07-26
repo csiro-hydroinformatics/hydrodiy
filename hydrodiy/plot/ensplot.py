@@ -320,7 +320,8 @@ def tsplot(obs, fcst, ax=None, \
 class MonthlyEnsplot(object):
 
     def __init__(self, obs, fcst, fcdates, fig=None, \
-        ylabel='Flow [GL/month]', random_pit=True, line='mean'):
+        ylabel='Flow [GL/month]', random_pit=True, line='mean', \
+        negnan=True):
         ''' Object to draw monthly ensemble forecasts
 
         Parameters
@@ -339,6 +340,8 @@ class MonthlyEnsplot(object):
             Randomise pit computation (generate pseudo-pits)
         line : str
             Line option to show mean or median
+        negnan : bool
+            Set negative values to NaN
 
         Examples
         -----------
@@ -352,7 +355,13 @@ class MonthlyEnsplot(object):
 
         # Check inputs
         obs = np.atleast_1d(obs)
+        if negnan:
+            obs[obs < 0] = np.nan
+
         fcst = np.atleast_2d(fcst)
+        if negnan:
+            fcst[fcst < 0] = np.nan
+
         fcdates = pd.DatetimeIndex(fcdates)
 
         if obs.shape[0] != fcst.shape[0]:
