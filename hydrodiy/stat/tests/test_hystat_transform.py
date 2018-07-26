@@ -2,6 +2,9 @@ import os
 import itertools
 import unittest
 import numpy as np
+
+from scipy.stats import norm
+
 from hydrodiy.data.containers import Vector
 from hydrodiy.stat import transform
 
@@ -27,45 +30,28 @@ class TransformTestCase(unittest.TestCase):
         self.xx = np.exp(np.linspace(-8, 5, 10))
 
 
-        def fun(nm):
-            ''' Get transformation '''
-            trans = transform.get_transform(nm)
-
-            # get parameter names
-            nparams = trans.params.nval
-            names = trans.params.names
-            kwargs = {k:1 for k in names}
-
-            # Set parameters
-            if nm == 'Logit':
-                kwargs['upper'] = 2.
-            elif nm == 'LogSinh':
-                kwargs['x0'] = 1.
-            elif nm == 'BoxCox1lam':
-                kwargs['nu'] = 1.
-            elif nm == 'BoxCox1nu':
-                kwargs['lam'] = 0.2
-
-            return transform.get_transform(nm, **kwargs)
-
-        self.get_transform = fun
-
-
     def test_get_transform(self):
         ''' Test get transform function '''
 
         for nm in transform.__all__:
             # Get transform
-            trans = self.get_transform(nm)
+            trans = transform.get_transform(nm, mininu=0.5)
+
+            if hasattr(trans, 'nu'):
+                trans.nu = 0.
+            if hasattr(trans, 'lam'):
+                trans.lam = 0.2
+            if hasattr(trans, 'xmax'):
+                trans.xmax = 1.
+
             nparams = trans.params.nval
+            trans.params.values = np.sort(np.random.uniform(1, 2, nparams))
 
             x = np.linspace(0, 1, 100)
             x /= 1.5*np.sum(x)
             y = trans.forward(x)
 
             self.assertEqual(nm, trans.name)
-            if nparams>0:
-                self.assertEqual(1, trans.params.values[0])
 
 
     def test_get_transform_errors(self):
@@ -84,6 +70,39 @@ class TransformTestCase(unittest.TestCase):
             trans = transform.get_transform('BoxCox2', g=1)
         except ValueError as err:
             self.assertTrue(str(err).startswith('Expected parameter name'))
+        else:
+            raise ValueError('Problem in error handling')
+
+        # Test error when no value for constants
+        trans = transform.get_transform('BoxCox1lam', lam=0.5)
+        try:
+            trans.forward(1.)
+        except ValueError as err:
+            self.assertTrue(str(err).startswith('nu is nan.'))
+        else:
+            raise ValueError('Problem in error handling')
+
+        trans = transform.get_transform('BoxCox1nu', nu=0.5)
+        try:
+            trans.forward(1.)
+        except ValueError as err:
+            self.assertTrue(str(err).startswith('lam is nan.'))
+        else:
+            raise ValueError('Problem in error handling')
+
+        trans = transform.get_transform('LogSinh', loga=-2, logb=0.)
+        try:
+            trans.forward(1.)
+        except ValueError as err:
+            self.assertTrue(str(err).startswith('xmax is nan.'))
+        else:
+            raise ValueError('Problem in error handling')
+
+        trans = transform.get_transform('Manly', lam=-1)
+        try:
+            trans.forward(1.)
+        except ValueError as err:
+            self.assertTrue(str(err).startswith('xmax is nan.'))
         else:
             raise ValueError('Problem in error handling')
 
@@ -213,7 +232,7 @@ class TransformTestCase(unittest.TestCase):
     def test_print(self):
         ''' Test print method '''
         for nm in transform.__all__:
-            trans = self.get_transform(nm)
+            trans = transform.get_transform(nm)
 
             nparams = trans.params.nval
             trans.params.values = np.random.uniform(-5, 5, size=nparams)
@@ -221,12 +240,16 @@ class TransformTestCase(unittest.TestCase):
 
 
     def test_forward_backward(self):
-        ''' Test if transform is stable when applying it
-            forward then backward
+        ''' Test if transform is stable when applying it forward then backward
         '''
         for nm in transform.__all__:
-            trans = self.get_transform(nm)
+            trans = transform.get_transform(nm)
             nparams = trans.params.nval
+
+            if hasattr(trans, 'nu'):
+                trans.nu = 0.
+            if hasattr(trans, 'lam'):
+                trans.lam = 0.2
 
             for sample in range(500):
                 # generate x sample
@@ -241,11 +264,17 @@ class TransformTestCase(unittest.TestCase):
                     x = np.random.uniform(0., 1., size=100)
                     trans.reset()
                 elif nm == 'LogSinh':
-                    trans.params.values += 0.1
-                    trans.constants.values = 5.
+                    trans.params.values = [np.random.uniform(-2, -0.1), \
+                                                np.random.uniform(-0.1, 0.1)]
                 elif nm == 'Softmax':
                     x = np.random.uniform(0, 1, size=(100, 5))
                     x = x/(0.1+np.sum(x, axis=1)[:, None])
+
+                elif nm == 'Manly':
+                    trans.params.values = np.random.uniform(-5, -5)
+
+                if hasattr(trans, 'xmax'):
+                    trans.xmax = x.max()
 
                 # Check x -> forward(x) -> backward(y) is stable
                 y = trans.forward(x)
@@ -272,14 +301,19 @@ class TransformTestCase(unittest.TestCase):
         delta = 1e-5
 
         for nm in transform.__all__:
-            trans = self.get_transform(nm)
+            trans = transform.get_transform(nm)
             nparams = trans.params.nval
+
+            if hasattr(trans, 'nu'):
+                trans.nu = 0.
+            if hasattr(trans, 'lam'):
+                trans.lam = 0.2
 
             for sample in range(100):
                 x = np.random.normal(size=100, loc=5, scale=20)
                 trans.params.values = np.random.uniform(1e-3, 2, size=nparams)
 
-                if nm in ['Log', 'BoxCox2']:
+                if nm in ['Log', 'BoxCox2', 'BoxCox1nu']:
                     x = np.clip(x, 1e-1, np.inf)
 
                 elif nm == 'Logit':
@@ -292,7 +326,11 @@ class TransformTestCase(unittest.TestCase):
                     trans.reset()
 
                 elif nm == 'LogSinh':
-                    trans.constants.values = 5.
+                    trans.params.values = [np.random.uniform(-2, -0.1), \
+                                                np.random.uniform(-0.1, 0.1)]
+
+                if hasattr(trans, 'xmax'):
+                    trans.xmax = x.max()
 
                 # Compute first order approx of jac
                 y = trans.forward(x)
@@ -315,7 +353,7 @@ class TransformTestCase(unittest.TestCase):
                 idx = ~np.isnan(jac)
                 ck = np.all(jac[idx]>0.)
                 if not ck:
-                    print(('Transform {0} not having'+\
+                    print(('\n\n!!!Transform {0} not having'+\
                         ' a strictly positive Jacobian').format(trans.name))
                 self.assertTrue(ck)
 
@@ -325,7 +363,9 @@ class TransformTestCase(unittest.TestCase):
                 idx = idx & ~np.isnan(crit)
                 ck = np.all(crit[idx]<1e-3)
                 if not ck:
-                    print(('Transform {0} failing the'+\
+                    import pdb; pdb.set_trace()
+
+                    print(('\n\n!!!Transform {0} failing the'+\
                         ' numerical Jacobian test').format(trans.name))
 
                 self.assertTrue(ck)
@@ -338,7 +378,15 @@ class TransformTestCase(unittest.TestCase):
             if nm in ['Softmax']:
                 continue
 
-            trans = self.get_transform(nm)
+            trans = transform.get_transform(nm)
+
+            if hasattr(trans, 'nu'):
+                trans.nu = 0.
+            if hasattr(trans, 'lam'):
+                trans.lam = 0.2
+
+            if hasattr(trans, 'xmax'):
+                trans.xmax = 1.
 
             for censor in [0.1, 0.5]:
                 tcensor = trans.forward(censor)
@@ -363,8 +411,15 @@ class TransformTestCase(unittest.TestCase):
         xs = np.column_stack([xs, (1-xs)*xs])
 
         for nm in transform.__all__:
-            trans = self.get_transform(nm)
+            trans = transform.get_transform(nm)
             nparams = trans.params.nval
+
+            if hasattr(trans, 'nu'):
+                trans.nu = 0.
+            if hasattr(trans, 'lam'):
+                trans.lam = 0.2
+            if hasattr(trans, 'xmax'):
+                trans.xmax = x.max()
 
             xx = x
             if nm == 'Softmax':
@@ -389,7 +444,7 @@ class TransformTestCase(unittest.TestCase):
             fig.savefig(os.path.join(self.fimg, 'transform_'+nm+'.png'))
 
 
-    def test_params_samples(self):
+    def test_params_sample(self):
         ''' Test parameter sampling '''
 
         nsamples = 1000
@@ -399,7 +454,7 @@ class TransformTestCase(unittest.TestCase):
                 continue
 
             trans = transform.get_transform(nm)
-            samples = trans.sample_params(nsamples)
+            samples = trans.params_sample(nsamples)
             self.assertEqual(samples.shape, (nsamples, trans.params.nval))
 
             mins = trans.params.mins
@@ -411,6 +466,63 @@ class TransformTestCase(unittest.TestCase):
             # Check that all parameters are valid
             for smp in samples:
                 trans.params.values = smp
+
+
+    def test_mininu(self):
+        ''' Test mini nu attribute '''
+        mininu = -10.
+
+        for nm in ['Log', 'BoxCox2',  'BoxCox1nu', 'Reciprocal']:
+            trans = transform.get_transform(nm, mininu=mininu)
+            trans.nu = mininu+1
+            self.assertTrue(np.isclose(trans.nu, mininu+1))
+
+            trans.nu = mininu-1
+            self.assertTrue(np.isclose(trans.nu, mininu))
+
+            if hasattr(trans, 'lam'):
+                trans.lam = 0.2
+            if hasattr(trans, 'xmax'):
+                trans.xmax = -mininu+1
+
+            # Generate censored inputs
+            # ... raw inputs
+            nval = 100
+            trans.nu = mininu
+            x = np.linspace(-mininu-1, -mininu+1, nval)
+            y = trans.forward(x)
+            # ... fit censored normal dist
+            ff = (np.arange(nval)+0.7)/(nval+0.4)
+            idx = ~np.isnan(y)
+            M = np.column_stack([np.ones(np.sum(idx)), norm.ppf(ff[idx])])
+            theta, _, _, _ = np.linalg.lstsq(M, y[idx])
+            y[~idx] = theta[0] + theta[1]*norm.ppf(ff[~idx])
+            # ... back transform
+            x0 = trans.backward_censored(y)
+
+            # ... test no nan
+            self.assertTrue(np.all(~np.isnan(x0)))
+
+
+    def test_params_logprior(self):
+        ''' Test log prior '''
+
+        nsamples = 1000
+        for nm in transform.__all__:
+            if nm == 'Identity':
+                continue
+
+            trans = transform.get_transform(nm)
+            samples = trans.params_sample(nsamples)
+
+            for smp in samples:
+                trans.params.values = smp
+                lp = trans.params_logprior()
+                if nm != 'LogSinh':
+                    self.assertTrue(np.isclose(lp, 0.))
+                else:
+                    self.assertTrue(np.isclose(lp, norm.logpdf(smp[1], 0, 0.3)))
+
 
 
 if __name__ == "__main__":
