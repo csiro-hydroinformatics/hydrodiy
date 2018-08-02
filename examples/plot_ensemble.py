@@ -75,8 +75,8 @@ for stat in ['mean', 'median']:
     fig, ax = plt.subplots()
 
     # Draw ensemble time series and get performance metrics
-    x, alpha, crps_ss, R2 = ensplot.tsplot(obs, fcst, ax, \
-                show_pit=True, show_scatter=True, \
+    x, alpha, crps_ss, R2, bias = ensplot.tsplot(obs, fcst, ax, \
+                loc_pit=1, loc_scatter=2, \
                 line=stat, random_pit=True)
 
     # Set x ticks
