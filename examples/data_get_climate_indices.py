@@ -50,7 +50,7 @@ LOGGER = iutils.get_logger(basename)
 # Process
 #----------------------------------------------------------------------
 
-data = {}
+data = []
 
 # Loop through the indices
 for indn in indices:
@@ -58,7 +58,9 @@ for indn in indices:
 
     #  --- Download the data ---
     series, url = hyclimind.get_data(indn)
-    data[indn] = series
+    series = series['1900-01-01':]
+    series.name = indn
+    data.append(series)
 
     # --- Plot the data --
     plt.close('all')
@@ -68,7 +70,7 @@ for indn in indices:
     fig.savefig(os.path.join(fimg, '{0}.png'.format(indn)))
 
 # Save all indices to disk
-data = pd.DataFrame(data)
+data = pd.concat(data, axis=1)
 fd = os.path.join(fdata, 'climate_indices.csv')
 comments = {'comment': 'Monthly time series of climate indices'}
 csv.write_csv(data, fd, comments, source_file, compress=False, \

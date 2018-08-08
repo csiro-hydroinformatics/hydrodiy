@@ -3,8 +3,8 @@
 
 ## -- Script Meta Data --
 ## Author  : julien
-## Created : 2018-01-15 10:16:35.712913
-## Comment : Create fancy boxplots
+## Created : 2018-08-02 Thu 11:23 AM
+## Comment : Generate ensemble verification metrics
 ##
 ## ------------------------------
 import sys, os, re, json, math
@@ -12,10 +12,8 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 
-import matplotlib.pyplot as plt
-
 from hydrodiy.io import iutils
-from hydrodiy.plot import putils, ensplot
+from hydrodiy.stat import metrics, transform
 
 #----------------------------------------------------------------------
 # Config
@@ -29,8 +27,6 @@ nval = 1000
 nens = 1000
 nval = 50
 
-putils.set_mpl(font_size=10)
-
 #----------------------------------------------------------------------
 # Folders
 #----------------------------------------------------------------------
@@ -39,9 +35,6 @@ putils.set_mpl(font_size=10)
 source_file = os.path.abspath(__file__)
 froot = os.path.dirname(source_file)
 
-fimg = os.path.join(froot, 'images', 'ensemble')
-os.makedirs(fimg, exist_ok=True)
-
 # Create logger to follow script execution
 basename = re.sub('\\.py.*', '', os.path.basename(source_file))
 LOGGER = iutils.get_logger(basename)
@@ -49,7 +42,6 @@ LOGGER = iutils.get_logger(basename)
 #----------------------------------------------------------------------
 # Get obs
 #----------------------------------------------------------------------
-
 
 # Create a random set of forecasts
 fcst = np.random.normal(loc=1, size=(nval, nens))
@@ -67,29 +59,43 @@ obs = np.maximum(obs, 0.)
 # Process
 #----------------------------------------------------------------------
 
-for stat in ['mean', 'median']:
+# CRPS score
+crps, crps_table = metrics.crps(obs, fcst)
+LOGGER.info('CRPS ={0:0.3f}'.format(crps.crps))
 
-    # Create matplotlib objects
-    plt.close('all')
+# CRPS skill score
+crps_ss = (1-crps.crps/crps.uncertainty)*100
+LOGGER.info('CRPS_SS ={0:0.3f}'.format(crps_ss))
 
-    fig, ax = plt.subplots()
+# Reliability (Pvalue of Cramer-Von Mises test for Probability Integral
+# Transform data)
+stat, CVpvalue = metrics.alpha(obs, fcst)
+LOGGER.info('ALPHA - CV ={0:0.3f}'.format(CVpvalue))
 
-    # Draw ensemble time series and get performance metrics
-    x, alpha, crps_ss, R2, bias = ensplot.tsplot(obs, fcst, ax, \
-                loc_pit=1, loc_scatter=2, \
-                line=stat, random_pit=True)
+# .. same with Kolmogorov-Smirnov test
+stat, KSpvalue = metrics.alpha(obs, fcst, type='KS')
+LOGGER.info('ALPHA - KS ={0:0.3f}'.format(KSpvalue))
 
-    # Set x ticks
-    xticks = np.where(pd.Series(days.day).isin([1, 10, 20]))[0]
-    xticklabels = [datetime.strftime(d, format='%d %b\n%Y') \
-                                        for d in days[xticks]]
-    ax.set_xticks(xticks)
-    ax.set_xticklabels(xticklabels)
+# Mean ensemble bias
+bias = metrics.bias(obs, np.mean(fcst, axis=1))
+LOGGER.info('Bias ={0:0.3f}'.format(bias))
 
-    # Save figure
-    fig.tight_layout()
-    fp = os.path.join(fimg, 'ensemble_plot_{0}.png'.format(stat))
-    fig.savefig(fp)
+# Mean ensemble rank correlation correlation
+corr = metrics.corr(obs, np.mean(fcst, axis=1), type='Spearman')
+LOGGER.info('Rk Corr ={0:0.3f}'.format(corr))
+
+# Computing metrics in transformed space
+# .. using a log transform with a shift parameter set to nu=1e-2
+# (see hydrodiy.stat.transform)
+trans = transform.Log()
+trans.nu = 1e-2
+
+biaslog = metrics.bias(obs, np.mean(fcst, axis=1), trans=trans)
+LOGGER.info('BiasLog ={0:0.3f}'.format(biaslog))
+
+corrlog = metrics.corr(obs, np.mean(fcst, axis=1), type='Spearman', trans=trans)
+LOGGER.info('CorrLog ={0:0.3f}'.format(corrlog))
+
 
 
 LOGGER.info('Process completed')

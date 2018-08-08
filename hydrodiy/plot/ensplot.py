@@ -190,6 +190,22 @@ def tsplot(obs, fcst, ax=None, \
         Percent threshold for marking sudo pits as suspicious
     random_pit : bool
         Randomise pit computation
+
+
+    Returns
+    -----------
+    out : pandas.core.series.Series
+        Aggregated time series
+    x : numpy.ndarray
+        Abscissae data used in plots
+    alpha : float
+        Alpha score (see hydrodiy.stat.metrics.alpha)
+    crps_ss : float
+        CRPS skill score (see hydrodiy.stat.metrics.crps)
+    R2 : float
+        Correlation coefficient (see hydrodiy.stat.metrics.corr)
+    bias : float
+        Bias (see hydrodiy.stat.metrics.bias)
    '''
     # Check inputs
     nval = len(obs)

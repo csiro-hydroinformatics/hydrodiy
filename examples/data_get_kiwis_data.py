@@ -114,7 +114,8 @@ csv.write_csv(data, fd, comments, source_file, compress=False, \
 
 # plot data data
 plt.close('all')
-fig, axs = putils.get_fig_axs(nrows=2)
+fig, axs = plt.subplots(nrows=2)
+axs = axs.flat
 
 ax = axs[0]
 data.filter(regex='flow', axis=1).plot(ax=ax)
