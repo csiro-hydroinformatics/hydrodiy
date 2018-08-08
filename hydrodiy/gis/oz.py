@@ -1,6 +1,6 @@
 ''' Module to plot data on an Australia map '''
 
-import re, os, tarfile
+import re, os, json, tarfile
 import pkg_resources
 
 import numpy as np
@@ -18,123 +18,9 @@ FCOAST50 = os.path.join(FDATA, 'ne_50m_admin_0_countries_australia.shp')
 FDRAINAGE = os.path.join(FDATA, 'drainage_divisions_lines_simplified.shp')
 
 # Lat long coordinate boxes for regions in Australia
-REGIONS = {\
-    'AUS': { \
-        'name' : 'Australia', \
-        'xlim' : [109., 155], \
-        'ylim' : [-44.4, -9.] \
-    }, \
-    # States
-    'QLD': {\
-        'name': 'Queensland', \
-        'xlim' : [136.5, 155.], \
-        'ylim' : [-30., -9.]\
-    }, \
-    'TAS':{\
-        'name': 'Tasmania',
-        'xlim': [144.38, 148.55], \
-        'ylim': [-43.83, -40.21] \
-    }, \
-    'WA':{\
-        'name': 'Western Australia', \
-        'xlim': [113.52, 129.26], \
-        'ylim': [-44., -13.2] \
-    }, \
-    'NSW':{\
-        'name': 'New South Wales', \
-        'xlim': [140.6, 154.], \
-        'ylim': [-38., -27.5] \
-    }, \
-    'VIC':{\
-        'name': 'Victoria', \
-        'xlim': [140.88, 150.68], \
-        'ylim': [-39.5, -33.9] \
-    }, \
-    'NT':{\
-        'name': 'Northern Territory', \
-        'xlim': [128., 138.40], \
-        'ylim': [-26.08, -10.49] \
-    }, \
-    # Drainage divisions
-    'MDB': {\
-        'name': 'Murray-Darling drainage division', \
-        'xlim' : [138., 155.], \
-        'ylim' : [-38.5, -23.] \
-    }, \
-    'SWC':{\
-        'name': 'South-West Coast drainage division',
-        'xlim': [113.52, 124.], \
-        'ylim': [-35.97, -27.22] \
-    }, \
-    'PG':{\
-        'name': 'Pilbara-Gascoyne drainage division', \
-        'xlim': [112., 122.], \
-        'ylim': [-30.17, -19.58] \
-    }, \
-    'NEC':{\
-        'name': 'North-East Coast drainage division', \
-        'xlim': [142.27, 153.98], \
-        'ylim': [-30., -9.33] \
-    }, \
-    'SEN':{\
-        'name': 'South East Coast (NSW) drainage division', \
-        'xlim': [148.78, 154.30], \
-        'ylim': [-37.70, -27.49] \
-    }, \
-    'SEV':{\
-        'name': 'South East Coast (VIC) drainage division', \
-        'xlim': [138.87, 149.84], \
-        'ylim': [-39.18, -35.55] \
-    }, \
-    # Miscellaneous regions
-    'SEAUS':{\
-        'name': 'South East Australia', \
-        'xlim': [140.81, 153.6], \
-        'ylim': [-44.03, -28.3] \
-    }, \
-    'NA':{\
-        'name': 'Northern Australia', \
-        'xlim': [109, 154], \
-        'ylim': [-24, -9.33] \
-    }, \
-    'MDBS': {\
-        'name': 'South of Murray Darling Basin',
-        'xlim': [138.36, 150.73], \
-        'ylim': [-38.6, -31.55] \
-    }, \
-    'MDBN': {\
-        'name': 'North of Murray Darling Basin',
-        'xlim': [141.14, 152.78], \
-        'ylim': [-33.02, -23.] \
-    }, \
-    'BIDGEE':{\
-        'name': 'Murrumbidgee Basin',
-        'xlim' : [142.37, 149.86], \
-        'ylim' : [-36.83, -33.5] \
-    }, \
-    'MURRAY':{\
-        'name': 'Murray Basin',
-        'xlim': [138.36, 149.86], \
-        'ylim': [-38.6, -34.18] \
-    }, \
-    'CAPEYORK': {\
-        'name' : 'Cape York', \
-        'xlim' : [137., 148.7], \
-        'ylim' : [-17., -10.] \
-    }, \
-    'COASTALNSW': {\
-        'name': 'Coastal New South Wales', \
-        'xlim' : [147.5, 155.], \
-        'ylim' : [-38.5, -27.8]
-    }, \
-    'VICTAS': {\
-        'name': 'Victoria and Tasmania', \
-         'xlim': [140.5, 151.], \
-         'ylim': [-44., -33.] \
-    }
-}
-
-
+freg = os.path.join(FDATA, 'regions.json')
+with open(freg, 'r') as fo:
+    REGIONS = json.load(fo)
 
 class Oz:
     ''' Class to plot data on an Australia map '''

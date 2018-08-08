@@ -108,6 +108,7 @@ setup(
     packages = find_packages(),
     package_data = {
         "hydrodiy": ["gis/data/*.gz", \
+            "gis/data/*.json", \
             "stat/data/*.zip",\
             "stat/data/*.csv"],
     },
