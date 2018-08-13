@@ -10,6 +10,7 @@ import warnings
 
 from hydrodiy.stat import transform
 from hydrodiy.stat import sutils
+from hydrodiy.stat.censored import normcensfit2d
 from hydrodiy.io import csv
 
 import c_hydrodiy_stat
@@ -587,7 +588,7 @@ def kge(obs, sim, trans=transform.Identity()):
 
 
 def corr(obs, ens, trans=transform.Identity(), \
-                    stat='median', type='Pearson'):
+                    stat='median', type='Pearson', censor=1e-10):
     ''' Compute correlation coefficient
 
     Parameters
@@ -601,7 +602,9 @@ def corr(obs, ens, trans=transform.Identity(), \
     stat : str
         Use median or mean from ensemble
     type : str
-        Pearson or Spearman type of correlation
+        Pearson, Spearman or censored type of correlation
+    censor : float
+        Censoring threshold (used only if type is "censored")
 
     Returns
     -----------
@@ -619,8 +622,8 @@ def corr(obs, ens, trans=transform.Identity(), \
     if not stat in ['median', 'mean']:
         raise ValueError('Expected stat in [mean/median], got '+stat)
 
-    if not type in ['Pearson', 'Spearman']:
-        raise ValueError('Expected type in [Pearson/Spearman], got '\
+    if not type in ['Pearson', 'Spearman', 'censored']:
+        raise ValueError('Expected type in [Pearson/Spearman/censored], got '\
                             +type)
 
     # Transform
@@ -645,8 +648,11 @@ def corr(obs, ens, trans=transform.Identity(), \
     # Compute
     if type == 'Pearson':
         corr_value = np.corrcoef(tobs, tsim)[0, 1]
-    else:
+    elif type == 'Spearman':
         corr_value = spearmanr(tobs, tsim).correlation
+    else:
+        X = np.column_stack([tobs, tsim])
+        _, _, corr_value = normcensfit2d(X, censor=censor)
 
     return corr_value
 

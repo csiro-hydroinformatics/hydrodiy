@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 from hydrodiy.stat import metrics
 from hydrodiy.io import csv
 from hydrodiy.stat import transform, sutils
+from hydrodiy.stat.censored import normcensfit2d
 
 from hydrodiy.plot import putils
 
@@ -640,14 +641,14 @@ class MetricsTestCase(unittest.TestCase):
         obs = np.arange(0, nval).astype(float)
 
         for trans, type, stat in prod(self.transforms, \
-                    ['Pearson', 'Spearman'], ['mean', 'median']):
+                    ['Pearson', 'Spearman', 'censored'], ['mean', 'median']):
 
             if trans.params.nval > 0:
                 trans.params.values[0] = np.mean(obs)*1e-2
 
             tobs = trans.forward(obs)
             tens = tobs[:, None] - 2 \
-                        + np.random.uniform(-1, 1, size=(nval, nens))
+                        + np.random.uniform(-2, 2, size=(nval, nens))
             ens = trans.backward(tens)
             corr = metrics.corr(obs, ens, trans, stat, type)
 
@@ -658,8 +659,11 @@ class MetricsTestCase(unittest.TestCase):
 
             if type == 'Pearson':
                 expected = np.corrcoef(tobs, tsim)[0, 1]
-            else:
+            elif type == 'Spearman':
                 expected = spearmanr(tobs, tsim).correlation
+            else:
+                X = np.column_stack([tobs, tsim])
+                _, _, expected = normcensfit2d(X, censor=1e-10)
 
             ck = np.isclose(corr, expected)
             self.assertTrue(ck)
@@ -684,8 +688,11 @@ class MetricsTestCase(unittest.TestCase):
 
             if type == 'Pearson':
                 expected = np.corrcoef(tobs, tens)[0, 1]
-            else:
+            elif type == 'Spearman':
                 expected = spearmanr(tobs, tens).correlation
+            else:
+                X = np.column_stack([tobs, tens])
+                _, _, expected = normcensfit2d(X, censor=1e-10)
 
             ck = np.isclose(corr, expected)
             self.assertTrue(ck)
