@@ -30,17 +30,24 @@ class CensoredTestCase(unittest.TestCase):
     def test_normcensloglike2d(self):
         ''' Test 2d censored log-likelihood '''
 
-        mu = np.zeros(2)
-        Sig = np.eye(2)
+        mu = np.array([0.5, 0.8])
+        s1, s2, rho = 2, 3, 0.8
+        Sig = np.array([[s1**2, s1*s2*rho], [s1*s2*rho, s2**2]])
         data = [[0, 0], [1, 0], [0, 1], [1, 1]]
         censor = 1e-10
+
+        nsamples = 100000
+        smp = np.random.multivariate_normal(size=nsamples, \
+            mean=mu, cov=Sig)
 
         ll = np.zeros(len(data))
         for i, d in enumerate(data):
             Y = np.array(d)[None, :]
             ll[i] = normcensloglike2d(Y, mu, Sig, censor)
 
-        import pdb; pdb.set_trace()
+        # Test all censored case
+        idx = np.sum(smp < censor, axis=1)
+        P = np.sum(idx)/len(idx)
 
 
 

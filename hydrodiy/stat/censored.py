@@ -181,6 +181,8 @@ def normcensloglike2d(Y, mu, Sig, censor, icens=None):
             # Compute cdf doubled censored
             err, cdf, info = mvn.mvndst(lower, upper, infin, corr)
             ll += np.log(cdf)*ncase
+            import pdb; pdb.set_trace()
+
 
     return ll
 
