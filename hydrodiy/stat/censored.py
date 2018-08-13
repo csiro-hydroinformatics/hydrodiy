@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import norm, mvn
 from scipy.stats import multivariate_normal as mvt
-from scipy.optimize import fmin, brent
+from scipy.optimize import fminbound
 
 # Small number used to detect censor data
 EPS = 1e-10
@@ -49,21 +49,27 @@ def normcensloglike(y, mu, sig, censor, icens=None):
     return ll
 
 
-def checkdata2d(Y):
-    ''' Check 2d Y array '''
-    Y = np.atleast_2d(Y)
-    if not Y.shape[1] == 2:
-        raise ValueError('Expected Y data of shape [nx2], got {0}'.format(\
-                    Y.shape))
-    return Y
+def checkdata2d(X):
+    ''' Check 2d X array '''
+    X = np.atleast_2d(X)
+    if not X.shape[1] == 2:
+        raise ValueError('Expected X data of shape [nx2], got {0}'.format(\
+                    X.shape))
+
+    nnan = np.sum(np.isnan(X), axis=0)
+    if not np.all(nnan == 0):
+        raise ValueError('Expected no nan in both columns of X,'+\
+                    ' got {0}'.format(nnan))
+
+    return X
 
 
-def censindexes(Y):
+def censindexes(X):
     ''' Compute censoring indexes
     Parameters
     -----------
-    Y : numpy.ndarray
-        2D Sample data [n x 2]
+    X : numpy.ndarray
+        2D Sample data [n x 2] (no nan values)
 
     Returns
     -----------
@@ -74,22 +80,22 @@ def censindexes(Y):
         * 2 : Second variable is censored
         * 3 : Both variables are censored
     '''
-    Y = checkdata2d(Y)
+    X = checkdata2d(X)
 
     # Individual indexes
-    idx = (Y < EPS).astype(int)
+    idx = (X < EPS).astype(int)
     idx[:, 1] *= 2
 
     return np.sum(idx, axis=1)
 
 
 
-def normcensloglike2d(Y, mu, Sig, censor, icens=None):
+def normcensloglike2d(X, mu, Sig, censor, icens=None):
     ''' Bivariate normal censored log likelihood
 
     Parameters
     -----------
-    Y : numpy.ndarray
+    X : numpy.ndarray
         2D Sample data [nx2] (no nan values)
     mu : float
         Location parameter
@@ -106,7 +112,8 @@ def normcensloglike2d(Y, mu, Sig, censor, icens=None):
         Censored log likelihood
     '''
     # Check data
-    Y = checkdata2d(Y)
+    X = checkdata2d(X)
+
     if not mu.shape == (2, ):
         raise ValueError('Expected a mu vector of size [2], '+\
                 'got {0}'.format(mu.shape))
@@ -121,7 +128,7 @@ def normcensloglike2d(Y, mu, Sig, censor, icens=None):
 
     # Finds censored data
     if icens is None:
-        icens = censindexes(Y)
+        icens = censindexes(X)
 
     # Censoring cases
     ll = 0.
@@ -136,7 +143,7 @@ def normcensloglike2d(Y, mu, Sig, censor, icens=None):
         # Proceeds with log likelihood computation
         if case == 0:
             # No censoring:
-            ll += mvt.logpdf(Y[idx, :], mean=mu, cov=Sig)
+            ll += np.sum(mvt.logpdf(X[idx, :], mean=mu, cov=Sig))
 
         elif case in [1, 2]:
             # Select which variable is censored and which one is not
@@ -151,13 +158,13 @@ def normcensloglike2d(Y, mu, Sig, censor, icens=None):
 
             # Compute loglike for non censored variable
             # use logpdf function
-            logpu = norm.logpdf(Y[idx, icasenc], \
+            logpu = norm.logpdf(X[idx, icasenc], \
                     loc=mu[icasenc], scale=math.sqrt(variances[icasenc]))
 
             # Compute loglike for censored variable
-            # using conditional parameters
+            # using conditional parameters of F2(censor|u)
             mu_update = mu[icasec] \
-                + Sig[0, 1]/variances[icasenc]*(Y[idx, icasenc]-mu[icasenc])
+                + Sig[0, 1]/variances[icasenc]*(X[idx, icasenc]-mu[icasenc])
             variance_update = variances[icasec] \
                 - Sig[0, 1]**2/variances[icasenc]
 
@@ -181,8 +188,6 @@ def normcensloglike2d(Y, mu, Sig, censor, icens=None):
             # Compute cdf doubled censored
             err, cdf, info = mvn.mvndst(lower, upper, infin, corr)
             ll += np.log(cdf)*ncase
-            import pdb; pdb.set_trace()
-
 
     return ll
 
@@ -263,6 +268,66 @@ def normcensfit1d(x, censor, cst=0.375, sort=True, icens=None):
             sig = (censor-mu)/norm.ppf(F1)
             theta = [mu, sig]
 
-    return theta
+    return theta[0], theta[1]
 
 
+def normcensfit2d(X, censor, cst=0.375, maxfun=500, maxabsrho=0.99):
+    ''' Fit a censored bivariate normal distribution
+    using ordered stats for marginals and maximum
+    likelihood for correlation
+
+    Parameters
+    -----------
+    X : numpy.ndarray
+        Sample 2d data (no nan values)
+    censor : float
+        Censoring threshold
+    cst : float
+        Plotting position constant. Suggested values are:
+        * 0.3: Value proposed by Benar and Bos-Levenbach (1953)
+        * 0.375: This is Blom's value to approximate the mean of normal
+                order statistics (Blom, 1958)
+        * 0.3175: This is Filliben's value to approximate the mode
+                of uniform order statistics (Filliben, 1975)
+    maxfun : int
+        Maximum iteration for Brent optimization routine
+        (see scipy.optimize.brent)
+    maxabsrho : float
+        Maximum absolute value for rho
+
+    Returns
+    -----------
+    mu : numpy.ndarray
+        Location parameters [2]
+    scales : numpy.ndarray
+        Scale parameters [2]
+    rho : float
+        Correlation
+    '''
+
+    # Check data
+    X = checkdata2d(X)
+
+    # Fit two univariate censored normals
+    thetas = np.zeros((2, 2))
+    for i in range(2):
+        thetas[i, :] = normcensfit1d(X[:, i], censor, cst)
+
+    # Fit correlation by maximum likelihood
+
+    # .. initialise data
+    icens2 = censindexes(X)
+    mu = thetas[:, 0]
+    Sig = np.diag(thetas[:, 1]**2)
+    cc = np.prod(thetas[:, 1])
+    M = cc*np.eye(2)[::-1]
+
+    # .. objective function
+    def objfun(rho):
+        Sigr = Sig + M*rho
+        return -normcensloglike2d(X, mu, Sigr, censor, icens=icens2)
+
+    # .. optimize
+    rho = fminbound(objfun, -maxabsrho, maxabsrho, maxfun=maxfun)
+
+    return thetas[:, 0], thetas[:, 1], rho
