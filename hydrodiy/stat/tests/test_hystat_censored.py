@@ -7,7 +7,7 @@ from scipy.stats import norm
 from scipy.stats import multivariate_normal as mvt
 
 from hydrodiy.stat.censored import normcensfit1d, normcensloglike, \
-                                censindexes, normcensloglike2d, \
+                                censindexes2d, normcensloglike2d, \
                                 normcensfit2d
 
 
@@ -18,14 +18,14 @@ class CensoredTestCase(unittest.TestCase):
         ftest = os.path.dirname(source_file)
         self.ftest = ftest
 
-    def test_censindexes(self):
+    def test_censindexes2d(self):
         ''' Test the fitting of normal censored data '''
         Y = np.zeros((4, 2))
         Y[1, 0] = 1
         Y[2, 1] = 1
         Y[3, :] = 1
 
-        icens = censindexes(Y)
+        icens = censindexes2d(Y, censor=0.)
         self.assertTrue(np.allclose(icens, [3, 2, 1, 0]))
 
     def test_normcensloglike2d(self):
@@ -181,8 +181,9 @@ class CensoredTestCase(unittest.TestCase):
             rhoe = np.array(rhoe)
             rhom = np.mean(rhoe)
             # There appears to be a bias in the estimation...
-            self.assertTrue(np.isclose(rho, rhom, rtol=0., atol=5e-2))
-            print('normcensfit2d - censor={0} \t=> passing!'.format(censor))
+            self.assertTrue(np.isclose(rho, rhom, rtol=0., atol=1e-3))
+            print(('normcensfit2d - censor={0} rho={1:0.4f} rhom={2:0.4f}'+\
+                    ' => passing!').format(censor, rho, rhom))
 
 
 if __name__ == "__main__":

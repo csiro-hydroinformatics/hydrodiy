@@ -64,12 +64,33 @@ def checkdata2d(X):
     return X
 
 
-def censindexes(X):
-    ''' Compute censoring indexes
+def censindexes1d(x, censor):
+    ''' Compute censoring index for a 1d vector
+    Parameters
+    -----------
+    x : numpy.ndarray
+        1D Sample data [n] (no nan values)
+    censor : float
+        Censoring threhsold
+
+    Returns
+    -----------
+    icens : numpy.ndarray
+        Indexes of censored data
+        * 0 : no censored data
+        * 1 : variable is censored
+    '''
+    return (x < censor + EPS).astype(int)
+
+
+def censindexes2d(X, censor):
+    ''' Compute censoring indexes for a 2d matrix
     Parameters
     -----------
     X : numpy.ndarray
         2D Sample data [n x 2] (no nan values)
+    censor : float
+        Censoring threhsold
 
     Returns
     -----------
@@ -83,7 +104,7 @@ def censindexes(X):
     X = checkdata2d(X)
 
     # Individual indexes
-    idx = (X < EPS).astype(int)
+    idx = (X < censor+EPS).astype(int)
     idx[:, 1] *= 2
 
     return np.sum(idx, axis=1)
@@ -104,7 +125,7 @@ def normcensloglike2d(X, mu, Sig, censor, icens=None):
     censor : float
         Censoring threshold
     icens : numpy.ndarray
-        Indexes of censored data (see hydrodiy.stat.censored.censindexes)
+        Indexes of censored data (see hydrodiy.stat.censored.censindexes2d)
 
     Returns
     -----------
@@ -128,7 +149,7 @@ def normcensloglike2d(X, mu, Sig, censor, icens=None):
 
     # Finds censored data
     if icens is None:
-        icens = censindexes(X)
+        icens = censindexes2d(X, censor)
 
     # Censoring cases
     ll = 0.
@@ -231,21 +252,22 @@ def normcensfit1d(x, censor, cst=0.375, sort=True, icens=None):
 
     # locate censored data
     if icens is None:
-        icens = xs < censor + EPS
+        icens = censindexes1d(xs, censor)
 
-    ncens = np.sum(icens)
+    ncens = np.sum(icens) # Number of censored data
+    nval = len(xs)
+    nocens = nval-ncens # Number of not censored data
 
     # Plotting positions
-    nval = len(xs)
     ff = (np.arange(1, nval+1)-cst)/(nval+1-2*cst)
 
     # Linear regression against ordered values
-    nocens = nval-ncens
     if nocens >= 2:
         # Standard quantiles
-        qq = norm.ppf(ff[~icens])
+        idx = icens == 0
+        qq = norm.ppf(ff[idx])
         M = np.column_stack([np.ones(nval-ncens), qq])
-        theta, _, _, _ = np.linalg.lstsq(M, xs[~icens])
+        theta, _, _, _ = np.linalg.lstsq(M, xs[idx])
 
     elif nocens <= 1:
         # Probability of censored data
@@ -316,7 +338,7 @@ def normcensfit2d(X, censor, cst=0.375, maxfun=500, maxabsrho=0.99):
     # Fit correlation by maximum likelihood
 
     # .. initialise data
-    icens2 = censindexes(X)
+    icens2 = censindexes2d(X, censor)
     mu = thetas[:, 0]
     Sig = np.diag(thetas[:, 1]**2)
     cc = np.prod(thetas[:, 1])
@@ -331,3 +353,5 @@ def normcensfit2d(X, censor, cst=0.375, maxfun=500, maxabsrho=0.99):
     rho = fminbound(objfun, -maxabsrho, maxabsrho, maxfun=maxfun)
 
     return thetas[:, 0], thetas[:, 1], rho
+
+
