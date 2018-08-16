@@ -14,6 +14,56 @@ class QualityControlTestCase(unittest.TestCase):
         self.ftest = os.path.dirname(source_file)
 
 
+    def test_check1d(self):
+        ''' Test is linear errors '''
+        # Basic test
+        a = np.ones(10)
+        b, idxok, nok = qc.check1d(a)
+        self.assertTrue(np.allclose(a, b))
+        self.assertTrue(np.sum(idxok) == 10)
+        self.assertTrue(nok == 10)
+
+        # nan
+        a = np.ones(10)
+        a[0] = np.nan
+        b, idxok, nok = qc.check1d(a)
+        self.assertTrue(np.allclose(a[1:], b[1:]))
+        self.assertTrue(np.sum(idxok) == 9)
+        self.assertTrue(nok == 9)
+
+        # infinite
+        a = np.ones(10)
+        a[0] = np.inf
+        b, idxok, nok = qc.check1d(a)
+        self.assertTrue(np.allclose(a[1:], b[1:]))
+        self.assertTrue(np.sum(idxok) == 9)
+        self.assertTrue(nok == 9)
+
+        # dimensions
+        a = np.ones((10, 1))
+        b, idxok, nok = qc.check1d(a)
+        self.assertTrue(np.allclose(a, b))
+        self.assertTrue(np.sum(idxok) == 10)
+        self.assertTrue(nok == 10)
+
+        a = np.ones((10, 2))
+        try:
+            b, idxok, nok = qc.check1d(a)
+        except ValueError as err:
+            self.assertTrue(str(err).startswith('Expected 1d'))
+        else:
+            raise ValueError('Problem with error')
+
+        # pandas
+        a = pd.Series(np.ones(10))
+        b, idxok, nok = qc.check1d(a)
+        self.assertTrue(isinstance(b, np.ndarray))
+        self.assertTrue(np.allclose(a, b))
+        self.assertTrue(np.sum(idxok) == 10)
+        self.assertTrue(nok == 10)
+
+
+
     def test_islinear_error(self):
         ''' Test is linear errors '''
         nval = 20

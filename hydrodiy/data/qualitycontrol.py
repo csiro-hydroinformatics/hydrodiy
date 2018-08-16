@@ -1,7 +1,29 @@
 import numpy as np
+import pandas as pd
 
 from hydrodiy.data import dutils
 import c_hydrodiy_data
+
+
+def check1d(x):
+    ''' Check variable is one d only '''
+    # Get numpy array data from pandas
+    if hasattr(x, 'values'):
+        x = x.values
+
+    # Check dimensions
+    x = np.atleast_1d(x).astype(np.float64).squeeze()
+    if x.ndim > 1:
+        raise ValueError('Expected 1d array, got shape {0}'.format(x.shape))
+
+    # Check nan and infinite values
+    idxok = pd.notnull(x) & np.isfinite(x)
+    nok = np.sum(idxok)
+    if nok == 0:
+        raise ValueError('Expected some valid data in x. Got none')
+
+    return x, idxok, nok
+
 
 def islinear(data, npoints=3, tol=1e-6, thresh=0.):
     '''
@@ -14,7 +36,8 @@ def islinear(data, npoints=3, tol=1e-6, thresh=0.):
     npoints : int
         Number of points before and after current to test linearity
     tol : float
-        Maximum distance between current point and linear interpolation to validate interpolation
+        Maximum distance between current point and linear interpolation
+        to validate interpolation
     thresh : float
         Minimum threshold below which value is considered to be zero
 
@@ -35,7 +58,7 @@ def islinear(data, npoints=3, tol=1e-6, thresh=0.):
 
     '''
     # Check data
-    data = np.atleast_1d(data).astype(np.float64)
+    data, _, _ = check1d(data)
     islin = np.zeros(len(data), dtype=np.int32)
     npoints = int(npoints)
     tol = np.float64(tol)
