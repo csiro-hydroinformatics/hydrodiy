@@ -63,7 +63,6 @@ class QualityControlTestCase(unittest.TestCase):
         self.assertTrue(nok == 10)
 
 
-
     def test_islinear_error(self):
         ''' Test is linear errors '''
         nval = 20

@@ -4,6 +4,7 @@ import pandas as pd
 from hydrodiy.data import dutils
 import c_hydrodiy_data
 
+EPS = 1e-10
 
 def check1d(x):
     ''' Check variable is one d only '''
@@ -78,5 +79,6 @@ def islinear(data, npoints=3, tol=1e-6, thresh=0.):
         raise ValueError('c_hydrodiy_data.islin returns {0}'.format(ierr))
 
     return islin
+
 
 
