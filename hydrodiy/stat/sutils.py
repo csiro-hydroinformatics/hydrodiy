@@ -16,7 +16,7 @@ def ppos(nval, cst=0.3):
     nval : int
         Sample size
     cst : float
-        Plotting position constant. Suggested values are:
+        Plotting position constant in [0, 0.5]. Suggested values are:
         * 0.3: Value proposed by Benar and Bos-Levenbach (1953)
         * 0.375: This is Blom's value to approximate the mean of normal
                 order statistics (Blom, 1958)
@@ -28,6 +28,8 @@ def ppos(nval, cst=0.3):
     ppos : numpy.ndarray
         Plotting postion
     '''
+    if cst < 0. or cst > 0.5:
+        raise ValueError('Expected cst  in [0, 0.5], got {0}'.format(cst))
     return (np.arange(1, nval+1)-cst)/(nval+1-2*cst)
 
 
