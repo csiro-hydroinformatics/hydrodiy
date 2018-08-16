@@ -36,7 +36,7 @@ for f in lf:
         continue
 
     name = re.sub('.py$', '', os.path.basename(f))
-    modname = re.split(os.path.sep, os.path.dirname(f))[-1]
+    modname = re.sub('.*[^A-Za-z]', '', os.path.dirname(f))
     import_name = 'hydrodiy.{0}.{1}'.format(modname, name)
     module = importlib.import_module(import_name, package='hydrodiy')
 
