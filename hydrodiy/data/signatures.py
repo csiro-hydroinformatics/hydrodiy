@@ -100,8 +100,13 @@ def fdcslope(x, q1=90, q2=100, cst=0.375):
         raise ValueError('Expected q2 > q1, got q1={0} and q2={1}'.format(\
                     q1, q2))
 
+    iok = icens > 0
+    nok = np.sum(iok)
+    if nok == 0:
+        raise ValueError('No valid data')
+
     # Compute percentiles
-    xok = x[icens > 0]
+    xok = x[iok]
     qq = np.percentile(xok, [q1, q2])
     idx = (xok>=qq[0]) & (xok<=qq[1])
     nqq = np.sum(idx)
