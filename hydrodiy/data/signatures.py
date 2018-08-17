@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 
 from hydrodiy.data.qualitycontrol import ismisscens
+from hydrodiy.data.dutils import lag, flathomogen
 from hydrodiy.stat.sutils import ppos
 from hydrodiy.stat.metrics import corr, nse
 from hydrodiy.stat.transform import Identity
@@ -14,7 +15,6 @@ from hydrodiy.stat.transform import Identity
 import c_hydrodiy_data
 
 EPS = 1e-10
-
 
 def eckhardt(flow, thresh=0.95, tau=20, BFI_max=0.8, timestep_type=1):
     ''' Compute the baseflow component based on Eckhardt algorithm
@@ -125,7 +125,7 @@ def fdcslope(x, q1=90, q2=100, cst=0.375):
     return theta[1], qq
 
 
-def goue(daily, trans=Identity()):
+def goue(aggindex, values, trans=Identity()):
     ''' GOUE index (Nash sutcliffe of flat disaggregated daily vs daily)
     as per
     Ficchì, Andrea, Charles Perrin, and Vazken Andréassian.
@@ -135,39 +135,25 @@ def goue(daily, trans=Identity()):
 
     Parameters
     -----------
-    daily : pandas.Series
-        Input daily time series
+    aggindex : numpy.ndarray
+        Aggregation index (e.g. month in the form 199501 for
+        Jan 1995). Index should be in increasing order.
+        (see also hydrodiy.data.dutils.aggregate)
+    values : numpy.ndarray
+        Values to be homogeneise
 
     Returns
     -----------
     goue_value : float
         GOUE index value
-    daily_flat : pandas.Series
-        Flat-disaggregated daily time series
-    monthly : pandas.Series
-        Monthly time series
     '''
-    # Monthly time series
-    monthly = daily.copy().resample('MS').sum()
-
-    # Upsample monthly to daily
-    daily_flat = monthly.resample('D').pad()
-    daily_flat /= daily_flat.index.daysinmonth
-
-    # Fix end of series
-    idx = daily.index.difference(daily_flat.index)
-    if len(idx) > 0:
-        se = pd.Series(np.nan, index=idx)
-        daily_flat = daily_flat.append(se).sort_index()
-        daily_flat = daily_flat.loc[daily.index]
-
-    # Set nan
-    daily_flat.loc[pd.isnull(daily)] = np.nan
+    # Get flat homogeneised series
+    values_flat = flathomogen(aggindex, values)
 
     # Compute goue
-    goue_value = nse(daily, daily_flat, trans=trans)
+    goue_value = nse(values, values_flat, trans=trans)
 
-    return goue_value, daily_flat, monthly
+    return goue_value
 
 
 def lag1corr(x, type='Pearson', censor=0.):
@@ -189,11 +175,10 @@ def lag1corr(x, type='Pearson', censor=0.):
         Lag 1 correlation
     '''
     # Check data
-    x, idxok, nok = check1d(x)
+    icens = ismisscens(x)
 
     # Shift data
-    xshifted = np.roll(x, 1)
-    xshifted[0] = np.nan
+    xshifted = lag(x, 1)
 
     # Correlation
     return metrics.corr(x, xshifted, censor=censor, type=type)

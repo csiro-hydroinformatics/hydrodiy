@@ -55,10 +55,19 @@ class SignaturesTestCase(unittest.TestCase):
         ''' Test goue computation '''
         dt = pd.date_range('2000-01-10', '2000-03-31')
         nt = len(dt)
-        daily = pd.Series(np.random.uniform(0, 1, nt), index=dt)
+        values = np.random.uniform(0, 1, nt)
+        aggindex = dt.year*100 + dt.month
 
-        gv, dflat, m = signatures.goue(daily)
+        gv = signatures.goue(aggindex, values)
 
+        flat = values*0.
+        for ix in np.unique(aggindex):
+            kk = aggindex == ix
+            flat[kk] = np.nanmean(values[kk])
+        gv_expected = 1-np.sum((flat-values)**2)\
+                        /np.sum((np.mean(values)-values)**2)
+
+        self.assertTrue(np.isclose(gv, gv_expected))
 
 
 if __name__ == "__main__":
