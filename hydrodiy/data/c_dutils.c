@@ -58,7 +58,8 @@ int c_aggregate(int nval, int oper, int maxnan, int * aggindex,
         /* check input and skip value if nan */
         inp = inputs[i];
 
-        if(isnan(inp)){
+        if(isnan(inp))
+        {
             nagg_nan ++;
             inp = 0;
         } else
@@ -114,3 +115,68 @@ long long c_combi(int n, int k)
     }
     return ans;
 }
+
+
+/**
+* Convert a time series into a flat homogeneised time series
+**/
+int c_flathomogen(int nval, int maxnan, int * aggindex,
+    double * inputs, double * outputs)
+{
+    int i, j, nagg, nagg_nan, start, ia, iaprev;
+    double agg, inp, nan;
+    static double zero = 0.0;
+
+    /* In case NAN is not defined */
+    nan = zero/zero;
+
+    /* Initialise */
+    iaprev = aggindex[0];
+    ia = 0;
+    start = 0;
+    agg = 0;
+    nagg = 0;
+    nagg_nan = 0;
+
+    for(i=0; i<nval; i++)
+    {
+        ia = aggindex[i];
+
+        /* Agg index should be increasing */
+        if(ia < iaprev)
+            return DUTILS_ERROR + __LINE__;
+
+        if(ia != iaprev)
+        {
+            /* Store outputs */
+            if(nagg_nan > maxnan)
+                agg = nan;
+
+            fprintf(stdout, "start=%d end=%d (nval=%d)\n", start, i, nval);
+            for(j=start; j++; j<i)
+                outputs[j] = agg/nagg;
+
+            /* Iterates */
+            agg = 0;
+            nagg = 0;
+            nagg_nan = 0;
+            iaprev = ia;
+            start = i;
+        }
+
+        /* check input and skip value if nan */
+        inp = inputs[i];
+
+        if(isnan(inp))
+        {
+            nagg_nan ++;
+            inp = 0;
+        } else
+            nagg ++;
+
+        agg += inp;
+    }
+
+    return 0;
+}
+

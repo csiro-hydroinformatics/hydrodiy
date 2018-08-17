@@ -10,3 +10,6 @@ int c_aggregate(int nval, int oper, int maxnan, int * aggindex,
     double * inputs, double * outputs, int * iend);
 
 long long c_combi(int n, int k);
+
+int c_flathomogen(int nval, int maxnan, int * aggindex,
+    double * inputs, double * outputs);

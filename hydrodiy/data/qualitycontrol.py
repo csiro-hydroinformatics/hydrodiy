@@ -4,26 +4,44 @@ import pandas as pd
 from hydrodiy.data import dutils
 import c_hydrodiy_data
 
-EPS = 1e-10
 
-def check1d(x):
-    ''' Check variable is one d only '''
-    # Get numpy array data from pandas
-    if hasattr(x, 'values'):
-        x = x.values
+def ismisscens(x, censor=0., eps=1e-10):
+    ''' Check if 1d variable is missing or censored
 
-    # Check dimensions
-    x = np.atleast_1d(x).astype(np.float64).squeeze()
+    Parameters
+    -----------
+    x : numpy.ndarray data
+        1D Data series (works with pandas.Series too)
+        returns an error if x is more than 1d.
+    censor : float
+        Censoring threshold
+    eps : float
+        Detection limit for censored data (i.e. x < censor + eps)
+
+    Returns
+    -----------
+    icens : numpy.ndarray
+        Censoring flagsLinear interpolation flag:
+        * 0 = Missing data
+        * 1 = Censored data
+        * 2 = Valid and not censored
+    '''
+    # Check data for 1d
     if x.ndim > 1:
-        raise ValueError('Expected 1d array, got shape {0}'.format(x.shape))
+        x = x.squeeze()
+    if x.ndim > 1:
+        raise ValueError('Expected 1d vector, got '+\
+                'x.shape = {0}'.format(x.shape))
 
-    # Check nan and infinite values
-    idxok = pd.notnull(x) & np.isfinite(x)
-    nok = np.sum(idxok)
-    if nok == 0:
-        raise ValueError('Expected some valid data in x. Got none')
+    icens = 2*np.ones(len(x), dtype=np.int64)
+    icens[pd.isnull(x) | ~np.isfinite(x)] = 0
+    icens[x < censor + eps] = 1
 
-    return x, idxok, nok
+    # Convert to pandas series if needed
+    if isinstance(x, pd.Series):
+        icens = pd.Series(icens, index=x.index)
+
+    return icens
 
 
 def islinear(data, npoints=3, tol=1e-6, thresh=0.):

@@ -14,53 +14,26 @@ class QualityControlTestCase(unittest.TestCase):
         self.ftest = os.path.dirname(source_file)
 
 
-    def test_check1d(self):
-        ''' Test is linear errors '''
+    def test_ismisscens(self):
+        ''' Test detection of missing and censored data '''
         # Basic test
         a = np.ones(10)
-        b, idxok, nok = qc.check1d(a)
-        self.assertTrue(np.allclose(a, b))
-        self.assertTrue(np.sum(idxok) == 10)
-        self.assertTrue(nok == 10)
-
-        # nan
-        a = np.ones(10)
         a[0] = np.nan
-        b, idxok, nok = qc.check1d(a)
-        self.assertTrue(np.allclose(a[1:], b[1:]))
-        self.assertTrue(np.sum(idxok) == 9)
-        self.assertTrue(nok == 9)
+        a[1] = -1
+        icens = qc.ismisscens(a)
+        self.assertTrue(np.allclose(icens, [0, 1]+[2]*8))
 
-        # infinite
-        a = np.ones(10)
-        a[0] = np.inf
-        b, idxok, nok = qc.check1d(a)
-        self.assertTrue(np.allclose(a[1:], b[1:]))
-        self.assertTrue(np.sum(idxok) == 9)
-        self.assertTrue(nok == 9)
-
-        # dimensions
+        # Dimensions
         a = np.ones((10, 1))
-        b, idxok, nok = qc.check1d(a)
-        self.assertTrue(np.allclose(a, b))
-        self.assertTrue(np.sum(idxok) == 10)
-        self.assertTrue(nok == 10)
+        icens = qc.ismisscens(a)
+        self.assertTrue(np.allclose(icens, [2]*10))
 
+        # Error
         a = np.ones((10, 2))
         try:
-            b, idxok, nok = qc.check1d(a)
+            icens = qc.ismisscens(a)
         except ValueError as err:
-            self.assertTrue(str(err).startswith('Expected 1d'))
-        else:
-            raise ValueError('Problem with error')
-
-        # pandas
-        a = pd.Series(np.ones(10))
-        b, idxok, nok = qc.check1d(a)
-        self.assertTrue(isinstance(b, np.ndarray))
-        self.assertTrue(np.allclose(a, b))
-        self.assertTrue(np.sum(idxok) == 10)
-        self.assertTrue(nok == 10)
+            self.assertTrue(str(err).startswith('Expected 1d vector'))
 
 
     def test_islinear_error(self):

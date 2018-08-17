@@ -6,11 +6,66 @@ from dateutil.relativedelta import relativedelta as delta
 import numpy as np
 import pandas as pd
 
-from hydrodiy.data.qualitycontrol import check1d
+from hydrodiy.data.qualitycontrol import ismisscens
 from hydrodiy.stat.sutils import ppos
-from hydrodiy.stat.metrics import corr
+from hydrodiy.stat.metrics import corr, nse
+from hydrodiy.stat.transform import Identity
+
+import c_hydrodiy_data
 
 EPS = 1e-10
+
+
+def eckhardt(flow, thresh=0.95, tau=20, BFI_max=0.8, timestep_type=1):
+    ''' Compute the baseflow component based on Eckhardt algorithm
+    Eckhardt K. (2005) How to construct recursive digital filters for
+    baseflow separation. Hydrological processes 19:507-515.
+
+    C code was translated from R code provided by
+    Jose Manuel Tunqui Neira and Vazken Andreassian, IRSTEA
+
+    Parameters
+    -----------
+    flow : numpy.array
+        Streamflow data
+    thresh : float
+        Percentage from which the base flow should be considered
+        as total flow
+    tau : float
+        Characteristic drainage timescale (hours)
+    BFI_max : float
+        See Eckhardt (2005)
+    timestep_type : int
+        Type of time step: 0=hourly, 1=daily
+
+    Returns
+    -----------
+    bflow : numpy.array
+        Baseflow time series
+
+    Example
+    -----------
+    >>> import numpy as np
+    >>> q = np.random.uniform(0, 100, size=1000)
+    >>> signatures.baseflow(q)
+
+    '''
+    # run C code via cython
+    thresh = np.float64(thresh)
+    tau = np.float64(tau)
+    BFI_max = np.float64(BFI_max)
+    timestep_type = np.int32(timestep_type)
+
+    flow = np.array(flow).astype(np.float64)
+    bflow = np.zeros(len(flow), np.float64)
+
+    ierr = c_hydrodiy_data.eckhardt(timestep_type, \
+                thresh, tau, BFI_max, flow, bflow)
+
+    if ierr!=0:
+        raise ValueError('c_hydata.eckhardt returns %d'%ierr)
+
+    return bflow
 
 
 def fdcslope(x, q1=90, q2=100, cst=0.375):
@@ -40,13 +95,13 @@ def fdcslope(x, q1=90, q2=100, cst=0.375):
         The two quantiles corresponding to q1 and q2
     '''
     # Check data
-    x, idxok, nok = check1d(x)
+    icens = ismisscens(x)
     if q2 < q1 + 1:
         raise ValueError('Expected q2 > q1, got q1={0} and q2={1}'.format(\
                     q1, q2))
 
     # Compute percentiles
-    xok = x[idxok]
+    xok = x[icens > 0]
     qq = np.percentile(xok, [q1, q2])
     idx = (xok>=qq[0]) & (xok<=qq[1])
     nqq = np.sum(idx)
@@ -57,7 +112,7 @@ def fdcslope(x, q1=90, q2=100, cst=0.375):
     xr = np.sort(xok)
 
     # Compute frequencies
-    ff = ppos(nok, cst=cst)
+    ff = ppos(len(xok), cst=cst)
 
     # Check data is not constant
     if np.std(x) < EPS:
@@ -66,11 +121,11 @@ def fdcslope(x, q1=90, q2=100, cst=0.375):
     # Compute slope
     M = np.column_stack([np.ones(nqq), xr[idx]])
     theta, _ , _, _ = np.linalg.lstsq(M, ff[idx])
-    import pdb; pdb.set_trace()
 
     return theta[1], qq
 
-def goue(x):
+
+def goue(daily, trans=Identity()):
     ''' GOUE index (Nash sutcliffe of flat disaggregated daily vs daily)
     as per
     Ficchì, Andrea, Charles Perrin, and Vazken Andréassian.
@@ -80,18 +135,39 @@ def goue(x):
 
     Parameters
     -----------
-    x : pandas.Series
+    daily : pandas.Series
         Input daily time series
 
     Returns
     -----------
     goue_value : float
         GOUE index value
+    daily_flat : pandas.Series
+        Flat-disaggregated daily time series
+    monthly : pandas.Series
+        Monthly time series
     '''
-    # Check data
-    times = x.index
-    x, idxok, nok = check1d(x)
+    # Monthly time series
+    monthly = daily.copy().resample('MS').sum()
 
+    # Upsample monthly to daily
+    daily_flat = monthly.resample('D').pad()
+    daily_flat /= daily_flat.index.daysinmonth
+
+    # Fix end of series
+    idx = daily.index.difference(daily_flat.index)
+    if len(idx) > 0:
+        se = pd.Series(np.nan, index=idx)
+        daily_flat = daily_flat.append(se).sort_index()
+        daily_flat = daily_flat.loc[daily.index]
+
+    # Set nan
+    daily_flat.loc[pd.isnull(daily)] = np.nan
+
+    # Compute goue
+    goue_value = nse(daily, daily_flat, trans=trans)
+
+    return goue_value, daily_flat, monthly
 
 
 def lag1corr(x, type='Pearson', censor=0.):

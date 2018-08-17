@@ -296,7 +296,8 @@ class UtilsTestCase(unittest.TestCase):
         nval = len(dates)
         se = pd.Series(np.exp(np.random.normal(size=nval)), index=dates)
 
-        sed = dutils.monthly2daily(se, interpolation='cubic', minthreshold=-np.inf)
+        sed = dutils.monthly2daily(se, interpolation='cubic', \
+                                minthreshold=-np.inf)
         se2 = agg_d2m(sed, fun='sum')
         self.assertTrue(np.allclose(se.values, se2.values))
 
@@ -419,7 +420,6 @@ class UtilsTestCase(unittest.TestCase):
         self.assertTrue(np.all(~np.isnan(seh.values[10:-1])))
 
 
-
     def test_hourly2daily(self):
         ''' Test conversion hourly to daily '''
 
@@ -433,7 +433,8 @@ class UtilsTestCase(unittest.TestCase):
             sed1 = dutils.hourly2daily(se, how=how)
             sed2 = dutils.hourly2daily(se, timestamp_end=False, how=how)
             sed3 = dutils.hourly2daily(se, start_hour=0, how=how)
-            sed4 = dutils.hourly2daily(se, start_hour=0, timestamp_end=False, \
+            sed4 = dutils.hourly2daily(se, start_hour=0, \
+                                timestamp_end=False, \
                                 how=how)
 
             # expected values
@@ -444,18 +445,22 @@ class UtilsTestCase(unittest.TestCase):
                 idx = (se.index>=t) & (se.index<t+delta(days=1))
 
                 if it<len(expected)-1:
-                    expected[it+1, 0] = se[idx].sum() if how=='sum' else se[idx].mean()
+                    expected[it+1, 0] = se[idx].sum() \
+                                    if how=='sum' else se[idx].mean()
 
-                expected[it, 1] = se[idx].sum() if how=='sum' else se[idx].mean()
+                expected[it, 1] = se[idx].sum() \
+                                    if how=='sum' else se[idx].mean()
 
             dt = se.index[se.index.hour==0]
             for it, t in enumerate(dt):
                 idx = (se.index>=t) & (se.index<t+delta(days=1))
 
                 if it<len(expected)-1:
-                    expected[it+1, 2] = se[idx].sum() if how=='sum' else se[idx].mean()
+                    expected[it+1, 2] = se[idx].sum() \
+                                        if how=='sum' else se[idx].mean()
 
-                expected[it, 3] = se[idx].sum() if how=='sum' else se[idx].mean()
+                expected[it, 3] = se[idx].sum() \
+                                        if how=='sum' else se[idx].mean()
 
             # Run tests
             for i, sed in enumerate([sed1, sed2, sed3, sed4]):
@@ -481,6 +486,15 @@ class UtilsTestCase(unittest.TestCase):
             self.assertTrue(str(err).startswith('Expected fi'))
         else:
             raise ValueError('Problem with error handling')
+
+
+    def test_flatdisagg(self):
+        ''' Test flat disaggregation '''
+        dt = pd.date_range('2000-01-10', '2000-04-05')
+        a = pd.Series(np.random.uniform(0, 1, size=len(dt)), index=dt)
+        idx = a.index.year*100 + a.index.month
+        af = dutils.flatdisagg(idx, a.values)
+        import pdb; pdb.set_trace()
 
 
 if __name__ == "__main__":

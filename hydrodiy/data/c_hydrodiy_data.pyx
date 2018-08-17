@@ -18,6 +18,9 @@ cdef extern from 'c_dutils.h':
 
     long long c_combi(int n, int k)
 
+    int c_flathomogen(int nval, int maxnan, int * aggindex,
+        double * inputs, double * outputs)
+
 cdef extern from 'c_qualitycontrol.h':
     int c_islin(int nval, double thresh, double tol, int npoints,
         double * inputs, int * islin)
@@ -128,6 +131,26 @@ def aggregate(int oper, int maxnan,
             <double*> np.PyArray_DATA(inputs),
             <double*> np.PyArray_DATA(outputs),
             <int*> np.PyArray_DATA(iend))
+
+    return ierr
+
+
+def flathomogen(int maxnan,
+        np.ndarray[int, ndim=1, mode='c'] aggindex not None,
+        np.ndarray[double, ndim=1, mode='c'] inputs not None,
+        np.ndarray[double, ndim=1, mode='c'] outputs not None):
+
+    cdef int ierr, nval
+
+    # check dimensions
+    nval = aggindex.shape[0]
+    assert nval == inputs.shape[0]
+    assert nval == outputs.shape[0]
+
+    ierr = c_flathomogen(inputs.shape[0], maxnan,
+            <int*> np.PyArray_DATA(aggindex),
+            <double*> np.PyArray_DATA(inputs),
+            <double*> np.PyArray_DATA(outputs))
 
     return ierr
 

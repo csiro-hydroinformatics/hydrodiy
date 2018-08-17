@@ -222,6 +222,51 @@ def aggregate(aggindex, inputs, oper=0, maxnan=0):
     return outputs
 
 
+def flatdisagg(aggindex, inputs, maxnan=0):
+    ''' Compute a series of the same length than inputs with all values
+    replaced by mean defined for each aggregation index.
+
+    This function is used in hydrodiy.data.signatures.goue
+
+    Parameters
+    -----------
+    aggindex : numpy.ndarray
+        Aggregation index (e.g. month in the form 199501 for
+        Jan 1995). Index should be in increasing order.
+    inputs : numpy.ndarray
+        Inputs data to be aggregated
+    maxnan : int
+        Maximum number of nan in inputs for each
+        aggregation index
+
+    Returns
+    -----------
+    outputs : numpy.ndarray
+        Flat disaggregated data
+
+    '''
+    # Check inputs
+    if len(aggindex) != len(inputs):
+        raise ValueError('Expected inputs of length {0}, got {1}'.format(\
+                len(aggindex), len(inputs)))
+
+    # Allocate arrays
+    maxnan = np.int32(maxnan)
+    aggindex = np.array(aggindex).astype(np.int32)
+    inputs = inputs.astype(np.float64)
+    outputs = 0.*inputs
+
+    # Run C function
+    ierr = c_hydrodiy_data.flatdisagg(maxnan, aggindex, \
+                inputs, outputs)
+
+    if ierr > 0:
+        raise ValueError('c_hydrodiy_data.flatdisagg'+\
+                            ' returns {0}'.format(ierr))
+
+    return outputs
+
+
 def lag(data, lag):
     ''' Lag a numpy array and adds NaN at the beginning or end of the lagged data
         depending on the lag value. The lag is introduced using numpy.roll
