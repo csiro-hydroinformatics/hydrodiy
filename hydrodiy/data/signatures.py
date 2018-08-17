@@ -111,7 +111,7 @@ def fdcslope(x, q1=90, q2=100, cst=0.375):
     idx = (xok>=qq[0]) & (xok<=qq[1])
     nqq = np.sum(idx)
     if nqq == 0:
-        raise ValueError('No data selected in range')
+        raise ValueError('No data in range Q{0}-Q{1}'.format(q1, q2))
 
     # Select data and sort
     xr = np.sort(xok)
@@ -121,7 +121,7 @@ def fdcslope(x, q1=90, q2=100, cst=0.375):
 
     # Check data is not constant
     if np.std(x) < EPS:
-        return np.nan
+        return np.nan, qq
 
     # Compute slope
     M = np.column_stack([np.ones(nqq), xr[idx]])
