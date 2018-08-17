@@ -6,6 +6,8 @@ from scipy.stats import norm, mvn
 from scipy.stats import multivariate_normal as mvt
 from scipy.optimize import fminbound
 
+from hydrodiy.data.qualitycontrol import ismisscens
+
 # Small number used to detect censor data
 EPS = 1e-10
 
@@ -33,9 +35,10 @@ def normcensloglike(y, mu, sig, censor, icens=None):
     '''
     # Finds censored data
     if icens is None:
-        icens = y < censor + EPS
-    ncens = np.sum(icens)
-    nval = len(y)
+        icens = ismisscens(y, censor, EPS)
+    nmiss = np.sum(icens==0)
+    ncens = np.sum(icens==1)
+    nnocens = len(y)-nmiss-ncens
 
     # Censored part of the likelihood
     ll = 0.
@@ -43,72 +46,10 @@ def normcensloglike(y, mu, sig, censor, icens=None):
         ll += ncens * norm.logcdf(censor, loc=mu, scale=sig)
 
     # Non-censored part of the likelihood
-    if nval-ncens > 0:
-        ll += np.sum(norm.logpdf(y[~icens], loc=mu, scale=sig))
+    if nnocens > 0:
+        ll += np.sum(norm.logpdf(y[icens==2], loc=mu, scale=sig))
 
     return ll
-
-
-def checkdata2d(X):
-    ''' Check 2d X array '''
-    X = np.atleast_2d(X)
-    if not X.shape[1] == 2:
-        raise ValueError('Expected X data of shape [nx2], got {0}'.format(\
-                    X.shape))
-
-    nnan = np.sum(np.isnan(X), axis=0)
-    if not np.all(nnan == 0):
-        raise ValueError('Expected no nan in both columns of X,'+\
-                    ' got {0}'.format(nnan))
-
-    return X
-
-
-def censindexes1d(x, censor):
-    ''' Compute censoring index for a 1d vector
-    Parameters
-    -----------
-    x : numpy.ndarray
-        1D Sample data [n] (no nan values)
-    censor : float
-        Censoring threhsold
-
-    Returns
-    -----------
-    icens : numpy.ndarray
-        Indexes of censored data
-        * 0 : no censored data
-        * 1 : variable is censored
-    '''
-    return (x < censor + EPS).astype(int)
-
-
-def censindexes2d(X, censor):
-    ''' Compute censoring indexes for a 2d matrix
-    Parameters
-    -----------
-    X : numpy.ndarray
-        2D Sample data [n x 2] (no nan values)
-    censor : float
-        Censoring threhsold
-
-    Returns
-    -----------
-    icens : numpy.ndarray
-        Indexes of censored data
-        * 0 : no censored data
-        * 1 : First variable is censored
-        * 2 : Second variable is censored
-        * 3 : Both variables are censored
-    '''
-    X = checkdata2d(X)
-
-    # Individual indexes
-    idx = (X < censor+EPS).astype(int)
-    idx[:, 1] *= 2
-
-    return np.sum(idx, axis=1)
-
 
 
 def normcensloglike2d(X, mu, Sig, censor, icens=None):
@@ -132,9 +73,6 @@ def normcensloglike2d(X, mu, Sig, censor, icens=None):
     ll : float
         Censored log likelihood
     '''
-    # Check data
-    X = checkdata2d(X)
-
     if not mu.shape == (2, ):
         raise ValueError('Expected a mu vector of size [2], '+\
                 'got {0}'.format(mu.shape))
@@ -149,11 +87,13 @@ def normcensloglike2d(X, mu, Sig, censor, icens=None):
 
     # Finds censored data
     if icens is None:
-        icens = censindexes2d(X, censor)
+        icens = ismisscens(X, censor, EPS)
 
-    # Censoring cases
+    # Censoring cases - ignores missing data for now
+    # i.e. one variable is missing or both
+    # with icens = 1, 2, 3 or 6
     ll = 0.
-    for case in range(4):
+    for case in [4, 5, 7, 8]:
         idx = icens == case
         ncase = np.sum(idx)
 
@@ -162,14 +102,15 @@ def normcensloglike2d(X, mu, Sig, censor, icens=None):
             continue
 
         # Proceeds with log likelihood computation
-        if case == 0:
-            # No censoring:
+        if case == 8:
+            # No censoring for both variables:
             ll += np.sum(mvt.logpdf(X[idx, :], mean=mu, cov=Sig))
 
-        elif case in [1, 2]:
+        elif case in [5, 7]:
+            # One variable censored but not the other
             # Select which variable is censored and which one is not
-            icasec = case-1
-            icasenc = 2-case
+            icasec = (7-case)//2
+            icasenc = (5-case)//2
 
             # Use conditional factoring of joint distribution
             # p(u, censor) = integ p(u, v) dv
@@ -195,7 +136,8 @@ def normcensloglike2d(X, mu, Sig, censor, icens=None):
 
             ll += np.sum(logpu+logFc)
 
-        else:
+        elif case == 4:
+            # Both variables censored
             # Compute
             # integ p(u, v) du dv
             lower = np.zeros(2)
@@ -251,12 +193,15 @@ def normcensfit1d(x, censor, cst=0.375, sort=True, icens=None):
         xs = x
 
     # locate censored data
-    if icens is None:
-        icens = censindexes1d(xs, censor)
+    if icens is None or sort:
+        icens = ismisscens(xs, censor, EPS)
 
-    ncens = np.sum(icens) # Number of censored data
-    nval = len(xs)
-    nocens = nval-ncens # Number of not censored data
+    ncens = np.sum(icens == 1) # Number of censored data
+
+    idx_nocens = icens == 2
+    nocens = np.sum(idx_nocens) # Number of not censored data
+
+    nval = ncens+nocens
 
     # Plotting positions
     ff = (np.arange(1, nval+1)-cst)/(nval+1-2*cst)
@@ -264,10 +209,9 @@ def normcensfit1d(x, censor, cst=0.375, sort=True, icens=None):
     # Linear regression against ordered values
     if nocens >= 2:
         # Standard quantiles
-        idx = icens == 0
-        qq = norm.ppf(ff[idx])
-        M = np.column_stack([np.ones(nval-ncens), qq])
-        theta, _, _, _ = np.linalg.lstsq(M, xs[idx])
+        qq = norm.ppf(ff[idx_nocens])
+        M = np.column_stack([np.ones(nocens), qq])
+        theta, _, _, _ = np.linalg.lstsq(M, xs[idx_nocens])
 
     elif nocens <= 1:
         # Probability of censored data
@@ -326,10 +270,6 @@ def normcensfit2d(X, censor, cst=0.375, maxfun=500, maxabsrho=0.99):
     rho : float
         Correlation
     '''
-
-    # Check data
-    X = checkdata2d(X)
-
     # Fit two univariate censored normals
     thetas = np.zeros((2, 2))
     for i in range(2):
@@ -338,7 +278,7 @@ def normcensfit2d(X, censor, cst=0.375, maxfun=500, maxabsrho=0.99):
     # Fit correlation by maximum likelihood
 
     # .. initialise data
-    icens2 = censindexes2d(X, censor)
+    icens = ismisscens(X, censor, EPS)
     mu = thetas[:, 0]
     Sig = np.diag(thetas[:, 1]**2)
     cc = np.prod(thetas[:, 1])
@@ -347,7 +287,7 @@ def normcensfit2d(X, censor, cst=0.375, maxfun=500, maxabsrho=0.99):
     # .. objective function
     def objfun(rho):
         Sigr = Sig + M*rho
-        return -normcensloglike2d(X, mu, Sigr, censor, icens=icens2)
+        return -normcensloglike2d(X, mu, Sigr, censor, icens=icens)
 
     # .. optimize
     rho = fminbound(objfun, -maxabsrho, maxabsrho, maxfun=maxfun)

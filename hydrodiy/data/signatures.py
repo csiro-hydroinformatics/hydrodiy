@@ -181,5 +181,5 @@ def lag1corr(x, type='Pearson', censor=0.):
     xshifted = lag(x, 1)
 
     # Correlation
-    return metrics.corr(x, xshifted, censor=censor, type=type)
+    return corr(x, xshifted, censor=censor, type=type)
 

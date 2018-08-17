@@ -11,35 +11,54 @@ def ismisscens(x, censor=0., eps=1e-10):
     Parameters
     -----------
     x : numpy.ndarray data
-        1D Data series (works with pandas.Series too)
+        1D or 2d Data series (works with pandas.Series too)
         returns an error if x is more than 1d.
     censor : float
         Censoring threshold
     eps : float
-        Detection limit for censored data (i.e. x < censor + eps)
+        Detection limit for censored data (i.e. censored = x < censor + eps)
 
     Returns
     -----------
     icens : numpy.ndarray
-        Censoring flagsLinear interpolation flag:
-        * 0 = Missing data
-        * 1 = Censored data
-        * 2 = Valid and not censored
+        Censoring flags:
+        * 3^i+0 = Missing data
+        * 3^i+1 = Censored data
+        * 3^i+2 = Valid and not censored
+        where i is the column number
     '''
-    # Check data for 1d
-    if x.ndim > 1:
-        x = x.squeeze()
-    if x.ndim > 1:
-        raise ValueError('Expected 1d vector, got '+\
+    # Check data dimensions
+    ndim = x.ndim
+    if ndim > 2:
+        raise ValueError('Expected 1d or 2d vector, got '+\
                 'x.shape = {0}'.format(x.shape))
 
-    icens = 2*np.ones(len(x), dtype=np.int64)
-    icens[pd.isnull(x) | ~np.isfinite(x)] = 0
-    icens[x < censor + eps] = 1
+    # Get dimensions
+    if ndim == 1:
+        nval = x.shape[0]
+        ncols = 1
+    else:
+        nval, ncols = x.shape
 
-    # Convert to pandas series if needed
-    if isinstance(x, pd.Series):
-        icens = pd.Series(icens, index=x.index)
+    # Compute censoring flags
+    icens = np.zeros((nval, ncols), dtype=np.int64)
+    for i in range(ncols):
+        # Select data
+        if ndim > 1:
+            u = x[:, i]
+        else:
+            u = x
+
+        # find censoring flags for column
+        icens[u < censor + eps, i] = 1
+        icens[u >= censor + eps, i] = 2
+        icens[:, i] *= 3**i
+
+    # Aggregate
+    if ndim > 1:
+        icens = np.sum(icens, axis=1)
+    else:
+        icens = icens.squeeze()
 
     return icens
 
@@ -77,7 +96,10 @@ def islinear(data, npoints=3, tol=1e-6, thresh=0.):
 
     '''
     # Check data
-    data, _, _ = check1d(data)
+    if data.ndim > 1:
+        raise ValueError('Expected data as 1d vector, got '+\
+            'data.shape={0}'.format(data.shape))
+
     islin = np.zeros(len(data), dtype=np.int32)
     npoints = int(npoints)
     tol = np.float64(tol)

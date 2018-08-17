@@ -53,7 +53,7 @@ class SignaturesTestCase(unittest.TestCase):
 
     def test_goue(self):
         ''' Test goue computation '''
-        dt = pd.date_range('2000-01-10', '2000-03-31')
+        dt = pd.date_range('2000-01-10', '2000-06-30')
         nt = len(dt)
         values = np.random.uniform(0, 1, nt)
         aggindex = dt.year*100 + dt.month
@@ -69,6 +69,13 @@ class SignaturesTestCase(unittest.TestCase):
 
         self.assertTrue(np.isclose(gv, gv_expected))
 
+
+    def test_lag1corr(self):
+        ''' Test goue computation '''
+        nval = 100
+        values = np.random.uniform(0, 1, nval)
+
+        rho = signatures.lag1corr(values)
 
 if __name__ == "__main__":
     unittest.main()
