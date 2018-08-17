@@ -222,9 +222,9 @@ def aggregate(aggindex, inputs, oper=0, maxnan=0):
     return outputs
 
 
-def flatdisagg(aggindex, inputs, maxnan=0):
+def flathomogen(aggindex, inputs, maxnan=0):
     ''' Compute a series of the same length than inputs with all values
-    replaced by mean defined for each aggregation index.
+    replaced by mean computed for each value of the aggregation index.
 
     This function is used in hydrodiy.data.signatures.goue
 
@@ -232,7 +232,7 @@ def flatdisagg(aggindex, inputs, maxnan=0):
     -----------
     aggindex : numpy.ndarray
         Aggregation index (e.g. month in the form 199501 for
-        Jan 1995). Index should be in increasing order.
+        Jan 1995). Index should be in increasing order!
     inputs : numpy.ndarray
         Inputs data to be aggregated
     maxnan : int
@@ -257,7 +257,7 @@ def flatdisagg(aggindex, inputs, maxnan=0):
     outputs = 0.*inputs
 
     # Run C function
-    ierr = c_hydrodiy_data.flatdisagg(maxnan, aggindex, \
+    ierr = c_hydrodiy_data.flathomogen(maxnan, aggindex, \
                 inputs, outputs)
 
     if ierr > 0:
@@ -268,8 +268,9 @@ def flatdisagg(aggindex, inputs, maxnan=0):
 
 
 def lag(data, lag):
-    ''' Lag a numpy array and adds NaN at the beginning or end of the lagged data
-        depending on the lag value. The lag is introduced using numpy.roll
+    ''' Lag a numpy array and adds NaN at the beginning or end of the
+        lagged data depending on the lag value. The lag is introduced
+        using numpy.roll
 
         This is equivalent to pandas.DataFrame.shift function, but for Numpy
         arrays.

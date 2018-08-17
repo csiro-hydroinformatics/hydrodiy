@@ -488,13 +488,23 @@ class UtilsTestCase(unittest.TestCase):
             raise ValueError('Problem with error handling')
 
 
-    def test_flatdisagg(self):
+    def test_flathomogen(self):
         ''' Test flat disaggregation '''
         dt = pd.date_range('2000-01-10', '2000-04-05')
         a = pd.Series(np.random.uniform(0, 1, size=len(dt)), index=dt)
+        a[15] = np.nan
         idx = a.index.year*100 + a.index.month
-        af = dutils.flatdisagg(idx, a.values)
-        import pdb; pdb.set_trace()
+        af = dutils.flathomogen(idx, a.values, 1)
+
+        self.assertTrue(len(af) == len(a))
+
+        expected = af*0.
+        for ix in np.unique(idx):
+            kk = idx == ix
+            expected[kk] = np.nanmean(a[kk])
+        expected[np.isnan(a)] = np.nan
+
+        self.assertTrue(np.allclose(af, expected))
 
 
 if __name__ == "__main__":

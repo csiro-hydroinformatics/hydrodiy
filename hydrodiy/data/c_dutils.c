@@ -148,14 +148,22 @@ int c_flathomogen(int nval, int maxnan, int * aggindex,
 
         if(ia != iaprev)
         {
-            /* Store outputs */
+            /* Set agg to nan if too many nans */
             if(nagg_nan > maxnan)
                 agg = nan;
 
-            fprintf(stdout, "start=%d end=%d (nval=%d)\n", start, i, nval);
-            for(j=start; j++; j<i)
-                outputs[j] = agg/nagg;
-
+            /* Set outputs value to flat homogeised ones */
+            for(j=start; j<i; j++)
+            {
+                inp = inputs[j];
+                if(isnan(inp))
+                {
+                    outputs[j] = nan;
+                } else
+                {
+                    outputs[j] = agg/nagg;
+                }
+            }
             /* Iterates */
             agg = 0;
             nagg = 0;
@@ -166,7 +174,6 @@ int c_flathomogen(int nval, int maxnan, int * aggindex,
 
         /* check input and skip value if nan */
         inp = inputs[i];
-
         if(isnan(inp))
         {
             nagg_nan ++;
@@ -177,6 +184,23 @@ int c_flathomogen(int nval, int maxnan, int * aggindex,
         agg += inp;
     }
 
-    return 0;
+
+    /* Final step */
+    if(nagg_nan > maxnan)
+        agg = nan;
+
+    for(j=start; j<i; j++)
+    {
+        inp = inputs[j];
+        if(isnan(inp))
+        {
+            outputs[j] = nan;
+        } else
+        {
+            outputs[j] = agg/nagg;
+        }
+    }
+
+   return 0;
 }
 
