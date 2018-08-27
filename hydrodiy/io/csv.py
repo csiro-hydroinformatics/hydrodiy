@@ -70,7 +70,7 @@ def _csvhead(nrow, ncol, comment, source_file, author=None):
     elif isinstance(comment, dict):
         comments = {}
         for k in comment:
-            comments[re.sub('\:', '', k).lower()] = comment[k]
+            comments[re.sub(':', '', k).lower()] = comment[k]
 
     else:
         comment = list(comment)
