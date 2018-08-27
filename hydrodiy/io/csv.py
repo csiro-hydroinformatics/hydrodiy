@@ -361,7 +361,7 @@ def read_csv(filename, has_colnames=True, archive=None, \
 
             if search:
                 for cn in search:
-                    cn2 = re.sub('\(|\)|\"|\'', '', cn)
+                    cn2 = re.sub('\(|\)|"|\'', '', cn)
                     cn2 = re.sub(', *', '-', cn2)
                     linecols = re.sub(re.escape(cn), cn2, linecols)
 
