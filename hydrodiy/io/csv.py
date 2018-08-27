@@ -356,7 +356,7 @@ def read_csv(filename, has_colnames=True, archive=None, \
         if 'names' not in kwargs:
             # deals with multi-index columns
             # reformat columns like (idx1-idx2-...)
-            search = re.findall('"\([^\(]*\)"', line)
+            search = re.findall('"\([^(]*\)"', line)
             linecols = line
 
             if search:
