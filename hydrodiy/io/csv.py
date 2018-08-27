@@ -40,11 +40,11 @@ def _header2comment(header):
 
     for elem in header:
         if not bool(re.search('-{10}', elem)):
-            key = re.sub('\:.*$', '', elem)
+            key = re.sub(':.*$', '', elem)
             val = elem[len(key)+1:].strip()
             key = re.sub(' +', '_', key.strip().lower())
 
-            if not bool(re.search('\:', elem[:KEY_LENGTH_MAX])):
+            if not bool(re.search(':', elem[:KEY_LENGTH_MAX])):
                 key = 'comment_{0:02d}'.format(i)
                 val = elem
                 i += 1
