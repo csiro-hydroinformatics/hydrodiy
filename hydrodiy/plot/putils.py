@@ -303,10 +303,9 @@ def equation(tex, filename, \
     Example
     -----------
     >>> from hyplot import putils
-    >>> tex = r'\begin{equation} s = \sum_{i=0}^{\infty} \frac{1}{i^2}
-    >>> fp = '~/equation.png'
+    >>> tex = r"\begin{equation} s = \sum_{i=0}^{\infty} \frac{1}{i^2}"
+    >>> fp = "~/equation.png"
     >>> putils.equation(tex, fp)
-
     '''
     usetex = mpl.rcParams['text.usetex']
     preamble = mpl.rcParams['text.latex.preamble']
