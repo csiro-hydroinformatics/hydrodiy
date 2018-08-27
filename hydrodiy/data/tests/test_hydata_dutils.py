@@ -504,7 +504,8 @@ class UtilsTestCase(unittest.TestCase):
             expected[kk] = np.nanmean(a[kk])
         expected[np.isnan(a)] = np.nan
 
-        self.assertTrue(np.allclose(af, expected))
+        idx = ~np.isnan(af)
+        self.assertTrue(np.allclose(af[idx], expected[idx]))
 
 
 if __name__ == "__main__":
