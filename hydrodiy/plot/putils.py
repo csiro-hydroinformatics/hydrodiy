@@ -284,7 +284,7 @@ def equation(tex, filename, \
     Parameters
     -----------
     tex : str
-        Latex equation code
+        Latex equation code including begin and end statements
     filename : str
         Filename to print in
     textcolor : str
@@ -299,13 +299,6 @@ def equation(tex, filename, \
         Figure height in pixels
     fontsize : int
         Font size in points
-
-    Example
-    -----------
-    >>> from hyplot import putils
-    >>> tex = r"\begin{equation} s = \sum_{i=0}^{\infty} \frac{1}{i^2}"
-    >>> fp = "~/equation.png"
-    >>> putils.equation(tex, fp)
     '''
     usetex = mpl.rcParams['text.usetex']
     preamble = mpl.rcParams['text.latex.preamble']
