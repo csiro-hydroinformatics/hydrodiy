@@ -9,6 +9,8 @@ from scipy.stats import norm, lognorm, spearmanr
 import time
 import zipfile
 
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from hydrodiy.stat import metrics
