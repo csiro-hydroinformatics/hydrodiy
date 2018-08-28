@@ -8,6 +8,7 @@ import numpy as np
 from scipy.ndimage import gaussian_filter, maximum_filter
 
 from mpl_toolkits.basemap import cm as cm
+
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from mpl_toolkits.axes_grid1 import make_axes_locatable

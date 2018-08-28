@@ -109,4 +109,11 @@ class GridplotTestCase(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+
+    # Skip if cannot import basemap
+    try:
+        from mpl_toolkits import basemap
+    except ImportError:
+        pass
+    else:
+        unittest.main()
