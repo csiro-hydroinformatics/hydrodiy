@@ -251,10 +251,10 @@ class Simplot(object):
         ''' Draw the flow duration curve '''
 
         if xlog:
-            ax.set_xscale('log', nonposx='clip')
+            ax.set_xscale('log')
 
         if ylog:
-            ax.set_yscale('log', nonposx='clip')
+            ax.set_yscale('log')
 
         # Freqency
         data = self.data
