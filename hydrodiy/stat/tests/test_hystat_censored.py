@@ -39,7 +39,7 @@ class CensoredTestCase(unittest.TestCase):
 
         # Sample probabilities
         icens = ismisscens(smp, censor)
-        P0 = np.sum(icens==4)/nsamples
+        P0 = float(np.sum(icens==4))/nsamples
 
         # Compare with code
         dx = 1e-2
@@ -59,12 +59,12 @@ class CensoredTestCase(unittest.TestCase):
                 nocens = i-1
                 idx = (np.abs(smp[:, nocens]-Y[0, nocens]) < dx/2) & \
                                 (smp[:, cens] < censor)
-                Pe = np.sum(idx)/nsamples/dx
+                Pe = float(np.sum(idx))/nsamples/dx
 
             else:
                 # no censoring (wider selection bounds)
                 idx = np.max(np.abs(smp-Y), 1) < 5*dx/2
-                Pe = np.sum(idx)/nsamples/(5*dx)**2
+                Pe = float(np.sum(idx))/nsamples/(5*dx)**2
 
             self.assertTrue(np.isclose(P, Pe, rtol=0., atol=5e-3))
 
@@ -153,7 +153,7 @@ class CensoredTestCase(unittest.TestCase):
     def test_normcensfit2d(self):
         ''' Test the fitting of normal censored data '''
         # Generate data
-        mu = np.array([0.5, 1])
+        mu = np.array([-0.5, 0.])
         scales = np.array([0.5, 2])
         rho = 0.9
         Sig = np.diag(scales**2)
@@ -163,6 +163,7 @@ class CensoredTestCase(unittest.TestCase):
         nsamples = 100
 
         # Run estimation
+        print('\n')
         for censor in [-0.5, 0., 0.5]:
             rhoe = []
             for isample in range(nsamples):
