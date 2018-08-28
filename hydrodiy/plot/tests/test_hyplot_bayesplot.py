@@ -3,6 +3,9 @@ import os, math
 import unittest
 import numpy as np
 
+import matplotlib as mpl
+mpl.use('Agg')
+
 import matplotlib.pyplot as plt
 from scipy.stats import multivariate_normal as mvt
 
