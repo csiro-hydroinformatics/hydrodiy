@@ -4,14 +4,6 @@ import unittest
 import numpy as np
 import pandas as pd
 
-# Check availability of shapely
-has_shapely = False
-try:
-    from shapely.geometry import Polygon
-    has_shapely = True
-except ImportError:
-    pass
-
 from matplotlib import pyplot as plt
 from hydrodiy.gis.oz import Oz, REGIONS
 from hydrodiy.plot import putils
@@ -147,5 +139,12 @@ class OzTestCase(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+
+    # Skip if cannot import basemap
+    try:
+        from mpl_toolkits import basemap
+    except ImportError:
+        pass
+    else:
+        unittest.main()
 

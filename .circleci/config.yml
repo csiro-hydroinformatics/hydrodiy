@@ -56,8 +56,7 @@ jobs:
             python -W ignore `which nosetests` hydrodiy/data
             python -W ignore `which nosetests` hydrodiy/stat
             python -W ignore `which nosetests` hydrodiy/plot
-            python -W ignore `which nosetests` hydrodiy/gis/tests/test_hygis_gutils.py
-            python -W ignore `which nosetests` hydrodiy/gis/tests/test_hygis_grid.py
+            python -W ignore `which nosetests` hydrodiy/gis
 
       - store_artifacts:
           path: test-reports
