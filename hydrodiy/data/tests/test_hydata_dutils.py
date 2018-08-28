@@ -493,19 +493,19 @@ class UtilsTestCase(unittest.TestCase):
         dt = pd.date_range('2000-01-10', '2000-04-05')
         a = pd.Series(np.random.uniform(0, 1, size=len(dt)), index=dt)
         a[15] = np.nan
-        idx = a.index.year*100 + a.index.month
-        af = dutils.flathomogen(idx, a.values, 1)
+        aggindex = a.index.year*100 + a.index.month
+        af = dutils.flathomogen(aggindex, a.values, 1)
 
         self.assertTrue(len(af) == len(a))
 
-        expected = af*0.
-        for ix in np.unique(idx):
-            kk = idx == ix
+        expected = np.zeros(len(af))
+        for ix in np.unique(aggindex):
+            kk = aggindex == ix
             expected[kk] = np.nanmean(a[kk])
-        expected[np.isnan(a)] = np.nan
+        expected[np.isnan(a.values)] = np.nan
 
-        idx = ~np.isnan(af)
-        self.assertTrue(np.allclose(af[idx], expected[idx]))
+        isok = ~np.isnan(af)
+        self.assertTrue(np.allclose(af[isok], expected[isok]))
 
 
 if __name__ == "__main__":
