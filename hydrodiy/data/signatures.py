@@ -71,7 +71,7 @@ def eckhardt(flow, thresh=0.95, tau=20, BFI_max=0.8, timestep_type=1):
 def fdcslope(x, q1=90, q2=100, cst=0.375):
     ''' Slope of flow duration curve as per
     Yilmaz, Koray K., Hoshin V. Gupta, and Thorsten Wagener.
-    "A process‐based diagnostic approach to model
+    A process-based diagnostic approach to model
     evaluation: Application to the NWS distributed
     hydrologic model."Water Resources Research 44.9 (2008).
 
@@ -133,9 +133,9 @@ def fdcslope(x, q1=90, q2=100, cst=0.375):
 def goue(aggindex, values, trans=Identity()):
     ''' GOUE index (Nash sutcliffe of flat disaggregated daily vs daily)
     as per
-    Ficchì, Andrea, Charles Perrin, and Vazken Andréassian.
-     "Impact of temporal resolution of inputs on hydrological
-     model performance: An analysis based on 2400 flood events."
+    Ficchi, Andrew, Charles Perrin, and Vazken Andreassian
+     Impact of temporal resolution of inputs on hydrological
+     model performance: An analysis based on 2400 flood events.
      Journal of Hydrology 538 (2016): 454-470.
 
     Parameters
