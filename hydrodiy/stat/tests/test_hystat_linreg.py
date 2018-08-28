@@ -3,9 +3,6 @@ import math
 import unittest
 import logging
 
-import warnings
-warnings.filterwarnings('error')
-
 import numpy as np
 import pandas as pd
 

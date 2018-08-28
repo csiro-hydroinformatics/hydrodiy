@@ -12,9 +12,6 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-import warnings
-#warnings.filterwarnings('error')
-
 np.random.seed(0)
 
 class TransformTestCase(unittest.TestCase):
@@ -521,9 +518,17 @@ class TransformTestCase(unittest.TestCase):
                 if nm != 'LogSinh':
                     self.assertTrue(np.isclose(lp, 0.))
                 else:
-                    self.assertTrue(np.isclose(lp, norm.logpdf(smp[1], 0, 0.3)))
+                    self.assertTrue(np.isclose(lp, norm.logpdf(smp[1], \
+                                                                0, 0.3)))
 
 
 
 if __name__ == "__main__":
+
+    # Disable warnings
+    def warn(*args, **kwargs):
+        pass
+    import warnings
+    warnings.warn = warn
+
     unittest.main()
