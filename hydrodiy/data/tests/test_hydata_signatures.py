@@ -36,7 +36,7 @@ class SignaturesTestCase(unittest.TestCase):
         ''' Test fdc slope computation '''
         x = np.linspace(0, 1, 101)
         slp, qq = signatures.fdcslope(x, q1=90, q2=100, cst=0.5)
-        self.assertTrue(np.isclose(slp, 0.99009901))
+        self.assertTrue(np.isclose(slp, 1.01))
         self.assertTrue(np.allclose(qq, [0.9, 1]))
 
 

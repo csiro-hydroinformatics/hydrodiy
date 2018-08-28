@@ -124,8 +124,8 @@ def fdcslope(x, q1=90, q2=100, cst=0.375):
         return np.nan, qq
 
     # Compute slope
-    M = np.column_stack([np.ones(nqq), xr[idx]])
-    theta, _ , _, _ = np.linalg.lstsq(M, ff[idx])
+    M = np.column_stack([np.ones(nqq), ff[idx]])
+    theta, _ , _, _ = np.linalg.lstsq(M, xr[idx])
 
     return theta[1], qq
 
