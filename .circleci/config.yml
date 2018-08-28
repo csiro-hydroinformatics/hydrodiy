@@ -47,6 +47,9 @@ jobs:
 
             # Install package and build binaries
             python setup.py build_ext --inplace --force
+            
+            # Remove warnings
+            export PYTHONWARNINGS="ignore"
 
             # Running tests
             python -W ignore `which nosetests` hydrodiy/io
