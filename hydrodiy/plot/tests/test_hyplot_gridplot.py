@@ -11,18 +11,29 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
+# Skip if package cannot be imported (circleci build)
+import_error = True
+try:
+    from hydrodiy.gis.oz import Oz
+    from hydrodiy.plot.gridplot import GridplotConfig, gplot, gsmooth
+    from hydrodiy.plot.gridplot import VARNAMES, gbar
+
+    import_error = False
+except ImportError:
+    pass
+
 from hydrodiy.data.hywap import get_data
 from hydrodiy.plot import putils
 from hydrodiy.gis.grid import get_mask, Grid
-from hydrodiy.gis.oz import Oz
 
-from hydrodiy.plot.gridplot import GridplotConfig, gplot, gsmooth
-from hydrodiy.plot.gridplot import VARNAMES, gbar
 
 class GridplotTestCase(unittest.TestCase):
 
     def setUp(self):
         print('\t=> GridplotTestCase (hyplot)')
+        if import_error:
+            self.skipTest('Import error')
+
         source_file = os.path.abspath(__file__)
         self.ftest = os.path.dirname(source_file)
 
@@ -110,10 +121,5 @@ class GridplotTestCase(unittest.TestCase):
 
 if __name__ == "__main__":
 
-    # Skip if cannot import basemap
-    try:
-        from mpl_toolkits import basemap
-    except ImportError:
-        pass
-    else:
+    if import_ok:
         unittest.main()

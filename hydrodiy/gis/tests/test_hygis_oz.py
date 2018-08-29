@@ -1,16 +1,30 @@
 import os
 import unittest
 
+# Skip if package cannot be imported (circleci build)
+import_error = True
+try:
+    from hydrodiy.gis.oz import Oz, REGIONS
+
+    import_error = False
+except ImportError:
+    pass
+
+from hydrodiy.plot import putils
+
 import numpy as np
 import pandas as pd
 
 from matplotlib import pyplot as plt
-from hydrodiy.gis.oz import Oz, REGIONS
-from hydrodiy.plot import putils
+
 
 class OzTestCase(unittest.TestCase):
+
     def setUp(self):
         print('\t=> OzTestCase')
+        if import_error:
+            self.skipTest('Import error')
+
         source_file = os.path.abspath(__file__)
         self.ftest = os.path.dirname(source_file)
 
@@ -139,12 +153,5 @@ class OzTestCase(unittest.TestCase):
 
 
 if __name__ == "__main__":
-
-    # Skip if cannot import basemap
-    try:
-        from mpl_toolkits import basemap
-    except ImportError:
-        pass
-    else:
-        unittest.main()
+    unittest.main()
 
