@@ -100,21 +100,39 @@ class UtilsTestCase(unittest.TestCase):
         fp = os.path.join(self.fimg, 'equations1.png')
         try:
             putils.equation(tex, fp)
-        except FileNotFoundError:
-            return
+        except (FileNotFoundError, RuntimeError) as err:
+            message = 'Cannot process tex command {0}'.format(tex)
+            print(message)
+            self.skipTest(message)
 
-        tex = r'\begin{equation} y = \frac{\int_0^{+\infty} x\ \exp(-\alpha x)}{\pi} \end{equation}'
+        tex = r'\begin{equation} y = \frac{\int_0^{+\infty}'+\
+                            ' x\ \exp(-\\alpha x)}{\pi} \end{equation}'
         fp = os.path.join(self.fimg, 'equations2.png')
-        putils.equation(tex, fp)
+        try:
+            putils.equation(tex, fp)
+        except (FileNotFoundError, RuntimeError) as err:
+            message = 'Cannot process tex command {0}'.format(tex)
+            print(message)
+            self.skipTest(message)
 
         tex = r'\begin{eqnarray} y & = & ax+b \\ z & = & \zeta \end{eqnarray}'
         fp = os.path.join(self.fimg, 'equations3.png')
-        putils.equation(tex, fp)
+        try:
+            putils.equation(tex, fp)
+        except (FileNotFoundError, RuntimeError) as err:
+            message = 'Cannot process tex command {0}'.format(tex)
+            print(message)
+            self.skipTest(message)
 
         tex = r'\begin{equation} y = \begin{bmatrix} 1 & 0 & 0 \\ ' +\
             r'0 & 1 & 0 \\ 0 & 0 & 1\end{bmatrix} \end{equation}'
         fp = os.path.join(self.fimg, 'equations4.png')
-        putils.equation(tex, fp, height=500)
+        try:
+            putils.equation(tex, fp)
+        except (FileNotFoundError, RuntimeError) as err:
+            message = 'Cannot process tex command {0}'.format(tex)
+            print(message)
+            self.skipTest(message)
 
 
     def test_set_mpl(self):
@@ -159,9 +177,13 @@ class UtilsTestCase(unittest.TestCase):
         fp = os.path.join(self.fimg, 'set_mpl4.png')
         try:
             plot(fp, True)
-        except FileNotFoundError:
-            pass
+        except (FileNotFoundError, RuntimeError) as err:
+            message = 'Cannot process set_mpl, error = {0}'.format(str(err))
+            print(message)
+            self.skipTest(message)
+
         mpl.rcdefaults()
+
 
     def test_kde(self):
         ''' Test kde generation '''
@@ -203,7 +225,6 @@ class UtilsTestCase(unittest.TestCase):
         ax.plot(xy[:, 0], xy[:, 1], '.', alpha=0.2, mfc='grey', mec='none')
         fp = os.path.join(self.fimg, 'kde_ties.png')
         fig.savefig(fp)
-
 
 
     def test_ellipse(self):
