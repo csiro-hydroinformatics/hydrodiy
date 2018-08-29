@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 
 from hydrodiy.plot import putils
-from hydrodiy.gis import oz
 
 class UtilsTestCase(unittest.TestCase):
 

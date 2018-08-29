@@ -10,7 +10,6 @@ mpl.use('Agg')
 import matplotlib.pyplot as plt
 
 from hydrodiy.plot.simplot import Simplot
-from hydrodiy.gis import oz
 
 # Reset matplotlib to default
 mpl.rcdefaults()
