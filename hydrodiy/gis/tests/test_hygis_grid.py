@@ -6,12 +6,6 @@ import pandas as pd
 
 import zipfile
 
-from hydrodiy.gis.grid import Grid, Catchment
-from hydrodiy.gis.grid import accumulate, voronoi, delineate_river
-from hydrodiy.gis.grid import get_mask
-
-from hydrodiy.io import csv
-
 import matplotlib
 matplotlib.use('Agg')
 
@@ -22,6 +16,11 @@ try:
     HAS_PYPROJ = True
 except ImportError:
     HAS_PYPROJ = False
+
+from hydrodiy.gis.grid import Grid, Catchment
+from hydrodiy.gis.grid import accumulate, voronoi, delineate_river
+from hydrodiy.gis.grid import get_mask
+from hydrodiy.io import csv
 
 source_file = os.path.abspath(__file__)
 
