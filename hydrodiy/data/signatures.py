@@ -111,22 +111,22 @@ def fdcslope(x, q1=90, q2=100, cst=0.375, trans=Identity()):
         return np.nan, (np.nan, np.nan)
 
     # Compute percentiles
-    xok = x[iok]
+    xok = np.sort(x[iok])
     qq = np.percentile(xok, [q1, q2])
-    idx = (xok>=qq[0]) & (xok<=qq[1])
-    nqq = np.sum(idx)
+    idxqq = (xok>=qq[0]) & (xok<=qq[1])
+    nqq = np.sum(idxqq)
     if nqq == 0:
         raise ValueError('No data in range Q{0}-Q{1}'.format(q1, q2))
 
-    # Select data and sort
-    xr = trans.forward(np.sort(xok))
+    # Transform
+    txr = trans.forward(np.sort(xok[idxqq]))
 
     # Compute frequencies
-    ff = ppos(len(xok), cst=cst)
+    ff = ppos(len(xok), cst=cst)[idxqq]
 
     # Compute slope
-    M = np.column_stack([np.ones(nqq), ff[idx]])
-    theta, _ , _, _ = np.linalg.lstsq(M, xr[idx])
+    M = np.column_stack([np.ones(nqq), ff])
+    theta, _ , _, _ = np.linalg.lstsq(M, txr)
 
     return theta[1], qq
 
