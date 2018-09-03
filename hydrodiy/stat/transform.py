@@ -3,6 +3,7 @@
 import math
 import sys
 import numpy as np
+import inspect
 
 from scipy.stats import norm
 
@@ -32,24 +33,27 @@ def get_transform(name, **kwargs):
         raise ValueError(('Expected transform name in {0}, '+\
             'got {1}').format(__all__, name))
 
-    # Get instance of transform, setting the mininu constant if needed
-    if ('mininu' in kwargs) and (name in ['Log', 'BoxCox2', 'BoxCox1lam', \
-                            'BoxCox1nu', 'Reciprocal']):
-        trans = getattr(sys.modules[__name__], name)(mininu=kwargs['mininu'])
-    else:
-        trans = getattr(sys.modules[__name__], name)()
+    # Get instance of transform, setting the constructor arguments
+    trans_class = getattr(sys.modules[__name__], name)
+    sig = inspect.signature(trans_class)
+    class_kwargs = {}
+    topop = []
+    for key in kwargs:
+        if key in sig.parameters:
+            class_kwargs[key] = kwargs[key]
+            topop.append(key)
 
-    if 'mininu' in kwargs:
-        kwargs.pop('mininu')
+    for key in topop:
+        kwargs.pop(key)
+
+    trans = trans_class(**class_kwargs)
 
     # Set parameters
     if len(kwargs) > 0:
         for vname in kwargs:
             if not vname in trans.params.names and \
-                not vname in trans.constants.names:
-                raise ValueError('Expected parameter name to '+\
-                    'be in {0} or {1}, got {2}'.format(trans.params.names, \
-                        trans.constants.names, vname))
+                    not vname in trans.constants.names:
+                continue
 
             # Set parameters
             if vname in trans.params.names:
@@ -303,22 +307,30 @@ class Logit(Transform):
 class Log(Transform):
     ''' Log transform y = log(x+nu) '''
 
-    def __init__(self, mininu=EPS):
+    def __init__(self, mininu=EPS, base=None):
         params = Vector(['nu'], defaults=[mininu], mins=[mininu])
         super(Log, self).__init__('Log', params)
         self.mininu = mininu
 
+        if base is None:
+            self.basefactor = 1
+        else:
+            self.basefactor = math.log(base)
+
     def _forward(self, x):
         nu = self.params.values[0]
-        return np.log(x+nu)
+        bf = self.basefactor
+        return np.log(x+nu)/bf
 
     def _backward(self, y):
         nu = self.params.values[0]
-        return np.exp(y)-nu
+        bf = self.basefactor
+        return np.exp(bf*y)-nu
 
     def _jacobian_det(self, x):
         nu = self.params.values[0]
-        return np.where(x+nu > self.mininu, 1./(x+nu), np.nan)
+        bf = self.basefactor
+        return np.where(x+nu > self.mininu, 1./(x+nu)/bf, np.nan)
 
     def params_sample(self, nsamples=500, minval=-6., maxval=0.):
         # Generate parameters samples in log space

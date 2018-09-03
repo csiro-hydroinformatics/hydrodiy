@@ -1,6 +1,7 @@
 import os
 import itertools
 import unittest
+import math
 import numpy as np
 
 from scipy.stats import norm
@@ -62,13 +63,6 @@ class TransformTestCase(unittest.TestCase):
 
         # This should work
         trans = transform.get_transform('BoxCox2', lam=1)
-
-        try:
-            trans = transform.get_transform('BoxCox2', g=1)
-        except ValueError as err:
-            self.assertTrue(str(err).startswith('Expected parameter name'))
-        else:
-            raise ValueError('Problem in error handling')
 
         # Test error when no value for constants
         trans = transform.get_transform('BoxCox1lam', lam=0.5)
@@ -360,8 +354,6 @@ class TransformTestCase(unittest.TestCase):
                 idx = idx & ~np.isnan(crit)
                 ck = np.all(crit[idx]<1e-3)
                 if not ck:
-                    import pdb; pdb.set_trace()
-
                     print(('\n\n!!!Transform {0} failing the'+\
                         ' numerical Jacobian test').format(trans.name))
 
@@ -520,8 +512,17 @@ class TransformTestCase(unittest.TestCase):
                 else:
                     self.assertTrue(np.isclose(lp, norm.logpdf(smp[1], \
                                                                 0, 0.3)))
+    def test_log_transform(self):
+        ''' Test special options for log transform '''
 
+        x = np.linspace(1, 3, 100)
+        trans = transform.get_transform('Log', nu=0., base=math.exp(1))
+        tx = trans.forward(x)
+        self.assertTrue(np.allclose(tx, np.log(x)))
 
+        trans = transform.get_transform('Log', nu=0., base=10)
+        tx = trans.forward(x)
+        self.assertTrue(np.allclose(tx, np.log10(x)))
 
 if __name__ == "__main__":
 
