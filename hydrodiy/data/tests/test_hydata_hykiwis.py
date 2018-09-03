@@ -18,7 +18,7 @@ class HyKiwisTestCase(unittest.TestCase):
         ''' Test get sites '''
 
         if not hykiwis.has_internal_access():
-            return
+            self.skipTest('No internal access available')
 
         sites, url = hykiwis.get_sites(external=False)
         self.assertTrue(not sites is None)
@@ -44,8 +44,14 @@ class HyKiwisTestCase(unittest.TestCase):
         self.assertEqual(attrs['ts_unitsymbol'], 'cumec')
         self.assertEqual(attrs['station_no'], '410001')
 
-        attrs, url = hykiwis.get_tsattrs('613002', 'daily_9am')
-        attrs = attrs[0]
+        try:
+            attrs, url = hykiwis.get_tsattrs('613002', 'daily_9am')
+            attrs = attrs[0]
+        except ValueError as err:
+            if str(err).startswith('Request returns no data'):
+                self.skipTest('Could not get ts attributes, '+\
+                                'request returns no data')
+
         self.assertTrue(re.search('DINGO R', attrs['station_name'], \
                             re.IGNORECASE))
         self.assertEqual(attrs['ts_unitsymbol'], 'cumec')
@@ -63,7 +69,13 @@ class HyKiwisTestCase(unittest.TestCase):
         ''' Test download flow data '''
 
         # Full download
-        attrs, url = hykiwis.get_tsattrs('410001', 'daily_9am')
+        try:
+            attrs, url = hykiwis.get_tsattrs('410001', 'daily_9am')
+        except ValueError as err:
+            if str(err).startswith('Request returns no data'):
+                self.skipTest('Could not get ts attributes, '+\
+                                'request returns no data')
+
         attrs = attrs[0]
         ts_data1, url = hykiwis.get_data(attrs)
         self.assertTrue(isinstance(ts_data1, pd.core.series.Series))
@@ -86,13 +98,17 @@ class HyKiwisTestCase(unittest.TestCase):
         ''' Test download data from internal.
             Skipped if there is no internal access to BOM Kiwis server
         '''
-
         if not hykiwis.has_internal_access():
-            return
+            self.skipTest('No internal access available')
 
         # Full download
-        attrs, url = hykiwis.get_tsattrs('410001', 'daily_9am', \
+        try:
+            attrs, url = hykiwis.get_tsattrs('410001', 'daily_9am', \
                             external=False)
+        except ValueError as err:
+            if str(err).startswith('Request returns no data'):
+                self.skipTest('Could not get ts attributes, '+\
+                                'request returns no data')
 
         attrs = attrs[0]
         ts_data1, url = hykiwis.get_data(attrs, external=False)
@@ -119,7 +135,13 @@ class HyKiwisTestCase(unittest.TestCase):
         storages = storages[::40]
 
         for kiwisid, row in storages.iterrows():
-            attrs, url = hykiwis.get_tsattrs(kiwisid, 'daily_12pm')
+            try:
+                attrs, url = hykiwis.get_tsattrs(kiwisid, 'daily_12pm')
+            except ValueError as err:
+                if str(err).startswith('Request returns no data'):
+                    self.skipTest('Could not get ts attributes, '+\
+                                    'request returns no data')
+
             attrs = attrs[0]
             ts_data1, url = hykiwis.get_data(attrs)
             self.assertTrue(isinstance(ts_data1, pd.core.series.Series))
