@@ -597,8 +597,8 @@ def corr(obs, ens, trans=transform.Identity(), \
         obs data, [n] or [n,1] array
     ens : numpy.ndarray
         simulated data, [n,p] array
-    transform : hydrodiy.stat.transform.Transform
-        Data transforma object
+    trans : hydrodiy.stat.transform.Transform
+        Data transform object
     stat : str
         Use median or mean from ensemble
     type : str
