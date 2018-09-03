@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 
 from hydrodiy.data import signatures
+from hydrodiy.stat import transform
 from hydrodiy.io import csv
 
 class SignaturesTestCase(unittest.TestCase):
@@ -38,6 +39,11 @@ class SignaturesTestCase(unittest.TestCase):
         slp, qq = signatures.fdcslope(x, q1=90, q2=100, cst=0.5)
         self.assertTrue(np.isclose(slp, 1.01))
         self.assertTrue(np.allclose(qq, [0.9, 1]))
+
+        slplog, qqlog = signatures.fdcslope(x, q1=90, q2=100, cst=0.5, \
+                        trans=transform.Log())
+        self.assertTrue(np.isclose(slplog, 1.063857825))
+        self.assertTrue(np.allclose(qq, qqlog))
 
 
     def test_fdcslope_error(self):

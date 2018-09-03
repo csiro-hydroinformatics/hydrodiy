@@ -10,7 +10,7 @@ from hydrodiy.data.qualitycontrol import ismisscens
 from hydrodiy.data.dutils import lag, flathomogen
 from hydrodiy.stat.sutils import ppos
 from hydrodiy.stat.metrics import corr, nse
-from hydrodiy.stat.transform import Identity
+from hydrodiy.stat.transform import Identity, Log
 
 import c_hydrodiy_data
 
@@ -68,7 +68,7 @@ def eckhardt(flow, thresh=0.95, tau=20, BFI_max=0.8, timestep_type=1):
     return bflow
 
 
-def fdcslope(x, q1=90, q2=100, cst=0.375):
+def fdcslope(x, q1=90, q2=100, cst=0.375, trans=Identity()):
     ''' Slope of flow duration curve as per
     Yilmaz, Koray K., Hoshin V. Gupta, and Thorsten Wagener.
     A process-based diagnostic approach to model
@@ -86,6 +86,8 @@ def fdcslope(x, q1=90, q2=100, cst=0.375):
     cst : float
         Constant used to compute plotting positions
         (see hydrodiy.stat.sutils.ppos)
+    trans : hydrodiy.stat.transform.Transform
+        Data transform object.
 
     Returns
     -----------
@@ -96,14 +98,17 @@ def fdcslope(x, q1=90, q2=100, cst=0.375):
     '''
     # Check data
     icens = ismisscens(x)
-    if q2 < q1 + 1:
-        raise ValueError('Expected q2 > q1, got q1={0} and q2={1}'.format(\
-                    q1, q2))
-
     iok = icens > 0
     nok = np.sum(iok)
     if nok == 0:
         raise ValueError('No valid data')
+
+    if q2 < q1 + 1./nok:
+        raise ValueError('Expected q2 > q1, got q1={0} and q2={1}'.format(\
+                    q1, q2))
+
+    if np.nanstd(x) < EPS:
+        return np.nan, (np.nan, np.nan)
 
     # Compute percentiles
     xok = x[iok]
@@ -114,14 +119,10 @@ def fdcslope(x, q1=90, q2=100, cst=0.375):
         raise ValueError('No data in range Q{0}-Q{1}'.format(q1, q2))
 
     # Select data and sort
-    xr = np.sort(xok)
+    xr = trans.forward(np.sort(xok))
 
     # Compute frequencies
     ff = ppos(len(xok), cst=cst)
-
-    # Check data is not constant
-    if np.std(x) < EPS:
-        return np.nan, qq
 
     # Compute slope
     M = np.column_stack([np.ones(nqq), ff[idx]])
@@ -146,6 +147,8 @@ def goue(aggindex, values, trans=Identity()):
         (see also hydrodiy.data.dutils.aggregate)
     values : numpy.ndarray
         Values to be homogeneise
+    trans : hydrodiy.stat.transform.Transform
+        Data transform object
 
     Returns
     -----------
