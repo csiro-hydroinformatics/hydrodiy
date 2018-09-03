@@ -37,7 +37,12 @@ class HyKiwisTestCase(unittest.TestCase):
 
     def test_getattrs(self):
         ''' Test get attributes '''
-        attrs, url = hykiwis.get_tsattrs('410001', 'daily_9am')
+        try:
+            attrs, url = hykiwis.get_tsattrs('410001', 'daily_9am')
+        except ValueError as err:
+            if str(err).startswith('Request returns no data'):
+                self.skipTest('Could not get ts attributes, '+\
+                                'request returns no data')
         attrs = attrs[0]
         self.assertTrue(isinstance(attrs, dict))
         self.assertEqual(attrs['station_name'], 'M/BIDGEE R @ WAGGA')
