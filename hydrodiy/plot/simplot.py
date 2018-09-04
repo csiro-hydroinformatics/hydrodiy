@@ -87,9 +87,9 @@ class Simplot(object):
         # Grid spec
         fig_ncols = 3
         fig_nrows = 3 + (nfloods-1)//3
-        self.gs = gridspec.GridSpec(fig_nrows, fig_ncols,
-                width_ratios=[1] * fig_ncols,
-                height_ratios=[0.5] * 1 + [1] * (fig_nrows-1))
+        self.gs = gridspec.GridSpec(fig_nrows, fig_ncols)
+                #width_ratios=[1] * fig_ncols,
+                #height_ratios=[0.5] * 1 + [1] * (fig_nrows-1))
 
 
     def _compute_idx_all(self):
@@ -191,7 +191,9 @@ class Simplot(object):
         self.draw_fdc(axfd)
 
         axfdl = plt.subplot(self.gs[1, 1])
-        self.draw_fdc(axfdl, 'd', xlog=True, ylog=False)
+        self.draw_fdc(axfdl, 'd', xlim=[0, 0.01], \
+                    ylog = False, \
+                    title_postfix='- high flow zoom')
 
         # Draw seasonal residuals
         axs = plt.subplot(self.gs[1, 2])
@@ -243,18 +245,13 @@ class Simplot(object):
         ax.grid()
         ax.set_xlabel('Month')
         ax.set_ylabel('Flow')
-        title = '({0}) Mean monthly simulations'.format(ax_letter)
+        title = '({0}) Monthly means'.format(ax_letter)
         ax.set_title(title)
 
 
-    def draw_fdc(self, ax, ax_letter='c', xlog=False, ylog=True):
+    def draw_fdc(self, ax, ax_letter='c', xlog=False, \
+                        ylog=True, xlim=[0, 1], title_postfix=''):
         ''' Draw the flow duration curve '''
-
-        if xlog:
-            ax.set_xscale('log')
-
-        if ylog:
-            ax.set_yscale('log')
 
         # Freqency
         data = self.data
@@ -263,6 +260,7 @@ class Simplot(object):
         ff = sutils.ppos(nval)
 
         icol = 0
+        ymin = np.inf
         for cn in data.columns:
             value = np.sort(data.loc[idx, cn].values)[::-1]
             name = self._getname(cn)
@@ -271,20 +269,44 @@ class Simplot(object):
                 color=COLORS[icol], lw=2)
             icol += 1
 
+            ymincn = np.min(value[ff < xlim[1]])
+            if ymincn < ymin:
+                ymin = ymincn
+
+        # Decorate
         ax.set_xlabel('Frequency')
         ax.set_ylabel('Flow')
 
-        title = '({0}) Flow duration curve'.format(ax_letter)
-        if ylog:
-            title += ' - Low flow'
-        if xlog:
-            title += ' - High flow'
+        title = '({0}) Flow duration curve {1}'.format(\
+                            ax_letter, title_postfix)
         ax.set_title(title)
+
         ax.legend(loc=1, frameon=False)
         ax.grid()
 
+        # Limits
+        if xlog:
+            xmin = max(xlim[0], ff[0]/10)
+            ax.set_xlim([xmin, xlim[1]])
+        else:
+            ax.set_xlim(xlim)
 
-    def draw_floods(self, ax, iflood, ax_letter, yminfactor=0.5, ymaxfactor=1.2):
+        _, ymax = ax.get_ylim()
+        if ylog:
+            ymin = max(np.min(value[value>0])/10, ymin)
+
+        ax.set_ylim((ymin, ymax))
+
+        # Scales
+        if xlog:
+            ax.set_xscale('log')
+        if ylog:
+            ax.set_yscale('log')
+
+
+    def draw_floods(self, ax, iflood, ax_letter, yminfactor=0.5, \
+                    ymaxfactor=1.2):
+
         ''' Draw a plot for a single flood event '''
         # Select event
         data = self.data
@@ -302,7 +324,7 @@ class Simplot(object):
             ax.legend(lines, labels, loc=2, frameon=False)
 
         date_max = self.flood_idx[iflood]['date_max']
-        title = r'({0}) Flood {1} - {2:%Y-%m}'.format(ax_letter, \
+        title = r'({0}) Flood #{1} - {2:%b %Y}'.format(ax_letter, \
             iflood+1, date_max)
         ax.set_title(title)
         ax.xaxis.grid()
