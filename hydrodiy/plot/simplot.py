@@ -32,7 +32,9 @@ class Simplot(object):
         wateryear_start =7, \
         ndays_beforepeak = 30, \
         ndays_afterpeak = 60, \
-        samefloodyscale=False):
+        samefloodyscale=False, \
+        maxnan_annual=50, \
+        maxnan_monthly=10):
         ''' Object to generate a diagnostic plot for flow simulations
 
         Parameters
@@ -55,6 +57,10 @@ class Simplot(object):
             Number of days following the peak in flood plots
         samefloodyscale : bool
             Use the same yscale for flood plots
+        maxnan_annual : int
+            Maximum number of nan per year
+        maxnan_monthly : int
+            Maximum number of nan per month
         '''
 
         # Properties
@@ -78,6 +84,10 @@ class Simplot(object):
         self.ndays_beforepeak = ndays_beforepeak
         self.ndays_afterpeak = ndays_afterpeak
         self._get_flood_indexes()
+
+        # Max nan values
+        self.maxnan_annual = maxnan_annual
+        self.maxnan_monthly = maxnan_monthly
 
         # Figure to draw on
         if fig is None:
@@ -184,7 +194,7 @@ class Simplot(object):
 
         # Draw annual time series
         axa = plt.subplot(self.gs[0, 1:])
-        self.draw_annual(axa)
+        self.draw_monthly(axa)
 
         # Draw flow duration curves
         axfd = plt.subplot(self.gs[1, 0])
@@ -225,7 +235,8 @@ class Simplot(object):
         data = self.data
         months = data.index.year * 100 + data.index.month
         monthsu = pd.to_datetime(pd.np.unique(months), format='%Y%m')
-        lam = lambda x: pd.Series(dutils.aggregate(months, x.values),\
+        lam = lambda x: pd.Series(dutils.aggregate(months, x.values, \
+                                    maxnan=self.maxnan_monthly),\
                                         index=monthsu)
         datam = self.data.apply(lam)
 
@@ -332,33 +343,29 @@ class Simplot(object):
 
 
 
-    def draw_annual(self, ax, ax_letter='b'):
+    def draw_monthly(self, ax, ax_letter='b'):
         ''' Draw plot for annual time series '''
 
-        # Compute annual time series
-        ym = months[(self.wateryear_start-2)%12+1].upper()
-
-        # Handle old Pandas syntax
+        # Compute monthly time series
         data = self.data
-        year = data.index.year
-        yearu = np.unique(year)
-        se = dutils.aggregate(year, data.iloc[:, 0].values)
-        lam = lambda x: pd.Series(dutils.aggregate(year, x.values), \
-                            index=yearu)
+        months = data.index.year*100 + data.index.month
+
+        monthsunique = [datetime(int(m/100), m-100*int(m/100), 1) \
+                            for m in np.unique(months)]
+        lam = lambda x: pd.Series(dutils.aggregate(months, x.values, \
+                                    maxnan=self.maxnan_annual), \
+                                        index=monthsunique)
         datay = data.apply(lam)
 
         # plot - exclude first and last year to avoid missing values
-        datay.iloc[1:-1, :].plot(ax=ax, color=COLORS, marker='o', lw=3)
+        datay.iloc[1:-1, :].plot(ax=ax, color=COLORS, lw=2)
 
         lines, labels = ax.get_legend_handles_labels()
         ax.legend(lines, labels, loc=2, frameon=False)
 
-        month = datetime(1900, self.wateryear_start, 1).strftime('%B')
-        title = ('({0}) Annual time series - '+\
-                    'Start of water year in {1}').format( \
-                    ax_letter, month)
+        title = '({0}) Monthly time series'.format(ax_letter)
         ax.set_title(title)
-        ax.set_ylabel('({0}) Annual flow'.format(ax_letter))
+        ax.set_ylabel('Monthly flow')
         ax.xaxis.grid()
 
 
