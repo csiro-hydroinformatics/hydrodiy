@@ -19,6 +19,7 @@ from io import BytesIO
 import requests
 
 import numpy as np
+import pandas as pd
 
 def find_files(folder, pattern, recursive=True):
     ''' Find files recursively based on regexp pattern search
@@ -216,7 +217,7 @@ def script_template(filename, comment,
 
 def get_logger(name, level='INFO', \
         console=True, flog=None, \
-        fmt='%(asctime)s - %(name)s - %(levelname)s - %(message)s', \
+        fmt='%(asctime)s | %(name)s | %(levelname)s | %(message)s', \
         overwrite=True,
         excepthook=True,
         no_duplicate_handler=True):
@@ -297,6 +298,45 @@ def get_logger(name, level='INFO', \
     [h.close() for h in logger.handlers]
 
     return logger
+
+
+def read_logfile(flog, \
+        fmt='%(asctime)s | %(name)s | %(levelname)s | %(message)s'):
+    ''' Reads a log file and process data
+
+    Parameters
+    -----------
+    flog : str
+        Log file path
+    fmt : str:
+        Logging format
+
+    Returns
+    -----------
+    logs : pandas.core.DataFrame
+        Logging items
+    '''
+    # Check inputs
+    if not os.path.exists(flog):
+        raise ValueError('File {0} does not exist'.format(flog))
+
+    # Build regex
+    regex = re.sub('\)s', '>.*)', re.sub('\%\(', '(?P<', fmt))
+    regex = re.sub('\|', '\|', regex)
+
+    # Open log file
+    with open(flog, 'r') as fobj:
+        loglines = fobj.readlines()
+
+    # Extract log info line by line
+    logs = []
+    for line in loglines:
+        se = re.search(regex, line.strip())
+        logs.append(se.groupdict())
+
+    logs = pd.DataFrame(logs)
+
+    return logs
 
 
 def get_ibatch(nsites, nbatch, ibatch):

@@ -224,6 +224,16 @@ class UtilsTestCase(unittest.TestCase):
         os.remove(flog2)
 
 
+    def test_read_logfile(self):
+        ''' Test reading log data '''
+        flog = os.path.join(self.ftest, 'logfile.log')
+        logs = iutils.read_logfile(flog)
+        self.assertEqual(list(logs.columns), \
+                ['asctime', 'levelname', 'message', 'name'])
+
+        self.assertEqual(logs.shape, (70, 4))
+
+
     def test_get_ibatch(self):
         ''' Test get_ibatch for small batches '''
         nbatch = 5
