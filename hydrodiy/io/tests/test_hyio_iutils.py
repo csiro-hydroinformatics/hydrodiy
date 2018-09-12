@@ -197,8 +197,8 @@ class UtilsTestCase(unittest.TestCase):
 
         with open(flog1, 'r') as fl:
             txt = fl.readlines()
-        ck = txt[0].strip().endswith('INFO - '+mess[0])
-        ck = ck & txt[1].strip().endswith('INFO - '+mess[1])
+        ck = txt[0].strip().endswith('INFO | '+mess[0])
+        ck = ck & txt[1].strip().endswith('INFO | '+mess[1])
         self.assertTrue(ck)
 
         # Test logging with different format
