@@ -215,17 +215,19 @@ def script_template(filename, comment,
     os.chmod(filename, st.st_mode | stat.S_IEXEC)
 
 
-class ContextualLogger(logging.Logger):
+class HydrodiyContextualLogger(logging.Logger):
     ''' Add context to logging messages via the context attribute '''
 
     def __init__(self, *args, **kwargs):
         self.context = ''
-        super(ContextualLogger, self).__init__(*args, **kwargs)
+        super(HydrodiyContextualLogger, self).__init__(*args, **kwargs)
 
     def _log(self, level, msg, args, exc_info=None, extra=None):
         if self.context != '':
             msg = '{{ {0} }} {1}'.format(self.context, msg)
-        super(ContextualLogger, self)._log(level, msg, args, exc_info, extra)
+
+        super(HydrodiyContextualLogger, self)._log(\
+                        level, msg, args, exc_info, extra)
 
 
 def get_logger(name, level='INFO', \
@@ -259,7 +261,7 @@ def get_logger(name, level='INFO', \
     contextual: bool
         Creates a logger with a context attribute
         to add context between curly braces before message
-        (see hydrodiy.io.ContextualLogger)
+        (see hydrodiy.io.HydrodiyContextualLogger)
 
     Returns
     -----------
@@ -319,7 +321,7 @@ def get_logger(name, level='INFO', \
     # Create the contextual logger
     if contextual:
         # A bit dangerous, but will do for now
-        logger.__class__ = ContextualLogger
+        logger.__class__ = HydrodiyContextualLogger
 
     return logger
 
