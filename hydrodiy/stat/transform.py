@@ -4,6 +4,7 @@ import math
 import sys
 import numpy as np
 import inspect
+from hydrodiy import PYVERSION
 
 from scipy.stats import norm
 
@@ -18,6 +19,16 @@ __all__ = ['Identity', 'Logit', 'Log', 'BoxCox2', \
 
 # Constant to detect zeros
 EPS = 1e-10
+
+def _class_constructor_argnames(classobj):
+    ''' Get class constructor arguments '''
+    if PYVERSION == 3:
+        sign = inspect.signature(classobj)
+        argnames = sign.parameters
+    elif PYVERSION == 2:
+        argnames = inspect.getargspec(classobj).args
+
+    return argnames
 
 
 def get_transform(name, **kwargs):
@@ -35,11 +46,11 @@ def get_transform(name, **kwargs):
 
     # Get instance of transform, setting the constructor arguments
     trans_class = getattr(sys.modules[__name__], name)
-    sig = inspect.signature(trans_class)
+    constructor_args = _class_constructor_argnames(trans_class)
     class_kwargs = {}
     topop = []
     for key in kwargs:
-        if key in sig.parameters:
+        if key in constructor_args:
             class_kwargs[key] = kwargs[key]
             topop.append(key)
 
