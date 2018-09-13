@@ -228,10 +228,6 @@ class Transform(object):
         # could compromise that)
         xc = np.maximum(self.backward(yc), censor)
 
-        if np.any(np.isnan(xc)):
-            import pdb; pdb.set_trace()
-
-
         return xc
 
     def params_sample(self, nsamples=500, minval=-10., maxval=10.):
@@ -354,7 +350,7 @@ class Log(Transform):
 class BoxCox2(Transform):
     ''' BoxCox transform with 2 parameters y = ((nu+x)^lambda-1)/lambda '''
 
-    def __init__(self, mininu=EPS, minilamprior=0.):
+    def __init__(self, mininu=EPS, minilam=0.):
         ''' Instanciate the BoxCox transform with two parameters
 
         Parameters
@@ -364,12 +360,14 @@ class BoxCox2(Transform):
         minilamprior : float
             Mininum of the value allowed for lambda in prior probability
         '''
+        if minilam < -3:
+            raise ValueError('Expected minilam > -3, got {0}'.format(minilam))
+
         params = Vector(['nu', 'lam'], [mininu, 1.], \
-                    [mininu, -3.], [np.inf, 3.])
+                    [mininu, minilam], [np.inf, 3.])
 
         super(BoxCox2, self).__init__('BoxCox2', params)
         self.mininu = mininu
-        self.minilamprior = minilamprior
 
     def _forward(self, x):
         nu, lam = self.params.values
@@ -407,22 +405,12 @@ class BoxCox2(Transform):
         return samples
 
 
-    def params_logprior(self):
-        ''' >minilamprior prior for loga and N(0., 0.3) prior for logb '''
-        nu, lam = self.params.values
-        if lam < self.minilamprior:
-            return -np.inf
-
-        return super(BoxCox2, self).params_logprior()
-
-
-
 class BoxCox1lam(Transform):
     ''' boxcox transform y = ((nu+x)^lambda-1)/lambda
         with shift parameter nu fixed
     '''
-    def __init__(self, mininu=EPS, minilamprior=0.):
-        params = Vector(['lam'], [1.], [-3.], [3.])
+    def __init__(self, mininu=EPS, minilam=0.):
+        params = Vector(['lam'], [1.], [minilam], [3.])
 
         # define the nu constant and set it to inf by default
         # to force proper setup
@@ -430,7 +418,7 @@ class BoxCox1lam(Transform):
                                         accept_nan=True)
 
         super(BoxCox1lam, self).__init__('BoxCox1lam', params, constants)
-        self.BC = BoxCox2(mininu=mininu, minilamprior=minilamprior)
+        self.BC = BoxCox2(mininu=mininu, minilam=minilam)
 
     def get_nu(self):
         nu = self.constants.values[0]
@@ -459,16 +447,16 @@ class BoxCox1nu(Transform):
     ''' BoxCox transform y = ((nu+x)^lambda-1)/lambda
         with lambda exponent fixed
     '''
-    
-    def __init__(self, mininu=EPS, minilamprior=0.):
+
+    def __init__(self, mininu=EPS, minilam=0.):
         params = Vector(['nu'], [mininu], [mininu], [np.inf])
 
         # Define the nu constant and set it to inf by default
         # to force proper setup
-        constants = Vector(['lam'], [np.nan], [-3], [3], accept_nan=True)
+        constants = Vector(['lam'], [np.nan], [minilam], [3], accept_nan=True)
 
         super(BoxCox1nu, self).__init__('BoxCox1nu', params, constants)
-        self.BC = BoxCox2(mininu=mininu, minilamprior=minilamprior)
+        self.BC = BoxCox2(mininu=mininu, minilam=minilam)
 
     def get_lam(self):
         lam = self.constants.values[0]
