@@ -234,6 +234,31 @@ class UtilsTestCase(unittest.TestCase):
         self.assertEqual(logs.shape, (70, 4))
 
 
+    def test_get_logger_contextual(self):
+        ''' Test contextual logger '''
+        flog = os.path.abspath(__file__) + '.log'
+
+        # Test logging
+        logger = iutils.get_logger('bidule', flog=flog,\
+                    contextual=True)
+
+        mess = ['flog1 A', 'flog1 B']
+        logger.context = 'context1'
+        logger.info(mess[0])
+
+        logger.context = 'context2'
+        logger.info(mess[1])
+
+        self.assertTrue(os.path.exists(flog))
+
+        with open(flog, 'r') as fl:
+            txt = fl.readlines()
+
+        ck = bool(re.search('\{ context1 \}', txt[0]))
+        ck = ck & bool(re.search('\{ context2 \}', txt[1]))
+        self.assertTrue(ck)
+
+
     def test_get_ibatch(self):
         ''' Test get_ibatch for small batches '''
         nbatch = 5

@@ -215,13 +215,27 @@ def script_template(filename, comment,
     os.chmod(filename, st.st_mode | stat.S_IEXEC)
 
 
+class ContextualLogger(logging.Logger):
+    ''' Add context to logging messages via the context attribute '''
+
+    def __init__(self, *args, **kwargs):
+        self.context = ''
+        super(ContextualLogger, self).__init__(*args, **kwargs)
+
+    def _log(self, level, msg, args, exc_info=None, extra=None):
+        if self.context != '':
+            msg = '{{ {0} }} {1}'.format(self.context, msg)
+        super(ContextualLogger, self)._log(level, msg, args, exc_info, extra)
+
+
 def get_logger(name, level='INFO', \
         console=True, flog=None, \
         fmt='%(asctime)s | %(name)s | %(levelname)s | %(message)s', \
         overwrite=True,
         excepthook=True,
-        no_duplicate_handler=True):
-    ''' Get a logger object
+        no_duplicate_handler=True,\
+        contextual=False):
+    ''' Get a logger object that can handle contextual info
 
     Parameters
     -----------
@@ -242,6 +256,10 @@ def get_logger(name, level='INFO', \
         (does not work within IPython)
     no_duplicate_handler : bool
         Avoid duplicating console or flog log handlers
+    contextual: bool
+        Creates a logger with a context attribute
+        to add context between curly braces before message
+        (see hydrodiy.io.ContextualLogger)
 
     Returns
     -----------
@@ -289,13 +307,19 @@ def get_logger(name, level='INFO', \
 
     if excepthook:
         def catcherr(exc_type, exc_value, exc_traceback):
-            logger.error('Unexpected error', exc_info=(exc_type, exc_value, exc_traceback))
+            logger.error('Unexpected error', exc_info=(exc_type, \
+                        exc_value, exc_traceback))
             sys.__excepthook__(exc_type, exc_value, exc_traceback)
 
         sys.excepthook = catcherr
 
     # Close all handlers
     [h.close() for h in logger.handlers]
+
+    # Create the contextual logger
+    if contextual:
+        # A bit dangerous, but will do for now
+        logger.__class__ = ContextualLogger
 
     return logger
 
