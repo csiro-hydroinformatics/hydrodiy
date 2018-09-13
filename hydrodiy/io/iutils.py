@@ -358,9 +358,16 @@ def read_logfile(flog, \
     logs = []
     for line in loglines:
         se = re.search(regex, line.strip())
-        logs.append(se.groupdict())
+        if se:
+            logs.append(se.groupdict())
 
     logs = pd.DataFrame(logs)
+
+    # Process contextual info
+    if 'message' in logs:
+        context = logs.message.str.findall('(?<=\{)[^\}]+(?=\})')
+        context = context.apply(lambda x: ''.join(x).strip())
+        logs['context'] = context
 
     return logs
 

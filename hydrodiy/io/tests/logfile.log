@@ -1,13 +1,13 @@
-2018-09-12 14:39:10,811 | merging_component.fit | INFO | 5 sites found
-2018-09-12 14:39:10,812 | merging_component.fit | INFO | Dealing with 1/5
-2018-09-12 14:39:11,217 | merging_component.fit | INFO | 2200 XV1990 month 1: Fitting QMA weights
-2018-09-12 14:39:11,217 | merging_component.fit | INFO | 2200 XV1990 month 1: -> Fitting logsinh parameters for BJP
-2018-09-12 14:39:11,217 | merging_component.fit | INFO | Started transform fitting
-2018-09-12 14:39:11,217 | merging_component.fit | INFO | Fitting transform on median forecast
-2018-09-12 14:39:11,222 | merging_component.fit | INFO | Started transform exploration. len(x)=16 ncens=0 nsamples=100
-2018-09-12 14:39:11,455 | merging_component.fit | INFO | Completed transform exploration
-2018-09-12 14:39:11,456 | merging_component.fit | INFO | Started transform fitting. len(x)=16 ncens=0
-2018-09-12 14:39:11,812 | merging_component.fit | INFO | Completed transform fitting. param1=-10.00 param2=-0.16 mu=-3.00 sig=2.81
+2018-09-12 14:39:10,811 | merging_component.fit | INFO | { test context } 5 sites found
+2018-09-12 14:39:10,812 | merging_component.fit | INFO | { test context } Dealing with 1/5
+2018-09-12 14:39:11,217 | merging_component.fit | INFO | { test context } 2200 XV1990 month 1: Fitting QMA weights
+2018-09-12 14:39:11,217 | merging_component.fit | INFO | { test context } 2200 XV1990 month 1: -> Fitting logsinh parameters for BJP
+2018-09-12 14:39:11,217 | merging_component.fit | INFO | { test context } Started transform fitting
+2018-09-12 14:39:11,217 | merging_component.fit | INFO | { test context } Fitting transform on median forecast
+2018-09-12 14:39:11,222 | merging_component.fit | INFO | { test context } Started transform exploration. len(x)=16 ncens=0 nsamples=100
+2018-09-12 14:39:11,455 | merging_component.fit | INFO | { test context } Completed transform exploration
+2018-09-12 14:39:11,456 | merging_component.fit | INFO | { test context } Started transform fitting. len(x)=16 ncens=0
+2018-09-12 14:39:11,812 | merging_component.fit | INFO | { test context } Completed transform fitting. param1=-10.00 param2=-0.16 mu=-3.00 sig=2.81
 2018-09-12 14:39:11,815 | merging_component.fit | INFO | ** Fitting of transform params for forecast #1 /16 **
 2018-09-12 14:39:13,329 | merging_component.fit | INFO | ** Fitting of transform params for forecast #2 /16 **
 2018-09-12 14:39:14,665 | merging_component.fit | INFO | ** Fitting of transform params for forecast #3 /16 **
@@ -24,6 +24,9 @@
 2018-09-12 14:39:30,484 | merging_component.fit | INFO | ** Fitting of transform params for forecast #14 /16 **
 2018-09-12 14:39:31,861 | merging_component.fit | INFO | ** Fitting of transform params for forecast #15 /16 **
 2018-09-12 14:39:33,244 | merging_component.fit | INFO | ** Fitting of transform params for forecast #16 /16 **
+
+error message here
+
 2018-09-12 14:39:34,668 | merging_component.fit | INFO | Completed fitting transforms
 2018-09-12 14:39:34,678 | merging_component.fit | INFO | 2200 XV1990 month 1: -> QMA w / Fitting logsinh parameters for DM
 2018-09-12 14:39:34,678 | merging_component.fit | INFO | Started transform fitting

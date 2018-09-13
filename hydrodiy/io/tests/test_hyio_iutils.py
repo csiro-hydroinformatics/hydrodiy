@@ -229,9 +229,11 @@ class UtilsTestCase(unittest.TestCase):
         flog = os.path.join(self.ftest, 'logfile.log')
         logs = iutils.read_logfile(flog)
         self.assertEqual(list(logs.columns), \
-                ['asctime', 'levelname', 'message', 'name'])
+                ['asctime', 'levelname', 'message', 'name', 'context'])
 
-        self.assertEqual(logs.shape, (70, 4))
+        self.assertEqual(logs.shape, (70, 5))
+        self.assertTrue(np.all(logs.context[:10] == 'test context'))
+        self.assertTrue(np.all(logs.context[10:] == ''))
 
 
     def test_get_logger_contextual(self):
