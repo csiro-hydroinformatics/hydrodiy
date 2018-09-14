@@ -62,7 +62,10 @@ jobs:
             python setup.py install
             
             # Running examples
-            python -W ignore examples/data_get_climate_grids.py
+            
+            # .. ignore this one which relies on basemap 
+            #python -W ignore examples/data_get_climate_grids.py # relies on
+            
             python -W ignore examples/data_get_climate_indices.py
             python -W ignore examples/data_get_kiwis_data.py
             python -W ignore examples/plot_draw_boxplot.py
