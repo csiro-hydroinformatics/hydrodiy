@@ -58,6 +58,9 @@ jobs:
             python -W ignore `which nosetests` hydrodiy/plot
             python -W ignore `which nosetests` hydrodiy/gis
 
+            # Install hydrodiy
+            python setup.py install
+            
             # Running examples
             python -W ignore examples/data_get_climate_grids.py
             python -W ignore examples/data_get_climate_indices.py
