@@ -57,7 +57,7 @@ def ensmetrics(obs, fcst, random_pit=True, stat='median'):
             obs.shape[0], fcst.shape[0]))
 
     # Compute skill scores
-    _, alpha = metrics.alpha(obs, fcst)
+    _, alpha, _ = metrics.alpha(obs, fcst)
     alpha = alpha*100
     crps, _ = metrics.crps(obs, fcst)
     crps_ss = (1.-crps[0]/crps[3])*100

@@ -270,6 +270,9 @@ def alpha(obs, ens, cst=0.3, type='CV', sudo_perc_threshold=5):
         Test statistic (low values mean that the test is passed)
     pvalue : float
         Test pvalue (values close to one mean that the test is passed)
+    is_sudo : numpy.ndarray
+         Tells if the pit is a sudo value.
+         See hydrodiy.stat.metrics.pit
     '''
     # Check data
     obs, ens, nforc, nens = __check_ensemble_data(obs, ens)
@@ -295,7 +298,7 @@ def alpha(obs, ens, cst=0.3, type='CV', sudo_perc_threshold=5):
         raise ValueError('Expected test type in [CV/KS/AD],'+\
                 ' got {0}'.format(type))
 
-    return stat, pvalue
+    return stat, pvalue, is_sudo
 
 
 def iqr(ens, ref, coverage=50.):
@@ -349,7 +352,7 @@ def iqr(ens, ref, coverage=50.):
 
     if ref.shape[0] != nforc:
         raise ValueError(('Expected clim to have {0} forecasts, '+\
-                        'got {1}').format(nforc, ens.shape[0]))
+                        'got {1}').format(ref.shape[0], ens.shape[0]))
 
     # Initialise
     iqr = np.zeros((nforc, 3))

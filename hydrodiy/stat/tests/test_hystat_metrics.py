@@ -89,7 +89,7 @@ class MetricsTestCase(unittest.TestCase):
         sim = np.repeat(np.linspace(0, 10, nens)[:, None], \
                     nval, 1).T
 
-        a, _ = metrics.alpha(obs, sim)
+        a, _, _ = metrics.alpha(obs, sim)
         self.assertTrue(np.allclose(a, 1.))
 
 
@@ -311,7 +311,7 @@ class MetricsTestCase(unittest.TestCase):
             ens = np.repeat(np.linspace(0, 1, nens)[None, :], nforc, 0)
 
             for type in ['CV', 'KS', 'AD']:
-                st, pv = metrics.alpha(obs, ens)
+                st, pv, sudo = metrics.alpha(obs, ens)
                 self.assertTrue(pv>1.-1e-3)
 
 
