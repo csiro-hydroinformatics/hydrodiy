@@ -58,6 +58,14 @@ jobs:
             python -W ignore `which nosetests` hydrodiy/plot
             python -W ignore `which nosetests` hydrodiy/gis
 
+            # Running examples
+            python -W ignore examples/data_get_climate_grid.py
+            python -W ignore examples/data_get_climate_indices.py
+            python -W ignore examples/data_get_kiwis_data.py
+            python -W ignore examples/plot_draw_boxplot.py
+            python -W ignore examples/plot_ensemble.py
+            python -W ignore examples/verify_ensemble.py
+            
       - store_artifacts:
           path: test-reports
           destination: test-reports
