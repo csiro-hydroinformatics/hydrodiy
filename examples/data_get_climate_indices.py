@@ -14,6 +14,9 @@ import pandas as pd
 from datetime import datetime
 from dateutil.relativedelta import relativedelta as delta
 
+import matplotlib as mpl
+mpl.use('Agg')
+
 import matplotlib.pyplot as plt
 
 from hydrodiy.data import hyclimind

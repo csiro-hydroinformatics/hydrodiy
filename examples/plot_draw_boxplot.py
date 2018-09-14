@@ -10,9 +10,12 @@
 import sys, os, re, json, math
 import numpy as np
 import pandas as pd
+from calendar import month_abbr as months
+
+import matplotlib as mpl
+mpl.use('Agg')
 
 import matplotlib.pyplot as plt
-from calendar import month_abbr as months
 
 from hydrodiy.io import iutils
 from hydrodiy.plot import putils, boxplot

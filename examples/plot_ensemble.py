@@ -12,6 +12,9 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 
+import matplotlib as mpl
+mpl.use('Agg')
+
 import matplotlib.pyplot as plt
 
 from hydrodiy.io import iutils
