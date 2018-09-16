@@ -24,7 +24,7 @@ int c_ensrank(double eps, int nval, int ncol, double* sim, \
 {
 	int i1, i2, j, ierr=0, ninit;
 	double value, valueprev, valuenext, index, u=0, F=0;
-    double sumrank, rk, ncold, thresh, diff, diffnext;
+    double sumrank, rk, ncold, diff, diffnext;
     double nties, start, end;
     double (*ensemb)[2];
 
@@ -58,7 +58,6 @@ int c_ensrank(double eps, int nval, int ncol, double* sim, \
 
     /* Maximum threshold of sum of ranks to get R==1 */
     ncold = (double) ncol;
-    thresh = ncold*ncold+ncold/2;
 
     /* Loop though pairs of ensembles */
 	for(i1=0; i1<nval; i1++)
