@@ -21,7 +21,12 @@ from hydrodiy.data import hywap
 from hydrodiy.io import iutils
 
 from hydrodiy.gis.grid import get_mask
-from hydrodiy.gis.oz import Oz
+
+try:
+    from hydrodiy.gis.oz import Oz
+except ImportError:
+    print('Cannot import oz. Skip this example')
+    sys.exit()
 
 from hydrodiy.plot.gridplot import gplot, gsmooth, GridplotConfig
 from hydrodiy.plot.gridplot import gbar
