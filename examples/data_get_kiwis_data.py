@@ -86,8 +86,7 @@ for siteid in siteids+storages:
         dh = 0
 
     # Download time series attributes
-    attrs, url = hykiwis.get_tsattrs(ksiteid, ts_name, \
-                        external=False)
+    attrs, url = hykiwis.get_tsattrs(ksiteid, ts_name, external=True)
 
     # Use the first one
     attrs = attrs[0]
