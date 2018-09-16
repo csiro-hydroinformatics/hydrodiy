@@ -69,11 +69,11 @@ LOGGER.info('CRPS_SS ={0:0.3f}'.format(crps_ss))
 
 # Reliability (Pvalue of Cramer-Von Mises test for Probability Integral
 # Transform data)
-stat, CVpvalue = metrics.alpha(obs, fcst)
+stat, CVpvalue, is_sudo = metrics.alpha(obs, fcst)
 LOGGER.info('ALPHA - CV ={0:0.3f}'.format(CVpvalue))
 
 # .. same with Kolmogorov-Smirnov test
-stat, KSpvalue = metrics.alpha(obs, fcst, type='KS')
+stat, KSpvalue, is_sudo = metrics.alpha(obs, fcst, type='KS')
 LOGGER.info('ALPHA - KS ={0:0.3f}'.format(KSpvalue))
 
 # Mean ensemble bias
