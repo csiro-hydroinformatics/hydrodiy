@@ -398,7 +398,14 @@ class Boxplot(object):
 
     @property
     def stats(self):
+        ''' Returns the boxplot stats '''
         return self._stats
+
+
+    @property
+    def ax(self):
+        ''' Returns the boxplot axe '''
+        return self._ax
 
 
     def draw(self, ax=None, logscale=False, xoffset=0.):
