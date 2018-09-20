@@ -322,6 +322,7 @@ def get_logger(name, level='INFO', \
     if contextual:
         # A bit dangerous, but will do for now
         logger.__class__ = HydrodiyContextualLogger
+        logger.context = ''
 
     return logger
 
