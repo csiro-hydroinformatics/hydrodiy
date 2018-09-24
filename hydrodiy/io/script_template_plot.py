@@ -33,6 +33,10 @@ from hydrodiy.gis.oz import Oz
 parser = argparse.ArgumentParser(\
     description='A plotting script', \
     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+parser.add_argument('-v', '--version', \
+                    help='Version number', \
+                    type=int, required=True)
 parser.add_argument('-e', '--extension', help='Image file extension', \
                     type=str, default='png')
 #parser.add_argument('-p', '--projection', \
@@ -40,6 +44,7 @@ parser.add_argument('-e', '--extension', help='Image file extension', \
 #                    type=int, default=3112)
 args = parser.parse_args()
 
+version = args.version
 
 # Image file extension
 imgext = args.extension

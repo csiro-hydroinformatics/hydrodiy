@@ -50,7 +50,7 @@ class UtilsTestCase(unittest.TestCase):
             ''' Run script and check there are no errors in stderr '''
 
             # Run system command
-            pipe = subprocess.Popen(['python', fs], \
+            pipe = subprocess.Popen(['python', fs, '-v 1'], \
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
 
