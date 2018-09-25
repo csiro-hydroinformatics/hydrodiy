@@ -36,7 +36,7 @@ class UtilsTestCase(unittest.TestCase):
     def test_acf_error(self):
         data = np.random.uniform(size=20)
         try:
-            acf = sutils.acf(data, idx=(data>0.5)[2:])
+            acf, cov = sutils.acf(data, idx=(data>0.5)[2:])
         except ValueError as err:
             self.assertTrue(str(err).startswith('Expected idx'))
         else:
@@ -51,7 +51,7 @@ class UtilsTestCase(unittest.TestCase):
         x = sutils.ar1innov(rho, innov)
 
         maxlag = 10
-        acf = sutils.acf(x, maxlag)
+        acf, cov = sutils.acf(x, maxlag)
 
         # Theoretical ACF for AR1 process
         expected = rho**np.arange(1, maxlag+1)
@@ -68,7 +68,7 @@ class UtilsTestCase(unittest.TestCase):
             expected, _ = csv.read_csv(fr)
             expected = expected['acf'].values[1:]
 
-            acf = sutils.acf(data, expected.shape[0])
+            acf, cov = sutils.acf(data, expected.shape[0])
 
             ck = np.allclose(expected, acf)
             self.assertTrue(ck)
@@ -87,8 +87,8 @@ class UtilsTestCase(unittest.TestCase):
 
         data = np.concatenate([x1, x2])
 
-        acf1 = sutils.acf(data, idx=data>=0)
-        acf2 = sutils.acf(data, idx=data<=0)
+        acf1, cov = sutils.acf(data, idx=data>=0)
+        acf2, cov = sutils.acf(data, idx=data<=0)
         self.assertTrue(np.allclose([acf1[0], acf2[0]], [rho1, rho2], \
                             atol=1e-2))
 
@@ -209,8 +209,8 @@ class UtilsTestCase(unittest.TestCase):
 
         y = sutils.ar1innov(alpha, innov)
 
-        acf1 = sutils.acf(y[:nval//2])
-        acf2 = sutils.acf(y[nval//2:])
+        acf1, cov = sutils.acf(y[:nval//2])
+        acf2, cov = sutils.acf(y[nval//2:])
 
         ck = np.allclose([acf1[0], acf2[0]], [0.9, 0.2], atol=1e-2)
         self.assertTrue(ck)

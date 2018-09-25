@@ -54,6 +54,8 @@ def acf(data, maxlag=1, biased=True, idx=None):
     -----------
     acf_values : numpy.ndarray
         Autocorrelation function. [h] array.
+    cov : float
+        Covariance
     '''
 
     # Check inputs
@@ -101,7 +103,7 @@ def acf(data, maxlag=1, biased=True, idx=None):
     # ACF function
     acf_values = cov[1:]/cov[0]
 
-    return acf_values
+    return acf_values, cov[0]
 
 
 def ar1innov(alpha, innov, yini=0.):
