@@ -185,9 +185,9 @@ class Transform(object):
         raise NotImplementedError('Method _backward not implemented')
 
 
-    def _jacobian_det(self, x):
-        ''' internal jacobian_det method (no cast)'''
-        raise NotImplementedError('Method _jacobian_det not implemented')
+    def _jacobian(self, x):
+        ''' internal jacobian method (no cast)'''
+        raise NotImplementedError('Method _jacobian not implemented')
 
 
     def forward(self, x):
@@ -200,11 +200,11 @@ class Transform(object):
         return dutils.cast(y, self._backward(y))
 
 
-    def jacobian_det(self, x):
-        ''' Returns the transformation jacobian_detobian d[forward(x)]/dx
+    def jacobian(self, x):
+        ''' Returns the transformation jacobianobian d[forward(x)]/dx
             after cast
         '''
-        return dutils.cast(x, self._jacobian_det(x))
+        return dutils.cast(x, self._jacobian(x))
 
 
     def backward_censored(self, y, censor=0.):
@@ -268,7 +268,7 @@ class Identity(Transform):
     def _backward(self, y):
         return y
 
-    def _jacobian_det(self, x):
+    def _jacobian(self, x):
         return np.ones_like(x)
 
 
@@ -293,7 +293,7 @@ class Logit(Transform):
         bnd = 1-1./(1+np.exp(y))
         return bnd*(upper-lower) + lower
 
-    def _jacobian_det(self, x):
+    def _jacobian(self, x):
         lower, logdelta = self.params.values
         upper = lower + math.exp(logdelta)
         value = (x-lower)/(upper-lower)
@@ -334,7 +334,7 @@ class Log(Transform):
         bf = self.basefactor
         return np.exp(bf*y)-nu
 
-    def _jacobian_det(self, x):
+    def _jacobian(self, x):
         nu = self.params.values[0]
         bf = self.basefactor
         return np.where(x+nu > self.mininu, 1./(x+nu)/bf, np.nan)
@@ -385,7 +385,7 @@ class BoxCox2(Transform):
         else:
             return np.exp(y)-nu
 
-    def _jacobian_det(self, x):
+    def _jacobian(self, x):
         nu, lam = self.params.values
 
         if abs(lam) > EPS:
@@ -434,9 +434,9 @@ class BoxCox1lam(Transform):
         self.BC.params.values = [self.get_nu(), self.params.values[0]]
         return self.BC.backward(y)
 
-    def _jacobian_det(self, x):
+    def _jacobian(self, x):
         self.BC.params.values = [self.get_nu(), self.params.values[0]]
-        return self.BC.jacobian_det(x)
+        return self.BC.jacobian(x)
 
     def params_sample(self, nsamples=500, minval=0., maxval=1.):
         return self.BC.params_sample(nsamples, minval, maxval)[:, 1][:, None]
@@ -472,9 +472,9 @@ class BoxCox1nu(Transform):
         self.BC.params.values = [self.params.values[0], self.get_lam()]
         return self.BC.backward(y)
 
-    def _jacobian_det(self, x):
+    def _jacobian(self, x):
         self.BC.params.values = [self.params.values[0], self.get_lam()]
-        return self.BC.jacobian_det(x)
+        return self.BC.jacobian(x)
 
     def params_sample(self, nsamples=500, minval=0., maxval=1.):
         return self.BC.params_sample(nsamples, minval, maxval)[:, 0][:, None]
@@ -530,7 +530,7 @@ class YeoJohnson(Transform):
 
         return (x-nu)/scale
 
-    def _jacobian_det(self, x):
+    def _jacobian(self, x):
         nu, scale, lam = self.params.values
         x = np.atleast_1d(x)
         j = x*np.nan
@@ -597,7 +597,7 @@ class LogSinh(Transform):
         w = b*y
         return xmax*(y + (np.log(1.+np.sqrt(1.+np.exp(-2.*w)))-a)/b)
 
-    def _jacobian_det(self, x):
+    def _jacobian(self, x):
         xmax = self.get_xmax()
         loga, logb = self.params.values
         a = math.exp(loga)
@@ -645,7 +645,7 @@ class Reciprocal(Transform):
         nu = self.params.values[0]
         return np.where(y < -self.mininu, -1./y-nu, np.nan)
 
-    def _jacobian_det(self, x):
+    def _jacobian(self, x):
         nu = self.params.values[0]
         return np.where(x > -nu, 1./(nu+x)**2, np.nan)
 
@@ -691,7 +691,7 @@ class Softmax(Transform):
         x = np.exp(y)
         return x/(1+np.sum(x, axis=1)[:, None])
 
-    def _jacobian_det(self, x):
+    def _jacobian(self, x):
         ''' See
         https://en.wikipedia.org/wiki/Determinant#Sylvester.27s_determinant_theorem
         '''
@@ -729,7 +729,7 @@ class Sinh(Transform):
         nu, scale = self.params.values
         return np.sinh(y)/scale+nu
 
-    def _jacobian_det(self, x):
+    def _jacobian(self, x):
         nu, scale = self.params.values
         u = (x-nu)*scale
         return scale/np.sqrt(1+u*u)
@@ -784,7 +784,7 @@ class Manly(Transform):
         else:
             return xmax*y
 
-    def _jacobian_det(self, x):
+    def _jacobian(self, x):
         lam = self.params.values[0]
         xmax = self.get_xmax()
         if abs(lam-EPS) > 0.:

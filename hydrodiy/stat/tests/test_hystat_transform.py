@@ -205,9 +205,9 @@ class TransformTestCase(unittest.TestCase):
             raise Exception('Problem with error handling')
 
         try:
-            trans.jacobian_det(x)
+            trans.jacobian(x)
         except NotImplementedError as err:
-            self.assertTrue(str(err).startswith('Method _jacobian_det'))
+            self.assertTrue(str(err).startswith('Method _jacobian'))
         else:
             raise Exception('Problem with error handling')
 
@@ -338,7 +338,7 @@ class TransformTestCase(unittest.TestCase):
                     yp = trans.forward(x+delta)
                     jacn = np.abs(yp-y)/delta
 
-                jac = trans.jacobian_det(x)
+                jac = trans.jacobian(x)
 
                 # Check jacobian are positive
                 idx = ~np.isnan(jac)
