@@ -56,6 +56,30 @@ def cast(x, y):
     return ycast
 
 
+def dayofyear(days):
+    ''' Compute day of year using days.dayofyear, but reduce the value by
+    one for leap-years. This ensures that all years have 365 days.
+
+     Parameters
+    -----------
+    days : pandas.core.indexes.dateteime.DatetimeIndex
+        Date series
+
+    Returns
+    -----------
+    doy : numpy.ndarray
+        Day of year
+    '''
+    doy = days.dayofyear.values
+
+    yy = days.year.values
+    isleap = (yy % 4 == 0) & (~(yy % 100 == 0) | (yy % 400 == 0))
+    idx = (days.month.values > 2) & isleap
+    doy[idx] = doy[idx]-1
+
+    return doy
+
+
 def aggmonths(tseries, nmonths=3, ngapmax=6, ngapcontmax=3):
     ''' Convert time series to aggregated monthly time steps
 

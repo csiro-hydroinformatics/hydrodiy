@@ -161,6 +161,18 @@ class UtilsTestCase(unittest.TestCase):
         self.ftest = os.path.dirname(source_file)
 
 
+    def test_dayofyear(self):
+        ''' Test day of year '''
+        days = pd.date_range('2001-01-01', '2001-12-31', freq='D')
+        doy = dutils.dayofyear(days)
+        self.assertTrue(np.allclose(doy, np.arange(1, 366)))
+
+        days = pd.date_range('2000-01-01', '2000-03-02', freq='D')
+        doy = dutils.dayofyear(days)
+        expected = np.append(np.arange(1, 61), [60, 61])
+        self.assertTrue(np.allclose(doy, expected))
+
+
     def test_aggmonths(self):
 
         # Generate daily data with gaps
