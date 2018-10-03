@@ -63,8 +63,15 @@ jobs:
             
             # Running examples
             python -W ignore examples/run_all_examples.py
+
+            # Get list of functions
+            python -W ignore listmembers.py
             
       - store_artifacts:
           path: test-reports
           destination: test-reports
+          
+      - store_artifacts:
+          path: listmembers.html
+          destination: listmembers
           
