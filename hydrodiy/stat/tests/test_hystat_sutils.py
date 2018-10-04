@@ -70,6 +70,12 @@ class UtilsTestCase(unittest.TestCase):
 
             acf, cov = sutils.acf(data, expected.shape[0])
 
+            # Modify for bias
+            nval = len(data)
+            nacf = len(acf)
+            factor = np.arange(nval-nacf, nval)[::-1]/nval
+            acf *= factor
+
             ck = np.allclose(expected, acf)
             self.assertTrue(ck)
 
