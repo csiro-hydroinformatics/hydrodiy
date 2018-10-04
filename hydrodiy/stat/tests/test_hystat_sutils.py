@@ -73,7 +73,7 @@ class UtilsTestCase(unittest.TestCase):
             # Modify for bias
             nval = len(data)
             nacf = len(acf)
-            factor = np.arange(nval-nacf, nval)[::-1]/nval
+            factor = np.arange(nval-nacf, nval)[::-1].astype(float)/nval
             acf *= factor
 
             ck = np.allclose(expected, acf)

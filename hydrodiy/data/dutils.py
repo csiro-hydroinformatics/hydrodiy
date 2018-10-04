@@ -70,9 +70,14 @@ def dayofyear(days):
     doy : numpy.ndarray
         Day of year
     '''
-    doy = days.dayofyear.values
+    try:
+        doy = days.dayofyear.values
+        yy = days.year.values
+    except AttributeError:
+        # Allow older version of pandas to work
+        doy = days.dayofyear
+        yy = days.year
 
-    yy = days.year.values
     isleap = (yy % 4 == 0) & (~(yy % 100 == 0) | (yy % 400 == 0))
     idx = (days.month.values > 2) & isleap
     doy[idx] = doy[idx]-1
