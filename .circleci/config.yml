@@ -64,8 +64,8 @@ jobs:
             # Running examples
             python -W ignore examples/run_all_examples.py
 
-            # Get list of functions
-            python -W ignore listmembers.py
+            # Get list of functions skipping files with basemap
+            python -W ignore listmembers.py -s
             
       - store_artifacts:
           path: test-reports

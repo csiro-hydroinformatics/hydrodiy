@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import sys, os, re
+import argparse
 import pandas as pd
 import importlib
 from inspect import getmembers, isfunction, isclass, getsourcefile, \
@@ -11,6 +12,15 @@ from hydrodiy.io import iutils, csv
 #----------------------------------------------------------------------
 # Config
 #----------------------------------------------------------------------
+parser = argparse.ArgumentParser(\
+    description='List functions available in hydrodiy package', \
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+parser.add_argument('-s', '--skipbasemap', \
+                    help='Skip code importing basemap package', \
+                    action='store_true', default=False)
+args = parser.parse_args()
+skipbasemap = args.skipbasemap
 
 #----------------------------------------------------------------------
 # Folders
@@ -18,6 +28,9 @@ from hydrodiy.io import iutils, csv
 source_file = os.path.abspath(__file__)
 froot = os.path.dirname(source_file)
 fhydrodiy = os.path.join(froot, 'hydrodiy')
+
+basename = re.sub('\\.py.*', '', os.path.basename(source_file))
+LOGGER = iutils.get_logger(basename)
 
 #----------------------------------------------------------------------
 # Get data
@@ -32,9 +45,23 @@ members = pd.DataFrame(columns=['package', 'module', \
                 'object_name', 'type', 'doc'])
 
 for f in lf:
+
     if re.search('version|template|test', f):
         continue
 
+    LOGGER.info('Inspecting {0}'.format(os.path.basename(f)))
+
+    # Skip if it imports basemap
+    if skipbasemap:
+        with open(f, 'r') as fo:
+            txt = fo.read()
+
+        if re.search('basemap', txt):
+            LOGGER.info(('file {0} imports basemap, '+\
+                            'skip it').format(os.path.basename(f)))
+            continue
+
+    # Import the file
     name = re.sub('.py$', '', os.path.basename(f))
     modname = re.sub('.*[^A-Za-z]', '', os.path.dirname(f))
     import_name = 'hydrodiy.{0}.{1}'.format(modname, name)
