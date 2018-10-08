@@ -161,6 +161,31 @@ class UtilsTestCase(unittest.TestCase):
         self.ftest = os.path.dirname(source_file)
 
 
+    def test_sequence_true(self):
+        ''' Test analysis of true sequence '''
+
+        nrepeat = 100
+        nseq = 10
+        for irepeat in range(nrepeat):
+            seq_len = np.random.randint(5, 20, size=20)
+
+            # Start with 1
+            reps = np.zeros(20)
+            reps[::2] = 1
+            seq = np.repeat(reps, seq_len)
+            start, end = dutils.sequence_true(seq)
+            duration = end-start
+            self.assertTrue(np.allclose(duration, seq_len[::2]))
+
+            # Start with 0
+            reps = np.zeros(20)
+            reps[1::2] = 1
+            seq = np.repeat(reps, seq_len)
+            start, end = dutils.sequence_true(seq)
+            duration = end-start
+            self.assertTrue(np.allclose(duration, seq_len[1::2]))
+
+
     def test_dayofyear(self):
         ''' Test day of year '''
         days = pd.date_range('2001-01-01', '2001-12-31', freq='D')

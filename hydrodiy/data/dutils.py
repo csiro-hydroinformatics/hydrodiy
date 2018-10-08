@@ -14,6 +14,33 @@ from hydrodiy import PYVERSION
 import c_hydrodiy_data
 
 
+def sequence_true(values):
+    ''' Identify start and end of consecutive "true" values in
+    a sequence. Can be used for gap analysis.
+
+    Parameters
+    -----------
+    values : numpy.ndarray
+        Vector of boolean
+
+    Returns
+    -----------
+    gap_start : numpy.ndarray
+        Indexes of gap sequence start
+
+    gap_end : numpy.ndarray
+        Indexes of gap sequence end
+    '''
+    values = values.astype(int)
+    values_filled = np.append(0, np.append(values, 0))
+    diff = np.diff(values_filled)
+
+    gap_start = np.where(diff == 1)[0]
+    gap_end = np.where(diff == -1)[0]
+
+    return gap_start, gap_end
+
+
 def cast(x, y):
     ''' Cast y to the type of x.
 
