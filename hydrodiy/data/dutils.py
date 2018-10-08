@@ -98,13 +98,15 @@ def dayofyear(days):
     try:
         doy = days.dayofyear.values
         yy = days.year.values
+        mm = days.month.values
     except AttributeError:
         # Allow older version of pandas to work
         doy = days.dayofyear
         yy = days.year
+        mm = days.month
 
     isleap = (yy % 4 == 0) & (~(yy % 100 == 0) | (yy % 400 == 0))
-    idx = (days.month.values > 2) & isleap
+    idx = (mm > 2) & isleap
     doy[idx] = doy[idx]-1
 
     return doy
