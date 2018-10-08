@@ -173,16 +173,16 @@ class UtilsTestCase(unittest.TestCase):
             reps = np.zeros(20)
             reps[::2] = 1
             seq = np.repeat(reps, seq_len)
-            start, end = dutils.sequence_true(seq)
-            duration = end-start
+            startend = dutils.sequence_true(seq)
+            duration = startend[:, 1]-startend[:, 0]
             self.assertTrue(np.allclose(duration, seq_len[::2]))
 
             # Start with 0
             reps = np.zeros(20)
             reps[1::2] = 1
             seq = np.repeat(reps, seq_len)
-            start, end = dutils.sequence_true(seq)
-            duration = end-start
+            startend = dutils.sequence_true(seq)
+            duration = startend[:, 1]-startend[:, 0]
             self.assertTrue(np.allclose(duration, seq_len[1::2]))
 
 

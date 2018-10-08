@@ -15,8 +15,8 @@ import c_hydrodiy_data
 
 
 def sequence_true(values):
-    ''' Identify start and end of consecutive "true" values in
-    a sequence. Can be used for gap analysis.
+    ''' Identify start and end of consecutive "true" values.
+    Can be used for gap analysis.
 
     Parameters
     -----------
@@ -25,20 +25,18 @@ def sequence_true(values):
 
     Returns
     -----------
-    gap_start : numpy.ndarray
-        Indexes of gap sequence start
-
-    gap_end : numpy.ndarray
-        Indexes of gap sequence end
+    startend : numpy.ndarray
+        Indexes of sequence starts (column 1) and ends (column 2)
     '''
     values = values.astype(int)
     values_filled = np.append(0, np.append(values, 0))
     diff = np.diff(values_filled)
 
-    gap_start = np.where(diff == 1)[0]
-    gap_end = np.where(diff == -1)[0]
+    start = np.where(diff == 1)[0]
+    end = np.where(diff == -1)[0]
+    startend = np.column_stack([start, end])
 
-    return gap_start, gap_end
+    return startend
 
 
 def cast(x, y):
