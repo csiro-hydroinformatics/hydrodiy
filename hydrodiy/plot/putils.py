@@ -121,6 +121,38 @@ def colors2cmap(colors, ncols=256):
     return cmap
 
 
+def cmap2grayscale(cmap):
+    ''' Return a grayscale version of the given colormap
+
+    This code was pasted from
+    https://jakevdp.github.io/PythonDataScienceHandbook/04.07-customizing-colorbars.html
+
+
+    Parameters
+    -----------
+    cmap : matplotlib.colormap
+        Colormap object
+
+    Returns
+    -----------
+    grayscale : matplotlib.colormap
+        Colormap object containing gray scale
+
+    '''
+    cmap = plt.cm.get_cmap(cmap)
+    colors = cmap(np.arange(cmap.N))
+
+    # convert RGBA to perceived grayscale luminance
+    # cf. http://alienryderflex.com/hsp.html
+    RGB_weight = [0.299, 0.587, 0.114]
+    luminance = np.sqrt(np.dot(colors[:, :3] ** 2, RGB_weight))
+    colors[:, :3] = luminance[:, np.newaxis]
+
+    grayscale = LinearSegmentedColormap.from_list(cmap.name + "_gray", colors, cmap.N)
+
+    return grayscale
+
+
 def _float(u):
     ''' Function to convert object to float '''
     try:

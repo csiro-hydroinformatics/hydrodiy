@@ -36,6 +36,23 @@ class UtilsTestCase(unittest.TestCase):
         fig.savefig(fp)
 
 
+    def test_grayscale(self):
+        ''' Test conversion between color sets and color maps '''
+
+        mpl.rcdefaults()
+        colors = {1:'#004C99', 0:'#FF9933', 0.3:'#FF99FF'}
+        cmap = putils.colors2cmap(colors)
+
+        grayscale = putils.cmap2grayscale(cmap)
+
+        x = np.arange(1, 257).reshape((1,256))
+        fig, axs = plt.subplots(ncols=2)
+        axs[0].pcolor(x, cmap=cmap, vmin=1, vmax=256)
+        axs[1].pcolor(x, cmap=grayscale, vmin=1, vmax=256)
+        fp = os.path.join(self.fimg, 'grayscale.png')
+        fig.savefig(fp)
+
+
     def test_cmap2colors(self):
         ''' Test conversion between color sets and color maps '''
 
