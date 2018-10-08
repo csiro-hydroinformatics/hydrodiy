@@ -334,6 +334,7 @@ def tsplot(obs, fcst, ax=None, \
 
 
 class MonthlyEnsplot(object):
+    ''' Object to show a summary of monthly ensemble simulations '''
 
     def __init__(self, obs, fcst, fcdates, fig=None, \
         ylabel='Flow [GL/month]', random_pit=True, line='mean', \

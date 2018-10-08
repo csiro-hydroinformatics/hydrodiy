@@ -24,6 +24,7 @@ COLORS = putils.COLORS10
 
 
 class Simplot(object):
+    ''' Object to plot a summary of daily hydrological simulations '''
 
     def __init__(self, obs, sim, \
         sim_name = None,

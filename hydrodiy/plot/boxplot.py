@@ -51,6 +51,7 @@ def boxplot_stats(data, box_coverage, whiskers_coverage):
 
 
 def _to_float(value, mini=0., maxi=np.inf):
+    ''' Convert value to float with range checking '''
     try:
         value = np.float64(value)
     except:
@@ -64,6 +65,7 @@ def _to_float(value, mini=0., maxi=np.inf):
 
 
 def _is_in(value, possible):
+    ''' Check if a value is in a set of possible choices '''
     if not value in possible:
         raise ValueError(('Expected value in {0},' + \
             ' got {1}').format(possible, value))
@@ -226,6 +228,7 @@ class BoxplotItem(object):
 
 
 class Boxplot(object):
+    ''' Object allowing to draw boxplots '''
 
     def __init__(self, data,
                 style='default', by=None, \
