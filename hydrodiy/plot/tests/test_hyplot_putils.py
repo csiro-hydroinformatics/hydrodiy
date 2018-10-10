@@ -250,19 +250,24 @@ class UtilsTestCase(unittest.TestCase):
         mpl.rcdefaults()
 
         mu = [1, 2]
-        cov = [[1, 0.9], [0.9, 1]]
-        xy = np.random.multivariate_normal(mu, cov, size=1000)
 
         plt.close('all')
-        fig, ax = plt.subplots()
-        ax.plot(xy[:, 0], xy[:, 1], '.', alpha=0.2, mfc='grey', mec='none')
+        fig, axs = plt.subplots(ncols=2)
 
-        colors = putils.cmap2colors(10, 'Reds')
+        for irho, rho in enumerate([-0.9, 0.9]):
+            cov = [[1, rho], [rho, 1]]
+            xy = np.random.multivariate_normal(mu, cov, size=1000)
 
-        for i, pvalue in enumerate([0.5, 0.8, 0.9, 0.95, 0.99]):
-            el = putils.cov_ellipse(mu, cov, pvalue, facecolor='none', \
-                        edgecolor=colors[i])
-            ax.add_patch(el)
+            ax = axs[irho]
+            ax.plot(xy[:, 0], xy[:, 1], '.', alpha=0.2, \
+                    mfc='grey', mec='none')
+
+            colors = putils.cmap2colors(10, 'Reds')
+
+            for i, pvalue in enumerate([0.5, 0.8, 0.9, 0.95, 0.99]):
+                el = putils.cov_ellipse(mu, cov, pvalue, facecolor='none', \
+                            edgecolor=colors[i])
+                ax.add_patch(el)
 
         fp = os.path.join(self.fimg, 'ellipse.png')
         fig.savefig(fp)

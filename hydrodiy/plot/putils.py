@@ -502,7 +502,7 @@ def cov_ellipse(mu, cov, pvalue=0.95, *args, **kwargs):
     eig, vect = np.linalg.eig(cov)
     v1 = 2*math.sqrt(fact*eig[0])
     v2 = 2*math.sqrt(fact*eig[1])
-    alpha = np.rad2deg(math.acos(vect[0, 0]))
+    alpha = np.sign(cov[0, 1])*np.rad2deg(math.acos(vect[0, 0]))
 
     # Draw ellipse
     ellipse = Ellipse(xy=mu, width=v1, height=v2, angle=alpha, \
