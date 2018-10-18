@@ -97,7 +97,6 @@ ext_modules = [
 
 cmdclass['build_ext'] = build_ext
 
-
 # Setup config
 setup(
     name = 'hydrodiy',
