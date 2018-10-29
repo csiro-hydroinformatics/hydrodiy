@@ -1,10 +1,20 @@
 # Python CircleCI 2.0 configuration file
 #
 # Check https://circleci.com/docs/2.0/language-python/ for more details
+# Multiple python version config script from
+# https://github.com/adambrenecki/virtualfish/blob/aa3d6271bcb86ad27b6d24f96b5bd386d176f588/.circleci/config.yml
+#
 #
 version: 2
+workflows:
+  version: 2
+  test:
+    jobs:
+      - test-3.7
+      - test-3.6
+      - test-2.7
 jobs:
-  build:
+  test-3.6: &test-template   
     docker:
       # specify the version you desire here
       # use `-browsers` prefix for selenium tests, e.g. `3.6.1-browsers`
@@ -75,3 +85,13 @@ jobs:
           path: listmembers.html
           destination: listmembers
           
+  test-2.7:
+    <<: *test-template
+    docker:
+      - image: circleci/python:2.7
+
+  test-3.7:
+    <<: *test-template
+    docker:
+      - image: circleci/python:3.7
+
