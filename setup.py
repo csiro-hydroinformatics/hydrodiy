@@ -16,47 +16,6 @@ import versioneer
 def read(fname):
     return open(os.path.join(os.path.dirname(os.path.abspath(__file__)), fname)).read()
 
-# Pylint command
-currdir = os.path.abspath(os.path.dirname(__file__))
-
-class PylintCommand(distutils.cmd.Command):
-  """A custom command to run Pylint on all Python source files."""
-
-  description = 'run Pylint on Python source files'
-  user_options = [
-      # The format is (long option, short option, description).
-      ('pylint-rcfile=', None, os.path.join(currdir, 'pylintrc')),
-  ]
-
-  def initialize_options(self):
-    """Set default values for options."""
-    # Each user option must be listed here with their default value.
-    self.pylint_rcfile = ''
-
-  def finalize_options(self):
-    """Post-process options."""
-    if self.pylint_rcfile:
-      assert os.path.exists(self.pylint_rcfile), (
-          'Pylint config file %s does not exist.' % self.pylint_rcfile)
-
-  def run(self):
-    """Run command."""
-
-    command = ['pylint', \
-        '--rcfile={0}'.format(self.pylint_rcfile), \
-        os.path.join(currdir, 'hydrodiy')]
-
-    logfile = os.path.join(currdir, 'pylint.log')
-    self.announce('Running command: {0} (log={1})'.format(\
-                        command, logfile), \
-        level=distutils.log.INFO)
-
-    with open(logfile, 'w') as log:
-        subprocess.call(command, stdout=log)
-
-
-cmdclass = versioneer.get_cmdclass()
-cmdclass['pylint'] = PylintCommand
 
 # Cython C extensions
 ext_modules = [
@@ -94,9 +53,8 @@ ext_modules = [
         ],
         include_dirs=[numpy.get_include()])
 ]
-
+cmdclass = versioneer.get_cmdclass()
 cmdclass['build_ext'] = build_ext
-
 
 # Setup config
 setup(
