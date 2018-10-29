@@ -39,7 +39,7 @@ jobs:
       - run:
           name: install dependencies
           command: |
-            python3 -m venv venv
+            python -m venv venv
             . venv/bin/activate
             pip install -r requirements.txt
 
@@ -71,7 +71,7 @@ jobs:
             coverage xml --rcfile=.coveragerc
 
             # Pylint
-            pylint --rcfile pylintrc hydrodiy > pylint_results
+            #pylint --rcfile pylintrc hydrodiy > pylint_results
 
             # Install hydrodiy
             python setup.py install
