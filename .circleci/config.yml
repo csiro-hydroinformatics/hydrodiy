@@ -39,9 +39,15 @@ jobs:
       - run:
           name: install dependencies
           command: |
-            python -m venv venv || virtualenv venv
-            . venv/bin/activate
-            pip install -r requirements.txt
+            {
+                python -m venv venv 
+                . venv/bin/activate
+                pip install -r requirements.txt
+            } || {
+                virtualenv venv
+                . venv/bin/activate
+                pip install -r requirements.txt
+            }    
 
       - save_cache:
           paths:
