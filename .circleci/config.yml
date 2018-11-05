@@ -41,8 +41,7 @@ jobs:
           command: |
             python -m venv venv || virtualenv venv
             . venv/bin/activate
-            pip install -e .[dev]
-            #pip install -r requirements.txt
+            pip install -r requirements.txt
 
       - save_cache:
           paths:
