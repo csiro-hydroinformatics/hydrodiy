@@ -2,6 +2,7 @@ import sys, os, re
 
 import shlex
 import subprocess
+import warnings
 
 from datetime import datetime
 import logging
@@ -301,7 +302,10 @@ def get_logger(name, level='INFO', \
     # log to file
     if not flog is None and not has_flog:
         if overwrite:
-            if os.path.exists(flog): os.remove(flog)
+            try:
+                if os.path.exists(flog): os.remove(flog)
+            except PermissionError as err:
+                warnings.warn('log file not deleted: '+str(err))
 
         fh = logging.FileHandler(flog)
         fh.setFormatter(ft)
