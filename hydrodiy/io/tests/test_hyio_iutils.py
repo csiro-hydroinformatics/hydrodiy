@@ -15,6 +15,47 @@ import matplotlib.pyplot as plt
 from hydrodiy.io import iutils, csv
 from hydrodiy import PYVERSION
 
+# Skip if package cannot be imported (circleci build)
+import_error = True
+try:
+    from hydrodiy.gis.oz import Oz, REGIONS
+
+    import_error = False
+except ImportError:
+    pass
+
+
+def run_script(fs, stype='python'):
+    ''' Run script and check there are no errors in stderr '''
+
+    # Run system command
+    pipe = subprocess.Popen(['python', fs, '-v 1'], \
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE)
+
+    # Get outputs
+    stdout, stderr = pipe.communicate()
+
+    # detect errors
+    hasError = False
+    if len(stderr)>0:
+        stderr = str(stderr)
+        hasError = bool(re.search('Error', stderr))
+
+        # Bypass install problems
+        if re.search('No module named.*hydrodiy', stderr):
+            hasError = False
+
+    if hasError:
+        print('STDERR not null in {0}:\n\t{1}'.format(fs, stderr))
+
+    # If no problem, then remove script
+    if not hasError:
+        os.remove(fs)
+
+    return stderr, hasError
+
+
 class UtilsTestCase(unittest.TestCase):
 
     def setUp(self):
@@ -41,57 +82,41 @@ class UtilsTestCase(unittest.TestCase):
         self.assertTrue(len(found)==3)
 
 
-    def test_script_template(self):
+    def test_script_template_default(self):
+        ''' Test running script template default '''
         sites = pd.DataFrame({'siteid':[1, 2, 3, 4], \
                     'id':['a', 'b', 'c', 'd']})
         fs = os.path.join(self.ftest, 'sites.csv')
         csv.write_csv(sites, fs, 'site list', self.source_file)
 
-        def test_script(fs, stype='python'):
-            ''' Run script and check there are no errors in stderr '''
-
-            # Run system command
-            pipe = subprocess.Popen(['python', fs, '-v 1'], \
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
-
-            # Get outputs
-            stdout, stderr = pipe.communicate()
-
-            # detect errors
-            hasError = False
-            if len(stderr)>0:
-                stderr = str(stderr)
-                hasError = bool(re.search('Error', stderr))
-
-                # Bypass install problems
-                if re.search('No module named.*hydrodiy', stderr):
-                    hasError = False
-
-            if hasError:
-                print('STDERR not null in {0}:\n\t{1}'.format(fs, stderr))
-
-            # If no problem, then remove script
-            if not hasError:
-                os.remove(fs)
-
-            return stderr, hasError
-
-
         # Run defaut script file template
-        fs = os.path.join(self.ftest, 'script_test1.py')
+        fs = os.path.join(self.ftest, 'script_test.py')
         iutils.script_template(fs, 'test')
-        stderr, hasError = test_script(fs)
+        stderr, hasError = run_script(fs)
         self.assertFalse(hasError)
+
+
+    def test_script_template_plot(self):
+        ''' Test running script template plot '''
+
+        if import_error:
+            self.skipTest('Import error')
+
+        sites = pd.DataFrame({'siteid':[1, 2, 3, 4], \
+                    'id':['a', 'b', 'c', 'd']})
+        fs = os.path.join(self.ftest, 'sites.csv')
+        csv.write_csv(sites, fs, 'site list', self.source_file)
 
         # Run plot script file template
-        fs = os.path.join(self.ftest, 'script_test2.py')
+        fs = os.path.join(self.ftest, 'script_test.py')
         iutils.script_template(fs, 'test', stype='plot')
-        stderr, hasError = test_script(fs)
+        stderr, hasError = run_script(fs)
         self.assertFalse(hasError)
+
 
 
     def test_str2dict(self):
+        ''' Test str2dict '''
         prefix = 'this_is_a_prefix'
 
         data = {'name':'bob', 'phone':'2010'}
