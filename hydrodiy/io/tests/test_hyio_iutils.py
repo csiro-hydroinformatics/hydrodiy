@@ -23,6 +23,7 @@ class UtilsTestCase(unittest.TestCase):
         self.ftest = os.path.dirname(self.source_file)
 
     def test_find_files(self):
+        ''' Test find files '''
         # Recursive
         folder = '%s/../..' % self.ftest
         pattern = '(_[\\d]{2}){3}( \\(|.txt)'
@@ -143,6 +144,7 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_str2dict_random_order(self):
+        ''' Test order of arguments for str2dict '''
         # Generate random keys
         nkeys = 10
         lkeys = 20
@@ -175,6 +177,7 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_get_logger(self):
+        ''' Test Logger '''
         flog1 = os.path.abspath(__file__) + '1.log'
         flog2 = os.path.abspath(__file__) + '2.log'
 
