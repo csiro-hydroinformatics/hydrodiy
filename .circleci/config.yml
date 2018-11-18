@@ -46,7 +46,7 @@ jobs:
                 pip install -r requirements.txt
             else    
                 echo "Installing Python 2.7+"
-                chown -R $USER:$USER /home/circleci/repo/venv
+                chown -R $USER:$USER /home/circleci/repo/venv/bin/python
                 virtualenv venv
                 . venv/bin/activate
                 pip install -r requirements.txt
