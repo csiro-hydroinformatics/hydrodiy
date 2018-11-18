@@ -14,6 +14,8 @@ import pandas as pd
 from datetime import datetime
 from dateutil.relativedelta import relativedelta as delta
 
+from requests.exceptions import ReadTimeout, HTTPError
+
 import matplotlib as mpl
 mpl.use('Agg')
 
@@ -60,7 +62,16 @@ for indn in indices:
     LOGGER.info('Downloading {0}'.format(indn))
 
     #  --- Download the data ---
-    series, url = hyclimind.get_data(indn)
+    try:
+        series, url = hyclimind.get_data(indn)
+    except ReadTimeout:
+        warnings.warn('Requests has timed out')
+        continue
+    except HTTPError as err:
+        warnings.warn('Requests has generated an HTTP error: {0}'.format(\
+                                    str(err)))
+        continue
+
     series = series['1900-01-01':]
     series.name = indn
     data.append(series)
