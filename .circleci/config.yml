@@ -40,10 +40,12 @@ jobs:
           name: install dependencies
           command: |
             if python -c "import venv" ; then
+                echo "Installing Python 3+"
                 python -m venv venv 
                 . venv/bin/activate
                 pip install -r requirements.txt
             else    
+                echo "Installing Python 2.7+"
                 virtualenv venv
                 . venv/bin/activate
                 pip install -r requirements.txt
