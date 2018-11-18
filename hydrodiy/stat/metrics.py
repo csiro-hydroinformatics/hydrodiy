@@ -377,7 +377,7 @@ def iqr(ens, ref, coverage=50.):
     return skill, score, clim, ratio
 
 
-def bias(obs, sim, trans=transform.Identity()):
+def bias(obs, sim, trans=transform.Identity(), excludenull=False):
     ''' Compute simulation bias
 
     Parameters
@@ -388,6 +388,8 @@ def bias(obs, sim, trans=transform.Identity()):
         simulated data, [n] or [n,1] array
     transform : hydrodiy.stat.transform.Transform
         Data transforma object
+    excludenull : bool
+        Exclude pair of data where obs or sim are nan or inf
 
     Returns
     -----------
@@ -406,7 +408,9 @@ def bias(obs, sim, trans=transform.Identity()):
     # Transform
     tobs = trans.forward(obs)
     tsim = trans.forward(sim)
-    tobs, tsim =  __nonulldata(tobs, tsim)
+
+    if excludenull:
+        tobs, tsim =  __nonulldata(tobs, tsim)
 
     # Compute
     meano = np.mean(tobs)
@@ -422,7 +426,7 @@ def bias(obs, sim, trans=transform.Identity()):
     return bias_value
 
 
-def nse(obs, sim, trans=transform.Identity()):
+def nse(obs, sim, trans=transform.Identity(), excludenull=False):
     ''' Compute Nash-Sucliffe efficiency.
 
     Parameters
@@ -433,6 +437,8 @@ def nse(obs, sim, trans=transform.Identity()):
         simulated data, [n], [n,1], or [n,p] array
     trans : hydrodiy.stat.transform.Transform
         Data transform object
+    excludenull : bool
+        Exclude pair of data where obs or sim are nan or inf
 
     Returns
     -----------
@@ -452,7 +458,9 @@ def nse(obs, sim, trans=transform.Identity()):
     # Transform
     tobs = trans.forward(obs)
     tsim = trans.forward(sim)
-    tobs, tsim =  __nonulldata(tobs, tsim)
+
+    if excludenull:
+        tobs, tsim =  __nonulldata(tobs, tsim)
 
     # SSE
     errs = np.sum((tsim-tobs)**2)
@@ -523,7 +531,7 @@ def dscore(obs, sim, eps=1e-6):
     return D
 
 
-def kge(obs, sim, trans=transform.Identity()):
+def kge(obs, sim, trans=transform.Identity(), excludenull=False):
     ''' Compute Kling-Gupta efficiency index.
 
     Parameters
@@ -534,6 +542,8 @@ def kge(obs, sim, trans=transform.Identity()):
         simulated data, [n], [n,1], or [n,p] array
     trans : hydrodiy.stat.transform.Transform
         Data transform object
+    excludenull : bool
+        Exclude pair of data where obs or sim are nan or inf
 
     Returns
     -----------
@@ -553,7 +563,8 @@ def kge(obs, sim, trans=transform.Identity()):
     # Transform
     tobs = trans.forward(obs)
     tsim = trans.forward(sim)
-    tobs, tsim =  __nonulldata(tobs, tsim)
+    if excludenull:
+        tobs, tsim =  __nonulldata(tobs, tsim)
 
     # Means
     meano = np.mean(tobs)
@@ -591,6 +602,7 @@ def kge(obs, sim, trans=transform.Identity()):
 
 
 def corr(obs, ens, trans=transform.Identity(), \
+                    excludenull=False, \
                     stat='median', type='Pearson', censor=1e-10):
     ''' Compute correlation coefficient
 
@@ -602,6 +614,8 @@ def corr(obs, ens, trans=transform.Identity(), \
         simulated data, [n,p] array
     trans : hydrodiy.stat.transform.Transform
         Data transform object
+    excludenull : bool
+        Exclude pair of data where obs or sim are nan or inf
     stat : str
         Use median or mean from ensemble
     type : str
@@ -626,8 +640,8 @@ def corr(obs, ens, trans=transform.Identity(), \
         raise ValueError('Expected stat in [mean/median], got '+stat)
 
     if not type in ['Pearson', 'Spearman', 'censored']:
-        raise ValueError('Expected type in [Pearson/Spearman/censored], got '\
-                            +type)
+        raise ValueError('Expected type in [Pearson/Spearman/censored], '+\
+                                'got '+type)
 
     # Transform
     tobs = trans.forward(obs)
@@ -639,7 +653,8 @@ def corr(obs, ens, trans=transform.Identity(), \
     else:
         tsim = np.nanmedian(tens, axis=1)
 
-    tobs, tsim =  __nonulldata(tobs, tsim)
+    if excludenull:
+        tobs, tsim =  __nonulldata(tobs, tsim)
 
     # Check std
     stdo = np.std(tobs)

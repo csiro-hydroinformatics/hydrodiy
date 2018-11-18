@@ -643,7 +643,8 @@ class MetricsTestCase(unittest.TestCase):
         obs = np.arange(0, nval).astype(float)
 
         for trans, type, stat in prod(self.transforms, \
-                    ['Pearson', 'Spearman', 'censored'], ['mean', 'median']):
+                    ['Pearson', 'Spearman', 'censored'], \
+                    ['mean', 'median']):
 
             if trans.params.nval > 0:
                 trans.params.values[0] = np.mean(obs)*1e-2
@@ -652,7 +653,7 @@ class MetricsTestCase(unittest.TestCase):
             tens = tobs[:, None] - 2 \
                         + np.random.uniform(-2, 2, size=(nval, nens))
             ens = trans.backward(tens)
-            corr = metrics.corr(obs, ens, trans, stat, type)
+            corr = metrics.corr(obs, ens, trans, False, stat, type)
 
             if stat == 'mean':
                 tsim = np.nanmean(tens, 1)
@@ -686,7 +687,7 @@ class MetricsTestCase(unittest.TestCase):
             tens = tobs - 2 \
                         + np.random.uniform(-1, 1, size=nval)
             ens = trans.backward(tens)
-            corr = metrics.corr(obs, ens, trans, stat, type)
+            corr = metrics.corr(obs, ens, trans, False, stat, type)
 
             if type == 'Pearson':
                 expected = np.corrcoef(tobs, tens)[0, 1]
