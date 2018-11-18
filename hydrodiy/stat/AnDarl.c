@@ -115,7 +115,7 @@ int ADtest(int n, double *x, double *outputs)
     static double zero = 0.0;
 
     /* nan value if not defined */
-    nan = zero/zero;
+    nan = 1./zero * zero;
     outputs[0] = nan;
     outputs[1] = nan;
 

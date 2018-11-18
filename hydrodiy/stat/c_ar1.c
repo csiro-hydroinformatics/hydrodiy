@@ -20,7 +20,7 @@ int c_ar1innov(int nval, int ncol, double yini, double * alpha,
     static double zero = 0.0;
 
     /* nan value if not defined */
-    nan = zero/zero;
+    nan = 1./zero * zero;
 
     /* loop across columns */
     for(j=0; j<ncol; j++)

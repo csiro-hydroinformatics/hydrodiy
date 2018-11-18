@@ -14,7 +14,7 @@ int c_aggregate(int nval, int oper, int maxnan, int * aggindex,
     static double zero = 0.0;
 
     /* In case NAN is not defined */
-    nan = zero/zero;
+    nan = 1./zero * zero;
 
     /* Initialise */
     iaprev = aggindex[0];
