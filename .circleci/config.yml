@@ -91,6 +91,8 @@ jobs:
             # Get list of functions skipping files with basemap
             python -W ignore listmembers.py -s
             
+          no_output_timeout: 30m
+
       - store_artifacts:
           path: test-reports
           destination: test-reports
