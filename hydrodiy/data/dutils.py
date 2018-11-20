@@ -253,8 +253,9 @@ def aggregate(aggindex, inputs, oper=0, maxnan=0):
     '''
     # Check inputs
     if len(aggindex) != len(inputs):
-        raise ValueError('Expected inputs of length {0}, got {1}'.format(\
-                len(aggindex), len(inputs)))
+        raise ValueError('Expected same length for aggindex and inputs. '+ \
+                    'got len(aggindex)={0} and len(inputs)={1}'.format(\
+                    len(aggindex), len(inputs)))
 
     # Allocate arrays
     oper = np.int32(oper)

@@ -288,6 +288,22 @@ class UtilsTestCase(unittest.TestCase):
         self.assertTrue(np.allclose(obsm.values, obsm3))
 
 
+    def test_aggregate_error(self):
+        dt = pd.date_range('1990-01-01', '2000-12-31')
+        nval = len(dt)
+        obs = pd.Series(np.random.uniform(0, 1, nval), \
+                index=dt)
+
+        aggindex = dt.year * 100 + dt.month
+
+        try:
+            obsm = dutils.aggregate(aggindex[:100], obs.values)
+        except ValueError as err:
+            self.assertTrue(str(err).startswith('Expected same length'))
+        else:
+            raise ValueError('Problem with error handling')
+
+
     def test_lag(self):
         ''' Test lag for 1d data'''
         size = [20, 10, 30, 4]
