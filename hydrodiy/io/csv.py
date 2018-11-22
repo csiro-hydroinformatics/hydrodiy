@@ -284,6 +284,8 @@ def read_csv(filename, has_colnames=True, archive=None, \
         Are column names stored in the first line of the data ?
     archive : tarfile.TarFile
         Archive to which data is to be added.
+    encoding : str
+        Charactert encoding
     kwargs : dict
         Arguments passed to pd.read_csv
 
