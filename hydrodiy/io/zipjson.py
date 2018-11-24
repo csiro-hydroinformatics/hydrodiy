@@ -3,6 +3,7 @@
 import sys, os, re, json
 from datetime import datetime
 import zipfile
+import warnings
 
 from hydrodiy import PYVERSION
 
@@ -14,6 +15,14 @@ if PYVERSION == 2:
 elif PYVERSION == 3:
     from io import StringIO
     UNICODE = str
+
+class ZipjsonWriteError(ValueError):
+    ''' Error raised by write_zipjson '''
+    pass
+
+class ZipjsonReadError(ValueError):
+    ''' Error raised by write_zipjson '''
+    pass
 
 
 def write_zipjson(data, filename, \
@@ -40,6 +49,10 @@ def write_zipjson(data, filename, \
     kwargs : dict
         Arguments passed to json.dump
     '''
+    # Check file extension
+    if not filename.endswith('.zip'):
+        raise ZipjsonWriteError('Expected filename extension to be zip')
+
     # Create dict object
     towrite = {'data': data}
 
@@ -55,15 +68,16 @@ def write_zipjson(data, filename, \
     towrite['filename'] = filename
 
     if not os.path.exists(source_file):
-        raise ValueError('Source file {0} does not exists'.format(\
+        raise ZipjsonWriteError('Source file {0} does not exists'.format(\
                             source_file))
+
     towrite['source_file'] = source_file
 
     time = datetime.strftime(datetime.now(), '%Y-%m-%d %H:%M:%S')
     towrite['time_generated'] = time
 
     # Write to Json
-    filename_txt = re.sub('\.[^\.]+$', '.json', filename)
+    filename_txt = re.sub('\.zip', '.json', filename)
     with open(filename_txt, 'w') as fo:
         json.dump(towrite, fo, **kwargs)
 
@@ -90,16 +104,24 @@ def read_zipjson(filename, encoding='utf-8', **kwargs):
     data = {}
     nfiles = 0
     with zipfile.ZipFile(filename, 'r') as archive:
-        for fname in archive.namelist():
-            uni = UNICODE(archive.read(fname), encoding=encoding)
-            with StringIO(uni) as fobj:
-                data[fname] = json.load(fobj, **kwargs)
+        namelist = archive.namelist()
+        if len(namelist) > 1:
+            raise ValueError(('Expected one file in zip file {0}, '+\
+                        'got {1}').format(filename, len(namelist)))
 
-            nfiles += 1
+        fname = namelist[0]
+        uni = UNICODE(archive.read(fname), encoding=encoding)
+        with StringIO(uni) as fobj:
+            meta = json.load(fobj, **kwargs)
 
-    # Simplify output if there is one file only
-    if nfiles == 1:
-        data = data[fname]
+    if not 'data' in meta:
+        raise  ValueError('No data in json file')
+    else:
+        data = meta['data']
 
-    return data
+    meta.pop('data')
+    if len(meta) == 0:
+        warnings.warn('No meta-data in json file')
+
+    return data, meta
 
