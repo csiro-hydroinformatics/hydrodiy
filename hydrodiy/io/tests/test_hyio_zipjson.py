@@ -12,8 +12,10 @@ class ZipjsonTestCase(unittest.TestCase):
         print('\t=> ZipjsonTestCase')
         self.source_file = os.path.abspath(__file__)
         self.ftest = os.path.dirname(self.source_file)
-        self.data = {'key1': 1, 'key2': 'this is a string', \
+        self.data = {
+            "data": {'key1': 1, 'key2': 'this is a string', \
                         'key3': [0.4, 32.2, 12.45]}
+        }
 
     def test_read(self):
         ''' Test zipjson reader '''
@@ -25,14 +27,10 @@ class ZipjsonTestCase(unittest.TestCase):
         ''' Test zipjson writer '''
         filename = os.path.join(self.ftest, 'zipjson_test2.zip')
         comment = 'test'
-        zipjson.write_zipjson(self.data, filename, comment, \
+        zipjson.write_zipjson(self.data['data'], filename, comment, \
                                 self.source_file, indent=4)
         data = zipjson.read_zipjson(filename)
-        for key in ['comment', 'source_file', 'time_generated', 'author']:
-            data.pop(key)
-            self.data.pop(key)
-
-        self.assertEqual(data, self.data)
+        self.assertEqual(data['data'], self.data['data'])
         os.remove(filename)
 
 if __name__ == "__main__":

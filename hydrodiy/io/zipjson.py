@@ -40,6 +40,9 @@ def write_zipjson(data, filename, \
     kwargs : dict
         Arguments passed to json.dump
     '''
+    # Create dict object
+    towrite = {'data': data}
+
     # Add file meta data
     if author is None:
         try:
@@ -47,22 +50,22 @@ def write_zipjson(data, filename, \
         except Exception:
             author = 'unknown'
 
-    data['author'] = author
-    data['comment'] = comment
-    data['filename'] = filename
+    towrite['author'] = author
+    towrite['comment'] = comment
+    towrite['filename'] = filename
 
     if not os.path.exists(source_file):
         raise ValueError('Source file {0} does not exists'.format(\
                             source_file))
-    data['source_file'] = source_file
+    towrite['source_file'] = source_file
 
     time = datetime.strftime(datetime.now(), '%Y-%m-%d %H:%M:%S')
-    data['time_generated'] = time
+    towrite['time_generated'] = time
 
     # Write to Json
     filename_txt = re.sub('\.[^\.]+$', '.json', filename)
     with open(filename_txt, 'w') as fo:
-        json.dump(data, fo, **kwargs)
+        json.dump(towrite, fo, **kwargs)
 
     # Zip the file
     with zipfile.ZipFile(filename, 'w', compression=compression) as archive:
