@@ -89,9 +89,7 @@ def _csvhead(nrow, ncol, comment, source_file, author=None):
 
     now = datetime.now()
     head.append('# time_generated : ' + \
-        '{0}-{1:02d}-{2:02d} {3:02d}:{4:02d}:{5:02d}'.format(\
-            now.year, now.month, now.day, now.hour, now.minute,
-            now.second))
+                        datetime.strftime(now, '%Y-%m-%d %H:%M:%S'))
 
     # seek author
     if author is None:

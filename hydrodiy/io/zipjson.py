@@ -1,6 +1,7 @@
 ''' Module to read and write csv data with comments '''
 
 import sys, os, re, json
+from datetime import datetime
 import zipfile
 
 from hydrodiy import PYVERSION
@@ -15,7 +16,11 @@ elif PYVERSION == 3:
     UNICODE = str
 
 
-def write_zipjson(data, filename, compression=zipfile.ZIP_DEFLATED, **kwargs):
+def write_zipjson(data, filename, \
+            comment, source_file, \
+            author=None, \
+            compression=zipfile.ZIP_DEFLATED, \
+            **kwargs):
     ''' write a python object to a compressed json file
 
     Parameters
@@ -24,11 +29,36 @@ def write_zipjson(data, filename, compression=zipfile.ZIP_DEFLATED, **kwargs):
         Serializable python object
     filename : str
         Path to file
+    comment : str (or dict)
+        Comments to be added to header
+    source_file : str
+        Path to script used to generate the data
+    author : str
+        Data author (default is given by os.getlogin)
     compression : str
         Compression level
     kwargs : dict
         Arguments passed to json.dump
     '''
+    # Add file meta data
+    if author is None:
+        try:
+            author = os.getlogin()
+        except Exception:
+            author = 'unknown'
+
+    data['author'] = author
+    data['comment'] = comment
+    data['filename'] = filename
+
+    if not os.path.exists(source_file):
+        raise ValueError('Source file {0} does not exists'.format(\
+                            source_file))
+    data['source_file'] = source_file
+
+    time = datetime.strftime(datetime.now(), '%Y-%m-%d %H:%M:%S')
+    data['time_generated'] = time
+
     # Write to Json
     filename_txt = re.sub('\.[^\.]+$', '.json', filename)
     with open(filename_txt, 'w') as fo:
