@@ -3,6 +3,7 @@ import unittest
 
 import pandas as pd
 import numpy as np
+from scipy.stats import norm
 
 import matplotlib as mpl
 mpl.use('Agg')
@@ -22,10 +23,13 @@ class UtilsTestCase(unittest.TestCase):
         if not os.path.exists(self.fimg):
             os.mkdir(self.fimg)
 
+        # Reset matplotlib defaults
+        mpl.rcdefaults()
+        plt.close('all')
+
+
     def test_colors2cmap(self):
         ''' Test conversion between color sets and color maps '''
-
-        mpl.rcdefaults()
         colors = {1:'#004C99', 0:'#FF9933', 0.3:'#FF99FF'}
         cmap = putils.colors2cmap(colors)
 
@@ -38,8 +42,6 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_grayscale(self):
         ''' Test conversion between color sets and color maps '''
-
-        mpl.rcdefaults()
         colors = {1:'#004C99', 0:'#FF9933', 0.3:'#FF99FF'}
         cmap = putils.colors2cmap(colors)
 
@@ -55,7 +57,6 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_cmap2colors(self):
         ''' Test conversion between color sets and color maps '''
-
         colors = putils.cmap2colors(ncols=10, cmap='Reds')
         self.assertTrue(len(colors) == 10)
 
@@ -66,8 +67,6 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_line(self):
         ''' Test line '''
-
-        mpl.rcdefaults()
         fig, ax = plt.subplots()
 
         nval = 100
@@ -87,8 +86,6 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_line_dates(self):
         ''' Test lines with dates in x axis '''
-
-        mpl.rcdefaults()
         fig, ax = plt.subplots()
 
         nval = 100
@@ -108,11 +105,6 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_equation(self):
         ''' Test equations '''
-
-        mpl.rcdefaults()
-
-        plt.close('all')
-        mpl.rcdefaults()
         tex = r'\begin{equation} y = ax+b \end{equation}'
         fp = os.path.join(self.fimg, 'equations1.png')
         try:
@@ -173,8 +165,6 @@ class UtilsTestCase(unittest.TestCase):
             ax.set_ylabel('Y label')
             fig.savefig(fp)
 
-        plt.close('all')
-        mpl.rcdefaults()
         putils.set_mpl()
         fp = os.path.join(self.fimg, 'set_mpl1.png')
         plot(fp)
@@ -204,9 +194,6 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_kde(self):
         ''' Test kde generation '''
-
-        mpl.rcdefaults()
-
         xy = np.random.multivariate_normal( \
             [1, 2], [[1, 0.9], [0.9, 1]], \
             size=1000)
@@ -224,9 +211,6 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_kde_ties(self):
         ''' Test kde generation with ties '''
-
-        mpl.rcdefaults()
-
         xy = np.random.multivariate_normal( \
             [1, 2], [[1, 0.9], [0.9, 1]], \
             size=1000)
@@ -246,12 +230,7 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_ellipse(self):
         ''' Test ellipse plot '''
-
-        mpl.rcdefaults()
-
         mu = [1, 2]
-
-        plt.close('all')
         fig, axs = plt.subplots(ncols=2)
 
         for irho, rho in enumerate([-0.9, 0.9]):
@@ -275,8 +254,6 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_qqplot(self):
         ''' Test qq plot '''
-
-        mpl.rcdefaults()
         putils.set_mpl()
         x = np.random.normal(size=200)
 
@@ -304,9 +281,6 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_xdate_monthly(self):
         ''' Test formatting xaxis with monthly dates '''
-
-        mpl.rcdefaults()
-
         x = np.random.normal(size=200)
         dt = pd.date_range('1990-01-01', periods=len(x))
         dt = dt.to_pydatetime()
@@ -333,9 +307,6 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_xdate_daily(self):
         ''' Test formatting xaxis with daily dates '''
-
-        mpl.rcdefaults()
-
         x = np.random.normal(size=200)
         dt = pd.date_range('1990-01-01', periods=len(x))
         dt = dt.to_pydatetime()
@@ -351,9 +322,6 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_xdate_yearly(self):
         ''' Test formatting xaxis with yearly dates '''
-
-        mpl.rcdefaults()
-
         x = np.random.normal(size=2000)
         dt = pd.date_range('1990-01-01', periods=len(x))
         dt = dt.to_pydatetime()
@@ -375,9 +343,6 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_xdate_error(self):
         ''' Test xdate error with wrong x axis data '''
-
-        mpl.rcdefaults()
-
         x = np.random.normal(size=2000)
         dt = pd.date_range('1990-01-01', periods=len(x))
 
@@ -394,7 +359,62 @@ class UtilsTestCase(unittest.TestCase):
             self.assertTrue(str(err).startswith('xaxis does not seem'))
         else:
             if np.any(xticks > 1e7):
-                raise ValueError('Problem with error handling (python 3 only)')
+                raise ValueError('Problem with error handling'+\
+                                        ' (python 3 only)')
+
+
+    def test_cmap_accentuate(self):
+        ''' Test accentuation of cmap '''
+        fig, axs = plt.subplots(nrows=3)
+
+        u = np.linspace(0, 1, 250)
+        zz = np.repeat(u[None, :], 10, axis=0)
+        params = [1, 2.5, 4]
+        levels = np.linspace(0, 1, 100)
+
+        for iax, ax in enumerate(axs):
+            cmap = putils.cmap_accentuate('RdBu', params[iax])
+            ax.contourf(zz, levels=levels, vmin=0., vmax=1., cmap=cmap)
+
+        fp = os.path.join(self.fimg, 'cmap_accentuate.png')
+        fig.savefig(fp)
+
+
+    def test_cmap_neutral(self):
+        ''' Test accentuation of cmap '''
+        u = np.linspace(0, 1, 250)
+        zz = np.repeat(u[None, :], 10, axis=0)
+        widths = [0.01, 0.05, 0.1]
+        color = 'green'
+        levels = np.linspace(0, 1, 100)
+
+        fig, axs = plt.subplots(nrows=3)
+        for iax, ax in enumerate(axs):
+            cmap = putils.cmap_neutral('RdBu', neutral_color='green', \
+                                            band_width=widths[iax])
+            ax.contourf(zz, levels=levels, vmin=0., vmax=1., cmap=cmap)
+
+        fp = os.path.join(self.fimg, 'cmap_neutral.png')
+        fig.savefig(fp)
+
+
+    def test_ecdfplot(self):
+        ''' Test ecdf plots '''
+
+        df = {}
+        for i in range(4):
+            df['Var{0}'.format(i)] = np.random.normal(i, 1, size=1000)
+
+        df = pd.DataFrame(df)
+
+        fig, ax = plt.subplots()
+        lines = putils.ecdfplot(ax, df)
+        for nm in lines:
+            lines[nm].set_linestyle(':')
+
+        ax.legend(loc=2)
+        fp = os.path.join(self.fimg, 'ecdfplot.png')
+        fig.savefig(fp)
 
 
 if __name__ == "__main__":

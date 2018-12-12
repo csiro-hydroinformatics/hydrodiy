@@ -153,6 +153,88 @@ def cmap2grayscale(cmap):
     return grayscale
 
 
+def cmap_accentuate(cmap, param=-1, ninterp=100):
+    ''' Accentuate a cmap contrast
+
+    Parameters
+    -----------
+    cmap : matplotlib.colors.Cmap
+        Input color palette
+    param : float
+        Parameter controlling the intensity of the
+        accentuation.
+        * -inf : no accentuation
+        * -1 : nearly no accentuation
+        * +inf : maximum accentuation
+    ninterp : int
+        Number of interpolation point for the output cmap
+
+    Returns
+    -----------
+    mcmap : matplotlib.colors.Cmap
+        Accentuated color palette
+    '''
+    if param < -1 or param > 4:
+        raise ValueError('Expected param in [-1, 4], got {0}'.format(param))
+
+    # Accentuating function (mapping from [0, 1] to [0, 1])
+    def fun(x):
+        a = math.exp(param)
+        v0 = math.tanh(-0.5*a)
+        v1 = math.tanh(0.5*a)
+        return (np.tanh((x-0.5)*a)-v0)/(v1-v0)
+
+    # Get original cmap colors
+    colors = cmap2colors(256, cmap)
+
+    # Build dict
+    ws = np.linspace(0, 1, ninterp)
+    mdict = {w: colors[int(round(fun(w)*255))] for w in ws}
+
+    # Create a linearly interpolated cmap
+    mcmap = colors2cmap(mdict)
+
+    return mcmap
+
+
+def cmap_neutral(cmap, band_width=0.05, neutral_color='#C0C0C0', ninterp=100):
+    ''' Replace the central part of a color map with a
+        neutral color
+
+    Parameters
+    -----------
+    cmap : matplotlib.colors.Cmap
+        Input color palette
+    band_width : float
+        Width of the neutral band
+    neutral_color : str
+        Neutral color
+    ninterp : int
+        Number of interpolation point for the output cmap
+
+    Returns
+    -----------
+    mcmap : matplotlib.colors.Cmap
+        Accentuated color palette
+    '''
+    # Get original cmap colors
+    colors = cmap2colors(256, cmap)
+
+    # Build dict
+    ws = np.linspace(0, 1, ninterp)
+    mdict = {w: colors[int(round(w*255))] for w in ws}
+
+    # Replace with neutral color
+    idx = np.abs(ws-0.5) < band_width
+    for w in ws[idx]:
+        mdict[w] = neutral_color
+
+    # Create a linearly interpolated cmap
+    mcmap = colors2cmap(mdict)
+
+    return mcmap
+
+
 def _float(u):
     ''' Function to convert object to float '''
     try:
@@ -551,4 +633,38 @@ def qqplot(ax, data, addline=False, censor=None, *args, **kwargs):
         a, b, r2 = [np.nan] * 3
 
     return a, b, r2
+
+
+def ecdfplot(ax, df, *args, **kwargs):
+    ''' Plot empirical cumulative density functions
+
+    Parameters
+    -----------
+    ax : matplotlib.axes
+        Axe to draw the line on
+    df : pandas.core.dataframe.DataFrame
+        Input data
+    args, kwargs
+        Argument sent to matplotlib.pyplot.plot command for each
+
+    '''
+    lines = {}
+    for name, se in df.iteritems():
+        values = se.sort_values()
+        values = values[~np.isnan(values)]
+        pp = sutils.ppos(len(values))
+        ax.plot(values, pp, label=name, *args, **kwargs)
+        lines[name] = ax.get_lines()[-1]
+
+    # Decorate
+    ax.set_ylabel('Emp. CDF [-]')
+    ax.set_yticks([0., 0.5, 1.])
+    ax.set_yticklabels(['0', '1/2', '1'])
+    ylabs = ax.get_yticklabels()
+    ylabs[0].set_va('bottom')
+    ylabs[2].set_va('top')
+    ax.set_ylim((0, 1))
+
+    return lines
+
 
