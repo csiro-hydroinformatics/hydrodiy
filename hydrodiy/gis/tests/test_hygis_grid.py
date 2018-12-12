@@ -316,6 +316,23 @@ class GridTestCase(unittest.TestCase):
             raise ValueError('Problem with error handling')
 
 
+    def test_interpolate(self):
+        gr = Grid(**self.config)
+        gr.data = np.arange(gr.nrows*gr.ncols).reshape((gr.nrows, gr.ncols))
+
+        cfg = {
+            'name': 'interpolate', \
+            'nrows': 14, \
+            'ncols': 10, \
+            'cellsize': 1.
+        }
+        for key in ['dtype', 'xllcorner', 'yllcorner']:
+            cfg[key] = self.config[key]
+
+        gr_geom = Grid(**cfg)
+        gri = gr.interpolate(gr_geom)
+
+
 
 class CatchmentTestCase(unittest.TestCase):
 

@@ -12,6 +12,7 @@ import calendar
 
 import numpy as np
 import pandas as pd
+from scipy.interpolate import bisplrep,bisplev
 
 import matplotlib.pyplot as plt
 
@@ -460,7 +461,8 @@ class Grid(object):
         '''
         xll, yll, csz, nrows, ncols = self._getsize()
 
-        xycoords = np.ascontiguousarray(np.atleast_2d(xycoords), dtype=np.float64)
+        xycoords = np.ascontiguousarray(np.atleast_2d(xycoords), \
+                                                    dtype=np.float64)
         idxcell = np.zeros(len(xycoords)).astype(np.int64)
 
         ierr = c_hydrodiy_gis.coord2cell(nrows, ncols, xll, yll,
@@ -496,7 +498,8 @@ class Grid(object):
         '''
         xll, yll, csz, nrows, ncols = self._getsize()
 
-        idxcells = np.ascontiguousarray(np.atleast_1d(idxcells), dtype=np.int64)
+        idxcells = np.ascontiguousarray(np.atleast_1d(idxcells), \
+                                                        dtype=np.int64)
         xycoords = np.zeros((len(idxcells), 2)).astype(np.float64)
 
         ierr = c_hydrodiy_gis.cell2coord(nrows, ncols, xll, yll,
@@ -577,7 +580,6 @@ class Grid(object):
             Axe to draw the grid on
 
         '''
-
         xll, yll, csz, nr, nc = self._getsize()
         extent = [xll, xll+csz*nc, yll, yll+csz*nr]
         cax = ax.imshow(self.data, extent=extent, *args, **kwargs)
@@ -646,6 +648,48 @@ class Grid(object):
         grid._data = fun(grid._data, *args, **kwargs).astype(self.dtype)
 
         return grid
+
+
+    def interpolate(self, grid):
+        ''' Interpolate the current grid based on geometry supplied
+        by another grid. The interpolation is based on the scipy
+        procedures interpolate.bisplrep and interpolate.bisplev
+
+        Parameters
+        -----------
+        grid : hydrodiy.gis.grid.Grid
+            Input grid used to define interpolation geometry
+
+        Returns
+        -----------
+        interp_grid : hydrodiy.gis.grid.Grid
+            Interpolated grid matching the input grid geometry
+        '''
+        # Build coordinate matrices
+        xll, yll, csz, nr, nc = self._getsize()
+        u = np.linspace(xll, xll+csz*nc, nc)
+        v = np.linspace(yll, yll+csz*nr, nr)
+        x, y = np.meshgrid(u, v)
+        x, y = x.T, y.T
+
+        # Matrices for input geometry
+        xll, yll, csz, nr, nc = grid._getsize()
+        u = np.linspace(xll, xll+csz*nc, nc)
+        v = np.linspace(yll, yll+csz*nr, nr)
+        xnew, ynew = np.meshgrid(u, v)
+        xnew, ynew = xnew.T, ynew.T
+
+        # interpolation
+        z = self.data
+        tck = bisplrep(x, y, z, s=0)
+        znew = bisplev(xnew[:,0], ynew[0,:], tck)
+        znew = znew.T
+
+        # Create grid
+        interp_grid = grid.clone()
+        interp_grid.data = znew.astype(grid.dtype)
+
+        return interp_grid
 
 
 
