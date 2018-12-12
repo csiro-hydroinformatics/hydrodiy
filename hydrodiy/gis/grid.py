@@ -680,10 +680,12 @@ class Grid(object):
         xnew, ynew = np.meshgrid(u, v)
 
         # interpolation
-        z = self.data
+        z = self.data.flat
         xy = np.column_stack([x.flat, y.flat])
-        znew = griddata(xy, z.flat, (xnew, ynew), \
+        znew = griddata(xy, z, (xnew, ynew), \
                             method=method)
+
+        import pdb; pdb.set_trace()
 
         # Create grid
         interp_grid = grid.clone()

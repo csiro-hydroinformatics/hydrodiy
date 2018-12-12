@@ -356,9 +356,6 @@ class GridTestCase(unittest.TestCase):
 
         cfg['nrows'] = 600
         cfg['ncols'] = 1000
-        for key in ['dtype', 'xllcorner', 'yllcorner']:
-            cfg[key] = self.config[key]
-
         gr_geom = Grid(**cfg)
         gri = gr.interpolate(gr_geom)
 
