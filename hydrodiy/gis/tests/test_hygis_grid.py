@@ -316,7 +316,8 @@ class GridTestCase(unittest.TestCase):
             raise ValueError('Problem with error handling')
 
 
-    def test_interpolate(self):
+    def test_interpolate_small(self):
+        ''' Small grid interpolation '''
         gr = Grid(**self.config)
         gr.data = np.arange(gr.nrows*gr.ncols).reshape((gr.nrows, gr.ncols))
 
@@ -331,6 +332,43 @@ class GridTestCase(unittest.TestCase):
 
         gr_geom = Grid(**cfg)
         gri = gr.interpolate(gr_geom)
+        self.assertTrue(np.allclose(gri.data[0, :], \
+                    np.linspace(0, 4., 10)))
+
+        self.assertTrue(np.allclose(gri.data[-1, :], \
+                    np.linspace(30, 34., 10)))
+
+
+    def test_interpolate_large(self):
+        ''' Large grid interpolation '''
+
+        cfg = {
+            'name': 'interpolate', \
+            'nrows': 300, \
+            'ncols': 500, \
+            'cellsize': 1., \
+            'dtype': np.float64, \
+            'xllcorner': 0.,\
+            'yllcorner': 0.
+        }
+        gr = Grid(**cfg)
+        gr.data = np.arange(gr.nrows*gr.ncols).reshape((gr.nrows, gr.ncols))
+
+        cfg['nrows'] = 600
+        cfg['ncols'] = 1000
+        for key in ['dtype', 'xllcorner', 'yllcorner']:
+            cfg[key] = self.config[key]
+
+        gr_geom = Grid(**cfg)
+        gri = gr.interpolate(gr_geom)
+
+        self.assertTrue(np.allclose(gri.data[0, :], \
+                    np.linspace(0, 4., gri.ncols)))
+
+        self.assertTrue(np.allclose(gri.data[-1, :], \
+                    np.linspace(30, 34., gri.nrows)))
+
+
 
 
 

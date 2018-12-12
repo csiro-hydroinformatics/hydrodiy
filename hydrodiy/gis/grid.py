@@ -12,7 +12,7 @@ import calendar
 
 import numpy as np
 import pandas as pd
-from scipy.interpolate import bisplrep,bisplev
+from scipy.interpolate import griddata
 
 import matplotlib.pyplot as plt
 
@@ -650,15 +650,17 @@ class Grid(object):
         return grid
 
 
-    def interpolate(self, grid):
+    def interpolate(self, grid, method='linear'):
         ''' Interpolate the current grid based on geometry supplied
         by another grid. The interpolation is based on the scipy
-        procedures interpolate.bisplrep and interpolate.bisplev
+        procedures interpolate.griddata
 
         Parameters
         -----------
         grid : hydrodiy.gis.grid.Grid
             Input grid used to define interpolation geometry
+        method : str
+            Interpolation method. See scipy.interpolate.griddata
 
         Returns
         -----------
@@ -670,20 +672,18 @@ class Grid(object):
         u = np.linspace(xll, xll+csz*nc, nc)
         v = np.linspace(yll, yll+csz*nr, nr)
         x, y = np.meshgrid(u, v)
-        x, y = x.T, y.T
 
         # Matrices for input geometry
         xll, yll, csz, nr, nc = grid._getsize()
         u = np.linspace(xll, xll+csz*nc, nc)
         v = np.linspace(yll, yll+csz*nr, nr)
         xnew, ynew = np.meshgrid(u, v)
-        xnew, ynew = xnew.T, ynew.T
 
         # interpolation
         z = self.data
-        tck = bisplrep(x, y, z, s=0)
-        znew = bisplev(xnew[:,0], ynew[0,:], tck)
-        znew = znew.T
+        xy = np.column_stack([x.flat, y.flat])
+        znew = griddata(xy, z.flat, (xnew, ynew), \
+                            method=method)
 
         # Create grid
         interp_grid = grid.clone()
