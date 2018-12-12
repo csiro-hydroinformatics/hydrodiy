@@ -21,7 +21,7 @@ def sequence_true(values):
     Parameters
     -----------
     values : numpy.ndarray
-        Vector of boolean
+        Vector of booleans
 
     Returns
     -----------
@@ -367,7 +367,7 @@ def monthly2daily(se, interpolation='flat', minthreshold=0.):
 
     Parameters
     -----------
-    sem : pandas.Series
+    sem : pandas.core.series.Series
         Monthly series
     interpolatoin : str
         Type of interpolation:
@@ -471,7 +471,7 @@ def var2h(se, maxgapsec=5*86400, display=False):
 
     Parameters
     -----------
-    se : pandas.Series
+    se : pandas.core.series.Series
         Irregular time series
     maxgapsec : int
         Maximum number of seconds between two valid measurements

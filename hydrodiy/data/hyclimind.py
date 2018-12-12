@@ -39,7 +39,7 @@ def get_data(index, timeout=300):
 
     Returns
     -----------
-    data : pandas.Series
+    data : pandas.core.series.Series
         Index monthly data
     url : str
         Download URL
