@@ -293,6 +293,29 @@ class GridTestCase(unittest.TestCase):
         self.assertTrue(ck)
 
 
+    def test_minmaxdata(self):
+        cfg = self.config.copy()
+        cfg['dtype'] = np.int32
+        gr = Grid(**cfg)
+        gr.data = np.arange(gr.nrows*gr.ncols).reshape((gr.nrows, gr.ncols))
+
+        # Check the minimum is converted to proper dtype
+        gr.mindata = 20.4
+        self.assertTrue(gr.mindata == 20)
+        self.assertTrue(gr.data.min() == 20)
+
+        gr.maxdata = 30.6
+        self.assertTrue(gr.maxdata == 30)
+        self.assertTrue(gr.data.max() == 30)
+
+        try:
+            gr.mindata = 35
+        except ValueError as err:
+            self.assertTrue(str(err).startswith('Expected mindata<maxdata'))
+        else:
+            raise ValueError('Problem with error handling')
+
+
 
 class CatchmentTestCase(unittest.TestCase):
 

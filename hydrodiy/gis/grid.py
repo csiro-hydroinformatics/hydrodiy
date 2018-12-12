@@ -54,8 +54,8 @@ class Grid(object):
         self.yllcorner = np.float64(yllcorner)
 
         self.nodata = np.nan
-        self.maxdata = np.inf
-        self.mindata = -np.inf
+        self._mindata = -np.inf
+        self._maxdata = np.inf
         self.comment = comment
 
         self._data = np.zeros((self.nrows, self.ncols), dtype=dtype)
@@ -160,7 +160,8 @@ class Grid(object):
             raise ValueError('Byteorder {0} not recognised'.format(
                     config['byteorder']))
 
-        pixeltype = re.sub('nsignedint$|^signed|nt|loat', '', config['pixeltype'])
+        pixeltype = re.sub('nsignedint$|^signed|nt|loat', '', \
+                                                    config['pixeltype'])
         nbits = config['nbits']//8
         config['dtype'] = np.dtype(byteorder + pixeltype + str(nbits)).type
 
@@ -265,6 +266,40 @@ class Grid(object):
 
         self._dtype = value
         self._data = self._data.astype(value)
+
+
+    @property
+    def mindata(self):
+        ''' Get data minimum allowed '''
+        return self._mindata
+
+    @mindata.setter
+    def mindata(self, value):
+        ''' Set data minimum allowed '''
+        self._mindata = self.dtype(value)
+        if self._mindata > self._maxdata:
+            raise ValueError('Expected mindata<maxdata, got '+\
+                'mindata={0} and maxdata={1}'.format(\
+                        self._mindata, self._maxdata))
+
+        self._data = np.maximum(self._data, self._mindata)
+
+
+    @property
+    def maxdata(self):
+        ''' Get data maximum allowed '''
+        return self._maxdata
+
+    @maxdata.setter
+    def maxdata(self, value):
+        ''' Set data maximum allowed '''
+        self._maxdata = self.dtype(value)
+        if self._mindata > self._maxdata:
+            raise ValueError('Expected mindata<maxdata, got '+\
+                'mindata={0} and maxdata={1}'.format(\
+                        self._mindata, self._maxdata))
+        self._data = np.minimum(self._data, self._maxdata)
+
 
     def same_geometry(self, grd):
         ''' Check another grid has the same geometry
