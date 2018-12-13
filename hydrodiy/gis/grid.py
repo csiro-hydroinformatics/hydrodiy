@@ -667,6 +667,10 @@ class Grid(object):
         interp_grid : hydrodiy.gis.grid.Grid
             Interpolated grid matching the input grid geometry
         '''
+        # Skip the interpolation process if geometry is same
+        if self.same_geometry(grid):
+            return self.clone()
+
         # Build coordinate matrices
         xll, yll, csz, nr, nc = self._getsize()
         u = np.linspace(xll, xll+csz*nc, nc)
@@ -687,7 +691,8 @@ class Grid(object):
 
         # Create grid
         interp_grid = grid.clone()
-        interp_grid.data = znew.astype(grid.dtype)
+        interp_grid.dtype = self.dtype
+        interp_grid.data = znew
 
         return interp_grid
 
