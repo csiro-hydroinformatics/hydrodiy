@@ -356,16 +356,19 @@ class GridTestCase(unittest.TestCase):
 
         cfg['nrows'] = 600
         cfg['ncols'] = 1000
+        cfg['cellsize'] = 0.5
         gr_geom = Grid(**cfg)
         gri = gr.interpolate(gr_geom)
 
+        v0 = gr.data[0, 0]
+        v1 = gr.data[0, -1]
         self.assertTrue(np.allclose(gri.data[0, :], \
-                    np.linspace(0, 4., gri.ncols)))
+                    np.linspace(v0, v1, gri.ncols)))
 
+        v0 = gr.data[-1, 0]
+        v1 = gr.data[-1, -1]
         self.assertTrue(np.allclose(gri.data[-1, :], \
-                    np.linspace(30, 34., gri.nrows)))
-
-
+                    np.linspace(v0, v1, gri.ncols)))
 
 
 

@@ -685,8 +685,6 @@ class Grid(object):
         znew = griddata(xy, z, (xnew, ynew), \
                             method=method)
 
-        import pdb; pdb.set_trace()
-
         # Create grid
         interp_grid = grid.clone()
         interp_grid.data = znew.astype(grid.dtype)
