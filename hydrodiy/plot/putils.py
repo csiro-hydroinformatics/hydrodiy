@@ -659,7 +659,7 @@ def ecdfplot(ax, df, *args, **kwargs):
     # Decorate
     ax.set_ylabel('Emp. CDF [-]')
     ax.set_yticks([0., 0.5, 1.])
-    ax.set_yticklabels(['0', '1/2', '1'])
+    ax.set_yticklabels(['0', chr(189)+' ', '1'])
     ylabs = ax.get_yticklabels()
     ylabs[0].set_va('bottom')
     ylabs[2].set_va('top')
