@@ -101,7 +101,8 @@ long long c_downstream(long long nrows, long long ncols,
     long long i, j, fd, idxcell;
     long long neighbours[9];
 
-    for(i=0; i<nval; i++){
+    for(i=0; i<nval; i++)
+    {
         /* Determines neighbouring cells */
         idxcell = idxup[i];
 
@@ -288,8 +289,8 @@ long long c_delineate_boundary(long long nrows, long long ncols,
     nbuffer = 1;
     buffer[0] = idxcells_area[0];
 
-    for(i=1; i<nval; i++){
-
+    for(i=1; i<nval; i++)
+    {
         idxcell = idxcells_area[i];
 
         /* Check if cell is in  area */
@@ -313,7 +314,7 @@ long long c_delineate_boundary(long long nrows, long long ncols,
 
     }
 
-    /* Step 2 - reorder the boundary cells along long the boundary */
+    /* Step 2 - reorder the boundary cells along the boundary */
     idxcell = buffer[0];
     start = buffer[0];
     getnxy(ncols, start, nxystart);
@@ -394,7 +395,8 @@ long long c_delineate_river(long long nrows, long long ncols,
     long long idxupstream,
     long long nval, long long * npoints,
     long long * idxcells,
-    double * data){
+    double * data)
+{
 
     long long i, idxup[1], idxdown[1], ierr;
     long long nx1, ny1, nx2, ny2, ncolsdata;
@@ -411,7 +413,8 @@ long long c_delineate_river(long long nrows, long long ncols,
     dx = 0;
     dy = 0;
 
-    for(i=0; i<nval; i++){
+    for(i=0; i<nval; i++)
+    {
         /* Store the current point */
         idxcells[i] = idxupstream;
         npoints[0] ++;
@@ -462,20 +465,30 @@ long long c_accumulate(long long nrows, long long ncols,
     long long nprint, long long maxarea,
     long long * flowdircode,
     long long * flowdir,
-    long long * accumulation){
+    long long * accumulation)
+{
 
     long long area, i, ierr, ntot;
     long long idxdown[1], idxup[1];
 
+    /* Check inputs */
+    if(maxarea <= 1e-10)
+            return CATCHMENT_ERROR + __LINE__;
+
+    if(nrows < 1 || nrows < 1)
+            return CATCHMENT_ERROR + __LINE__;
+
     ntot = nrows*ncols;
 
-    fprintf(stdout, "\n\t-- Started accumulation for grid [%lldx%lld] --\n", nrows, ncols);
+    /* print inputs */
+    fprintf(stdout, "\n\t-- Started accumulation for "
+                            "grid [%lldx%lld] --\n", nrows, ncols);
     fprintf(stdout, "\tntot = %lld\n", ntot);
     fprintf(stdout, "\tnprint = %lld\n", nprint);
     fprintf(stdout, "\tmaxarea = %lld\n", maxarea);
 
-    for(i=0; i<ntot; i++){
-
+    for(i=0; i<ntot; i++)
+    {
         if(i%nprint == 0)
             fprintf(stdout, "\t\tCompleted accumulation ... %0.1f%%\n",
                 100*(double)(i)/(double)(ntot));
@@ -485,8 +498,8 @@ long long c_accumulate(long long nrows, long long ncols,
         idxdown[0] = 0;
         area = 0;
 
-        while(area <= maxarea){
-
+        while(area <= maxarea)
+        {
             ierr = c_downstream(nrows, ncols, flowdircode, flowdir,
                         1, idxup, idxdown);
 
@@ -514,7 +527,8 @@ long long c_intersect(long long nrows, long long ncols,
     double xll, double yll, double csz, double csz_area,
     long long nval, double * xy_area,
     long long ncells, long long * npoints,
-    long long * idxcells, double * weights){
+    long long * idxcells, double * weights)
+{
 
     long long i, j, k, ierr, idxcell[1];
     double xy[2], areafactor;
@@ -522,7 +536,8 @@ long long c_intersect(long long nrows, long long ncols,
     areafactor = (csz_area/csz)*(csz_area/csz);
 
     j = 0;
-    for(i=0; i<nval; i++){
+    for(i=0; i<nval; i++)
+    {
         xy[0] = xy_area[2*i];
         xy[1] = xy_area[2*i+1];
 
@@ -550,16 +565,16 @@ long long c_intersect(long long nrows, long long ncols,
     }
     npoints[0] = j;
 
-
-
     return 0;
 }
+
 
 long long c_voronoi(long long nrows, long long ncols,
     double xll, double yll, double csz,
     long long ncells, long long * idxcells_area,
     long long npoints, double * xypoints,
-    double * weights){
+    double * weights)
+{
 
     long long i, j, jmin, ierr, idxcell[1];
     double xy[2], dx, dy, dist, distmin;
@@ -567,8 +582,8 @@ long long c_voronoi(long long nrows, long long ncols,
     for(j=0; j<npoints; j++)
         weights[j] = 0;
 
-    for(i=0; i<ncells; i++){
-
+    for(i=0; i<ncells; i++)
+    {
         /* Get cell number for coordinates */
         idxcell[0] = idxcells_area[i];
         xy[0] = xypoints[2*i];
@@ -604,3 +619,79 @@ long long c_voronoi(long long nrows, long long ncols,
 
     return 0;
 }
+
+
+/*
+* Computes slope in a grid
+*
+* Flow dir codes are organised as follows
+* 0 1 2
+* 3 X 5
+* 6 7 8
+*/
+long long c_slope(long long nrows,
+    long long ncols,
+    long long nprint,
+    double cellsize,
+    long long * flowdircode,
+    long long * flowdir,
+    double * altitude,
+    double * slopeval)
+{
+
+    long long i, ierr, ntot, fd;
+    long long idxdown[1], idxup[1];
+    double altup, altdown, dist;
+    double sqrt2 = sqrt(2);
+
+    /* Check inputs */
+    //if(cellsize <= 1e-10)
+    //        return CATCHMENT_ERROR + __LINE__;
+
+    if(nrows < 1 || nrows < 1)
+            return CATCHMENT_ERROR + __LINE__;
+
+    ntot = nrows*ncols;
+
+    /* Print intputs */
+    fprintf(stdout, "\n\t-- Started splope calculation"
+                        " for grid [%lldx%lld] --\n", nrows, ncols);
+    fprintf(stdout, "\tntot = %lld\n", ntot);
+    fprintf(stdout, "\tnprint = %lld\n", nprint);
+    fprintf(stdout, "\tcellsize = %f\n", cellsize);
+
+    for(i=0; i<ntot; i++)
+    {
+        if(i%nprint == 0)
+            fprintf(stdout, "\t\tCompleted slope calculation ... %0.1f%%\n",
+                100*(double)(i)/(double)(ntot));
+
+        /* Find downstream cell */
+        idxup[0] = i;
+        idxdown[0] = 0;
+        ierr = c_downstream(nrows, ncols, flowdircode, flowdir,
+                    1, idxup, idxdown);
+
+        if(ierr>0)
+            return CATCHMENT_ERROR + __LINE__;
+
+        /* Extract altitude of both cells */
+        if(idxdown[0]>=0)
+        {
+            altup = altitude[i];
+            altdown = altitude[idxdown[0]];
+
+            /* Compute slope */
+            fd = flowdir[i];
+            dist = cellsize;
+            if(fd == flowdircode[0] || fd == flowdircode[2]
+                        || fd == flowdircode[6] || fd == flowdircode[8])
+                dist *= sqrt2;
+
+            slopeval[i] = (altup-altdown)/dist;
+        }
+    }
+
+    return 0;
+}
+

@@ -69,6 +69,14 @@ cdef extern from 'c_catchment.h':
         long long npoints, double * xypoints,
         double * weights)
 
+    long long c_slope(long long nrows,
+        long long ncols,
+        long long nprint,
+        double cellsize,
+        long long * flowdircode,
+        long long * flowdir,
+        double * altitude,
+        double * slopeval)
 
 def __cinit__(self):
     pass
@@ -342,4 +350,34 @@ def voronoi(long long nrows, long long ncols,
             <double*> np.PyArray_DATA(weights))
 
     return ierr
+
+
+def slope(long long nprint, double cellsize,
+            np.ndarray[long long, ndim=2, mode='c'] flowdircode not None,
+            np.ndarray[long long, ndim=2, mode='c'] flowdir not None,
+            np.ndarray[double, ndim=2, mode='c'] altitude not None,
+            np.ndarray[double, ndim=2, mode='c'] slopeval not None):
+
+    cdef long long ierr
+
+    # check dimensions
+    assert flowdircode.shape[0] == 3
+    assert flowdircode.shape[1] == 3
+
+    assert altitude.shape[0] == flowdir.shape[0]
+    assert altitude.shape[1] == flowdir.shape[1]
+
+    assert slopeval.shape[0] == flowdir.shape[0]
+    assert slopeval.shape[1] == flowdir.shape[1]
+
+    # Run C code
+    ierr = c_slope(flowdir.shape[0], flowdir.shape[1],
+            nprint, cellsize,
+            <long long*> np.PyArray_DATA(flowdircode),
+            <long long*> np.PyArray_DATA(flowdir),
+            <double*> np.PyArray_DATA(altitude),
+            <double*> np.PyArray_DATA(slopeval))
+
+    return ierr
+
 

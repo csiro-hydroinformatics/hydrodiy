@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 import c_hydrodiy_gis
 
 # Codes indicating the flow direction for a cell
+# using ESRI convention
 # i.e.
 #  32  64   128       \   |   /
 #  16   0     1   =>  <-  x   ->
@@ -1250,3 +1251,31 @@ def get_mask(name):
     gr = Grid.from_header(fdata)
 
     return gr
+
+
+def slope(flowdir, altitude, nprint=100):
+    ''' Compute flow accumulation from the flow direction grid '''
+
+    nprint = np.int64(nprint)
+
+    # Convert flowdir
+    flowdir.dtype = np.int64
+    altitude.dtype = np.float64
+
+    # Initiase the slope grid with 0 accumulation
+    slopeval = altitude.clone()
+    slopeval.fill(slopeval.nodata_value)
+
+    # Compute slope
+    cellsize = np.float64(altitude.cellsize)
+
+    ierr = c_hydrodiy_gis.slope(nprint, cellsize, FLOWDIRCODE,
+                flowdir.data, altitude.data, slopeval.data)
+
+    if ierr>0:
+        raise ValueError(('c_hydrodiy_gis.slope' +
+            ' returns {0}').format(ierr))
+
+    return slopeval
+
+

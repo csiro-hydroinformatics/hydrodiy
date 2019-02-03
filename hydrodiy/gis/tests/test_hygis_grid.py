@@ -18,7 +18,7 @@ except ImportError:
     HAS_PYPROJ = False
 
 from hydrodiy.gis.grid import Grid, Catchment
-from hydrodiy.gis.grid import accumulate, voronoi, delineate_river
+from hydrodiy.gis.grid import accumulate, voronoi, delineate_river, slope
 from hydrodiy.gis.grid import get_mask
 from hydrodiy.io import csv
 
@@ -481,7 +481,6 @@ class CatchmentTestCase(unittest.TestCase):
         self.assertTrue(ck)
 
 
-
     def test_delineate_river(self):
         nr = self.gr.nrows
         nc = self.gr.ncols
@@ -615,6 +614,26 @@ class CatchmentTestCase(unittest.TestCase):
 
         ca = ca1-ca2
         ck = np.allclose(ca.idxcells_area, [27, 33])
+        self.assertTrue(ck)
+
+
+    def test_slope(self):
+        alt = self.gr.clone()
+
+        alt.data = alt.data*0. + np.arange(alt.nrows)[::-1][:, None]
+        slp = slope(self.gr, alt)
+
+        sq2 = 1./math.sqrt(2)
+        expected = np.array([[np.nan, 1., 1., 1,    np.nan, np.nan],
+                    [np.nan, 1., 1., sq2,  np.nan, np.nan],
+                    [np.nan, sq2, 1., sq2, np.nan, np.nan],
+                    [np.nan, np.nan, sq2, np.nan, np.nan, np.nan],
+                    [np.nan, np.nan, np.nan, 1.,  np.nan, np.nan],
+                    [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan]])
+
+        idx = ~np.isnan(expected)
+        ck = np.allclose(slp.data[idx], expected[idx])
+        ck &= np.all(np.isnan(slp.data[~idx]))
         self.assertTrue(ck)
 
 

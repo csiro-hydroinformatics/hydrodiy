@@ -69,3 +69,12 @@ long long c_voronoi(long long nrows, long long ncols,
     double * weights);
 
 
+long long c_slope(long long nrows,
+    long long ncols,
+    long long nprint,
+    double cellsize,
+    long long * flowdircode,
+    long long * flowdir,
+    double * altitude,
+    double * slopeval);
+

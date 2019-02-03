@@ -125,7 +125,8 @@ long long c_slice(long long nrows, long long ncols,
 				/ [(x2-x1)(y3-y1) - (y2-y1)(x3-x1)]   + z1
 	*/
 
-    for(i=0; i<nval; i++){
+    for(i=0; i<nval; i++)
+    {
         /* Convert to idxcell */
         c_coord2cell(nrows, ncols, xll, yll, csz, 1,
             &(xyslice[2*i]), idxcell1);
@@ -167,17 +168,20 @@ long long c_slice(long long nrows, long long ncols,
         /* Linear interpolation */
 	    zslice[i] = val1;
 
-	    if((fabs(dx)>tol && fabs(dy)<tol) || idxcell1[0]==idxcell2[0]){
+	    if((fabs(dx)>tol && fabs(dy)<tol) || idxcell1[0]==idxcell2[0])
+        {
             zslice[i] = (val2-val1)/csz*dx+val1;
             continue;
         }
 
-        if((fabs(dx)<tol && fabs(dy)>tol) || idxcell1[0]==idxcell3[0]){
+        if((fabs(dx)<tol && fabs(dy)>tol) || idxcell1[0]==idxcell3[0])
+        {
             zslice[i] = (val3-val1)/csz*dy+val1;
             continue;
         }
 
-        if(fabs(dx)>tol && fabs(dy)>tol){
+        if(fabs(dx)>tol && fabs(dy)>tol)
+        {
 	    	denom = (xy2[0]-xy1[0])*(xy3[1]-xy1[1])-(xy2[1]-xy1[1])*(xy3[0]-xy1[0]);
 	    	t1 = (val2-val1)*(xy3[1]-xy1[1])-(val3-val1)*(xy2[1]-xy1[1]);
 	    	t2 = (val2-val1)*(xy3[0]-xy1[0])-(val3-val1)*(xy2[0]-xy1[0]);
