@@ -101,8 +101,13 @@ def get_data(index, timeout=300):
             data = pd.read_csv(stream, skiprows=11, \
                                         sep='   ', engine='python')
 
-        # Build time series
+        # Name columns
         data.columns = ['year'] + [months[i] for i in range(1, 13)]
+
+        # Remove negative years
+        idx = data.year.str.findall('^(1|2)').astype(bool)
+        data = data.loc[idx, :]
+
         series = pd.melt(data, id_vars='year')
         series = series[pd.notnull(series['value'])]
 
@@ -118,6 +123,10 @@ def get_data(index, timeout=300):
 
     # Make sure series is float
     series = series.astype(float)
+
+    # Check index
+    if not series.index.is_unique:
+        raise ValueError('Time index is not unique')
 
     # Set missing values to missing
     if re.search('nino', index):
