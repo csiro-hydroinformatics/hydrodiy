@@ -108,73 +108,84 @@ long long c_slice(long long nrows, long long ncols,
     double xll, double yll, double csz, double* data,
     long long nval, double* xyslice, double * zslice)
 {
-    long long i, idxcell1[1], idxcell2[1], idxcell3[1];
+    long long ierr, i, idxcell1[1], idxcell2[1], idxcell3[1];
     double dx, dy, xy1[2], xy2[2], xy3[2];
     double val1, val2, val3, tol;
-    double denom, t1, t2;
-    double xmax, ymax;
+    double nan, denom, t1, t2;
+    static double zero = 0.0;
 
+    /* nan value if not defined */
+    nan = 1./zero * zero;
+
+    /* Initialise */
     tol = 1e-10;
-    xmax = xll+(ncols-1)*csz;
-    ymax = yll+(nrows-1)*csz;
 
 	/* Linear long longerpolation
-	* Given 3 polong longs (x1,y1,z1) (x2,y2,z2) (x3,y3,z3), The plan (x,y,z)
-	* containing the 3 polong longs has the following equation
-	*  z 	= {  [ (z2-z1)(y3-y1) - (z3-z1)(y2-y1) ] * (x-x1) - [(z2-z1)(x3-x1) - (z3-z1)(x2-x1)] * (y-y1)  }
+	* Given 3 points (x1,y1,z1) (x2,y2,z2) (x3,y3,z3), The plan (x,y,z)
+	* containing the 3 points has the following equation
+	*  z 	= {  [ (z2-z1)(y3-y1) - (z3-z1)(y2-y1) ] * (x-x1)
+    *                   - [(z2-z1)(x3-x1) - (z3-z1)(x2-x1)] * (y-y1)  }
 				/ [(x2-x1)(y3-y1) - (y2-y1)(x3-x1)]   + z1
 	*/
 
     for(i=0; i<nval; i++)
     {
+        zslice[i] = nan;
+
         /* Convert to idxcell */
-        c_coord2cell(nrows, ncols, xll, yll, csz, 1,
-            &(xyslice[2*i]), idxcell1);
+        ierr = c_coord2cell(nrows, ncols, xll, yll, csz, 1,
+                                &(xyslice[2*i]), idxcell1);
+        if(ierr > 0)
+            continue;
 
         /* Convert to xy of nearest cell */
-        c_cell2coord(nrows, ncols, xll, yll, csz, 1,
-            idxcell1, xy1);
+        ierr = c_cell2coord(nrows, ncols, xll, yll, csz, 1,
+                                            idxcell1, xy1);
+        if(ierr > 0)
+            continue;
+
+        /* Set default value */
+        val1 = data[*idxcell1];
+        zslice[i] = val1;
 
         /* Get distance from nearest cell */
         dx = xyslice[2*i]-xy1[0];
         dy = xyslice[2*i+1]-xy1[1];
 
-        /* Compute coordinates of nearest polong longs */
+        /* Compute coordinates of nearest points */
     	xy2[0] = xy1[0];
 	    xy2[1] = xy1[1];
 	    if(fabs(dx)>tol)
             xy2[0]=xy1[0]+dx/fabs(dx)*csz;
 
-        xy2[0] = clipd(xy2[0], 0, xmax);
-        xy2[1] = clipd(xy2[1], 0, ymax);
 
         xy3[0] = xy1[0];
         xy3[1] = xy1[1];
 	    if(fabs(dy)>0)
             xy3[1]=xy1[1]+dy/fabs(dy)*csz;
 
-        xy3[0] = clipd(xy3[0], 0, xmax);
-        xy3[1] = clipd(xy3[1], 0, ymax);
-
         /* Convert nearest xy to idxcell and get value */
-        val1 = data[idxcell1[0]];
+        ierr = c_coord2cell(nrows, ncols, xll, yll, csz, 1, xy2, idxcell2);
+        if(ierr > 0)
+            continue;
 
-        c_coord2cell(nrows, ncols, xll, yll, csz, 1, xy2, idxcell2);
-        val2 = data[idxcell2[0]];
-
-        c_coord2cell(nrows, ncols, xll, yll, csz, 1, xy3, idxcell3);
-        val3 = data[idxcell3[0]];
+        ierr = c_coord2cell(nrows, ncols, xll, yll, csz, 1, xy3, idxcell3);
+        if(ierr > 0)
+            continue;
 
         /* Linear interpolation */
+        val2 = data[*idxcell2];
+        val3 = data[*idxcell3];
+
 	    zslice[i] = val1;
 
-	    if((fabs(dx)>tol && fabs(dy)<tol) || idxcell1[0]==idxcell2[0])
+	    if((fabs(dx)>tol && fabs(dy)<tol) || *idxcell1==*idxcell2)
         {
             zslice[i] = (val2-val1)/csz*dx+val1;
             continue;
         }
 
-        if((fabs(dx)<tol && fabs(dy)>tol) || idxcell1[0]==idxcell3[0])
+        if((fabs(dx)<tol && fabs(dy)>tol) || *idxcell1==*idxcell3)
         {
             zslice[i] = (val3-val1)/csz*dy+val1;
             continue;
@@ -182,9 +193,12 @@ long long c_slice(long long nrows, long long ncols,
 
         if(fabs(dx)>tol && fabs(dy)>tol)
         {
-	    	denom = (xy2[0]-xy1[0])*(xy3[1]-xy1[1])-(xy2[1]-xy1[1])*(xy3[0]-xy1[0]);
+	    	denom = (xy2[0]-xy1[0])*(xy3[1]-xy1[1])
+                        -(xy2[1]-xy1[1])*(xy3[0]-xy1[0]);
+
 	    	t1 = (val2-val1)*(xy3[1]-xy1[1])-(val3-val1)*(xy2[1]-xy1[1]);
 	    	t2 = (val2-val1)*(xy3[0]-xy1[0])-(val3-val1)*(xy2[0]-xy1[0]);
+
 	    	zslice[i] = (t1*dx-t2*dy)/denom + val1;
 	    }
         /*

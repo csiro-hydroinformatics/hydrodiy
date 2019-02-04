@@ -556,12 +556,16 @@ class Grid(object):
         zslice : numpy.ndarray
             1D array containing sliced values from gridded data
         '''
+        # Get inputs
         xll, yll, csz, _, _ = self._getsize()
 
         xyslice = np.ascontiguousarray(np.atleast_2d(xyslice),
                         dtype=np.float64)
         zslice = np.zeros(len(xyslice)).astype(np.float64)
-        ierr = c_hydrodiy_gis.slice(xll, yll, csz, self._data,
+
+        # Run C code
+        ierr = c_hydrodiy_gis.slice(xll, yll, csz, \
+                    self._data.astype(np.float64), \
                     xyslice, zslice)
 
         if ierr>0:
