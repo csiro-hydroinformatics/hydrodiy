@@ -202,8 +202,8 @@ class Simplot(object):
         self.draw_fdc(axfd)
 
         axfdl = plt.subplot(self.gs[1, 1])
-        self.draw_fdc(axfdl, 'd', xlim=[0, 0.01], \
-                    ylog = False, \
+        self.draw_fdc(axfdl, 'd', xlim=[0, 0.05], \
+                    ylog = True, \
                     title_postfix='- high flow zoom')
 
         # Draw seasonal residuals
