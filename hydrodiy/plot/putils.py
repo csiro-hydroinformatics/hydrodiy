@@ -657,7 +657,7 @@ def ecdfplot(ax, df, *args, **kwargs):
         lines[name] = ax.get_lines()[-1]
 
     # Decorate
-    ax.set_ylabel('Emp. CDF [-]')
+    ax.set_ylabel('Empirical CDF [-]')
     ax.set_yticks([0., 0.5, 1.])
     ax.set_yticklabels(['0', chr(189)+' ', '1'])
     ylabs = ax.get_yticklabels()
