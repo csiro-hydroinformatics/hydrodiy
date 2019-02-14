@@ -120,5 +120,23 @@ class SimplotTestCase(unittest.TestCase):
         sm.savefig(fp)
 
 
+    def test_options_fdc_zoom(self):
+        dt = pd.date_range('1970-01-01', '2015-12-01')
+        nval = len(dt)
+
+        obs = pd.Series(np.exp(np.random.normal(size=nval)), index=dt)
+        sim = pd.Series(np.exp(np.random.normal(size=nval)), index=dt)
+
+        plt.close('all')
+        sm = Simplot(obs, sim, sim_name='bidule', \
+                    fdc_zoom_xlim=[0., 0.2], \
+                    fdc_zoom_ylog=False)
+
+        axb, axa, axfd, axfdl, axs, axf = sm.draw()
+
+        fp = os.path.join(self.fimg, 'simplot_fdc_zoom.png')
+        sm.savefig(fp)
+
+
 if __name__ == "__main__":
     unittest.main()

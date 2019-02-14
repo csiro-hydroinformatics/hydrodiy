@@ -31,6 +31,8 @@ class Simplot(object):
         fig = None, \
         nfloods = 3, \
         wateryear_start =7, \
+        fdc_zoom_xlim=[0., 0.05], \
+        fdc_zoom_ylog=True, \
         ndays_beforepeak = 30, \
         ndays_afterpeak = 60, \
         samefloodyscale=False, \
@@ -52,6 +54,10 @@ class Simplot(object):
             Number of flood events to draw
         wateryear_start : int
             Month of water year start
+        fdc_zoom_xlim : list
+            X axis limits for the fdc zoom plot
+        fdc_zoom_ylog : bool
+            Log transform Y axis in fdc zoom plot
         ndays_beforepeak : int
             Number of days preceeding the peak in flood plots
         ndays_afterpeak : int
@@ -67,6 +73,8 @@ class Simplot(object):
         # Properties
         self.samefloodyscale = samefloodyscale
         self.wateryear_start = wateryear_start
+        self.fdc_zoom_xlim = [float(x) for x in list(fdc_zoom_xlim)]
+        self.fdc_zoom_ylog = bool(fdc_zoom_ylog)
 
         # data
         self.idx_obs = pd.notnull(obs) & (obs >= 0)
@@ -202,8 +210,9 @@ class Simplot(object):
         self.draw_fdc(axfd)
 
         axfdl = plt.subplot(self.gs[1, 1])
-        self.draw_fdc(axfdl, 'd', xlim=[0, 0.05], \
-                    ylog = True, \
+        self.draw_fdc(axfdl, 'd', \
+                    xlim = self.fdc_zoom_xlim, \
+                    ylog = self.fdc_zoom_ylog, \
                     title_postfix='- high flow zoom')
 
         # Draw seasonal residuals
