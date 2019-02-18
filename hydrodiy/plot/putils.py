@@ -19,7 +19,7 @@ from matplotlib.path import Path
 from matplotlib.patches import Ellipse
 
 from matplotlib import colors
-from matplotlib.colors import hex2color
+from matplotlib.colors import hex2color, rgb2hex
 from matplotlib.colors import LinearSegmentedColormap
 
 import matplotlib.dates as mdates
@@ -62,11 +62,11 @@ def cmap2colors(ncols=10, cmap='Paired'):
 
     if isinstance(cmap, str):
         cmapn = cm.get_cmap(cmap, ncols)
-        return [cmapn(i) for i in range(cmapn.N)]
+        return [rgb2hex(cmapn(i)) for i in range(cmapn.N)]
     else:
         ii = np.linspace(0, cmap.N, ncols+2)
         ii = np.round(ii).astype(int)[1:-1]
-        return [cmap(i) for i in ii]
+        return [rgb2hex(cmapn(i)) for i in ii]
 
 
 def colors2cmap(colors, ncols=256):

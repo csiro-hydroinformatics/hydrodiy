@@ -21,8 +21,10 @@ from hydrodiy.stat import sutils
 from hydrodiy.plot import putils
 
 # Select color scheme
-COLORS = putils.COLORS10
-COLORS_CYCLE = cycle(COLORS)
+COLOR_SCHEME = putils.COLORS10
+
+def get_colors():
+    return cycle(COLOR_SCHEME)
 
 
 class Simplot(object):
@@ -219,7 +221,7 @@ class Simplot(object):
 
         # Draw seasonal residuals
         axs = plt.subplot(self.gs[1, 2])
-        self.draw_monthlyres(axs, 'e')
+        self.draw_monthlymeans(axs, 'e')
 
         # Same flood y scale if needed
         ylim = (max(0, self.minobs*0.5), self.maxobs*1.2)
@@ -241,7 +243,7 @@ class Simplot(object):
         return axb, axa, axfd, axfdl, axs, axf
 
 
-    def draw_monthlyres(self, ax, ax_letter='d'):
+    def draw_monthlymeans(self, ax, ax_letter='d'):
         ''' Draw the plot of monthly residuals '''
 
         # Quick aggregate
@@ -259,7 +261,8 @@ class Simplot(object):
 
         # plot mean monthly
         lines = {}
-        for (cn, se), color in zip(mdatam.items(), COLORS_CYCLE):
+        colors = get_colors()
+        for (cn, se), color in zip(mdatam.items(), colors):
             se.plot(ax=ax, color=color, marker='o', lw=3)
 
         # decoration
@@ -290,7 +293,8 @@ class Simplot(object):
         icol = 0
         ymin = np.inf
         lines = {}
-        for cn, color in zip(data.columns, COLORS_CYCLE):
+        colors = get_colors()
+        for cn, color in zip(data.columns, colors):
             value = np.sort(data.loc[idx, cn].values)[::-1]
             name = self._getname(cn)
             ax.plot(ff, value, '-', label=name,
@@ -349,7 +353,8 @@ class Simplot(object):
 
         # Draw flood plot
         lines = {}
-        for (cn, se), color in zip(dataf.items(), COLORS_CYCLE):
+        colors = get_colors()
+        for (cn, se), color in zip(dataf.items(), colors):
             se.plot(ax=ax, color=color, lw=2, \
                 marker='o', legend=iflood==0)
             lines[cn] = ax.get_lines()[-1]
@@ -384,8 +389,9 @@ class Simplot(object):
 
         # plot - exclude first and last year to avoid missing values
         lines = {}
-        for (cn, se), color in zip(datay.items(), COLORS_CYCLE):
-            datay.iloc[1:-1, :].plot(ax=ax, color=color, lw=2)
+        colors = get_colors()
+        for (cn, se), color in zip(datay.items(), colors):
+            se.plot(ax=ax, color=color, lw=2)
             lines[cn] = ax.get_lines()[-1]
 
         leglines, labels = ax.get_legend_handles_labels()
@@ -419,7 +425,8 @@ class Simplot(object):
 
         # plot
         lines = {}
-        for (cn, se), color in zip(datab.items(), COLORS_CYCLE):
+        colors = get_colors()
+        for (cn, se), color in zip(datab.items(), colors):
             se.plot(ax=ax, kind='bar', color=color, edgecolor='none')
             lines[cn] = ax.get_lines()[-1]
 
@@ -435,7 +442,8 @@ class Simplot(object):
         data = self.data
         obs = np.sort(data.loc[self.idx_all, data.columns[0]])
         lines = {}
-        for cn, color in zip(data.columns[1:], COLORS_CYCLE):
+        colors = get_colors()
+        for cn, color in zip(data.columns[1:], colors):
             sim = np.sort(data.loc[self.idx_all, cn])
             label = self._getname(cn)
             ax.loglog(sim, obs, label=label, color=color)

@@ -9,7 +9,8 @@ mpl.use('Agg')
 
 import matplotlib.pyplot as plt
 
-from hydrodiy.plot.simplot import Simplot
+from hydrodiy.plot import simplot
+from hydrodiy.plot import putils
 
 # Reset matplotlib to default
 mpl.rcdefaults()
@@ -34,7 +35,7 @@ class SimplotTestCase(unittest.TestCase):
         sim2 = pd.Series(np.exp(np.random.normal(size=nval)), index=dt)
 
         plt.close('all')
-        sm = Simplot(obs, sim, sim_name='bidule')
+        sm = simplot.Simplot(obs, sim, sim_name='bidule')
 
         sm.add_sim(sim2, name='truc')
         axb, axa, axfd, axfdl, axs, axf = sm.draw()
@@ -52,7 +53,7 @@ class SimplotTestCase(unittest.TestCase):
         sim2 = pd.Series(np.exp(np.random.normal(size=nval)), index=dt)
 
         plt.close('all')
-        sm = Simplot(obs, sim, sim_name='bidule', samefloodyscale=True)
+        sm = simplot.Simplot(obs, sim, sim_name='bidule', samefloodyscale=True)
 
         sm.add_sim(sim2, name='truc')
         axb, axa, axfd, axfdl, axs, axf = sm.draw()
@@ -74,7 +75,7 @@ class SimplotTestCase(unittest.TestCase):
         sim = pd.Series(np.exp(np.random.normal(size=nval)), index=dt)
 
         plt.close('all')
-        sm = Simplot(obs, sim, sim_name='bidule', nfloods=10)
+        sm = simplot.Simplot(obs, sim, sim_name='bidule', nfloods=10)
         sm.draw()
 
         fp = os.path.join(self.fimg, 'simplot_nfloods.png')
@@ -89,7 +90,7 @@ class SimplotTestCase(unittest.TestCase):
         sim = pd.Series(np.exp(np.random.normal(size=nval)), index=dt)
 
         plt.close('all')
-        sm = Simplot(obs, sim)
+        sm = simplot.Simplot(obs, sim)
         sm.draw()
 
         fp = os.path.join(self.fimg, 'simplot_monthly.png')
@@ -104,7 +105,7 @@ class SimplotTestCase(unittest.TestCase):
         sim = pd.Series(np.exp(np.random.normal(size=nval)), index=dt)
 
         plt.close('all')
-        sm = Simplot(obs, sim, sim_name='bidule')
+        sm = simplot.Simplot(obs, sim, sim_name='bidule')
 
         axb, axa, axfd, axfdl, axs, axf = sm.draw()
 
@@ -128,7 +129,7 @@ class SimplotTestCase(unittest.TestCase):
         sim = pd.Series(np.exp(np.random.normal(size=nval)), index=dt)
 
         plt.close('all')
-        sm = Simplot(obs, sim, sim_name='bidule', \
+        sm = simplot.Simplot(obs, sim, sim_name='bidule', \
                     fdc_zoom_xlim=[0., 0.2], \
                     fdc_zoom_ylog=False)
 
@@ -136,6 +137,27 @@ class SimplotTestCase(unittest.TestCase):
 
         fp = os.path.join(self.fimg, 'simplot_fdc_zoom.png')
         sm.savefig(fp)
+
+
+    def test_color_scheme(self):
+        dt = pd.date_range('1970-01-01', '2015-12-01')
+        nval = len(dt)
+
+        sch = simplot.COLOR_SCHEME
+        cols = putils.cmap2colors(3, 'Spectral')
+        simplot.COLOR_SCHEME = cols
+
+        obs = pd.Series(np.exp(np.random.normal(size=nval)), index=dt)
+        sim = pd.Series(np.exp(np.random.normal(size=nval)), index=dt)
+
+        plt.close('all')
+        sm = simplot.Simplot(obs, sim, sim_name='bidule')
+        axb, axa, axfd, axfdl, axs, axf = sm.draw()
+
+        fp = os.path.join(self.fimg, 'simplot_colors.png')
+        sm.savefig(fp)
+
+        simplot.COLOR_SCHEME = sch
 
 
 if __name__ == "__main__":
