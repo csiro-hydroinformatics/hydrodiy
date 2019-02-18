@@ -66,7 +66,7 @@ def cmap2colors(ncols=10, cmap='Paired'):
     else:
         ii = np.linspace(0, cmap.N, ncols+2)
         ii = np.round(ii).astype(int)[1:-1]
-        return [rgb2hex(cmapn(i)) for i in ii]
+        return [rgb2hex(cmap(i)) for i in ii]
 
 
 def colors2cmap(colors, ncols=256):
