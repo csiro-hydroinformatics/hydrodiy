@@ -3,6 +3,7 @@ import warnings
 import re
 from datetime import datetime
 from dateutil.relativedelta import relativedelta as delta
+from itertools import cycle
 
 from calendar import month_abbr as months
 
@@ -21,6 +22,7 @@ from hydrodiy.plot import putils
 
 # Select color scheme
 COLORS = putils.COLORS10
+COLORS_CYCLE = cycle(COLORS)
 
 
 class Simplot(object):
@@ -228,7 +230,8 @@ class Simplot(object):
             ix = 2 + iflood//3
             iy = iflood%3
             ax = plt.subplot(self.gs[ix, iy])
-            self.draw_floods(ax, iflood, letters[5+iflood])
+            self.draw_floods(ax, iflood, letters[5+iflood], \
+                        show_legend=iflood == 0)
 
             if self.samefloodyscale:
                 ax.set_ylim(ylim)
@@ -255,7 +258,9 @@ class Simplot(object):
         mdatam.columns = [self._getname(cn) for cn in  mdatam.columns]
 
         # plot mean monthly
-        mdatam.plot(ax=ax, color=COLORS, marker='o', lw=3)
+        lines = {}
+        for (cn, se), color in zip(mdatam.items(), COLORS_CYCLE):
+            se.plot(ax=ax, color=color, marker='o', lw=3)
 
         # decoration
         lines, labels = ax.get_legend_handles_labels()
@@ -268,6 +273,8 @@ class Simplot(object):
         ax.set_ylabel('Flow')
         title = '({0}) Monthly means'.format(ax_letter)
         ax.set_title(title)
+
+        return lines
 
 
     def draw_fdc(self, ax, ax_letter='c', xlog=False, \
@@ -282,12 +289,14 @@ class Simplot(object):
 
         icol = 0
         ymin = np.inf
-        for cn in data.columns:
+        lines = {}
+        for cn, color in zip(data.columns, COLORS_CYCLE):
             value = np.sort(data.loc[idx, cn].values)[::-1]
             name = self._getname(cn)
             ax.plot(ff, value, '-', label=name,
                 markersize=6,
-                color=COLORS[icol], lw=2)
+                color=color, lw=2)
+            lines[cn] = ax.get_lines()[-1]
             icol += 1
 
             ymincn = np.min(value[ff < xlim[1]])
@@ -324,9 +333,11 @@ class Simplot(object):
         if ylog:
             ax.set_yscale('log')
 
+        return lines
+
 
     def draw_floods(self, ax, iflood, ax_letter, yminfactor=0.5, \
-                    ymaxfactor=1.2):
+                    ymaxfactor=1.2, show_legend=False):
 
         ''' Draw a plot for a single flood event '''
         # Select event
@@ -337,12 +348,15 @@ class Simplot(object):
         dataf.columns = [self._getname(cn) for cn in  data.columns]
 
         # Draw flood plot
-        dataf.plot(ax=ax, color=COLORS, lw=2, \
+        lines = {}
+        for (cn, se), color in zip(dataf.items(), COLORS_CYCLE):
+            se.plot(ax=ax, color=color, lw=2, \
                 marker='o', legend=iflood==0)
+            lines[cn] = ax.get_lines()[-1]
 
-        if iflood == 0:
-            lines, labels = ax.get_legend_handles_labels()
-            ax.legend(lines, labels, loc=2, frameon=False)
+        if show_legend:
+            leglines, labels = ax.get_legend_handles_labels()
+            ax.legend(leglines, labels, loc=2, frameon=False)
 
         date_max = self.flood_idx[iflood]['date_max']
         title = r'({0}) Flood #{1} - {2:%b %Y}'.format(ax_letter, \
@@ -351,6 +365,7 @@ class Simplot(object):
         ax.xaxis.grid()
         ax.set_ylabel('Flow')
 
+        return lines
 
 
     def draw_monthly(self, ax, ax_letter='b'):
@@ -368,15 +383,20 @@ class Simplot(object):
         datay = data.apply(lam)
 
         # plot - exclude first and last year to avoid missing values
-        datay.iloc[1:-1, :].plot(ax=ax, color=COLORS, lw=2)
+        lines = {}
+        for (cn, se), color in zip(datay.items(), COLORS_CYCLE):
+            datay.iloc[1:-1, :].plot(ax=ax, color=color, lw=2)
+            lines[cn] = ax.get_lines()[-1]
 
-        lines, labels = ax.get_legend_handles_labels()
-        ax.legend(lines, labels, loc=2, frameon=False)
+        leglines, labels = ax.get_legend_handles_labels()
+        ax.legend(leglines, labels, loc=2, frameon=False)
 
         title = '({0}) Monthly time series'.format(ax_letter)
         ax.set_title(title)
         ax.set_ylabel('Monthly flow')
         ax.xaxis.grid()
+
+        return lines
 
 
     def draw_balance(self, ax, ax_letter='a'):
@@ -398,21 +418,28 @@ class Simplot(object):
         datab = datab * fact
 
         # plot
-        datab.plot(ax=ax, kind='bar', color=COLORS, edgecolor='none')
+        lines = {}
+        for (cn, se), color in zip(datab.items(), COLORS_CYCLE):
+            se.plot(ax=ax, kind='bar', color=color, edgecolor='none')
+            lines[cn] = ax.get_lines()[-1]
 
         ax.set_ylabel('Mean annual')
         ax.set_title('({0}) Water Balance'.format(ax_letter))
         ax.grid()
+
+        return lines
 
 
     def draw_loglog(self, ax, ax_letter='a'):
         ''' Draw a log-log plot of sorted sim vs obs '''
         data = self.data
         obs = np.sort(data.loc[self.idx_all, data.columns[0]])
-        for icn, cn in enumerate(data.columns[1:]):
+        lines = {}
+        for cn, color in zip(data.columns[1:], COLORS_CYCLE):
             sim = np.sort(data.loc[self.idx_all, cn])
             label = self._getname(cn)
-            line = ax.loglog(sim, obs, label=label, color=COLORS[icn+1])
+            ax.loglog(sim, obs, label=label, color=color)
+            lines[cn] = ax.get_lines()[-1]
 
         putils.line(ax, 1, 1, 1, 1, 'k--')
         ax.set_xlabel('Simulation')
@@ -420,6 +447,8 @@ class Simplot(object):
         ax.legend(loc=4, fontsize='x-small')
         ax.set_title('({0}) Sim vs obs'.format(ax_letter))
         ax.grid()
+
+        return lines
 
 
     def set_size_inches(self, size=None):
