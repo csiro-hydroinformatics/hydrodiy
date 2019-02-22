@@ -27,7 +27,7 @@ cdef extern from 'c_olsleverage.h':
 
 cdef extern from 'c_dscore.h':
     int c_ensrank(double eps, int nval, int ncol, double* sim,
-        double * fmat, double * ranks);
+        double * fmat, double * ranks)
 
 cdef extern from 'c_andersondarling.h':
     int c_ad_test(int nval, double *unifdata, double *outputs)
