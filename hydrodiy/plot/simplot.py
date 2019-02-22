@@ -341,7 +341,9 @@ class Simplot(object):
 
 
     def draw_floods(self, ax, iflood, ax_letter, yminfactor=0.5, \
-                    ymaxfactor=1.2, show_legend=False):
+                    ymaxfactor=1.2, show_legend=False, \
+                    xaxis_freq='D', xaxis_by=[1, 15], \
+                    xaxis_fmt='%d %b'):
 
         ''' Draw a plot for a single flood event '''
         # Select event
@@ -355,10 +357,15 @@ class Simplot(object):
         lines = {}
         colors = get_colors()
         for (cn, se), color in zip(dataf.items(), colors):
-            se.plot(ax=ax, color=color, lw=2, \
-                marker='o', legend=iflood==0)
+            label = cn if iflood == 0 else ''
+            ax.plot(se.index, se.values, color=color, lw=2, \
+                marker='o', label=label)
             lines[cn] = ax.get_lines()[-1]
 
+        # Fix x axis
+        putils.xdate(ax, xaxis_freq, xaxis_by, xaxis_fmt)
+
+        # Fix legend
         if show_legend:
             leglines, labels = ax.get_legend_handles_labels()
             ax.legend(leglines, labels, loc=2, frameon=False)
