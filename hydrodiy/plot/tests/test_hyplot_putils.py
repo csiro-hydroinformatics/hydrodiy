@@ -421,8 +421,7 @@ class UtilsTestCase(unittest.TestCase):
         x, y, z = np.random.uniform(0, 1, size=(100, 3)).T
         fig, ax = plt.subplots()
         plotted, cats = putils.scattercat(ax, x, y, z, 5, \
-                                None, 'viridis', '0.3f', \
-                                'o', markersize=12, alpha=0.6)
+                                markersize=12, alpha=0.6)
         ax.legend(loc=2, title='categories')
         fp = os.path.join(self.fimg, 'scattercat.png')
         fig.savefig(fp)

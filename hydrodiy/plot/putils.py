@@ -727,7 +727,7 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap='viridis', \
         label = '[{0:{fmt}}, {1:{fmt}}]'.format(cuts[icat], \
                                             cuts[icat+1], fmt=fmt)
         if np.sum(idx) > 0:
-            ax.plot(x[idx], y[idx], color=colors[icat], label=label, \
+            ax.plot(x[idx], y[idx], 'o', color=colors[icat], label=label, \
                                 *args, **kwargs)
 
             line = ax.get_lines()[-1]
