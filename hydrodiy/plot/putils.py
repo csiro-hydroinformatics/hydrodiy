@@ -705,6 +705,10 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap='viridis', \
         qq = np.linspace(0, 1, ncats+1)
         cuts = list(pd.Series(z).quantile(qq))
 
+        # make sure the cuts cover the full range
+        cuts[0] = z.min()-1e-10
+        cuts[-1] = z.max()+1e-10
+
     if len(set(cuts)) != len(cuts):
         raise ValueError('Non-unique category boundaries :{0}'.format(\
                 '/ '.join([str(u) for u in list(cuts)])))
