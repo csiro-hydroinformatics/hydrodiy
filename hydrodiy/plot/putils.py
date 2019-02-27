@@ -1,4 +1,5 @@
 import os, math, re
+import warnings
 from datetime import datetime
 
 from scipy.stats import gaussian_kde, chi2
@@ -476,7 +477,6 @@ def set_mpl(color_theme='black', font_size=18, usetex=False):
         if has_cycler:
             mpl.rc('axes', prop_cycle=cycler('color', COLORS10))
         else:
-            import warnings
             warnings.warn('Cannot set color cycle '+ \
                 'because cycler package is missing')
 
@@ -668,3 +668,80 @@ def ecdfplot(ax, df, *args, **kwargs):
     return lines
 
 
+def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap='viridis', \
+                        fmt='0.2f', *args, **kwargs):
+    ''' Draw a scatter plot using different colors depending on categories
+    defined by z. Be careful when z has a lot of zeros, quantile computation
+    may lead to non-unique category boundaries.
+
+    Parameters
+    -----------
+    ax : matplotlib.axes
+        Axe to draw the points on
+    x : numpy.ndarray
+        X coordinates
+    y : numpy.ndarray
+        Y coordinates
+    z : numpy.ndarray
+        Z values to derive categories
+    ncats : int
+        Number of categories when creating categories from quantiles.
+        This value is ignored if cuts is not None
+    cuts : list
+        Bounds to create categories from z values.
+    cmap : str
+        Matplotlib color map name to change color for each category.
+        Input data
+    args, kwargs
+        Argument sent to matplotlib.pyplot.plot command
+
+    Returns
+    -----------
+    plotted : dict
+        Dictionary containing plotting data
+    '''
+    # Create categories
+    if not ncats is None:
+        qq = np.linspace(0, 1, ncats+1)
+        cuts = list(pd.Series(z).quantile(qq))
+
+    if len(set(cuts)) != len(cuts):
+        raise ValueError('Non-unique category boundaries :{0}'.format(\
+                '/ '.join([str(u) for u in list(cuts)])))
+
+    cats = pd.cut(z, cuts, right=True, labels=False).astype(int)
+
+    if cats.max() != ncats-1:
+        raise ValueError('Expected cat.max to be equal to '+\
+                            '{0}, got {1}'.format(ncats-1, cats.max()))
+
+    # Get colors for each category
+    colors = cmap2colors(ncats, cmap)
+
+    # Plot all categories
+    plotted = []
+
+    for icat in range(ncats):
+        # Plot category
+        idx = cats == icat
+        label = '[{0:{fmt}}, {1:{fmt}}]'.format(cuts[icat], \
+                                            cuts[icat+1], fmt=fmt)
+        if np.sum(idx) > 0:
+            ax.plot(x[idx], y[idx], color=colors[icat], label=label, \
+                                *args, **kwargs)
+
+            line = ax.get_lines()[-1]
+
+            # Store plotted data
+            dd = {'idx': idx, \
+                'label': label, \
+                'color': colors[icat], \
+                'line': line, \
+                'x': x[idx], 'y': y[idx]}
+
+            plotted.append(dd)
+        else:
+            warnings.warn('No points falling in category '+\
+                        '{0} ({1})'.format(icat, label))
+
+    return plotted, cats

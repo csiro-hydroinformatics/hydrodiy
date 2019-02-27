@@ -400,7 +400,6 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_ecdfplot(self):
         ''' Test ecdf plots '''
-
         df = {}
         for i in range(4):
             df['Var{0}'.format(i)] = np.random.normal(i, 1, size=1000)
@@ -414,6 +413,18 @@ class UtilsTestCase(unittest.TestCase):
 
         ax.legend(loc=2)
         fp = os.path.join(self.fimg, 'ecdfplot.png')
+        fig.savefig(fp)
+
+
+    def test_scattercat(self):
+        ''' Test categorical scatter plot '''
+        x, y, z = np.random.uniform(0, 1, size=(100, 3)).T
+        fig, ax = plt.subplots()
+        plotted, cats = putils.scattercat(ax, x, y, z, 5, \
+                                None, 'viridis', '0.3f', \
+                                'o', markersize=12, alpha=0.6)
+        ax.legend(loc=2, title='categories')
+        fp = os.path.join(self.fimg, 'scattercat.png')
         fig.savefig(fp)
 
 
