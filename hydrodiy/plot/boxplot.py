@@ -551,7 +551,8 @@ class Boxplot(object):
                         ax.plot(x, y, lw=item.linewidth,
                             color=item.linecolor, \
                             alpha=item.alpha)
-                        element['whiskers'] = ax.get_lines()[-1]
+                        element['bottom-whiskers'] = ax.get_lines()[-2]
+                        element['top-whiskers'] = ax.get_lines()[-1]
                     else:
                         # Draw box
                         bbox = FancyBboxPatch([i-ww/2+xoffset, q1], \
