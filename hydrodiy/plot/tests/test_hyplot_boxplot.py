@@ -10,7 +10,7 @@ matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
 
-from hydrodiy.plot.boxplot import Boxplot
+from hydrodiy.plot.boxplot import Boxplot, BoxplotError
 
 class BoxplotTestCase(unittest.TestCase):
 
@@ -112,7 +112,7 @@ class BoxplotTestCase(unittest.TestCase):
 
 
     def test_by_missing2(self):
-        df = pd.read_csv(os.path.join(self.test, 'boxplot_test_data.csv'))
+        df = pd.read_csv(os.path.join(self.ftest, 'boxplot_test_data.csv'))
         cats = list(np.arange(0.8, 3.8, 0.2)) + [30]
         by = pd.cut(df['cat_value'], cats)
 
@@ -192,7 +192,7 @@ class BoxplotTestCase(unittest.TestCase):
 
         try:
             bx.median.va = 'left'
-        except ValueError as err:
+        except BoxplotError as err:
             self.assertTrue(str(err).startswith('Expected value in'))
         else:
             raise Exception('Problem with error handling')
