@@ -10,6 +10,7 @@ mpl.use('Agg')
 
 import matplotlib.pyplot as plt
 from matplotlib import cm
+from matplotlib.patches import Rectangle
 
 from hydrodiy.plot import putils
 
@@ -424,6 +425,25 @@ class UtilsTestCase(unittest.TestCase):
                                 markersize=12, alpha=0.6)
         ax.legend(loc=2, title='categories')
         fp = os.path.join(self.fimg, 'scattercat.png')
+        fig.savefig(fp)
+
+
+    def test_interpolate_color(self):
+        ''' Test color interpolation '''
+        fig, ax = plt.subplots()
+        ax.plot([0, 1], [0, 1], '-', color='none')
+
+        ncols = 20
+        between = ['orange', 'blue']
+        cols = [putils.interpolate_color('g', a, between) for a \
+                    in np.linspace(0, 1, ncols)]
+
+        for icol, col in enumerate(cols):
+            r = Rectangle((icol/ncols, icol/ncols), \
+                                1./ncols, 1./ncols, facecolor=col)
+            ax.add_patch(r)
+
+        fp = os.path.join(self.fimg, 'interpolate.png')
         fig.savefig(fp)
 
 

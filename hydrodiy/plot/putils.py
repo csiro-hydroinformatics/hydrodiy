@@ -19,7 +19,7 @@ from matplotlib import cm
 from matplotlib.path import Path
 from matplotlib.patches import Ellipse
 
-from matplotlib import colors
+from matplotlib import colors as mcolors
 from matplotlib.colors import hex2color, rgb2hex
 from matplotlib.colors import LinearSegmentedColormap
 
@@ -33,10 +33,8 @@ from hydrodiy.stat import sutils, linreg
 
 # Some useful colors
 COLORS1 = '#002745'
-
 COLORS3 = ['#FF9933', '#64A0C8', '#005BBB']
-
-COLORS10 = [colors.rgb2hex([float(coo)/255 for coo in co]) for co in [ \
+COLORS10 = [mcolors.rgb2hex([float(coo)/255 for coo in co]) for co in [ \
             (31, 119, 180), (255, 127, 14), (44, 160, 44), \
             (214, 39, 40), (148, 103, 189), (140, 86, 75), \
             (227, 119, 194), (127, 127, 127), (188, 189, 34), \
@@ -44,9 +42,8 @@ COLORS10 = [colors.rgb2hex([float(coo)/255 for coo in co]) for co in [ \
         ] ]
 
 
-
 def cmap2colors(ncols=10, cmap='Paired'):
-    ''' generates a set of colors from colormap
+    ''' Generates a set of colors from a colormap
 
     Parameters
     -----------
@@ -78,7 +75,7 @@ def colors2cmap(colors, ncols=256):
     colors : dict
         A set of colors indexed by a float in [0, 1]. The index
         provides the location in the color map. Example:
-        colors = {'0.':'#3399FF', '0.1':'#33FFFF', '1.0':'#33FF99'}
+        colors = {0.:'#3399FF', 0.1:'#33FFFF', 1.0:'#33FF99'}
 
     Returns
     -----------
@@ -127,7 +124,6 @@ def cmap2grayscale(cmap):
 
     This code was pasted from
     https://jakevdp.github.io/PythonDataScienceHandbook/04.07-customizing-colorbars.html
-
 
     Parameters
     -----------
@@ -198,7 +194,8 @@ def cmap_accentuate(cmap, param=-1, ninterp=100):
     return mcmap
 
 
-def cmap_neutral(cmap, band_width=0.05, neutral_color='#C0C0C0', ninterp=100):
+def cmap_neutral(cmap, band_width=0.05, \
+            neutral_color='#C0C0C0', ninterp=100):
     ''' Replace the central part of a color map with a
         neutral color
 
@@ -234,6 +231,50 @@ def cmap_neutral(cmap, band_width=0.05, neutral_color='#C0C0C0', ninterp=100):
     mcmap = colors2cmap(mdict)
 
     return mcmap
+
+
+def interpolate_color(color, amount=0., between=['k', 'w']):
+    ''' Interpolate color linearly between two extremes.
+
+    Parameters
+    -----------
+    color : str or tuple
+        Color name or rgb
+    amount : float
+        Interpolation index
+        * 0 : color = between[0]
+        * 1 : color = between[1]
+    between : list
+        Two colors to define the interpolation extremes.
+        Default is black to white.
+
+    Returns
+    -----------
+    color : str
+        HGB color
+
+    Examples:
+    -----------
+    >> interpolate_color('g', 0.3)
+    >> interpolate_color('#F034A3', 0.6)
+    >> interpolate_color((.3,.55,.1), 0.5)
+    '''
+    # Check inputs
+    amount = float(amount)
+    if amount < 0. or amount > 1.:
+        raise  ValueError('Expected amount in [0, 1], got {0}'.format(\
+                        amount))
+
+    if len(between) != 2:
+        raise  ValueError('Expected len(between)=2, got {0}'.format(\
+                        len(between)))
+
+    # Build interpolated color map
+    cmap = colors2cmap({0.:between[0], 0.5:color, 1:between[1]})
+
+    # Return interpolated color
+    i = int(round(cmap.N * amount))
+    return rgb2hex(cmap(i))
 
 
 def _float(u):
