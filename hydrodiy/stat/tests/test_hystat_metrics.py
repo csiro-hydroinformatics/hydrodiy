@@ -701,5 +701,36 @@ class MetricsTestCase(unittest.TestCase):
             self.assertTrue(ck)
 
 
+    def test_abspeakerror(self):
+        ''' Test peak timing error using lagged data '''
+        nval = 2000
+        obs = np.exp(np.random.normal(size=nval))
+
+        lag = 3
+        sim = np.append(obs[lag:], [0]*2)
+        aperr, events = metrics.absolute_peak_error(obs, sim)
+
+        self.assertTrue(np.isclose(aperr, lag))
+        self.assertTrue(np.allclose(events.delta, lag))
+
+
+    def test_relpercerror(self):
+        ''' Test relative percentile error '''
+        nval = 2000
+        obs = np.exp(np.random.normal(size=nval))
+        err = 1.3
+        sim = (err+1)*obs
+
+        rperr, perc = metrics.relative_percentile_error(obs, sim, [0, 100])
+        self.assertTrue(np.isclose(rperr, err))
+        self.assertTrue(np.allclose(perc.rel_perc_err, err))
+
+        rperr, perc = metrics.relative_percentile_error(obs, sim, [0, 100], \
+                                                modified=True)
+        errm = err/(2+err)
+        self.assertTrue(np.isclose(rperr, abs(errm)))
+        self.assertTrue(np.allclose(perc.rel_perc_err, errm))
+
+
 if __name__ == "__main__":
     unittest.main()

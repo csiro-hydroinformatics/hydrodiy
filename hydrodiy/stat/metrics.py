@@ -675,3 +675,137 @@ def corr(obs, ens, trans=transform.Identity(), \
     return corr_value
 
 
+def absolute_peak_error(obs, sim, winerase=300, winpeakbefore=5, \
+                    winpeakafter=10, neventmax=500):
+    ''' Mean absolute peak time error
+
+    Parameters
+    -----------
+    obs : numpy.ndarray
+        obs data, [n] or [n,1] array
+    sim : numpy.ndarray
+        simulated data, [n] or [n,1] array
+    winerase : int
+        Number of time steps before and after the peak that deleted
+        after processing a peak event.
+    winpeakbefore : int
+        Number of time step before peak to define event window.
+    winpeakafter : int
+        Number of time step after peak to define event window.
+
+    Returns
+    -----------
+    aperr : float
+        Average peak timing error
+    events : pandas.DataFrame
+        Characteristics of each events.
+    '''
+
+    # Check data
+    obsc = np.array(obs).squeeze().copy()
+    obsc[obsc<0] = np.nan
+
+    simc = np.array(sim).squeeze().copy()
+    simc[simc<0] = np.nan
+
+    # Initialise
+    nval = len(obsc)
+    nvalid = nval
+    nevent = 0
+    aperr = 0
+
+    # Run
+    events = []
+    while nvalid > winerase and nevent < neventmax:
+        # find max obs
+        imax = np.nanargmax(obsc)
+        idx = np.clip(np.arange(imax-winpeakbefore, \
+                            imax+winpeakafter+1), 0, nval-1)
+
+        # find peak location in both obs and sim
+        imaxo = np.nanargmax(obsc[idx])
+        imaxs = np.nanargmax(simc[idx])
+        delta = abs(imaxs-imaxo)
+        aperr += delta
+        events.append({'start': idx[0], 'end':idx[-1], 'delta':delta, \
+                'imax_obs': imaxo, 'imax_sim': imaxs})
+
+        # loop
+        idx = np.clip(np.arange(imax-winerase, imax+winerase+1), 0, \
+                    nval-1)
+        obsc[idx] = np.nan
+        nvalid -= len(idx)
+        nevent += 1
+
+    events = pd.DataFrame(events)
+
+    return aperr/nevent, events
+
+
+def relative_percentile_error(obs, sim, percentile_range, \
+                            eps=0., modified=False, neval=50):
+    ''' Mean relative percentile error
+
+    Parameters
+    -----------
+    obs : numpy.ndarray
+        obs data, [n] or [n,1] array
+    sim : numpy.ndarray
+        simulated data, [n] or [n,1] array
+    percentile_range : list
+        Range of percentiles over which relative bias is computed.
+    eps : float
+        Small term added to denominator in relative bias computation.
+    modified : bool
+        Compute a modified relative bias as:
+        B = (qo-qs)/(qo+qs)
+        instead of the standard relative bias:
+        B = (qo-qs)/(eps+qo)
+
+        Note that if modified is True, eps is not used.
+    neval : int
+        Number of percentile computed between rg[0] and rg[1].
+
+    Returns
+    -----------
+    aperr : float
+        Average peak timing error
+    events : pandas.DataFrame
+        Characteristics of each events.
+    '''
+    # Check values
+    rg = percentile_range
+    if len(rg) != 2:
+        raise ValueError('Expected len(rg) = 2, got {0}'.format(len(rg)))
+    if rg[1] < rg[0]+1:
+        raise ValueError('Expected rg[1] > rg[0]+1, '+\
+                        'got rg={0}'.format(*rg))
+
+    for ir, r in enumerate(rg):
+        if r < 0 or r > 100:
+            raise ValueError('Expected r[{0}] in [0, 100], got {1}'.format(\
+                        ir, r))
+
+    # Process
+    idx = pd.notnull(obs) & pd.notnull(sim)
+    rperr = 0.
+    perc = []
+    for iq, qt in enumerate(np.linspace(*percentile_range, num=neval)):
+        qo = np.percentile(obs[idx], qt)
+        qs = np.percentile(sim[idx], qt)
+        if modified:
+            rp = (qs-qo)/(qo+qs) if not np.isclose(qo+qs, 0.) else 0.
+        else:
+            rp = (qs-qo)/(qo+eps)
+
+        rperr += abs(rp)
+        perc.append({'quantile':qt, 'qobs':qo, 'qsim':qs, \
+                            'rel_perc_err':rp})
+
+    rperr /= neval
+    perc = pd.DataFrame(perc)
+
+    return rperr, perc
+
+
+
