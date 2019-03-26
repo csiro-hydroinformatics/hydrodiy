@@ -417,6 +417,22 @@ class UtilsTestCase(unittest.TestCase):
         fig.savefig(fp)
 
 
+    def test_ecdfplot_labels(self):
+        ''' Test ecdf plots with mean in labels'''
+        df = {}
+        for i in range(4):
+            df['Var{0}'.format(i)] = np.random.normal(i, 1, size=1000)
+
+        df = pd.DataFrame(df)
+
+        fig, ax = plt.subplots()
+        lines = putils.ecdfplot(ax, df, '0.3f', 'std')
+
+        ax.legend(loc=2)
+        fp = os.path.join(self.fimg, 'ecdfplot_labels.png')
+        fig.savefig(fp)
+
+
     def test_scattercat(self):
         ''' Test categorical scatter plot '''
         x, y, z = np.random.uniform(0, 1, size=(100, 3)).T
