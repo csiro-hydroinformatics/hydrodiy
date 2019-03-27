@@ -1150,25 +1150,51 @@ def delineate_river(flowdir, idxupstream, nval=1000000):
     return data
 
 
-def accumulate(flowdir, nprint=100, maxarea=-1):
-    ''' Compute flow accumulation from the flow direction grid '''
+def accumulate(flowdir, to_accumulate=None, nprint=100, \
+                    max_accumulated_cells=-1):
+    ''' Compute flow accumulation from the flow direction grid
 
+    Parameters
+    -----------
+    flowdir : hydrodiy.gis.grid.Catchment
+        Flow direction grid
+    to_accumulate : hydrodiy.gis.grid.Catchment
+        Grid to accumulate. Should have the same dimensions than
+        flowdir.
+    nprint : int
+        Frequency of log print
+    max_accumulated_cells : int
+        Maximimum number of accumulated cells
+
+    Returns
+    -----------
+    accumulation : hydrodiy.gis.grid.Catchment
+        Accumulated field
+    '''
     nprint = np.int64(nprint)
 
-    if maxarea == -1:
-        maxarea = flowdir.nrows * flowdir.ncols
-    maxarea = np.int64(maxarea)
+    if max_accumulated_cells == -1:
+        max_accumulated_cells = flowdir.nrows * flowdir.ncols
+    max_accumulated_cells = np.int64(max_accumulated_cells)
 
     # Convert flowdir
     flowdir.dtype = np.int64
 
+    # Set accumulation field
+    if to_accumulate is None:
+        to_accumulate = flowdir.clone()
+        to_accumulate.fill(1)
+
+    to_accumulate.dtype = np.float64
+
     # Initiase the accumulation grid with 0 accumulation
-    accumulation = flowdir.clone()
-    accumulation.fill(1)
+    accumulation = to_accumulate.clone()
 
     # Compute accumulation
-    ierr = c_hydrodiy_gis.accumulate(nprint, maxarea, FLOWDIRCODE,
-                flowdir.data, accumulation.data)
+    ierr = c_hydrodiy_gis.accumulate(nprint, \
+                max_accumulated_cells, FLOWDIRCODE, \
+                flowdir.data, to_accumulate.data, \
+                accumulation.data)
 
     if ierr>0:
         raise ValueError(('c_hydrodiy_gis.accumulate' +

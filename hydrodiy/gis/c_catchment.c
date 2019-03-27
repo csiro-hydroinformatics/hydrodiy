@@ -462,17 +462,19 @@ long long c_delineate_river(long long nrows, long long ncols,
 
 
 long long c_accumulate(long long nrows, long long ncols,
-    long long nprint, long long maxarea,
+    long long nprint, long long max_accumulated_cells,
     long long * flowdircode,
     long long * flowdir,
-    long long * accumulation)
+    double * to_accumulate,
+    double * accumulation)
 {
 
-    long long area, i, ierr, ntot;
+    long long accumulated_cells, i, ierr, ntot;
     long long idxdown[1], idxup[1];
+    double accvalue;
 
     /* Check inputs */
-    if(maxarea <= 1e-10)
+    if(max_accumulated_cells < 1)
             return CATCHMENT_ERROR + __LINE__;
 
     if(nrows < 1 || nrows < 1)
@@ -485,7 +487,8 @@ long long c_accumulate(long long nrows, long long ncols,
                             "grid [%lldx%lld] --\n", nrows, ncols);
     fprintf(stdout, "\tntot = %lld\n", ntot);
     fprintf(stdout, "\tnprint = %lld\n", nprint);
-    fprintf(stdout, "\tmaxarea = %lld\n", maxarea);
+    fprintf(stdout, "\tmax_accumulated_cells = %lld\n",
+                        max_accumulated_cells);
 
     for(i=0; i<ntot; i++)
     {
@@ -496,9 +499,9 @@ long long c_accumulate(long long nrows, long long ncols,
         /* Find downstream cell */
         idxup[0] = i;
         idxdown[0] = 0;
-        area = 0;
+        accumulated_cells = 0;
 
-        while(area <= maxarea)
+        while(accumulated_cells <= max_accumulated_cells)
         {
             ierr = c_downstream(nrows, ncols, flowdircode, flowdir,
                         1, idxup, idxdown);
@@ -510,10 +513,11 @@ long long c_accumulate(long long nrows, long long ncols,
                 break;
 
             /* Increase flow accumulation at downstream cell */
-            accumulation[idxdown[0]] +=1;
+            accvalue = to_accumulate[idxdown[0]];
+            accumulation[idxdown[0]] += accvalue;
 
             /* Loop */
-            area ++;
+            accumulated_cells ++;
             idxup[0] = idxdown[0];
         }
 

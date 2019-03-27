@@ -638,7 +638,9 @@ class CatchmentTestCase(unittest.TestCase):
 
 
     def test_accumulate(self):
-        acc = accumulate(self.gr, 10)
+        ''' Test accumulate '''
+        # Standard accumulation
+        acc = accumulate(self.gr, nprint=10)
         expected = [ [1, 1, 1, 1, 1, 1],
                     [1, 2, 2, 2, 1, 1],
                     [1, 3, 5, 1, 1, 1],
@@ -649,7 +651,15 @@ class CatchmentTestCase(unittest.TestCase):
         ck = np.allclose(acc.data, expected)
         self.assertTrue(ck)
 
-        acc = accumulate(self.gr, 10, maxarea=2)
+        # Test with an accumulation field
+        to_acc = acc.clone()
+        to_acc.fill(0.1)
+        acc = accumulate(self.gr, to_acc, nprint=10)
+        ck = np.allclose(10*acc.data, expected)
+        self.assertTrue(ck)
+
+        # Restrict the maximum number of accumulated cells
+        acc = accumulate(self.gr, nprint=10, max_accumulated_cells=2)
         expected = [ [1, 1, 1, 1, 1, 1],
                     [1, 2, 2, 2, 1, 1],
                     [1, 3, 5, 1, 1, 1],

@@ -52,10 +52,11 @@ cdef extern from 'c_catchment.h':
         double * data)
 
     long long c_accumulate(long long nrows, long long ncols,
-        long long nprint, long long maxarea,
+        long long nprint, long long max_accumulated_cells,
         long long * flowdircode,
         long long * flowdir,
-        long long * accumulation)
+        double * to_accumulate,
+        double * accumulation)
 
     long long c_intersect(long long nrows, long long ncols,
         double xll, double yll, double csz, double csz_area,
@@ -280,10 +281,11 @@ def delineate_river(double xll, double yll, double csz,
     return ierr
 
 
-def accumulate(long long nprint, long long maxarea,
+def accumulate(long long nprint, long long max_accumulated_cells,
             np.ndarray[long long, ndim=2, mode='c'] flowdircode not None,
             np.ndarray[long long, ndim=2, mode='c'] flowdir not None,
-            np.ndarray[long long, ndim=2, mode='c'] accumulation not None):
+            np.ndarray[double, ndim=2, mode='c'] to_accumulate not None,
+            np.ndarray[double, ndim=2, mode='c'] accumulation not None):
 
     cdef long long ierr
 
@@ -291,15 +293,19 @@ def accumulate(long long nprint, long long maxarea,
     assert flowdircode.shape[0] == 3
     assert flowdircode.shape[1] == 3
 
+    assert to_accumulate.shape[0] == flowdir.shape[0]
+    assert to_accumulate.shape[1] == flowdir.shape[1]
+
     assert accumulation.shape[0] == flowdir.shape[0]
     assert accumulation.shape[1] == flowdir.shape[1]
 
 
     ierr = c_accumulate(flowdir.shape[0], flowdir.shape[1],
-            nprint, maxarea,
+            nprint, max_accumulated_cells,
             <long long*> np.PyArray_DATA(flowdircode),
             <long long*> np.PyArray_DATA(flowdir),
-            <long long*> np.PyArray_DATA(accumulation))
+            <double*> np.PyArray_DATA(to_accumulate),
+            <double*> np.PyArray_DATA(accumulation))
 
     return ierr
 

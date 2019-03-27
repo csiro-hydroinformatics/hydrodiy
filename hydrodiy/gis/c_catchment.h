@@ -49,10 +49,11 @@ long long c_delineate_river(long long nrows, long long ncols,
 
 
 long long c_accumulate(long long nrows, long long ncols,
-    long long nprint, long long maxarea,
+    long long nprint, long long max_accumulated_cells,
     long long * flowdircode,
     long long * flowdir,
-    long long * accumulation);
+    double * to_accumulate,
+    double * accumulation);
 
 
 long long c_intersect(long long nrows, long long ncols,
