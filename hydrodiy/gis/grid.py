@@ -5,6 +5,7 @@ import pkg_resources
 import math
 import copy
 import zipfile
+import warnings
 
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
@@ -38,7 +39,7 @@ class Grid(object):
 
     def __init__(self, name, ncols, nrows=None, cellsize=1., \
             xllcorner=0, yllcorner=0, dtype=np.float64, \
-            nodata_value=np.nan, \
+            nodata=0, \
             comment=''):
 
         if nrows is None:
@@ -48,14 +49,14 @@ class Grid(object):
         self.ncols = np.int64(ncols)
         self.nrows = np.int64(nrows)
         self._dtype = dtype
-        self.nodata_value = nodata_value
+        self._nodata = nodata
 
         self.cellsize = np.float64(cellsize)
 
         self.xllcorner = np.float64(xllcorner)
         self.yllcorner = np.float64(yllcorner)
 
-        self.nodata = np.nan
+        self.nodata = nodata
         self._mindata = -np.inf
         self._maxdata = np.inf
         self.comment = comment
@@ -93,7 +94,7 @@ class Grid(object):
         str += '\txllcorner: {0}\n'.format(self.xllcorner)
         str += '\tyllcorner: {0}\n'.format(self.yllcorner)
         str += '\tdtype    : {0}\n'.format(self.dtype)
-        str += '\tno_data_value : {0}\n'.format(self.nodata_value)
+        str += '\tno_data_value : {0}\n'.format(self.nodata)
         str += '\tcomment  : {0}\n'.format(self.comment)
 
         return str
@@ -125,7 +126,7 @@ class Grid(object):
             'xllcorner' : 0., \
             'yllcorner' : 0., \
             'cellsize': 1., \
-            'nodata_value' : np.nan, \
+            'nodata' : 0, \
             'nbits' : 64, \
             'pixeltype' : 'float', \
             'byteorder' : 'i', \
@@ -148,7 +149,6 @@ class Grid(object):
 
                     config[pname] = pvalue
                 except ValueError:
-                    import warnings
                     warnings.warn(('Header field {0} cannot be' + \
                             +'processed').format(pname))
                     pass
@@ -183,9 +183,14 @@ class Grid(object):
             config['yllcorner'] = config['ulymap'] - \
                                 config['cellsize']*config['nrows']
 
+        # Rename nodata_value to nodata
+        if 'nodata_value' in config:
+            config['nodata'] = config['nodata_value']
+            config.pop('nodata_value')
+
         # Filters config data
         keys = ['name', 'ncols', 'nrows', 'cellsize', 'comment', \
-            'xllcorner', 'yllcorner', 'dtype', 'nodata_value']
+            'xllcorner', 'yllcorner', 'dtype', 'nodata']
         config = {k:config[k] for k in config if k in keys}
 
         # Creates grid
@@ -219,7 +224,7 @@ class Grid(object):
 
         # Init optional arguments
         for opt in ['nrows', 'cellsize', 'xllcorner', 'yllcorner', \
-            'dtype', 'nodata_value', 'comment']:
+            'dtype', 'nodata', 'comment']:
             if opt in dic:
                 dic2[opt] = dic[opt]
 
@@ -258,6 +263,17 @@ class Grid(object):
                                 self.maxdata).astype(self.dtype)
 
     @property
+    def nodata(self):
+        ''' Get nodata value '''
+        return self._nodata
+
+    @nodata.setter
+    def nodata(self, value):
+        ''' Set nodata value '''
+        self._nodata = self.dtype(value)
+
+
+    @property
     def dtype(self):
         ''' Get data type '''
         return self._dtype
@@ -265,7 +281,6 @@ class Grid(object):
     @dtype.setter
     def dtype(self, value):
         ''' Set data type '''
-
         self._dtype = value
         self._data = self._data.astype(value)
 
@@ -364,7 +379,7 @@ class Grid(object):
             'xllcorner': self.xllcorner, \
             'yllcorner': self.yllcorner, \
             'dtype': np.dtype(self.dtype).str, \
-            'nodata_value': str(self.nodata_value), \
+            'nodata': str(self.nodata), \
             'comment': self.comment
         }
 
@@ -637,7 +652,7 @@ class Grid(object):
         grid = Grid(name, ncols, nrows, cellsize=self.cellsize,
                 xllcorner=xll, yllcorner=yll,
                 dtype=self.dtype,
-                nodata_value=self.nodata_value)
+                nodata=self.nodata)
 
         # Set data
         dt = self._data[ny1:ny0+1, nx0:nx1+1]
@@ -1192,7 +1207,9 @@ def accumulate(flowdir, to_accumulate=None, nprint=100, \
 
     # Compute accumulation
     ierr = c_hydrodiy_gis.accumulate(nprint, \
-                max_accumulated_cells, FLOWDIRCODE, \
+                max_accumulated_cells,
+                to_accumulate.nodata, \
+                FLOWDIRCODE, \
                 flowdir.data, to_accumulate.data, \
                 accumulation.data)
 
@@ -1294,7 +1311,7 @@ def slope(flowdir, altitude, nprint=100):
 
     # Initiase the slope grid with 0 accumulation
     slopeval = altitude.clone()
-    slopeval.fill(slopeval.nodata_value)
+    slopeval.fill(slopeval.nodata)
 
     # Compute slope
     cellsize = np.float64(altitude.cellsize)

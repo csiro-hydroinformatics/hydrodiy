@@ -53,6 +53,7 @@ cdef extern from 'c_catchment.h':
 
     long long c_accumulate(long long nrows, long long ncols,
         long long nprint, long long max_accumulated_cells,
+        double nodata_to_accumulate,
         long long * flowdircode,
         long long * flowdir,
         double * to_accumulate,
@@ -282,6 +283,7 @@ def delineate_river(double xll, double yll, double csz,
 
 
 def accumulate(long long nprint, long long max_accumulated_cells,
+            double nodata_to_accumulate,
             np.ndarray[long long, ndim=2, mode='c'] flowdircode not None,
             np.ndarray[long long, ndim=2, mode='c'] flowdir not None,
             np.ndarray[double, ndim=2, mode='c'] to_accumulate not None,
@@ -302,6 +304,7 @@ def accumulate(long long nprint, long long max_accumulated_cells,
 
     ierr = c_accumulate(flowdir.shape[0], flowdir.shape[1],
             nprint, max_accumulated_cells,
+            nodata_to_accumulate,
             <long long*> np.PyArray_DATA(flowdircode),
             <long long*> np.PyArray_DATA(flowdir),
             <double*> np.PyArray_DATA(to_accumulate),

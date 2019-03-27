@@ -463,6 +463,7 @@ long long c_delineate_river(long long nrows, long long ncols,
 
 long long c_accumulate(long long nrows, long long ncols,
     long long nprint, long long max_accumulated_cells,
+    double nodata_to_accumulate,
     long long * flowdircode,
     long long * flowdir,
     double * to_accumulate,
@@ -501,6 +502,7 @@ long long c_accumulate(long long nrows, long long ncols,
         idxdown[0] = 0;
         accumulated_cells = 0;
 
+        /* Loop through cells */
         while(accumulated_cells <= max_accumulated_cells)
         {
             ierr = c_downstream(nrows, ncols, flowdircode, flowdir,
@@ -510,10 +512,15 @@ long long c_accumulate(long long nrows, long long ncols,
                 return CATCHMENT_ERROR + __LINE__;
 
             if(idxdown[0]<0)
+            {
+                accumulation[idxup[0]] = nodata_to_accumulate;
                 break;
+            }
+
+            /* Get accumulated value */
+            accvalue = to_accumulate[idxdown[0]];
 
             /* Increase flow accumulation at downstream cell */
-            accvalue = to_accumulate[idxdown[0]];
             accumulation[idxdown[0]] += accvalue;
 
             /* Loop */

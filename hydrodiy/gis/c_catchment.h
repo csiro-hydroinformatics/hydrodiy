@@ -50,6 +50,7 @@ long long c_delineate_river(long long nrows, long long ncols,
 
 long long c_accumulate(long long nrows, long long ncols,
     long long nprint, long long max_accumulated_cells,
+    double nodata_to_accumulate,
     long long * flowdircode,
     long long * flowdir,
     double * to_accumulate,

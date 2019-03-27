@@ -3,6 +3,7 @@ import warnings
 import unittest
 import numpy as np
 import pandas as pd
+import warnings
 
 import zipfile
 
@@ -167,8 +168,9 @@ class GridTestCase(unittest.TestCase):
 
         for idxcell in idxcells:
             nb = gr.neighbours(idxcell)
-            expected = np.array([idxcell-nc-1, idxcell-nc, idxcell-nc+1,
-                idxcell-1, -1, idxcell+1, idxcell+nc-1, idxcell+nc, idxcell+nc+1])
+            expected = np.array([idxcell-nc-1, idxcell-nc, idxcell-nc+1, \
+                idxcell-1, -1, idxcell+1, idxcell+nc-1, idxcell+nc, \
+                idxcell+nc+1])
 
             ck = np.allclose(nb, expected)
             self.assertTrue(ck)
@@ -240,7 +242,6 @@ class GridTestCase(unittest.TestCase):
         try:
             gr = Grid.from_header(filename)
         except MemoryError:
-            import warnings
             warnings.warn('test_from_header no run due to memory error')
             return
 
@@ -249,7 +250,7 @@ class GridTestCase(unittest.TestCase):
         ck = ck & (gr.xllcorner == 112.90125)
         ck = ck & (gr.yllcorner == -43.74375)
         ck = ck & (gr.cellsize == 0.0025)
-        ck = ck & (gr.nodata_value == 32767)
+        ck = ck & (gr.nodata == 32767)
         ck = ck & (gr.name == 'mygrid')
         ck = ck & (gr.comment == 'testing header')
 
@@ -371,6 +372,22 @@ class GridTestCase(unittest.TestCase):
                     np.linspace(v0, v1, gri.ncols)))
 
 
+    def test_nodata(self):
+        ''' Test setting nodata '''
+        nrows = 6
+        gr = Grid(nrows, nrows, dtype=np.int32)
+
+        gr.nodata = 3.6
+        self.assertEqual(3, gr.nodata)
+
+        try:
+            gr.nodata = np.nan
+        except Exception as err:
+            self.assertTrue(str(err).startswith('cannot convert'))
+        else:
+            raise ValueError('Problem with error generation')
+
+
 
 class CatchmentTestCase(unittest.TestCase):
 
@@ -381,7 +398,7 @@ class CatchmentTestCase(unittest.TestCase):
         self.ftest = os.path.dirname(source_file)
 
         nrows = 6
-        gr = Grid(nrows, nrows, dtype=np.int32)
+        gr = Grid(nrows, nrows, dtype=np.int32, nodata=-1)
         gr.data = [ [0, 4, 4, 4, 0, 0],
                     [0, 4, 4, 8, 0, 0],
                     [0, 2, 4, 8, 0, 0],
@@ -618,8 +635,10 @@ class CatchmentTestCase(unittest.TestCase):
 
 
     def test_slope(self):
+        ''' Test computation of slope '''
         alt = self.gr.clone()
-
+        alt.dtype = np.float64
+        alt.nodata = np.nan
         alt.data = alt.data*0. + np.arange(alt.nrows)[::-1][:, None]
         slp = slope(self.gr, alt)
 
@@ -641,12 +660,12 @@ class CatchmentTestCase(unittest.TestCase):
         ''' Test accumulate '''
         # Standard accumulation
         acc = accumulate(self.gr, nprint=10)
-        expected = [ [1, 1, 1, 1, 1, 1],
-                    [1, 2, 2, 2, 1, 1],
-                    [1, 3, 5, 1, 1, 1],
-                    [1, 1, 10, 1, 1, 1],
-                    [1, 1, 1, 11, 1, 1],
-                    [1, 1, 1, 12, 1, 1]]
+        expected = [ [-1, 1, 1, 1, -1, -1],
+                    [-1, 2, 2, 2, -1, -1],
+                    [-1, 3, 5, 1, -1, -1],
+                    [-1, -1, 10, -1, -1, -1],
+                    [-1, -1, -1, 11, -1, -1],
+                    [-1, -1, -1, -1, -1, -1]]
 
         ck = np.allclose(acc.data, expected)
         self.assertTrue(ck)
@@ -654,18 +673,19 @@ class CatchmentTestCase(unittest.TestCase):
         # Test with an accumulation field
         to_acc = acc.clone()
         to_acc.fill(0.1)
+        to_acc.nodata = -0.1
         acc = accumulate(self.gr, to_acc, nprint=10)
         ck = np.allclose(10*acc.data, expected)
         self.assertTrue(ck)
 
         # Restrict the maximum number of accumulated cells
         acc = accumulate(self.gr, nprint=10, max_accumulated_cells=2)
-        expected = [ [1, 1, 1, 1, 1, 1],
-                    [1, 2, 2, 2, 1, 1],
-                    [1, 3, 5, 1, 1, 1],
-                    [1, 1, 10, 1, 1, 1],
-                    [1, 1, 1, 8, 1, 1],
-                    [1, 1, 1, 6, 1, 1]]
+        expected = [[-1, 1, 1, 1, -1, -1],
+                    [-1, 2, 2, 2, -1, -1],
+                    [-1, 3, 5, 1, -1, -1],
+                    [-1, -1, 10, -1,-1,-1],
+                    [-1, -1, -1, 8, -1, -1],
+                    [-1, -1, -1, -1, -1, -1]]
         ck = np.allclose(acc.data, expected)
         self.assertTrue(ck)
 
