@@ -242,7 +242,7 @@ class GridTestCase(unittest.TestCase):
         try:
             gr = Grid.from_header(filename)
         except MemoryError:
-            warnings.warn('test_from_header no run due to memory error')
+            warnings.warn('test_from_header not run due to memory error')
             return
 
         ck = gr.nrows == 13857
