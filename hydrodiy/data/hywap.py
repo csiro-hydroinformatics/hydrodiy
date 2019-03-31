@@ -113,7 +113,8 @@ def get_data(varname, vartype, timestep, date):
         compressedfile = Popen(['zcat', ftmp], stdout=PIPE).stdout
         fdata = ftmp
     except FileNotFoundError as err:
-        warnings.warn('zcat decompression utility is not available. Trying 7z')
+        warnings.warn('zcat decompression utility is '+\
+                            'not available. Trying 7z')
 
         # Try 7z if the previous one does not work
         fdata = os.path.join(tmpdir, filename)
@@ -124,9 +125,9 @@ def get_data(varname, vartype, timestep, date):
 
         except FileNotFoundError as err:
             raise ValueError(('Problem with decompression of {0}: {1}. '+\
-                    'Try installing 7zip (http://www.7-zip.org) and add its path to environment'+\
-                    'variables.').format(\
-                    url, str(err)))
+                    'Try installing 7zip (http://www.7-zip.org) and '+\
+                    'add its path to environment variables.').format(\
+                        url, str(err)))
 
     txt = compressedfile.readlines()
 
@@ -144,8 +145,9 @@ def get_data(varname, vartype, timestep, date):
             os.remove(fdata)
         os.remove(os.path.dirname(ftmp))
     except OSError as err:
-        warnings.warn('Cannot delete temporary file {0} and {1} ({2})'.format(\
-                    ftmp, fdata, str(err)))
+        warnings.warn('Cannot delete temporary file '+\
+                    '{0} and {1} ({2})'.format(\
+                        ftmp, fdata, str(err)))
 
     # Spot header / comments
     tmp = [bool(re.search('([a-zA-Z]|\\[)', line[0])) for line in txt]
@@ -160,6 +162,9 @@ def get_data(varname, vartype, timestep, date):
     header['ncols'] = int(header['ncols'])
     header['nrows'] = int(header['nrows'])
     header['cellsize'] = float(header['cellsize'])
+
+    header['nodata'] = float(header['nodata_value'])
+    header.pop('nodata_value')
 
     header['xllcorner'] = float(header['xllcenter'])
     header.pop('xllcenter')
@@ -180,7 +185,7 @@ def get_data(varname, vartype, timestep, date):
     data = [np.array(re.split(' +', s.strip())) \
                 for s in txt[iheader:-icomment]]
     data = np.array(data).astype(np.float)
-    data[data == header['nodata_value']] = np.nan
+    data[data == header['nodata']] = np.nan
 
     # Check dimensions of dataset
     ncols = header['ncols']
