@@ -44,14 +44,19 @@ class QualityControlTestCase(unittest.TestCase):
         try:
             status = qc.islinear(data, npoints=0)
         except Exception as err:
-            self.assertTrue(str(err).startswith('Expected npoints'))
+            errs = str(err)
+            if not errs.startswith('Compiled C modules'):
+                self.assertTrue(errs.startswith('Expected npoints'))
+            else:
+                self.skipTest('Missing C modules')
         else:
             raise Exception('Problem with error handling')
 
         try:
             status = qc.islinear(data, tol=1e-11)
         except Exception as err:
-            self.assertTrue(str(err).startswith('Expected tol'))
+            errs = str(err)
+            self.assertTrue(errs.startswith('Expected tol'))
         else:
             raise Exception('Problem with error handling')
 
@@ -62,7 +67,13 @@ class QualityControlTestCase(unittest.TestCase):
         data = np.random.normal(size=nval)
         data[3:17] = np.linspace(0, 1, 14)
 
-        status = qc.islinear(data, npoints=1)
+        try:
+            status = qc.islinear(data, npoints=1)
+        except Exception as err:
+            errs = str(err)
+            if errs.startswith('Compiled C modules'):
+                self.skipTest('Missing C modules')
+
         expected = np.zeros(data.shape[0])
         expected[3:17] = 1
 
@@ -75,7 +86,13 @@ class QualityControlTestCase(unittest.TestCase):
         data = np.random.normal(size=nval)
         data[3:17] = 100
 
-        status = qc.islinear(data, npoints=1)
+        try:
+            status = qc.islinear(data, npoints=1)
+        except Exception as err:
+            errs = str(err)
+            if errs.startswith('Compiled C modules'):
+                self.skipTest('Missing C modules')
+
         expected = np.zeros(data.shape[0])
         expected[3:17] = 2
 
@@ -89,7 +106,13 @@ class QualityControlTestCase(unittest.TestCase):
         data[3:17] = np.linspace(0, 1, 14)
         data[12:16] = np.nan
 
-        status = qc.islinear(data, npoints=1)
+        try:
+            status = qc.islinear(data, npoints=1)
+        except Exception as err:
+            errs = str(err)
+            if errs.startswith('Compiled C modules'):
+                self.skipTest('Missing C modules')
+
         expected = np.zeros(data.shape[0])
         expected[3:12] = 1
 
@@ -107,7 +130,12 @@ class QualityControlTestCase(unittest.TestCase):
         data[idxlin] = np.linspace(0, 1, 11)
 
         for npoints in range(2, 5):
-            status = qc.islinear(data, npoints)
+            try:
+                status = qc.islinear(data, npoints)
+            except Exception as err:
+                errs = str(err)
+                if errs.startswith('Compiled C modules'):
+                    self.skipTest('Missing C modules')
 
             expected = np.zeros(data.shape[0])
             expected[i1:i2+1] = 1
@@ -122,7 +150,13 @@ class QualityControlTestCase(unittest.TestCase):
 
         data = np.random.normal(size=nval)
         data[5:9] = 0.
-        status = qc.islinear(data, npoints=1, thresh=data.min()-1)
+        try:
+            status = qc.islinear(data, npoints=1, thresh=data.min()-1)
+        except Exception as err:
+            errs = str(err)
+            if errs.startswith('Compiled C modules'):
+                self.skipTest('Missing C modules')
+
         expected = np.zeros(data.shape[0])
         expected[5:9] = 2
         self.assertTrue(np.allclose(status, expected))
@@ -136,7 +170,13 @@ class QualityControlTestCase(unittest.TestCase):
         ''' Test is islinear 1d against integer '''
         data = np.array([0.]*20+[0., 1., 2., 3., 4., 5., 3.]+[0.]*20)
         for npoints in range(1, 7):
-            status = qc.islinear(data, npoints=npoints)
+            try:
+                status = qc.islinear(data, npoints=npoints)
+            except Exception as err:
+                errs = str(err)
+                if errs.startswith('Compiled C modules'):
+                    self.skipTest('Missing C modules')
+
             expected = np.zeros(data.shape[0])
             if npoints<=4:
                 expected[20:26] = 1
@@ -156,7 +196,12 @@ class QualityControlTestCase(unittest.TestCase):
         data[ib1:ib2+1] = np.linspace(0, 1, 6)
 
         for npoints in range(1, 10):
-            status = qc.islinear(data, npoints)
+            try:
+                status = qc.islinear(data, npoints)
+            except Exception as err:
+                errs = str(err)
+                if errs.startswith('Compiled C modules'):
+                    self.skipTest('Missing C modules')
 
             expected = np.zeros(nval)
             if npoints <= 3:

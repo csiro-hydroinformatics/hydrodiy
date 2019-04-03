@@ -5,7 +5,12 @@ import datetime
 from dateutil.relativedelta import relativedelta as delta
 import pandas as pd
 
-import c_hydrodiy_data as chd
+# Try to import C code
+HAS_C_MODULES = True
+try:
+    import c_hydrodiy_data as chd
+except ImportError:
+    HAS_C_MODULES = False
 
 # Fix seed
 np.random.seed(1)
@@ -18,6 +23,8 @@ class DateutilsTestCase(unittest.TestCase):
         self.months = pd.date_range('1800-01-01', '2200-12-1', freq='MS')
         self.days = pd.date_range('1800-01-01', '2200-12-1', freq='5D')
 
+        if not HAS_C_MODULES:
+            self.skipTest('Missing C modules')
 
     def test_isleapyear(self):
         years = range(1800, 2200)

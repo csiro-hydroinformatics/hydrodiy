@@ -2,7 +2,13 @@ import numpy as np
 import pandas as pd
 
 from hydrodiy.data import dutils
-import c_hydrodiy_data
+
+# Try to import C code
+HAS_C_MODULES = True
+try:
+    import c_hydrodiy_data
+except ImportError:
+    HAS_C_MODULES = False
 
 
 def ismisscens(x, censor=0., eps=1e-10):
@@ -95,6 +101,11 @@ def islinear(data, npoints=3, tol=1e-6, thresh=0.):
     array([False, True, False, False, True, False], dtype=int32)
 
     '''
+    # Check C modules are available
+    if not HAS_C_MODULES:
+        raise ValueError('Compiled C modules are not available, '+\
+                'please run python setup.py build')
+
     # Check data
     if data.ndim > 1:
         raise ValueError('Expected data as 1d vector, got '+\

@@ -11,7 +11,12 @@ from scipy.special import comb
 from hydrodiy.io import csv
 from hydrodiy.data import dutils
 
-import c_hydrodiy_data as chd
+# Try to import C code
+HAS_C_MODULES = True
+try:
+    import c_hydrodiy_data as chd
+except ImportError:
+    HAS_C_MODULES = False
 
 # Utility function to aggregate data
 # using various version of pandas
@@ -259,6 +264,10 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_aggregate(self):
+        ''' Test aggregation '''
+        if not HAS_C_MODULES:
+            self.skipTest('Missing C modules')
+
         dt = pd.date_range('1990-01-01', '2000-12-31')
         nval = len(dt)
         obs = pd.Series(np.random.uniform(0, 1, nval), \
@@ -289,6 +298,10 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_aggregate_error(self):
+        ''' Test aggregation error '''
+        if not HAS_C_MODULES:
+            self.skipTest('Missing C modules')
+
         dt = pd.date_range('1990-01-01', '2000-12-31')
         nval = len(dt)
         obs = pd.Series(np.random.uniform(0, 1, nval), \
@@ -332,7 +345,6 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_monthly2daily_flat(self):
         ''' Test monthly2daily with flat disaggregation'''
-
         dates = pd.date_range('1990-01-01', '2000-12-31', freq='MS')
         nval = len(dates)
         se = pd.Series(np.exp(np.random.normal(size=nval)), index=dates)
@@ -344,7 +356,6 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_monthly2daily_cubic(self):
         ''' Test monthly2daily with cubic disaggregation'''
-
         dates = pd.date_range('1990-01-01', '2000-12-31', freq='MS')
         nval = len(dates)
         se = pd.Series(np.exp(np.random.normal(size=nval)), index=dates)
@@ -357,6 +368,8 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_combi(self):
         ''' Test number of combinations '''
+        if not HAS_C_MODULES:
+            self.skipTest('Missing C modules')
 
         for n in range(1, 65):
             for k in range(n):
@@ -369,6 +382,8 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_var2h_hourly(self):
         ''' Test conversion to hourly for hourly data '''
+        if not HAS_C_MODULES:
+            self.skipTest('Missing C modules')
 
         nval = 24*365*20
         dt = pd.date_range(start='1968-01-01', freq='H', periods=nval)
@@ -384,6 +399,8 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_var2h_5min(self):
         ''' Test conversion to hourly for 10min data '''
+        if not HAS_C_MODULES:
+            self.skipTest('Missing C modules')
 
         nval = 24 #*365*3
         dt = pd.date_range(start='1968-01-01', freq='5min', periods=nval*6)
@@ -408,6 +425,8 @@ class UtilsTestCase(unittest.TestCase):
     def test_var2h_variable(self):
         ''' Test variable to hourly conversion by comparing with python
         algorithm '''
+        if not HAS_C_MODULES:
+            self.skipTest('Missing C modules')
 
         nvalh =50
         varsec = []
@@ -458,6 +477,8 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_var2h_longgap(self):
         ''' Test variable to hourly conversion and apply to dataset '''
+        if not HAS_C_MODULES:
+            self.skipTest('Missing C modules')
 
         nval = 6*20
         index = pd.date_range('1970-01-01', freq='10min', periods=nval)
@@ -475,6 +496,9 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_flathomogen(self):
         ''' Test flat disaggregation '''
+        if not HAS_C_MODULES:
+            self.skipTest('Missing C modules')
+
         dt = pd.date_range('2000-01-10', '2000-04-05')
         a = pd.Series(np.random.uniform(0, 1, size=len(dt)), index=dt)
         a[15] = np.nan

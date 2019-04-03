@@ -12,7 +12,12 @@ from hydrodiy.stat.sutils import ppos
 from hydrodiy.stat.metrics import corr, nse
 from hydrodiy.stat.transform import Identity, Log
 
-import c_hydrodiy_data
+# Try to import C code
+HAS_C_MODULES = True
+try:
+    import c_hydrodiy_data
+except ImportError:
+    HAS_C_MODULES = False
 
 EPS = 1e-10
 
@@ -50,6 +55,11 @@ def eckhardt(flow, thresh=0.95, tau=20, BFI_max=0.8, timestep_type=1):
     >>> signatures.baseflow(q)
 
     '''
+    # Check C modules are available
+    if not HAS_C_MODULES:
+        raise ValueError('Compiled C modules are not available, '+\
+                'please run python setup.py build')
+
     # run C code via cython
     thresh = np.float64(thresh)
     tau = np.float64(tau)
