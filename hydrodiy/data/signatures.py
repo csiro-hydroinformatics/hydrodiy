@@ -8,13 +8,14 @@ import pandas as pd
 
 from hydrodiy.data.qualitycontrol import ismisscens
 from hydrodiy.data.dutils import lag, flathomogen
-from hydrodiy.stat.sutils import ppos
-from hydrodiy.stat.metrics import corr, nse
-from hydrodiy.stat.transform import Identity, Log
 
 # Try to import C code
 HAS_C_MODULES = True
 try:
+    from hydrodiy.stat.sutils import ppos
+    from hydrodiy.stat.metrics import corr, nse
+    from hydrodiy.stat.transform import Identity, Log
+
     import c_hydrodiy_data
 except ImportError:
     HAS_C_MODULES = False
@@ -106,6 +107,10 @@ def fdcslope(x, q1=90, q2=100, cst=0.375, trans=Identity()):
     qq : numpy.ndarray
         The two quantiles corresponding to q1 and q2
     '''
+    # Check C modules are available
+    if not HAS_C_MODULES:
+        raise ValueError('Compiled C modules are not available, '+\
+                'please run python setup.py build')
     # Check data
     icens = ismisscens(x)
     iok = icens > 0

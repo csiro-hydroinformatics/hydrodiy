@@ -25,10 +25,15 @@ class SignaturesTestCase(unittest.TestCase):
         flow = data.iloc[:, 2]
         bflow_expected = data.iloc[:, 3]
 
-        bflow = signatures.eckhardt(flow, \
+        try:
+            bflow = signatures.eckhardt(flow, \
                         tau=100,\
                         thresh=0.95, \
                         BFI_max = 0.80)
+        except Exception as err:
+            errs = str(err)
+            if errs.startswith('Compiled C modules'):
+                self.skipTest('Missing C modules')
 
         self.assertTrue(np.allclose(bflow_expected, bflow))
 
@@ -40,8 +45,14 @@ class SignaturesTestCase(unittest.TestCase):
         self.assertTrue(np.isclose(slp, 1.01))
         self.assertTrue(np.allclose(qq, [0.9, 1]))
 
-        slplog, qqlog = signatures.fdcslope(x, q1=90, q2=100, cst=0.5, \
+        try:
+            slplog, qqlog = signatures.fdcslope(x, q1=90, q2=100, cst=0.5, \
                         trans=transform.Log())
+        except Exception as err:
+            errs = str(err)
+            if errs.startswith('Compiled C modules'):
+                self.skipTest('Missing C modules')
+
         self.assertTrue(np.isclose(slplog, 1.063857825))
         self.assertTrue(np.allclose(qq, qqlog))
 
