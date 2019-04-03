@@ -17,42 +17,47 @@ def read(fname):
     return open(os.path.join(os.path.dirname(os.path.abspath(__file__)), fname)).read()
 
 
-# Cython C extensions
-ext_modules = [
-    Extension(
-        name='c_hydrodiy_data',
-        sources=[
-            'hydrodiy/data/c_hydrodiy_data.pyx',
-            'hydrodiy/data/c_dateutils.c',
-            'hydrodiy/data/c_qualitycontrol.c',
-            'hydrodiy/data/c_dutils.c',
-            'hydrodiy/data/c_var2h.c',
-            'hydrodiy/data/c_baseflow.c'
-        ],
-        include_dirs=[numpy.get_include()]),
+# Define Cython C extensions
+if os.getenv('HYDRODIY_NO_BUILD') == '1':
+    # Not extension
+    ext_modules = []
+else:
+    ext_modules = [
+        Extension(
+            name='c_hydrodiy_data',
+            sources=[
+                'hydrodiy/data/c_hydrodiy_data.pyx',
+                'hydrodiy/data/c_dateutils.c',
+                'hydrodiy/data/c_qualitycontrol.c',
+                'hydrodiy/data/c_dutils.c',
+                'hydrodiy/data/c_var2h.c',
+                'hydrodiy/data/c_baseflow.c'
+            ],
+            include_dirs=[numpy.get_include()]),
 
-    Extension(
-        name='c_hydrodiy_stat',
-        sources=[
-            'hydrodiy/stat/c_hydrodiy_stat.pyx',
-            'hydrodiy/stat/c_crps.c',
-            'hydrodiy/stat/c_dscore.c',
-            'hydrodiy/stat/c_olsleverage.c',
-            'hydrodiy/stat/c_ar1.c',
-            'hydrodiy/stat/ADinf.c',
-            'hydrodiy/stat/AnDarl.c',
-            'hydrodiy/stat/c_andersondarling.c'
-        ],
-        include_dirs=[numpy.get_include()]),
-    Extension(
-        name='c_hydrodiy_gis',
-        sources=[
-            'hydrodiy/gis/c_hydrodiy_gis.pyx',
-            'hydrodiy/gis/c_grid.c',
-            'hydrodiy/gis/c_catchment.c'
-        ],
-        include_dirs=[numpy.get_include()])
-]
+        Extension(
+            name='c_hydrodiy_stat',
+            sources=[
+                'hydrodiy/stat/c_hydrodiy_stat.pyx',
+                'hydrodiy/stat/c_crps.c',
+                'hydrodiy/stat/c_dscore.c',
+                'hydrodiy/stat/c_olsleverage.c',
+                'hydrodiy/stat/c_ar1.c',
+                'hydrodiy/stat/ADinf.c',
+                'hydrodiy/stat/AnDarl.c',
+                'hydrodiy/stat/c_andersondarling.c'
+            ],
+            include_dirs=[numpy.get_include()]),
+        Extension(
+            name='c_hydrodiy_gis',
+            sources=[
+                'hydrodiy/gis/c_hydrodiy_gis.pyx',
+                'hydrodiy/gis/c_grid.c',
+                'hydrodiy/gis/c_catchment.c'
+            ],
+            include_dirs=[numpy.get_include()])
+    ]
+
 cmdclass = versioneer.get_cmdclass()
 cmdclass['build_ext'] = build_ext
 
