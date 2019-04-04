@@ -90,6 +90,16 @@ jobs:
 
             # Get list of functions skipping files with basemap
             python -W ignore listmembers.py -s
+
+            # Remove C modules and rerun tests
+            rm -f *.so
+            rm -rf build
+            python -W ignore `which nosetests` hydrodiy/io
+            python -W ignore `which nosetests` hydrodiy/data
+            python -W ignore `which nosetests` hydrodiy/stat
+            python -W ignore `which nosetests` hydrodiy/plot
+            python -W ignore `which nosetests` hydrodiy/gis
+
             
           no_output_timeout: 30m
 
