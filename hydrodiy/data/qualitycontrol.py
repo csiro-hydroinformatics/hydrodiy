@@ -4,11 +4,11 @@ import pandas as pd
 from hydrodiy.data import dutils
 
 # Try to import C code
-HAS_C_MODULES = True
+HAS_C_DATA_MODULE = True
 try:
     import c_hydrodiy_data
 except ImportError:
-    HAS_C_MODULES = False
+    HAS_C_DATA_MODULE = False
 
 
 def ismisscens(x, censor=0., eps=1e-10):
@@ -101,9 +101,9 @@ def islinear(data, npoints=3, tol=1e-6, thresh=0.):
     array([False, True, False, False, True, False], dtype=int32)
 
     '''
-    # Check C modules are available
-    if not HAS_C_MODULES:
-        raise ValueError('Compiled C modules are not available, '+\
+    # Check C module is available
+    if not HAS_C_DATA_MODULE:
+        raise ValueError('Compiled C c_hydrodiy_data is not available, '+\
                 'please run python setup.py build')
 
     # Check data

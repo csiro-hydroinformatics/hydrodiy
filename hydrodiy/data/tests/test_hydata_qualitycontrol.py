@@ -3,6 +3,7 @@ import unittest
 import numpy as np
 import pandas as pd
 from hydrodiy.data import qualitycontrol as qc
+from hydrodiy.data.dutils import HAS_C_DATA_MODULE
 
 np.random.seed(0)
 
@@ -38,41 +39,37 @@ class QualityControlTestCase(unittest.TestCase):
 
     def test_islinear_error(self):
         ''' Test is linear errors '''
+        if not HAS_C_DATA_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_data')
+
         nval = 20
         data = np.random.normal(size=nval)
 
         try:
             status = qc.islinear(data, npoints=0)
         except Exception as err:
-            errs = str(err)
-            if not errs.startswith('Compiled C modules'):
-                self.assertTrue(errs.startswith('Expected npoints'))
-            else:
-                self.skipTest('Missing C modules')
+            self.assertTrue(str(err).startswith('Expected npoints'))
         else:
             raise Exception('Problem with error handling')
 
         try:
             status = qc.islinear(data, tol=1e-11)
         except Exception as err:
-            errs = str(err)
-            self.assertTrue(errs.startswith('Expected tol'))
+            self.assertTrue(str(err).startswith('Expected tol'))
         else:
             raise Exception('Problem with error handling')
 
 
     def test_islinear_1d_linspace(self):
         ''' Test is linear 1d against the numpy linspace function '''
+        if not HAS_C_DATA_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_data')
+
         nval = 20
         data = np.random.normal(size=nval)
         data[3:17] = np.linspace(0, 1, 14)
 
-        try:
-            status = qc.islinear(data, npoints=1)
-        except Exception as err:
-            errs = str(err)
-            if errs.startswith('Compiled C modules'):
-                self.skipTest('Missing C modules')
+        status = qc.islinear(data, npoints=1)
 
         expected = np.zeros(data.shape[0])
         expected[3:17] = 1
@@ -82,16 +79,14 @@ class QualityControlTestCase(unittest.TestCase):
 
     def test_islinear_1d_constant(self):
         ''' Test is linear 1d against constant data '''
+        if not HAS_C_DATA_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_data')
+
         nval = 20
         data = np.random.normal(size=nval)
         data[3:17] = 100
 
-        try:
-            status = qc.islinear(data, npoints=1)
-        except Exception as err:
-            errs = str(err)
-            if errs.startswith('Compiled C modules'):
-                self.skipTest('Missing C modules')
+        status = qc.islinear(data, npoints=1)
 
         expected = np.zeros(data.shape[0])
         expected[3:17] = 2
@@ -101,17 +96,15 @@ class QualityControlTestCase(unittest.TestCase):
 
     def test_islinear_1d_nan(self):
         ''' Test is linear 1d against nan data '''
+        if not HAS_C_DATA_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_data')
+
         nval = 20
         data = np.random.normal(size=nval)
         data[3:17] = np.linspace(0, 1, 14)
         data[12:16] = np.nan
 
-        try:
-            status = qc.islinear(data, npoints=1)
-        except Exception as err:
-            errs = str(err)
-            if errs.startswith('Compiled C modules'):
-                self.skipTest('Missing C modules')
+        status = qc.islinear(data, npoints=1)
 
         expected = np.zeros(data.shape[0])
         expected[3:12] = 1
@@ -121,6 +114,9 @@ class QualityControlTestCase(unittest.TestCase):
 
     def test_islinear_1d_linspace_npoints(self):
         ''' Test is linear 1d against the numpy linspace function '''
+        if not HAS_C_DATA_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_data')
+
         nval = 30
         data = np.random.normal(size=nval)
 
@@ -130,12 +126,7 @@ class QualityControlTestCase(unittest.TestCase):
         data[idxlin] = np.linspace(0, 1, 11)
 
         for npoints in range(2, 5):
-            try:
-                status = qc.islinear(data, npoints)
-            except Exception as err:
-                errs = str(err)
-                if errs.startswith('Compiled C modules'):
-                    self.skipTest('Missing C modules')
+            status = qc.islinear(data, npoints)
 
             expected = np.zeros(data.shape[0])
             expected[i1:i2+1] = 1
@@ -146,16 +137,14 @@ class QualityControlTestCase(unittest.TestCase):
 
     def test_islinear_1d_zeros(self):
         ''' Test if islinear 1d is sensitive to zeros '''
+        if not HAS_C_DATA_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_data')
+
         nval = 20
 
         data = np.random.normal(size=nval)
         data[5:9] = 0.
-        try:
-            status = qc.islinear(data, npoints=1, thresh=data.min()-1)
-        except Exception as err:
-            errs = str(err)
-            if errs.startswith('Compiled C modules'):
-                self.skipTest('Missing C modules')
+        status = qc.islinear(data, npoints=1, thresh=data.min()-1)
 
         expected = np.zeros(data.shape[0])
         expected[5:9] = 2
@@ -168,14 +157,12 @@ class QualityControlTestCase(unittest.TestCase):
 
     def test_islinear_1d_int(self):
         ''' Test is islinear 1d against integer '''
+        if not HAS_C_DATA_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_data')
+
         data = np.array([0.]*20+[0., 1., 2., 3., 4., 5., 3.]+[0.]*20)
         for npoints in range(1, 7):
-            try:
-                status = qc.islinear(data, npoints=npoints)
-            except Exception as err:
-                errs = str(err)
-                if errs.startswith('Compiled C modules'):
-                    self.skipTest('Missing C modules')
+            status = qc.islinear(data, npoints=npoints)
 
             expected = np.zeros(data.shape[0])
             if npoints<=4:
@@ -187,6 +174,9 @@ class QualityControlTestCase(unittest.TestCase):
 
     def test_islinear_sequence(self):
         ''' Test is_linear for two consecutive sequences of linear data '''
+        if not HAS_C_DATA_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_data')
+
         nval = 50
         data = np.random.uniform(size=nval)
         ia1, ia2 = 20, 24
@@ -196,12 +186,7 @@ class QualityControlTestCase(unittest.TestCase):
         data[ib1:ib2+1] = np.linspace(0, 1, 6)
 
         for npoints in range(1, 10):
-            try:
-                status = qc.islinear(data, npoints)
-            except Exception as err:
-                errs = str(err)
-                if errs.startswith('Compiled C modules'):
-                    self.skipTest('Missing C modules')
+            status = qc.islinear(data, npoints)
 
             expected = np.zeros(nval)
             if npoints <= 3:

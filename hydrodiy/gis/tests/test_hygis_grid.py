@@ -18,7 +18,7 @@ try:
 except ImportError:
     HAS_PYPROJ = False
 
-from hydrodiy.gis.grid import Grid, Catchment
+from hydrodiy.gis.grid import Grid, Catchment, HAS_C_GIS_MODULE
 from hydrodiy.gis.grid import accumulate, voronoi, delineate_river, slope
 from hydrodiy.gis.grid import get_mask
 from hydrodiy.io import csv
@@ -158,6 +158,9 @@ class GridTestCase(unittest.TestCase):
 
 
     def test_neighbours(self):
+        if not HAS_C_GIS_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_gis')
+
         gr = Grid(**self.config)
 
         idxcells = []
@@ -197,6 +200,9 @@ class GridTestCase(unittest.TestCase):
 
 
     def test_coord2cell(self):
+        if not HAS_C_GIS_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_gis')
+
         gr = Grid(**self.config)
 
         csz = gr.cellsize
@@ -220,6 +226,9 @@ class GridTestCase(unittest.TestCase):
 
 
     def test_slice(self):
+        if not HAS_C_GIS_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_gis')
+
         ndim = 11
         gr = Grid('test', ndim)
         vect = np.arange(0, int(ndim/2)+1)+1.
@@ -285,6 +294,9 @@ class GridTestCase(unittest.TestCase):
 
 
     def test_clip(self):
+        if not HAS_C_GIS_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_gis')
+
         gr = Grid(**self.config)
         gr.data = np.arange(gr.nrows*gr.ncols).reshape((gr.nrows, gr.ncols))
         grclip = gr.clip(132.1, -35.1, 137.6, -26.9)
@@ -319,6 +331,9 @@ class GridTestCase(unittest.TestCase):
 
     def test_interpolate_small(self):
         ''' Small grid interpolation '''
+        if not HAS_C_GIS_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_gis')
+
         gr = Grid(**self.config)
         gr.data = np.arange(gr.nrows*gr.ncols).reshape((gr.nrows, gr.ncols))
 
@@ -342,6 +357,8 @@ class GridTestCase(unittest.TestCase):
 
     def test_interpolate_large(self):
         ''' Large grid interpolation '''
+        if not HAS_C_GIS_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_gis')
 
         cfg = {
             'name': 'interpolate', \
@@ -393,6 +410,9 @@ class CatchmentTestCase(unittest.TestCase):
 
     def setUp(self):
         print('\t=> CatchmentTestCase')
+
+        if not HAS_C_GIS_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_gis')
 
         source_file = os.path.abspath(__file__)
         self.ftest = os.path.dirname(source_file)

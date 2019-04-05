@@ -14,11 +14,11 @@ from hydrodiy.stat.metrics import corr, nse
 from hydrodiy.stat.transform import Identity, Log
 
 # Try to import C code
-HAS_C_MODULES = True
+HAS_C_DATA_MODULE = True
 try:
     import c_hydrodiy_data
 except ImportError:
-    HAS_C_MODULES = False
+    HAS_C_DATA_MODULE = False
 
 EPS = 1e-10
 
@@ -57,8 +57,8 @@ def eckhardt(flow, thresh=0.95, tau=20, BFI_max=0.8, timestep_type=1):
 
     '''
     # Check C modules are available
-    if not HAS_C_MODULES:
-        raise ValueError('Compiled C modules are not available, '+\
+    if not HAS_C_DATA_MODULE:
+        raise ValueError('Compiled C module c_hydrodiy_data is not available, '+\
                 'please run python setup.py build')
 
     # run C code via cython

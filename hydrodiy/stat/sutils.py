@@ -5,7 +5,12 @@ import pandas as pd
 
 from scipy.stats import norm
 
-import c_hydrodiy_stat
+# Try to import C code
+HAS_C_STAT_MODULE = True
+try:
+    import c_hydrodiy_stat
+except ImportError:
+    HAS_C_STAT_MODULE = False
 
 
 def ppos(nval, cst=0.3):
@@ -137,6 +142,10 @@ def ar1innov(alpha, innov, yini=0.):
     True
 
     '''
+    if not HAS_C_STAT_MODULE:
+        raise ValueError('C module c_hydrodiy_stat is not available, '+\
+                'please run python setup.py build')
+
     shape = innov.shape
     innov = np.atleast_2d(innov).astype(np.float64)
 
@@ -202,6 +211,10 @@ def ar1inverse(alpha, inputs, yini=0):
     True
 
     '''
+    if not HAS_C_STAT_MODULE:
+        raise ValueError('C module c_hydrodiy_stat is not available, '+\
+                'please run python setup.py build')
+
     shape = inputs.shape
     inputs = np.atleast_2d(inputs).astype(np.float64)
 

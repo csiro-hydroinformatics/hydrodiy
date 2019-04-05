@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 
 from hydrodiy.data import signatures
+from hydrodiy.data.dutils import HAS_C_DATA_MODULE
+
 from hydrodiy.stat import transform
 from hydrodiy.io import csv
 
@@ -19,21 +21,18 @@ class SignaturesTestCase(unittest.TestCase):
 
     def test_eckhardt(self):
         ''' Test Eckhardt baseflow '''
+        if not HAS_C_DATA_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_data')
 
         fd = os.path.join(self.ftest, 'baseflow_RDF_EC.csv')
         data, _  = csv.read_csv(fd)
         flow = data.iloc[:, 2]
         bflow_expected = data.iloc[:, 3]
 
-        try:
-            bflow = signatures.eckhardt(flow, \
-                        tau=100,\
-                        thresh=0.95, \
-                        BFI_max = 0.80)
-        except Exception as err:
-            errs = str(err)
-            if errs.startswith('Compiled C modules'):
-                self.skipTest('Missing C modules')
+        bflow = signatures.eckhardt(flow, \
+                    tau=100,\
+                    thresh=0.95, \
+                    BFI_max = 0.80)
 
         self.assertTrue(np.allclose(bflow_expected, bflow))
 
@@ -70,6 +69,9 @@ class SignaturesTestCase(unittest.TestCase):
 
     def test_goue(self):
         ''' Test goue computation '''
+        if not HAS_C_DATA_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_data')
+
         dt = pd.date_range('2000-01-10', '2000-06-30')
         nt = len(dt)
         values = np.random.uniform(0, 1, nt)
@@ -93,6 +95,7 @@ class SignaturesTestCase(unittest.TestCase):
         values = np.random.uniform(0, 1, nval)
 
         rho = signatures.lag1corr(values)
+
 
 if __name__ == "__main__":
     unittest.main()

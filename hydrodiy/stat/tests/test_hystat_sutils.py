@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 
 from hydrodiy.io import csv
 from hydrodiy.stat import sutils
+from hydrodiy.stat.sutils import HAS_C_STAT_MODULE
 
 np.random.seed(0)
 
@@ -44,6 +45,9 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_acf_all(self):
+        if not HAS_C_STAT_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_stat')
+
         nval = 100000
         rho = 0.8
         sig = 2
@@ -81,6 +85,9 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_acf_idx(self):
+        if not HAS_C_STAT_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_stat')
+
         nval = 5000
         sig = 2
         rho1 = 0.7
@@ -100,6 +107,9 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_ar1_forward(self):
+        if not HAS_C_STAT_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_stat')
+
         nval = 10
         alpha = 0.9
         yini = 10
@@ -130,6 +140,9 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_ar1_backward(self):
+        if not HAS_C_STAT_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_stat')
+
         nval = 10
         alpha = 0.9
         yini = 10
@@ -163,6 +176,9 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_ar1_forward_backward(self):
+        if not HAS_C_STAT_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_stat')
+
         nval = 100
         alpha = 0.9
         yini = 10
@@ -183,6 +199,9 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_ar1_nan(self):
+        if not HAS_C_STAT_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_stat')
+
         nval = 20
         innov = np.random.normal(size=nval)
         innov[5:10] = np.nan
@@ -199,6 +218,8 @@ class UtilsTestCase(unittest.TestCase):
         self.assertTrue(np.allclose(innov[11:], innov2[1:]))
 
     def test_ar1_variable(self):
+        if not HAS_C_STAT_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_stat')
 
         nval = 500000
         innov = np.random.normal(size=nval)

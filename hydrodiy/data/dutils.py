@@ -12,11 +12,11 @@ from numpy.polynomial import polynomial as poly
 from hydrodiy import PYVERSION
 
 # Try to import C code
-HAS_C_MODULES = True
+HAS_C_DATA_MODULE = True
 try:
     import c_hydrodiy_data
 except ImportError:
-    HAS_C_MODULES = False
+    HAS_C_DATA_MODULE = False
 
 
 def sequence_true(values):
@@ -257,8 +257,8 @@ def aggregate(aggindex, inputs, oper=0, maxnan=0):
 
     '''
     # Check C modules are available
-    if not HAS_C_MODULES:
-        raise ValueError('Compiled C modules are not available, '+\
+    if not HAS_C_DATA_MODULE:
+        raise ValueError('C module c_hydrodiy_data is not available, '+\
                 'please run python setup.py build')
 
     # Check inputs
@@ -313,8 +313,8 @@ def flathomogen(aggindex, inputs, maxnan=0):
 
     '''
     # Check C modules are available
-    if not HAS_C_MODULES:
-        raise ValueError('Compiled C modules are not available, '+\
+    if not HAS_C_DATA_MODULE:
+        raise ValueError('C module c_hydrodiy_data is not available, '+\
                 'please run python setup.py build')
 
     # Check inputs
@@ -499,8 +499,8 @@ def var2h(se, maxgapsec=5*86400, display=False):
         Hourly series
     '''
     # Check C modules are available
-    if not HAS_C_MODULES:
-        raise ValueError('Compiled C modules are not available, '+\
+    if not HAS_C_DATA_MODULE:
+        raise ValueError('C module c_hydrodiy_data is not available, '+\
                 'please run python setup.py build')
 
     # Allocate arrays

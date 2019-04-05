@@ -10,13 +10,11 @@ from scipy.special import comb
 
 from hydrodiy.io import csv
 from hydrodiy.data import dutils
+from hydrodiy.data.dutils import HAS_C_DATA_MODULE
 
 # Try to import C code
-HAS_C_MODULES = True
-try:
+if HAS_C_DATA_MODULE:
     import c_hydrodiy_data as chd
-except ImportError:
-    HAS_C_MODULES = False
 
 # Utility function to aggregate data
 # using various version of pandas
@@ -204,7 +202,7 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_aggmonths(self):
-
+        ''' Test month aggregation '''
         # Generate daily data with gaps
         index = pd.date_range('1950-01-01', '1950-12-31', freq='D')
         nval = len(index)
@@ -250,6 +248,7 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_atmpressure(self):
+        ''' Test computation of atmospheric pressure '''
         alt = 0
         p = dutils.atmpressure(alt)
         self.assertTrue(np.allclose(p, 101325.))
@@ -265,8 +264,8 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_aggregate(self):
         ''' Test aggregation '''
-        if not HAS_C_MODULES:
-            self.skipTest('Missing C modules')
+        if not HAS_C_DATA_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_data')
 
         dt = pd.date_range('1990-01-01', '2000-12-31')
         nval = len(dt)
@@ -299,8 +298,8 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_aggregate_error(self):
         ''' Test aggregation error '''
-        if not HAS_C_MODULES:
-            self.skipTest('Missing C modules')
+        if not HAS_C_DATA_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_data')
 
         dt = pd.date_range('1990-01-01', '2000-12-31')
         nval = len(dt)
@@ -368,8 +367,8 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_combi(self):
         ''' Test number of combinations '''
-        if not HAS_C_MODULES:
-            self.skipTest('Missing C modules')
+        if not HAS_C_DATA_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_data')
 
         for n in range(1, 65):
             for k in range(n):
@@ -382,8 +381,8 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_var2h_hourly(self):
         ''' Test conversion to hourly for hourly data '''
-        if not HAS_C_MODULES:
-            self.skipTest('Missing C modules')
+        if not HAS_C_DATA_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_data')
 
         nval = 24*365*20
         dt = pd.date_range(start='1968-01-01', freq='H', periods=nval)
@@ -399,8 +398,8 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_var2h_5min(self):
         ''' Test conversion to hourly for 10min data '''
-        if not HAS_C_MODULES:
-            self.skipTest('Missing C modules')
+        if not HAS_C_DATA_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_data')
 
         nval = 24 #*365*3
         dt = pd.date_range(start='1968-01-01', freq='5min', periods=nval*6)
@@ -425,8 +424,8 @@ class UtilsTestCase(unittest.TestCase):
     def test_var2h_variable(self):
         ''' Test variable to hourly conversion by comparing with python
         algorithm '''
-        if not HAS_C_MODULES:
-            self.skipTest('Missing C modules')
+        if not HAS_C_DATA_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_data')
 
         nvalh =50
         varsec = []
@@ -477,8 +476,8 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_var2h_longgap(self):
         ''' Test variable to hourly conversion and apply to dataset '''
-        if not HAS_C_MODULES:
-            self.skipTest('Missing C modules')
+        if not HAS_C_DATA_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_data')
 
         nval = 6*20
         index = pd.date_range('1970-01-01', freq='10min', periods=nval)
@@ -496,8 +495,8 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_flathomogen(self):
         ''' Test flat disaggregation '''
-        if not HAS_C_MODULES:
-            self.skipTest('Missing C modules')
+        if not HAS_C_DATA_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_data')
 
         dt = pd.date_range('2000-01-10', '2000-04-05')
         a = pd.Series(np.random.uniform(0, 1, size=len(dt)), index=dt)

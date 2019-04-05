@@ -9,8 +9,13 @@ from scipy.stats import shapiro
 from scipy.optimize import fmin_powell as fmin
 
 from hydrodiy.stat import sutils
-import c_hydrodiy_stat
 
+# Try to import C code
+HAS_C_STAT_MODULE = True
+try:
+    import c_hydrodiy_stat
+except ImportError:
+    HAS_C_STAT_MODULE = False
 
 # Setup login
 LOGGER = logging.getLogger(__name__)
@@ -501,6 +506,9 @@ class Linreg:
         cook : numpy.ndarray
             Cook's distance for each regression point
         '''
+        if not HAS_C_STAT_MODULE:
+            raise ValueError('C module c_hydrodiy_stat is not available, '+\
+                'please run python setup.py build')
 
         if self.regtype != 'ols':
             raise ValueError('Can only compute leverage for ols regression')
@@ -544,6 +552,9 @@ class Linreg:
         predint : pandas.DataFrame
             Prediction intervals
         '''
+        if not HAS_C_STAT_MODULE:
+            raise ValueError('C module c_hydrodiy_stat is not available, '+\
+                'please run python setup.py build')
 
         # Generate regression inputs and output
         if x is None:
@@ -595,7 +606,8 @@ class Linreg:
 
         else:
             if not hasattr(self, 'params_boot'):
-                raise ValueError('No bootstrap results, please run Linreg.boot')
+                raise ValueError('No bootstrap results, '+\
+                                    'please run Linreg.boot')
 
             # Computed predicted values with all bootstrap parameters
             pboot = self.params_boot

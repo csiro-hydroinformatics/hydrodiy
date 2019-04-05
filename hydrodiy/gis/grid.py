@@ -17,7 +17,13 @@ from scipy.interpolate import griddata
 
 import matplotlib.pyplot as plt
 
-import c_hydrodiy_gis
+
+# Try to import C code
+HAS_C_GIS_MODULE = True
+try:
+    import c_hydrodiy_gis
+except ImportError:
+    HAS_C_GIS_MODULE = False
 
 # Codes indicating the flow direction for a cell
 # using ESRI convention
@@ -475,6 +481,10 @@ class Grid(object):
             1D array containing cell numbers
 
         '''
+        if not HAS_C_GIS_MODULE:
+            raise ValueError('C module c_hydrodiy_gis is not available, '+\
+                'please run python setup.py build')
+
         xll, yll, csz, nrows, ncols = self._getsize()
 
         xycoords = np.ascontiguousarray(np.atleast_2d(xycoords), \
@@ -512,6 +522,10 @@ class Grid(object):
             y coords in second column.
 
         '''
+        if not HAS_C_GIS_MODULE:
+            raise ValueError('C module c_hydrodiy_gis is not available, '+\
+                'please run python setup.py build')
+
         xll, yll, csz, nrows, ncols = self._getsize()
 
         idxcells = np.ascontiguousarray(np.atleast_1d(idxcells), \
@@ -544,6 +558,10 @@ class Grid(object):
             1D array containing the 9 neighbouring cell number
 
         '''
+        if not HAS_C_GIS_MODULE:
+            raise ValueError('C module c_hydrodiy_gis is not available, '+\
+                'please run python setup.py build')
+
         _, _, _, nrows, ncols = self._getsize()
 
         idxcell = np.int64(idxcell)
@@ -571,6 +589,10 @@ class Grid(object):
         zslice : numpy.ndarray
             1D array containing sliced values from gridded data
         '''
+        if not HAS_C_GIS_MODULE:
+            raise ValueError('C module c_hydrodiy_gis is not available, '+\
+                'please run python setup.py build')
+
         # Get inputs
         xll, yll, csz, _, _ = self._getsize()
 
@@ -619,7 +641,6 @@ class Grid(object):
         clone : hydrodiy.gis.grid.Grid
             Cloned grid
         '''
-
         grid = copy.deepcopy(self)
 
         if not dtype is None:
@@ -866,6 +887,10 @@ class Catchment(object):
 
     def upstream(self, idxdown):
         ''' Get upstream cell of a given cell '''
+        if not HAS_C_GIS_MODULE:
+            raise ValueError('C module c_hydrodiy_gis is not available, '+\
+                'please run python setup.py build')
+
         idxdown = np.atleast_1d(idxdown).astype(np.int64)
         idxup = np.zeros((len(idxdown), 9), dtype=np.int64)
         ierr = c_hydrodiy_gis.upstream(FLOWDIRCODE,
@@ -880,6 +905,10 @@ class Catchment(object):
 
     def downstream(self, idxup):
         ''' Get downstream cell of a given cell '''
+        if not HAS_C_GIS_MODULE:
+            raise ValueError('C module c_hydrodiy_gis is not available, '+\
+                'please run python setup.py build')
+
         idxup = np.atleast_1d(idxup).astype(np.int64)
         idxdown = np.zeros(len(idxup), dtype=np.int64)
 
@@ -905,6 +934,10 @@ class Catchment(object):
         nval : int
             Maximum number of cells in area
         '''
+        if not HAS_C_GIS_MODULE:
+            raise ValueError('C module c_hydrodiy_gis is not available, '+\
+                'please run python setup.py build')
+
         self._idxoutlet = np.int64(idxoutlet)
 
         if idxinlets is None:
@@ -933,6 +966,9 @@ class Catchment(object):
 
     def delineate_boundary(self):
         ''' Delineate catchment boundary from area '''
+        if not HAS_C_GIS_MODULE:
+            raise ValueError('C module c_hydrodiy_gis is not available, '+\
+                'please run python setup.py build')
 
         if self._idxcells_area is None:
             raise ValueError('idxcells_area is None, please' + \
@@ -970,6 +1006,9 @@ class Catchment(object):
 
     def intersect(self, grid):
         ''' Intersect catchment area with other grid '''
+        if not HAS_C_GIS_MODULE:
+            raise ValueError('C module c_hydrodiy_gis is not available, '+\
+                'please run python setup.py build')
 
         if self._idxcells_area is None:
             raise ValueError('idxcells_area is None, ' + \
@@ -1136,6 +1175,10 @@ def delineate_river(flowdir, idxupstream, nval=1000000):
         - Col5 = y coordinate of point
         - Col6 = Index of cells forming the river
     '''
+    if not HAS_C_GIS_MODULE:
+        raise ValueError('C module c_hydrodiy_gis is not available, '+\
+            'please run python setup.py build')
+
     # Check type of flowdir
     flowdir.dtype = np.int64
 
@@ -1186,6 +1229,10 @@ def accumulate(flowdir, to_accumulate=None, nprint=100, \
     accumulation : hydrodiy.gis.grid.Catchment
         Accumulated field
     '''
+    if not HAS_C_GIS_MODULE:
+        raise ValueError('C module c_hydrodiy_gis is not available, '+\
+            'please run python setup.py build')
+
     nprint = np.int64(nprint)
 
     if max_accumulated_cells == -1:
@@ -1238,6 +1285,9 @@ def voronoi(catchment, xypoints):
         (i.e. percentage of Voronoi cell falling the catchment area
         for each point)
     '''
+    if not HAS_C_GIS_MODULE:
+        raise ValueError('C module c_hydrodiy_gis is not available, '+\
+            'please run python setup.py build')
 
     if catchment._idxcells_area is None:
         raise ValueError('Catchment idxcells_area is None, ' + \
@@ -1302,6 +1352,9 @@ def get_mask(name):
 
 def slope(flowdir, altitude, nprint=100):
     ''' Compute flow accumulation from the flow direction grid '''
+    if not HAS_C_GIS_MODULE:
+        raise ValueError('C module c_hydrodiy_gis is not available, '+\
+            'please run python setup.py build')
 
     nprint = np.int64(nprint)
 
