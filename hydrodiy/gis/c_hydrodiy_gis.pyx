@@ -3,6 +3,14 @@ cimport numpy as np
 
 np.import_array()
 
+cdef extern from 'c_points_inside_polygon.h':
+    int c_inside(int npoints, double * points,
+        int nvertices, double * polygon,
+        double atol,
+        double * polygon_xlim, double * polygon_ylim,
+        int * inside)
+
+
 cdef extern from 'c_grid.h':
     long long c_coord2cell(long long nrows, long long ncols,
         double xll, double yll, double csz,
@@ -386,6 +394,38 @@ def slope(long long nprint, double cellsize,
             <long long*> np.PyArray_DATA(flowdir),
             <double*> np.PyArray_DATA(altitude),
             <double*> np.PyArray_DATA(slopeval))
+
+    return ierr
+
+
+def points_inside_polygon(double atol,
+            np.ndarray[double, ndim=2, mode='c'] points not None,
+            np.ndarray[double, ndim=2, mode='c'] polygon not None,
+            np.ndarray[int, ndim=1, mode='c'] inside not None):
+
+    cdef int ierr
+    cdef double polygon_xlim[2]
+    cdef double polygon_ylim[2]
+
+    # check dimensions
+    assert points.shape[0] == inside.shape[0]
+    assert points.shape[1] == 2
+    assert polygon.shape[1] == 2
+
+    # Define polygon extension
+    polygon_xlim[0] = polygon[:, 0].min()
+    polygon_xlim[1] = polygon[:, 0].max()
+
+    polygon_ylim[0] = polygon[:, 1].min()
+    polygon_ylim[1] = polygon[:, 1].max()
+
+    # Run C code
+    ierr = c_inside(points.shape[0],
+            <double*> np.PyArray_DATA(points),
+            polygon.shape[0],
+            <double*> np.PyArray_DATA(polygon),
+            atol, polygon_xlim, polygon_ylim,
+            <int*> np.PyArray_DATA(inside))
 
     return ierr
 

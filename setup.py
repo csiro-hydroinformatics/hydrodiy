@@ -53,7 +53,8 @@ else:
             sources=[
                 'hydrodiy/gis/c_hydrodiy_gis.pyx',
                 'hydrodiy/gis/c_grid.c',
-                'hydrodiy/gis/c_catchment.c'
+                'hydrodiy/gis/c_catchment.c',
+                'hydrodiy/gis/c_points_inside_polygon.c'
             ],
             include_dirs=[numpy.get_include()])
     ]

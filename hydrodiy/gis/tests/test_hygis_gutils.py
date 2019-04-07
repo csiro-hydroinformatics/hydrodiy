@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 
 from hydrodiy.gis import gutils
+from hydrodiy.gis.gutils import HAS_C_GIS_MODULE
 
 class GutilsTestCase(unittest.TestCase):
 
@@ -72,6 +73,9 @@ class GutilsTestCase(unittest.TestCase):
 
     def test_point_inside_triangle(self):
         ''' Test points are inside a triangle '''
+        if not HAS_C_GIS_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_gis')
+
         points = np.array([[0.2, 0.2], [1.0, 1.0], [-0.2, -0.2]])
         inside = gutils.points_inside_polygon(points, self.triangle)
         expected = np.array([True, False, True])
@@ -86,6 +90,8 @@ class GutilsTestCase(unittest.TestCase):
 
     def test_point_inside_polygon(self):
         ''' Test points are inside a polygon '''
+        if not HAS_C_GIS_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_gis')
 
         # Additional data to test points in polygon algorithm
         fp = os.path.join(self.ftest, 'polygon.csv')
