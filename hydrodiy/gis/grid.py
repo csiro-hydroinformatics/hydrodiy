@@ -17,13 +17,14 @@ from scipy.interpolate import griddata
 
 import matplotlib.pyplot as plt
 
-
 # Try to import C code
 HAS_C_GIS_MODULE = True
 try:
     import c_hydrodiy_gis
 except ImportError:
     HAS_C_GIS_MODULE = False
+
+from hydrodiy.gis import gutils
 
 # Codes indicating the flow direction for a cell
 # using ESRI convention
@@ -337,7 +338,6 @@ class Grid(object):
         identical : bool
             Same geometry True/False
         '''
-
         identical = grd.ncols == self.ncols
         identical = identical & (grd.nrows == self.nrows)
         identical = identical & np.allclose(grd.xllcorner, self.xllcorner)
@@ -347,7 +347,6 @@ class Grid(object):
         return identical
 
 
-
     def load(self, filename):
         ''' Load data from file
 
@@ -355,9 +354,7 @@ class Grid(object):
         -----------
         filename : str
             Path to the binary data (only BIL file format at the moment)
-
         '''
-
         if not filename.endswith('bil'):
             raise ValueError('Only bil format recognised')
 
@@ -736,6 +733,37 @@ class Grid(object):
         interp_grid.data = znew
 
         return interp_grid
+
+
+    def cells_inside_polygon(self, polygon, atol=1e-8):
+        ''' Identify grid cells which have their centroid falling
+        into a defined polygon.
+
+        Parameters
+        -----------
+        polygon : numpy.array polygon
+            Coordinates of polygon vertices given as 2d numpy array [x,y]
+        atol : float
+            Tolerance factor for float number identity testing
+
+        Returns
+        -----------
+        cells_inside : pandas.DataFrame
+            Grid cells in this polygon identified by x, y and cell number
+        '''
+        # Get cell coordinates
+        ncells = np.arange(self.nrows*self.ncols)
+        points = self.cell2coord(ncells)
+
+        # Get list of cells inside polygon
+        inside = gutils.points_inside_polygon(points, polygon)
+        points = points[inside, :]
+
+        cells_inside = pd.DataFrame({'x':points[:, 0], \
+                    'y':points[:, 1], \
+                    'cell':ncells[inside]})
+
+        return cells_inside
 
 
 

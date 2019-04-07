@@ -22,6 +22,20 @@ def points_inside_polygon(points, polygon, atol=1e-8):
     see [web ref from where I got the code]
     Note that points on the polygon border are not inside!
 
+    Parameters
+    -----------
+    points : numpy.array polygon
+        Coordinates of points given as 2d numpy array [x,y]
+    polygon : numpy.array polygon
+        Coordinates of polygon vertices given as 2d numpy array [x,y]
+    atol : float
+        Tolerance factor for float number identity testing
+
+    Returns
+    -----------
+    cells_inside : numpy.array
+        List of grid cells in this polygon
+
     :param numpy.array points : A list of points given as a 2d numpy array
     :param numpy.array polygon : A polygon defined by a 2d numpy array [x,y]
     :param float atol : absolute tolerance for float comparison

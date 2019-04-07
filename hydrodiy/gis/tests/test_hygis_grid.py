@@ -405,6 +405,19 @@ class GridTestCase(unittest.TestCase):
             raise ValueError('Problem with error generation')
 
 
+    def test_cells_inside_polygon(self):
+        ''' Test cells inside polygon algorithm '''
+        nrows = 10
+        gr = Grid(nrows, nrows, dtype=np.int32)
+
+        polygon = np.array([[0.5, 2.3], [7.2, 9.5], [6.2, 2.2]])
+        inside = gr.cells_inside_polygon(polygon)
+
+        fe = os.path.join(self.ftest, 'grid_cells_inside_polygon.csv')
+        expected = pd.read_csv(fe).iloc[:, 1:]
+        self.assertTrue(np.allclose(inside, expected))
+
+
 
 class CatchmentTestCase(unittest.TestCase):
 
