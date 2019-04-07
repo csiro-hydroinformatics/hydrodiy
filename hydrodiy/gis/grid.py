@@ -149,7 +149,8 @@ class Grid(object):
                     if pname in ['pixeltype', 'byteorder',
                         'layout', 'comment', 'name']:
                         pvalue = ' '.join(line[1:]).strip().lower()
-                    elif pname.startswith('n'):
+                    elif pname.startswith('n') and \
+                                not pname.startswith('nodata'):
                         pvalue = int(line[1].strip())
                     else:
                         pvalue = float(line[1].strip())
