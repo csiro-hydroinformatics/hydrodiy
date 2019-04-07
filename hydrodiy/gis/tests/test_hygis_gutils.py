@@ -42,35 +42,6 @@ class GutilsTestCase(unittest.TestCase):
         gutils.xy2kml(x, y, fkml, siteid=siteid, icon='caution', scale=3)
 
 
-    def test_georef(self):
-        ''' Test the georef function with canberra '''
-        try:
-            lon, lat, xlim, ylim, info = gutils.georef(\
-                            'Canberra ACT 2601, Australia')
-        except:
-            self.skipTest('Failure of georef')
-
-        fj = os.path.join(self.ftest, 'canberra.json')
-        with open(fj, 'r') as fo:
-            info_e = json.load(fo)
-        info_e['url'] = info['url']
-
-        self.assertEqual(info, info_e)
-        self.assertTrue(np.allclose([lon, lat], [149.1300092, -35.2809368]))
-        self.assertTrue(np.allclose(xlim, (149.1207312, 149.1376675)))
-        self.assertTrue(np.allclose(ylim, (-35.2873252, -35.2752841)))
-
-
-    def test_georef_error(self):
-        ''' Test error for georef '''
-        try:
-            out = gutils.georef('zzz_xwyxzz')
-        except ValueError as err:
-            self.assertTrue(str(err) in ['No results', 'Info is None'])
-        else:
-            raise ValueError('Problem with error handling')
-
-
     def test_point_inside_triangle(self):
         ''' Test points are inside a triangle '''
         if not HAS_C_GIS_MODULE:
