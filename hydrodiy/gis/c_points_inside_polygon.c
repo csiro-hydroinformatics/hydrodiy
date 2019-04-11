@@ -20,12 +20,6 @@ int c_inside(int nprint, int npoints, double * points,
 
     for(ipt=0; ipt<npoints; ipt++)
     {
-        if(nprint > 0)
-            if(ipt%nprint== 0 && ipt > 0)
-                fprintf(stdout,
-                    "\t\tInside calculation running ... %0.1f%%\n",
-                        100*(double)(ipt)/(double)(npoints));
-
         x = points[2*ipt];
         y = points[2*ipt+1];
 
@@ -33,6 +27,13 @@ int c_inside(int nprint, int npoints, double * points,
         if(x < polygon_xlim[0] || x > polygon_xlim[1] ||
                 y < polygon_ylim[0] || y > polygon_ylim[1])
             continue;
+
+        /* Prints only if point is in domain */
+        if(nprint > 0)
+            if(ipt%nprint== 0 && ipt > 0)
+                fprintf(stdout,
+                    "\t\tInside calculation running ... %0.1f%%\n",
+                        100*(double)(ipt)/(double)(npoints));
 
         /* Point inside polygon algorithm */
         p1x = polygon[0];
