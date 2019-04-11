@@ -15,7 +15,7 @@ except ImportError:
     HAS_C_GIS_MODULE = False
 
 
-def points_inside_polygon(points, polygon, atol=1e-8):
+def points_inside_polygon(points, polygon, inside=None, atol=1e-8):
     '''
 
     Determines if a set of points are inside a given polygon or not
@@ -28,18 +28,19 @@ def points_inside_polygon(points, polygon, atol=1e-8):
         Coordinates of points given as 2d numpy array [x,y]
     polygon : numpy.array polygon
         Coordinates of polygon vertices given as 2d numpy array [x,y]
+    inside : numpy.array polygon
+        Vector containing 0 if the point is not in the polygon or 1 for
+        the opposite case.
+        This input can be used to avoid allocating
+        the array when calling this function multiple times.
     atol : float
         Tolerance factor for float number identity testing
 
     Returns
     -----------
-    cells_inside : numpy.array
-        List of grid cells in this polygon
-
-    :param numpy.array points : A list of points given as a 2d numpy array
-    :param numpy.array polygon : A polygon defined by a 2d numpy array [x,y]
-    :param float atol : absolute tolerance for float comparison
-
+    inside : numpy.array
+        Vector containing 0 if the point is not in the polygon or 1 for
+        the opposite case.
     '''
     if not HAS_C_GIS_MODULE:
         raise ValueError('C module c_hydrodiy_gis is not available, '+\
@@ -49,7 +50,16 @@ def points_inside_polygon(points, polygon, atol=1e-8):
     atol = np.float64(atol)
     points = points.astype(np.float64)
     polygon = polygon.astype(np.float64)
-    inside = np.zeros(len(points), dtype=np.int32)
+    if inside is None:
+        inside = np.zeros(len(points), dtype=np.int32)
+    else:
+        if not inside.dtype == np.int32:
+            raise ValueError('Expected inside of dtype np.int32, '+\
+                    'got {}'.format(inside.dtype))
+
+        if not len(inside) == len(points):
+            raise ValueError(('Expected inside of length {}, '+\
+                    'got {}').format(len(points), len(inside)))
 
     # run C code
     ierr = c_hydrodiy_gis.points_inside_polygon(atol, points, \
@@ -59,48 +69,8 @@ def points_inside_polygon(points, polygon, atol=1e-8):
         raise ValueError('c_hydrodiy_gis.points_inside_polygon '+\
                             'returns '+str(ierr))
 
-    inside = inside.astype(bool)
-
-    #nvert = poly.shape[0]
-    #xymin = poly.min(axis=0)
-    #xymax = poly.max(axis=0)
-
-    #npt = points.shape[0]
-    #inside = np.repeat(False, npt)
-
-    #for idx in range(npt):
-    #    x, y = points[idx,:]
-    #    x = float(x)
-    #    y = float(y)
-
-    #    # Simple check
-    #    if x<xymin[0] or y<xymin[1] or x>xymax[0] or y>xymax[1]:
-    #        continue
-
-    #    # Advanced algorithm
-    #    p1x,p1y = poly[0, :]
-    #    p1x = float(p1x)
-    #    p1y = float(p1y)
-
-    #    for i in range(nvert+1):
-    #        p2x,p2y = poly[i % nvert, :]
-    #        p2x = float(p2x)
-    #        p2y = float(p2y)
-
-    #        if y > min(p1y,p2y):
-    #            if y <= max(p1y,p2y):
-    #                if x <= max(p1x,p2x):
-    #                    iseq = np.isclose(p1y, p2y, atol=atol, rtol=rtol)
-    #                    if not iseq:
-    #                        xinters = (y-p1y)*(p2x-p1x)/(p2y-p1y)+p1x
-
-    #                    iseq = np.isclose(p1x, p2x, atol=atol, rtol=rtol)
-    #                    if iseq or x <= xinters:
-    #                        inside[idx] = not inside[idx]
-
-    #        p1x,p1y = p2x,p2y
-
     return inside
+
 
 def xy2kml(x, y, fkml, z=None, siteid=None, label=None,
             icon='placemark_circle', scale=1.2):
