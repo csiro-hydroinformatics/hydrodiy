@@ -1,6 +1,6 @@
 #include "c_points_inside_polygon.h"
 
-int c_inside(int npoints, double * points,
+int c_inside(int nprint, int npoints, double * points,
     int nvertices, double * polygon,
     double atol,
     double * polygon_xlim, double * polygon_ylim,
@@ -10,8 +10,22 @@ int c_inside(int npoints, double * points,
     double x, y, p1x, p1y, p2x, p2y;
     double xinters, dist;
 
+    /* Print intputs */
+    if(nprint > 0)
+    {
+        fprintf(stdout, "\n\t-- Started inside calculation --\n");
+        fprintf(stdout, "\tnpoints   = %d\n", npoints);
+        fprintf(stdout, "\tnvertices = %d\n", nvertices);
+    }
+
     for(ipt=0; ipt<npoints; ipt++)
     {
+        if(nprint > 0)
+            if(ipt%nprint== 0 && ipt > 0)
+                fprintf(stdout,
+                    "\t\tInside calculation running ... %0.1f%%\n",
+                        100*(double)(ipt)/(double)(npoints));
+
         x = points[2*ipt];
         y = points[2*ipt+1];
 
@@ -53,6 +67,8 @@ int c_inside(int npoints, double * points,
         }
 
     }
+    if(nprint > 0)
+        fprintf(stdout, "\t-- Completed inside calculation --\n\n");
 
     return 0;
 }

@@ -15,7 +15,8 @@ except ImportError:
     HAS_C_GIS_MODULE = False
 
 
-def points_inside_polygon(points, polygon, inside=None, atol=1e-8):
+def points_inside_polygon(points, polygon, inside=None, atol=1e-8, \
+                    nprint=0):
     '''
 
     Determines if a set of points are inside a given polygon or not
@@ -35,6 +36,8 @@ def points_inside_polygon(points, polygon, inside=None, atol=1e-8):
         the array when calling this function multiple times.
     atol : float
         Tolerance factor for float number identity testing
+    nprint : int
+        Log printing frequency. No log if nprint=0
 
     Returns
     -----------
@@ -47,6 +50,7 @@ def points_inside_polygon(points, polygon, inside=None, atol=1e-8):
             'please run python setup.py build')
 
     # Prepare inputs
+    nprint = np.int32(nprint)
     atol = np.float64(atol)
     points = points.astype(np.float64)
     polygon = polygon.astype(np.float64)
@@ -62,7 +66,7 @@ def points_inside_polygon(points, polygon, inside=None, atol=1e-8):
                     'got {}').format(len(points), len(inside)))
 
     # run C code
-    ierr = c_hydrodiy_gis.points_inside_polygon(atol, points, \
+    ierr = c_hydrodiy_gis.points_inside_polygon(atol, nprint, points, \
                     polygon, inside)
 
     if ierr>0:

@@ -5,7 +5,7 @@
 
 #define INSIDE_ERROR 60000
 
-int c_inside(int npoints, double * points,
+int c_inside(int nprint, int npoints, double * points,
     int nvertices, double * polygon,
     double atol,
     double * polygon_xlim, double * polygon_ylim,

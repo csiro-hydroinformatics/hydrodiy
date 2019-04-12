@@ -4,7 +4,7 @@ cimport numpy as np
 np.import_array()
 
 cdef extern from 'c_points_inside_polygon.h':
-    int c_inside(int npoints, double * points,
+    int c_inside(int nprint, int npoints, double * points,
         int nvertices, double * polygon,
         double atol,
         double * polygon_xlim, double * polygon_ylim,
@@ -398,7 +398,7 @@ def slope(long long nprint, double cellsize,
     return ierr
 
 
-def points_inside_polygon(double atol,
+def points_inside_polygon(double atol, int nprint,
             np.ndarray[double, ndim=2, mode='c'] points not None,
             np.ndarray[double, ndim=2, mode='c'] polygon not None,
             np.ndarray[int, ndim=1, mode='c'] inside not None):
@@ -420,7 +420,7 @@ def points_inside_polygon(double atol,
     polygon_ylim[1] = polygon[:, 1].max()
 
     # Run C code
-    ierr = c_inside(points.shape[0],
+    ierr = c_inside(nprint, points.shape[0],
             <double*> np.PyArray_DATA(points),
             polygon.shape[0],
             <double*> np.PyArray_DATA(polygon),
