@@ -174,7 +174,8 @@ class EnsplotTestCase(unittest.TestCase):
                     ['R2', 'alpha', 'bias', 'crps_ss'])
 
         fp = os.path.join(self.fimg, 'yearplot.png')
-        mep.savefig(fp)
+        mep.set_fig_size()
+        fig.savefig(fp)
 
 
 
@@ -188,9 +189,8 @@ class EnsplotTestCase(unittest.TestCase):
         mep.yearplot()
 
         fp = os.path.join(self.fimg, 'yearplot_sudo.png')
-        mep.savefig(fp)
-
-
+        mep.set_fig_size()
+        fig.savefig(fp)
 
 
 

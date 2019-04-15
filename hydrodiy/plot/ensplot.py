@@ -534,8 +534,8 @@ class MonthlyEnsplot(object):
         return perf
 
 
-    def savefig(self, filename, figsize=(26, 18)):
-        ''' Save figure at the right resolution '''
+    def set_fig_size(self, figsize=(26, 18)):
+        ''' Set figure dimensions '''
 
         if self.gridspec is None:
             raise ValueError('Grispec object is None, run yearplot first')
@@ -543,4 +543,3 @@ class MonthlyEnsplot(object):
         self.fig.set_size_inches(figsize)
         self.gridspec.tight_layout(self.fig)
 
-        self.fig.savefig(filename)
