@@ -159,37 +159,37 @@ class EnsplotTestCase(unittest.TestCase):
 
 
 
-    def test_yearplot(self):
+    def test_overviewplot(self):
         ''' Test all year plot '''
 
         plt.close('all')
         fig = plt.figure()
 
         mep = MonthlyEnsplot(self.obs, self.fcst, self.fcdates, fig)
-        perf = mep.yearplot()
+        perf = mep.overviewplot()
 
         perf = pd.DataFrame(perf).T
         self.assertEqual(perf.shape, (13, 4))
         self.assertEqual(list(perf.columns), \
                     ['R2', 'alpha', 'bias', 'crps_ss'])
 
-        fp = os.path.join(self.fimg, 'yearplot.png')
-        mep.set_fig_size()
+        fp = os.path.join(self.fimg, 'overviewplot.png')
+        mep.set_overview_fig('Title')
         fig.savefig(fp)
 
 
 
-    def test_yearplot_sudo(self):
+    def test_overviewplot_sudo(self):
         ''' Test all year plot with sudo '''
 
         plt.close('all')
         fig = plt.figure()
 
         mep = MonthlyEnsplot(self.obs_sudo, self.fcst_sudo, self.fcdates, fig)
-        mep.yearplot()
+        mep.overviewplot()
 
-        fp = os.path.join(self.fimg, 'yearplot_sudo.png')
-        mep.set_fig_size()
+        fp = os.path.join(self.fimg, 'overviewplot_sudo.png')
+        mep.set_overview_fig('Title')
         fig.savefig(fp)
 
 

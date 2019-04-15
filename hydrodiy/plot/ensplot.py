@@ -366,7 +366,7 @@ class MonthlyEnsplot(object):
         >>> ens = np.random.uniform(0, 1, (100, 50))
         >>> ep = MonthlyEnsplot(obs, ens)
         >>> # Create a yearly ensemble plot
-        >>> ep.yearplot()
+        >>> ep.overviewplot()
 
         '''
 
@@ -506,7 +506,7 @@ class MonthlyEnsplot(object):
         return perf
 
 
-    def yearplot(self, show_scatter=True, show_pit=True):
+    def overviewplot(self, show_scatter=True, show_pit=True):
         ''' Draw a figure with forecast data for all months '''
 
         # Plot options
@@ -534,12 +534,17 @@ class MonthlyEnsplot(object):
         return perf
 
 
-    def set_fig_size(self, figsize=(26, 18)):
+    def set_overview_fig(self, title='', figsize=(26, 18)):
         ''' Set figure dimensions '''
 
         if self.gridspec is None:
-            raise ValueError('Grispec object is None, run yearplot first')
+            raise ValueError('Grispec object is None, run overviewplot first')
 
         self.fig.set_size_inches(figsize)
-        self.gridspec.tight_layout(self.fig)
+
+        if title != '':
+            self.fig.suptitle(title)
+            self.gridspec.tight_layout(self.fig, rect=[0, 0, 1, 0.97])
+        else:
+            self.gridspec.tight_layout(self.fig)
 
