@@ -414,8 +414,9 @@ class GridTestCase(unittest.TestCase):
         inside = gr.cells_inside_polygon(polygon)
 
         fe = os.path.join(self.ftest, 'grid_cells_inside_polygon.csv')
-        expected = pd.read_csv(fe).iloc[:, 1:]
-        self.assertTrue(np.allclose(inside, expected))
+        expected = pd.read_csv(fe).iloc[:, 1:].cell
+        result = np.where(inside.cell == 1)[0]
+        self.assertTrue(np.allclose(result, expected))
 
 
 
