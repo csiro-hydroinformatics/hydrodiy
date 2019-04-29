@@ -8,12 +8,6 @@ import pandas as pd
 
 from hydrodiy import PYVERSION
 
-if PYVERSION == 3:
-    from json.decoder import JSONDecodeError
-elif PYVERSION == 2:
-    # Replace decode error by value error
-    JSONDecodeError = ValueError
-
 from hydrodiy.data.qualitycontrol import islinear
 from hydrodiy.io import csv
 
@@ -55,7 +49,7 @@ def __testjson(req):
         out = req.json()
         return out
 
-    except JSONDecodeError as jerr:
+    except ValueError as jerr:
         warnings.warn('Repairing json text')
         txt = re.sub(r'(?<!\\)\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})', \
                                 r'', req.text)
