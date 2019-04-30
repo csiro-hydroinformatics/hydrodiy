@@ -676,7 +676,7 @@ def qqplot(ax, data, addline=False, censor=None, *args, **kwargs):
     return a, b, r2
 
 
-def ecdfplot(ax, df, label_format=None, label_stat='mean', \
+def ecdfplot(ax, df, label_stat=None, label_stat_format='4.2f', \
             *args, **kwargs):
     ''' Plot empirical cumulative density functions
 
@@ -686,13 +686,12 @@ def ecdfplot(ax, df, label_format=None, label_stat='mean', \
         Axe to draw the line on
     df : pandas.core.dataframe.DataFrame
         Input data
-    label_format : str
-        Add the mean value at the end of the label
-        using the supplied number format. If None,
-        does not print label.
     label_stat : str
         Statistic use for the label, should be an attribute
-        of pandas.Series (e.g. mean or median)
+        of pandas.Series (e.g. mean or median).
+        If None, does not print the label stat.
+    label_stat_format : str
+        Format to use for the label statistic value.
     args, kwargs
         Argument sent to matplotlib.pyplot.plot command for each
 
@@ -703,10 +702,11 @@ def ecdfplot(ax, df, label_format=None, label_stat='mean', \
         values = values[~np.isnan(values)]
 
         pp = sutils.ppos(len(values))
-        label_value = getattr(se, label_stat)()
-        label = name if label_format is None else \
-                        '{} ({:{format}})'.format(name, label_value, \
-                            format=label_format)
+
+        label = name
+        if not label_stat is None:
+            stat = getattr(se, label_stat)()
+            label = '{} ({:{format}})'.format(name, stat, format=label_stat_format)
 
         ax.plot(values, pp, label=label, *args, **kwargs)
         lines[name] = ax.get_lines()[-1]

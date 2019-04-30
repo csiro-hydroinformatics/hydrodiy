@@ -426,7 +426,7 @@ class UtilsTestCase(unittest.TestCase):
         df = pd.DataFrame(df)
 
         fig, ax = plt.subplots()
-        lines = putils.ecdfplot(ax, df, '0.3f', 'std')
+        lines = putils.ecdfplot(ax, df, 'std', '0.3f')
 
         ax.legend(loc=2)
         fp = os.path.join(self.fimg, 'ecdfplot_labels.png')
