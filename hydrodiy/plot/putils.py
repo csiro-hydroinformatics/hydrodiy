@@ -695,6 +695,11 @@ def ecdfplot(ax, df, label_stat=None, label_stat_format='4.2f', \
     args, kwargs
         Argument sent to matplotlib.pyplot.plot command for each
 
+    Returns
+    -----------
+    lines : dict
+        Dictionnary containing the line object for each column
+        in df
     '''
     lines = {}
     for name, se in df.iteritems():
