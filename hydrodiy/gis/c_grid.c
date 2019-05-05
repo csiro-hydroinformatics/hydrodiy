@@ -25,16 +25,15 @@ long long c_coord2cell(long long nrows, long long ncols,
     long long ierr, i, nx, ny;
     ierr = 0;
 
-    for(i=0; i<nval; i++){
+    for(i=0; i<nval; i++)
+    {
         nx = (long long)rint((xycoords[2*i]-xll)/csz);
         ny = nrows-1-(long long)rint((xycoords[2*i+1]-yll)/csz);
-        idxcell[i] = ny*ncols+nx;
 
-        if(nx<0 || nx>=ncols)
-            return GRID_ERROR + __LINE__;
-
-        if(ny<0 || ny>=nrows)
-            return GRID_ERROR + __LINE__;
+        if(nx<0 || nx>=ncols || ny<0 || ny>=nrows)
+            idxcell[i] = -1;
+        else
+            idxcell[i] = ny*ncols+nx;
     }
 
     return ierr;
@@ -44,17 +43,29 @@ long long c_cell2coord(long long nrows, long long ncols,
     double xll, double yll, double csz,
     long long nval, long long * idxcell, double * xycoords)
 {
-    long long ierr, i, nc;
+    long long ierr, i, icell;
     ierr = 0;
+    double nan;
+    static double zero = 0.0;
 
-    for(i=0; i<nval; i++){
-        nc = idxcell[i];
+    /* nan value if not defined */
+    nan = 1./zero * zero;
 
-        if(nc<0 || nc>=nrows*ncols)
-            return GRID_ERROR + __LINE__;
+    for(i=0; i<nval; i++)
+    {
+        icell = idxcell[i];
 
-        xycoords[2*i] = nc%ncols*csz+xll;
-        xycoords[2*i+1] = (nrows-1-(nc-nc%ncols)/ncols)*csz+yll;
+        if(icell<0 || icell>=nrows*ncols)
+        {
+            xycoords[2*i] = nan;
+            xycoords[2*i+1] = nan;
+        }
+        else
+        {
+            /* Compute coordinates of cell center */
+            xycoords[2*i] = icell%ncols*csz+xll;
+            xycoords[2*i+1] = (nrows-1-(icell-icell%ncols)/ncols)*csz+yll;
+        }
     }
 
     return ierr;
@@ -135,13 +146,13 @@ long long c_slice(long long nrows, long long ncols,
         /* Convert to idxcell */
         ierr = c_coord2cell(nrows, ncols, xll, yll, csz, 1,
                                 &(xyslice[2*i]), idxcell1);
-        if(ierr > 0)
+        if(ierr > 0 || *idxcell1 < 0)
             continue;
 
         /* Convert to xy of nearest cell */
         ierr = c_cell2coord(nrows, ncols, xll, yll, csz, 1,
                                             idxcell1, xy1);
-        if(ierr > 0)
+        if(ierr > 0 || isnan(*xy1))
             continue;
 
         /* Set default value */
@@ -166,11 +177,11 @@ long long c_slice(long long nrows, long long ncols,
 
         /* Convert nearest xy to idxcell and get value */
         ierr = c_coord2cell(nrows, ncols, xll, yll, csz, 1, xy2, idxcell2);
-        if(ierr > 0)
+        if(ierr > 0 || *idxcell2 < 0)
             continue;
 
         ierr = c_coord2cell(nrows, ncols, xll, yll, csz, 1, xy3, idxcell3);
-        if(ierr > 0)
+        if(ierr > 0 || *idxcell3 < 0)
             continue;
 
         /* Linear interpolation */
@@ -201,15 +212,6 @@ long long c_slice(long long nrows, long long ncols,
 
 	    	zslice[i] = (t1*dx-t2*dy)/denom + val1;
 	    }
-        /*
-        fprintf(stdout, "[%2d] (%0.2f, %0.2f) -> (%0.2f, %0.2f, %d, %0.2f) "
-            "(%0.2f, %0.2f, %d, %0.2f) "
-            "(%0.2f, %0.2f, %d, %0.2f) %f\n",
-            i, dx, dy,
-            xy1[0], xy1[1], idxcell1[0], val1,
-            xy2[0], xy2[1], idxcell2[0], val2,
-            xy3[0], xy3[1], idxcell3[0], val3, denom);
-        */
 	}
 
     return 0;

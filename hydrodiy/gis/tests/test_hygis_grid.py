@@ -200,6 +200,7 @@ class GridTestCase(unittest.TestCase):
 
 
     def test_coord2cell(self):
+        ''' Test coord2cell and cell2coord '''
         if not HAS_C_GIS_MODULE:
             self.skipTest('Missing C module c_hydrodiy_gis')
 
@@ -209,6 +210,7 @@ class GridTestCase(unittest.TestCase):
         xll = gr.xllcorner
         yll = gr.yllcorner
 
+        # Generate coordinates
         xx = xll+np.arange(0, gr.ncols)*csz
         yy = yll+np.arange(gr.nrows-1, -1, -1)*csz
         xxg, yyg = np.meshgrid(xx, yy)
@@ -216,10 +218,13 @@ class GridTestCase(unittest.TestCase):
                     yyg.flat[:][:, None]], axis=1)
         xycoords1 = xycoords0 + np.random.uniform(-csz/2, csz/2,
                         xycoords0.shape)
+
+        # Get cell index and test
         idxcell = gr.coord2cell(xycoords1)
         ck = np.allclose(idxcell, np.arange(gr.ncols*gr.nrows))
         self.assertTrue(ck)
 
+        # Get cell coordinate from index and test
         xycoords2 = gr.cell2coord(idxcell)
         ck = np.allclose(xycoords0, xycoords2)
         self.assertTrue(ck)
@@ -243,6 +248,7 @@ class GridTestCase(unittest.TestCase):
         expect[:ndim//2] -= 0.1
         expect[ndim//2:-1] += 0.1
         ck = np.allclose(zslice, expect)
+
         self.assertTrue(ck)
 
 
@@ -738,7 +744,7 @@ class CatchmentTestCase(unittest.TestCase):
 
     def test_accumulate_advanced(self):
         if not run_advanced:
-            return
+            self.skipTest('Skipping advanced grid tests')
 
         filename = os.path.join(self.ftest, 'fdtest.hdr')
         flowdir = Grid.from_header(filename)
@@ -763,7 +769,7 @@ class CatchmentTestCase(unittest.TestCase):
 
     def test_delineate_advanced(self):
         if not run_advanced:
-            return
+            self.skipTest('Skipping advanced grid tests')
 
         config = [
             {'outletxy':[147.72, -37.26], 'upstreamxy':[147.9, -37.0],
@@ -832,8 +838,8 @@ class RefGridsTestCase(unittest.TestCase):
         gr = get_mask('AWRAL')
         self.assertEqual(gr.nrows, 681)
         self.assertEqual(gr.ncols, 841)
-        self.assertEqual(gr.xllcorner, 111.975)
-        self.assertEqual(gr.yllcorner, -44.025)
+        self.assertEqual(gr.xllcorner, 112.)
+        self.assertEqual(gr.yllcorner, -44.)
         self.assertEqual(np.sum(gr.data), 281655)
 
     def test_awap(self):
