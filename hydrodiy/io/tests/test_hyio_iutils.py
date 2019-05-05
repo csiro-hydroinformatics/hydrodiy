@@ -15,11 +15,12 @@ import matplotlib.pyplot as plt
 from hydrodiy.io import iutils, csv
 from hydrodiy import PYVERSION
 
+from requests.exceptions import HTTPError
+
 # Skip if package cannot be imported (circleci build)
 import_error = True
 try:
     from hydrodiy.gis.oz import Oz, REGIONS
-
     import_error = False
 except ImportError:
     pass
@@ -351,7 +352,8 @@ class UtilsTestCase(unittest.TestCase):
         self.assertTrue(txt.startswith('<!doctype html>'))
 
         # Binary file download
-        url = 'https://www.google.com.au/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png'
+        url = 'https://www.google.com.au/images/branding/googlelogo/2x/'+\
+                                'googlelogo_color_272x92dp.png'
         fn = os.path.join(self.ftest, 'google.png')
         iutils.download(url, fn)
 
@@ -362,7 +364,8 @@ class UtilsTestCase(unittest.TestCase):
         self.assertTrue(txt.startswith('<!doctype html>'))
 
         # Binary file - stream
-        url = 'https://www.google.com.au/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png'
+        url = 'https://www.google.com.au/images/branding/googlelogo/2x/'+\
+                                'googlelogo_color_272x92dp.png'
         stream = iutils.download(url)
         bins = stream.read()
 
@@ -373,15 +376,20 @@ class UtilsTestCase(unittest.TestCase):
 
         # auth
         url = 'https://httpbin.org/basic-auth/user/pwd'
-        stream = iutils.download(url, user='user', pwd='pwd')
-        txt = stream.read().decode('cp437')
-        js = json.loads(txt)
-        self.assertTrue(js['authenticated'])
+        try:
+            stream = iutils.download(url, user='user', pwd='pwd')
+            txt = stream.read().decode('cp437')
+            js = json.loads(txt)
+            self.assertTrue(js['authenticated'])
+        except HTTPError as err:
+            if re.search('at capacity', str(err)):
+                self.skipTest('Issue with {}'.format(url))
 
 
     def test_download_timeout(self):
         ''' Test the timeout option in iutils.download '''
-        url = 'https://www.google.com.au/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png'
+        url = 'https://www.google.com.au/images/branding/googlelogo/2x/'+\
+                        'googlelogo_color_272x92dp.png'
         fn = os.path.join(self.ftest, 'google.png')
         iutils.download(url, fn, timeout=10)
 
