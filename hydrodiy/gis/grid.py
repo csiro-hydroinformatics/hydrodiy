@@ -367,7 +367,7 @@ class Grid(object):
         nval = self.nrows * self.ncols
         if len(data) != nval:
             raise ValueError(('File contains {0} data points' +
-                ', expecting {1}').format(len(self._data), nval))
+                ', expecting {1}').format(len(data), nval))
 
         self._data = np.clip(data.reshape((self.nrows, self.ncols)),
                         self.mindata, self.maxdata).astype(self.dtype)
