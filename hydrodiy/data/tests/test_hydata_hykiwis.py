@@ -16,11 +16,7 @@ class HyKiwisTestCase(unittest.TestCase):
 
     def test_getsites(self):
         ''' Test get sites '''
-
-        if not hykiwis.has_internal_access():
-            self.skipTest('No internal access available')
-
-        sites, url = hykiwis.get_sites(external=False)
+        sites, url = hykiwis.get_sites()
         self.assertTrue(not sites is None)
         self.assertTrue(isinstance(sites, pd.core.frame.DataFrame))
 

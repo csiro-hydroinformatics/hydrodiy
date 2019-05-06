@@ -85,15 +85,15 @@ def get_storages():
     return storages
 
 
-def get_sites(external=True):
+def get_sites(download=False):
     ''' Get list of BoM Kiwis stations
 
     Parameters
     -----------
-    external : bool
-        Use Bureau of Meterology external Kiwis server.
-        If False, use Bureau internal server
-        (accessible within Bureau network only).
+    download : bool
+        If True, download data from Bureau of Meterology internal Kiwis server
+        and store it locally (accessible within Bureau network only).
+        If False, just reads local data.
 
     Returns
     -----------
@@ -102,31 +102,43 @@ def get_sites(external=True):
     url : str
         Url used to query the Kiwis server
     '''
+    # path to csv file
+    fsites = os.path.join(DATA_FOLDER, 'kiwis_sites.csv')
 
     # Download site list
-    params = dict(BASE_PARAMS)
-    params.update({ \
-                'request': 'getStationList', \
-                'returnfields':'station_no,station_name,'+\
-                    'station_longname,station_id,' +\
-                    'object_type,station_latitude,station_longitude' \
-    })
+    if download or not os.path.exists(re.sub('csv$', 'zip', fsites)):
+        params = dict(BASE_PARAMS)
+        params.update({ \
+                    'request': 'getStationList', \
+                    'returnfields':'station_no,station_name,'+\
+                        'station_longname,station_id,' +\
+                        'object_type,station_latitude,station_longitude' \
+        })
 
-    if external:
-        raise ValueError(('get_sites only works from internal'+\
-            ' access, and external={0}').format(external))
+        url = KIWIS_URL_INT
+        req = requests.get(url, params=params)
 
-    url = KIWIS_URL_INT
-    req = requests.get(url, params=params)
+        # Format list of sites
+        sites = __testjson(req)
+        if sites is None or re.search('No matches', ' '.join(sites[0])):
+            raise ValueError('Request returns no data. URL={0}'.format(req.url))
 
-    # Format list of sites
-    sites = __testjson(req)
-    if sites is None or re.search('No matches', ' '.join(sites[0])):
-        raise ValueError('Request returns no data. URL={0}'.format(req.url))
+        sites = pd.DataFrame(sites[1:], columns = sites[0])
 
-    sites = pd.DataFrame(sites[1:], columns = sites[0])
+        comments = {'data': 'Kiwis sites', \
+                    'date_downloaded': str(datetime.now().date())}
+        csv.write_csv(sites, fsites, comments, \
+                os.path.abspath(__file__), write_index=True)
 
-    return sites, req.url
+        return sites, req.url
+
+    else:
+        sites, comments = csv.read_csv(fsites)
+        comment = 'No download. list of sites read from local '+\
+                    'data downloaded  on {}'.format(comments['date_downloaded'])
+        warnings.warn(comment)
+
+        return sites, comment
 
 
 def get_tsattrs(siteid, ts_name, external=True):
