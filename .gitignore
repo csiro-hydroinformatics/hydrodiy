@@ -18,6 +18,8 @@ build
 *.zip
 *.bil
 *.hdr
+*.xml
+*.stx
 .coverage
 examples/data/
 hydrodiy/gis/tests/*.png
