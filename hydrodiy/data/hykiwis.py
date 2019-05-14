@@ -44,7 +44,6 @@ START_YEAR = 1950
 
 def __testjson(req):
     ''' Test validity of json conversion '''
-
     try:
         out = req.json()
         return out
@@ -53,7 +52,11 @@ def __testjson(req):
         warnings.warn('Repairing json text')
         txt = re.sub(r'(?<!\\)\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})', \
                                 r'', req.text)
-        return json.loads(txt)
+
+        if re.search('Unavailable', txt):
+            return {'error': 'Service unavailable'}
+        else:
+            return json.loads(txt)
 
     except Exception as err:
         warnings.warn('Formatting of json data return {0}'.format(err))
@@ -195,14 +198,21 @@ def get_tsattrs(siteid, ts_name, external=True):
     js_data = __testjson(req)
 
     # Check outputs
-    mess = 'Request returns no data. URL={0}'.format(req.url)
-
+    mess = 'Request returns no data. URL={}'.format(req.url)
     if js_data is None:
         raise ValueError(mess)
+
+    if 'error' in js_data:
+        mess = 'Request returns no data. URL={}, Error={}'.format(req.url, \
+                                    js_data['error'])
+        raise ValueError(mess)
+
     if 'type' in js_data:
         if js_data['type'] == 'error':
             raise ValueError(mess)
+
     if re.search('No matches', ''.join(js_data[0])):
+        mess = 'Request returns no data, no matches in Kiwis server. URL={}'.format(req.url)
         raise ValueError(mess)
 
     # Format attributes
