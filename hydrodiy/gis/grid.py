@@ -1026,11 +1026,25 @@ class Catchment(object):
 
         idx = idxcells_boundary >= 0
         idxcells_boundary = idxcells_boundary[idx]
-        self._idxcells_boundary = idxcells_boundary
 
         # Generate coordinates for the boundary
-        self._xycells_boundary = self._flowdir.cell2coord(
-                                        self._idxcells_boundary)
+        xy = self._flowdir.cell2coord(idxcells_boundary)
+
+        # Exclude zero area angles
+        # to allow processing by GDAL
+        nrows = len(xy)
+        idxok = np.zeros(nrows, dtype=np.int64)
+        deteps = np.std(xy)*1e-6;
+        ierr = c_hydrodiy_gis.exclude_zero_area_boundary(deteps, xy, idxok)
+
+        if ierr>0:
+            raise ValueError(('c_hydrodiy_gis.exclude_zero_area_boundary' +
+                ' returns {0}').format(ierr))
+
+        # Store boundaries
+        idx = idxok == 1
+        self._idxcells_boundary = idxcells_boundary[idx]
+        self._xycells_boundary  = xy[idx]
 
 
     def intersect(self, grid):

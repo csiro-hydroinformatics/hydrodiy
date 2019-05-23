@@ -51,6 +51,9 @@ cdef extern from 'c_catchment.h':
         long long * grid_area,
         long long * idxcells_boundary)
 
+    long long c_exclude_zero_area_boundary(long long nval,
+        double deteps, double * xycoords, long long * idxok)
+
     long long c_delineate_river(long long nrows, long long ncols,
         double xll, double yll, double csz,
         long long* flowdircode, long long * flowdir,
@@ -259,6 +262,23 @@ def delineate_boundary(long long nrows, long long ncols,
             <long long*> np.PyArray_DATA(idxcells_boundary))
 
     return ierr
+
+
+def exclude_zero_area_boundary(double deteps,
+            np.ndarray[double, ndim=2, mode='c'] xycoords not None,
+            np.ndarray[long long, ndim=1, mode='c'] idxok not None):
+
+    cdef long long ierr
+
+    # check dimensions
+    assert xycoords.shape[0] == idxok.shape[0]
+
+    ierr = c_exclude_zero_area_boundary(xycoords.shape[0], deteps,
+            <double*> np.PyArray_DATA(xycoords),
+            <long long*> np.PyArray_DATA(idxok))
+
+    return ierr
+
 
 
 def delineate_river(double xll, double yll, double csz,

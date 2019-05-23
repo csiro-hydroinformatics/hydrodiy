@@ -257,7 +257,7 @@ long long c_delineate_boundary(long long nrows, long long ncols,
     long long * idxcells_boundary)
 {
     long long i, k, ngrid, nbuffer, shift[4], isout;
-    long long idxcell, idxcelln, distmax;
+    long long idxcell, idxcelln, idxcellp, distmax;
     long long next, buf, ibnd, start;
     long long nxycell[2], nxybuf[2], nxystart[2];
     long long dx, dy, dist, dmin, knext;
@@ -306,15 +306,16 @@ long long c_delineate_boundary(long long nrows, long long ncols,
                 isout *= (long long)(grid_area[idxcelln] == 1);
         }
 
+        /* If at least one cell is out of the area, then
+        * we are on the boundary */
         if(isout==0)
         {
             buffer[nbuffer] = idxcell;
             nbuffer++;
         }
-
     }
 
-    /* Step 2 - reorder the boundary cells along the boundary */
+    /* Step 2 - reorder the cells along the boundary */
     idxcell = buffer[0];
     start = buffer[0];
     getnxy(ncols, start, nxystart);
@@ -349,7 +350,7 @@ long long c_delineate_boundary(long long nrows, long long ncols,
             dist = dx*dx+dy*dy;
 
             /* Find closest cell */
-            if(dist<dmin)
+            if(dist<dmin && dist >0)
             {
                 next = buf;
                 knext = k;
@@ -361,8 +362,8 @@ long long c_delineate_boundary(long long nrows, long long ncols,
                 break;
         }
 
-        /* Compute distance from start  when approacing the end of the boundary
-         * points */
+        /* Compute distance from start when approaching the end of the boundary
+         * points. This is to avoid loops */
         if(ibnd > (long long)((double)nbuffer*percmax))
         {
             dx = nxycell[0]-nxystart[0];
@@ -377,7 +378,6 @@ long long c_delineate_boundary(long long nrows, long long ncols,
         /* Iterate if we have a neighbour, else return */
         buffer[knext] = -1;
         idxcell = next;
-
     }
 
     /* Close boundary */
@@ -387,6 +387,46 @@ long long c_delineate_boundary(long long nrows, long long ncols,
     return 0;
 }
 
+long long c_exclude_zero_area_boundary(long long nval,
+    double deteps, double * xycoords, long long * idxok)
+{
+    long long ierr=0, i;
+    double det, proj, norm, x1, y1, x2, y2, x3, y3;
+
+    for(i=2; i<nval; i++)
+    {
+        /* Get coordinates from three consecutive points */
+        x1 = xycoords[(i-2)*2];
+        y1 = xycoords[(i-2)*2+1];
+        x2 = xycoords[(i-1)*2];
+        y2 = xycoords[(i-1)*2+1];
+        x3 = xycoords[i*2];
+        y3 = xycoords[i*2+1];
+
+        /* By default, we assume that point is ok */
+        idxok[i] = 1;
+
+        /* Check if the points are aligned
+         * by computing determinant */
+        det = fabs(y3*x2-y2*x3-x1*y3+x3*y1+x1*y2-x2*y1);
+
+        /* Determinant is zero, so points are aligned */
+        if(det < deteps)
+        {
+            /* Compute the projection of P1P2 on P1P3 */
+            proj = (x2-x1)*(x3-x1)+(y2-y1)*(y3-y1);
+            norm = (x3-x1)*(x3-x1)+(y3-y1)*(y3-y1);
+
+            if(proj < 0 || proj > norm)
+            {
+                /* Point 2 is outside the line 1 to 3 */
+                idxok[i-1] = 0;
+            }
+        }
+    }
+
+    return ierr;
+}
 
 long long c_delineate_river(long long nrows, long long ncols,
     double xll, double yll, double csz,

@@ -38,6 +38,9 @@ long long c_delineate_boundary(long long nrows, long long ncols,
     long long * grid_area,
     long long * idxcells_boundary);
 
+long long c_exclude_zero_area_boundary(long long nval,
+    double deteps, double * xycoords, long long * idxok);
+
 long long c_delineate_river(long long nrows, long long ncols,
     double xll, double yll, double csz,
     long long* flowdircode,
