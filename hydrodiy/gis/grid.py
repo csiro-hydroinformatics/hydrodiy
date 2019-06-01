@@ -15,8 +15,6 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import griddata
 
-import matplotlib.pyplot as plt
-
 # Try to import C code
 HAS_C_GIS_MODULE = True
 try:
