@@ -581,12 +581,41 @@ class CatchmentTestCase(unittest.TestCase):
         ca.delineate_boundary()
         idxc = ca.idxcells_boundary
 
-        expected = [1, 7, 13, 20, 15, 9, 3, 1]
+        expected = [1, 2, 3, 9, 15, 20, 13, 7, 1]
+        ck = np.allclose(idxc, expected)
+
+        self.assertTrue(ck)
+
+
+    def test_delineate_flowpaths(self):
+        ''' Test flow path delineation '''
+        nr = self.gr.nrows
+        nc = self.gr.ncols
+        ca = Catchment('test', self.gr)
+
+        ca.delineate_area(27)
+        ca.delineate_flowpaths()
+        idxc = ca.idxcells_flowpaths
+
+        expected = -1 * np.ones((11, 11), dtype=np.int64)
+        expected[:2, 0] = [20, 27]
+        expected[:1, 1] = 27
+        expected[:3, 2] = [13, 20, 27]
+        expected[:3, 3] = [14, 20, 27]
+        expected[:3, 4] = [15, 20, 27]
+        expected[:4, 5] = [7, 13, 20, 27]
+        expected[:4, 6] = [8, 14, 20, 27]
+        expected[:4, 7] = [9, 14, 20, 27]
+        expected[:5, 8] = [1, 7, 13, 20, 27]
+        expected[:5, 9] = [2, 8, 14, 20, 27]
+        expected[:5, 10] = [3, 9, 14, 20, 27]
+
         ck = np.allclose(idxc, expected)
         self.assertTrue(ck)
 
 
-    def test_dic(self):
+    def test_dict(self):
+        ''' test conversion to dict '''
         ca = Catchment('test', self.gr)
 
         ca.delineate_area(27)
@@ -658,7 +687,7 @@ class CatchmentTestCase(unittest.TestCase):
         gda94 = pyproj.Proj('+init=EPSG:3112')
         area = ca.compute_area(gda94)
 
-        ck = np.allclose(area, 59733.200152475583)
+        ck = np.allclose(area, 59780.087434986817)
         self.assertTrue(ck)
 
 

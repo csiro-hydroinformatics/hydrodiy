@@ -27,8 +27,6 @@ cdef extern from 'c_grid.h':
     long long c_neighbours(long long nrows, long long ncols,
         long long idxcell, long long * neighbours)
 
-
-cdef extern from 'c_catchment.h':
     long long c_upstream(long long nrows, long long ncols,
         long long * flowdircode, long long * flowdir,
         long long nval, long long * idxdown, long long * idxup)
@@ -36,31 +34,6 @@ cdef extern from 'c_catchment.h':
     long long c_downstream(long long nrows, long long ncols,
         long long * flowdircode, long long * flowdir,
         long long nval, long long * idxup, long long * idxdown)
-
-    long long c_delineate_area(long long nrows, long long ncols,
-        long long* flowdircode, long long * flowdir,
-        long long idxoutlet,
-        long long ninlets, long long * idxinlets,
-        long long nval, long long * idxcells,
-        long long * buffer1, long long * buffer2)
-
-    long long c_delineate_boundary(long long nrows, long long ncols,
-        long long nval,
-        long long * idxcells_area,
-        long long * buffer,
-        long long * grid_area,
-        long long * idxcells_boundary)
-
-    long long c_exclude_zero_area_boundary(long long nval,
-        double deteps, double * xycoords, long long * idxok)
-
-    long long c_delineate_river(long long nrows, long long ncols,
-        double xll, double yll, double csz,
-        long long* flowdircode, long long * flowdir,
-        long long idxupstream,
-        long long nval, long long * npoints,
-        long long * idxcells,
-        double * data)
 
     long long c_accumulate(long long nrows, long long ncols,
         long long nprint, long long max_accumulated_cells,
@@ -91,9 +64,46 @@ cdef extern from 'c_catchment.h':
         double * altitude,
         double * slopeval)
 
+
+
+cdef extern from 'c_catchment.h':
+    long long c_delineate_area(long long nrows, long long ncols,
+        long long* flowdircode, long long * flowdir,
+        long long idxoutlet,
+        long long ninlets, long long * idxinlets,
+        long long nval, long long * idxcells_area,
+        long long * buffer1, long long * buffer2)
+
+    long long c_delineate_boundary(long long nrows, long long ncols,
+        long long nval,
+        long long * idxcells_area,
+        long long * buffer,
+        long long * catchment_area_mask,
+        long long * idxcells_boundary)
+
+    long long c_exclude_zero_area_boundary(long long nval,
+        double deteps, double * xycoords, long long * idxok)
+
+    long long c_delineate_river(long long nrows, long long ncols,
+        double xll, double yll, double csz,
+        long long* flowdircode, long long * flowdir,
+        long long idxupstream,
+        long long nval, long long * npoints,
+        long long * idxcells,
+        double * data)
+
+    long long c_delineate_flowpaths_in_catchment(long long nrows,
+        long long ncols,
+        long long * flowdircode,
+        long long * flowdir,
+        long long nval,
+        long long * idxcells_area,
+        long long idxcell_outlet,
+        long long * flowpaths)
+
+
 def __cinit__(self):
     pass
-
 
 def coord2cell(long long nrows, long long ncols, double xll, double yll,
         double csz,
@@ -214,15 +224,15 @@ def delineate_area(np.ndarray[long long, ndim=2, mode='c'] flowdircode not None,
             np.ndarray[long long, ndim=2, mode='c'] flowdir not None,
             long long idxoutlet,
             np.ndarray[long long, ndim=1, mode='c'] idxinlets not None,
-            np.ndarray[long long, ndim=1, mode='c'] idxcells not None,
+            np.ndarray[long long, ndim=1, mode='c'] idxcells_area not None,
             np.ndarray[long long, ndim=1, mode='c'] buffer1 not None,
             np.ndarray[long long, ndim=1, mode='c'] buffer2 not None):
 
     cdef long long ierr
 
     # check dimensions
-    assert idxcells.shape[0] == buffer1.shape[0]
-    assert idxcells.shape[0] == buffer2.shape[0]
+    assert idxcells_area.shape[0] == buffer1.shape[0]
+    assert idxcells_area.shape[0] == buffer2.shape[0]
     assert flowdircode.shape[0] == 3
     assert flowdircode.shape[1] == 3
 
@@ -233,8 +243,8 @@ def delineate_area(np.ndarray[long long, ndim=2, mode='c'] flowdircode not None,
             idxoutlet,
             idxinlets.shape[0],
             <long long*> np.PyArray_DATA(idxinlets),
-            idxcells.shape[0],
-            <long long*> np.PyArray_DATA(idxcells),
+            idxcells_area.shape[0],
+            <long long*> np.PyArray_DATA(idxcells_area),
             <long long*> np.PyArray_DATA(buffer1),
             <long long*> np.PyArray_DATA(buffer2))
 
@@ -244,7 +254,7 @@ def delineate_area(np.ndarray[long long, ndim=2, mode='c'] flowdircode not None,
 def delineate_boundary(long long nrows, long long ncols,
             np.ndarray[long long, ndim=1, mode='c'] idxcells_area not None,
             np.ndarray[long long, ndim=1, mode='c'] buffer not None,
-            np.ndarray[long long, ndim=1, mode='c'] grid_area not None,
+            np.ndarray[long long, ndim=1, mode='c'] catchment_area_mask not None,
             np.ndarray[long long, ndim=1, mode='c'] idxcells_boundary not None):
 
     cdef long long ierr
@@ -252,13 +262,13 @@ def delineate_boundary(long long nrows, long long ncols,
     # check dimensions
     assert idxcells_area.shape[0] == idxcells_boundary.shape[0]
     assert idxcells_area.shape[0] == buffer.shape[0]
-    assert nrows*ncols == grid_area.shape[0]
+    assert nrows*ncols == catchment_area_mask.shape[0]
 
     ierr = c_delineate_boundary(nrows, ncols,
             idxcells_area.shape[0],
             <long long*> np.PyArray_DATA(idxcells_area),
             <long long*> np.PyArray_DATA(buffer),
-            <long long*> np.PyArray_DATA(grid_area),
+            <long long*> np.PyArray_DATA(catchment_area_mask),
             <long long*> np.PyArray_DATA(idxcells_boundary))
 
     return ierr
@@ -449,4 +459,30 @@ def points_inside_polygon(double atol, int nprint,
 
     return ierr
 
+
+
+def delineate_flowpaths_in_catchment(long long idxcell_outlet,
+            np.ndarray[long long, ndim=2, mode='c'] flowdircode not None,
+            np.ndarray[long long, ndim=2, mode='c'] flowdir not None,
+            np.ndarray[long long, ndim=1, mode='c'] idxcells_area not None,
+            np.ndarray[long long, ndim=2, mode='c'] flowpaths not None):
+
+    cdef long long ierr
+
+    # check dimensions
+    assert flowdircode.shape[0] == 3
+    assert flowdircode.shape[1] == 3
+    assert flowpaths.shape[0] == idxcells_area.shape[0]
+    assert flowpaths.shape[1] == idxcells_area.shape[0]
+
+    ierr = c_delineate_flowpaths_in_catchment(
+            flowdir.shape[0], flowdir.shape[1],
+            <long long*> np.PyArray_DATA(flowdircode),
+            <long long*> np.PyArray_DATA(flowdir),
+            idxcells_area.shape[0],
+            <long long*> np.PyArray_DATA(idxcells_area),
+            idxcell_outlet,
+            <long long*> np.PyArray_DATA(flowpaths))
+
+    return ierr
 

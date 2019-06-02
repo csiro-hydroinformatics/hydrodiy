@@ -772,16 +772,17 @@ class Catchment(object):
     def __init__(self, name, flowdir):
         self.name = name
         self._flowdir = flowdir.clone(np.int64)
-        self._idxoutlet = None
+        self._idxcell_outlet = None
         self._idxinlets = None
         self._idxcells_area = None
         self._idxcells_boundary = None
+        self._idxcells_flowpaths = None
         self._xycells_boundary = None
 
 
     def __str__(self):
         str = '\nGrid {0}:\n'.format(self.name)
-        str += '\toutlet   : {0}\n'.format(self._idxoutlet)
+        str += '\toutlet   : {0}\n'.format(self._idxcell_outlet)
         str += '\tinlets   : {0}\n'.format(self._idxinlets)
 
         narea = 0
@@ -810,11 +811,13 @@ class Catchment(object):
 
         catchment = self.clone()
         catchment.name = self.name +'+'+other.name
-        catchment._idxoutlet = None
+        catchment._idxcell_outlet = None
         catchment._idxinlets = None
         catchment._idxcells_boundary = None
         catchment._xycells_boundary = None
-        catchment._idxcells_area = np.union1d(self._idxcells_area,
+        if self._idxcells_area is not None and other._idxcells_area \
+                is not None:
+            catchment._idxcells_area = np.union1d(self._idxcells_area,
                                     other._idxcells_area)
         return catchment
 
@@ -823,7 +826,7 @@ class Catchment(object):
         ''' Substract two catchment areas '''
         catchment = self.clone()
         catchment.name = self.name +'-'+other.name
-        catchment._idxoutlet = None
+        catchment._idxcell_outlet = None
         catchment._idxinlets = None
         catchment._idxcells_boundary = None
         catchment._xycells_boundary = None
@@ -850,7 +853,7 @@ class Catchment(object):
         '''
         flowdir = Grid.from_dict(dic['flowdir'])
         catchment = Catchment(dic['name'], flowdir)
-        catchment._idxoutlet = dic['idxoutlet']
+        catchment._idxcell_outlet = dic['idxcell_outlet']
         catchment._idxintlets = dic['idxinlets']
 
         catchment._idxcells_area = \
@@ -860,9 +863,9 @@ class Catchment(object):
 
 
     @property
-    def idxoutlet(self):
+    def idxcell_outlet(self):
         ''' Get outlet cell '''
-        return self._idxoutlet
+        return self._idxcell_outlet
 
 
     @property
@@ -870,12 +873,15 @@ class Catchment(object):
         ''' Get inlet cells '''
         return self._idxinlets
 
-
     @property
     def idxcells_area(self):
         ''' Get cells of catchment area '''
         return self._idxcells_area
 
+    @property
+    def idxcells_flowpaths(self):
+        ''' Get flowpaths cells '''
+        return self._idxcells_flowpaths
 
     @property
     def xycells_boundary(self):
@@ -949,12 +955,12 @@ class Catchment(object):
         return idxdown
 
 
-    def delineate_area(self, idxoutlet, idxinlets=None, nval=1000000):
+    def delineate_area(self, idxcell_outlet, idxinlets=None, nval=1000000):
         ''' Delineate catchment area from flow direction grid
 
         Parameters
         -----------
-        idxoutlet : int
+        idxcell_outlet : int
             Index of outlet cell
         idxinlets : list
             Index of inlet cells
@@ -965,7 +971,7 @@ class Catchment(object):
             raise ValueError('C module c_hydrodiy_gis is not available, '+\
                 'please run python setup.py build')
 
-        self._idxoutlet = np.int64(idxoutlet)
+        self._idxcell_outlet = np.int64(idxcell_outlet)
 
         if idxinlets is None:
             idxinlets = -1*np.ones(0, dtype=np.int64)
@@ -979,7 +985,7 @@ class Catchment(object):
 
         # Compute area
         ierr = c_hydrodiy_gis.delineate_area(FLOWDIRCODE,
-                    self._flowdir.data, self._idxoutlet, idxinlets,
+                    self.flowdir.data, self.idxcell_outlet, idxinlets,
                     idxcells, buffer1, buffer2)
 
         if ierr>0:
@@ -991,7 +997,7 @@ class Catchment(object):
         self._idxcells_area = idxcells[idx]
 
 
-    def delineate_boundary(self):
+    def delineate_boundary(self, catchment_area_mask=None):
         ''' Delineate catchment boundary from area '''
         if not HAS_C_GIS_MODULE:
             raise ValueError('C module c_hydrodiy_gis is not available, '+\
@@ -1009,14 +1015,18 @@ class Catchment(object):
         nval = np.int64(len(self._idxcells_area))
         idxcells_boundary = -1*np.ones(nval, dtype=np.int64)
         buf = -1*np.ones(nval, dtype=np.int64)
-        grid = np.zeros(nrows*ncols, dtype=np.int64)
-        grid[self._idxcells_area] = 1
+
+        # Initialise catchment area mask
+        if catchment_area_mask is None:
+            catchment_area_mask = np.zeros(nrows*ncols, dtype=np.int64)
+            catchment_area_mask[self._idxcells_area] = 1
 
         # Compute boundary with varying dmax
         # This point could be improved!!
         ierr = c_hydrodiy_gis.delineate_boundary(nrows, ncols, \
                     self._idxcells_area, \
-                    buf, grid, idxcells_boundary)
+                    buf, catchment_area_mask, \
+                    idxcells_boundary)
 
         if ierr>0:
             raise ValueError(('c_hydrodiy_gis.delineate_boundary' +
@@ -1025,24 +1035,71 @@ class Catchment(object):
         idx = idxcells_boundary >= 0
         idxcells_boundary = idxcells_boundary[idx]
 
-        # Generate coordinates for the boundary
-        xy = self._flowdir.cell2coord(idxcells_boundary)
+        if len(idxcells_boundary) >= 3:
+            # Generate coordinates for the boundary
+            xy = self._flowdir.cell2coord(idxcells_boundary)
 
-        # Exclude zero area angles
-        # to allow processing by GDAL
-        nrows = len(xy)
-        idxok = np.zeros(nrows, dtype=np.int64)
-        deteps = np.std(xy)*1e-6;
-        ierr = c_hydrodiy_gis.exclude_zero_area_boundary(deteps, xy, idxok)
+            # Exclude zero area angles
+            # to allow processing by GDAL
+            nrows = len(xy)
+            idxok = np.zeros(nrows, dtype=np.int64)
+            deteps = np.std(xy)*1e-6;
+            ierr = c_hydrodiy_gis.exclude_zero_area_boundary(\
+                            deteps, xy, idxok)
 
-        if ierr>0:
-            raise ValueError(('c_hydrodiy_gis.exclude_zero_area_boundary' +
-                ' returns {0}').format(ierr))
+            if ierr>0:
+                raise ValueError(('c_hydrodiy_gis.'+\
+                    'exclude_zero_area_boundary' +
+                    ' returns {0}').format(ierr))
+        else:
+            idxok = np.ones(len(idxcells_boundary))
 
         # Store boundaries
         idx = idxok == 1
         self._idxcells_boundary = idxcells_boundary[idx]
         self._xycells_boundary  = xy[idx]
+
+
+    def delineate_flowpaths(self):
+        ''' Delineate all flow paths in catchment
+
+        Returns
+        -----------
+        flowpaths : numpy.ndarray
+            Index of cells indicating the flowp paths in the catchment.
+            Each column contain a single flow path.
+        '''
+        if not HAS_C_GIS_MODULE:
+            raise ValueError('C module c_hydrodiy_gis is not available, '+\
+                'please run python setup.py build')
+
+        idxcells_area = self.idxcells_area
+        if idxcells_area is None:
+            raise ValueError('idxcells_area is None, please' + \
+                        ' delineate the area')
+
+        if self.idxcell_outlet is None:
+            raise ValueError('idxcell_outlet is None, please' + \
+                        ' define an outlet for the catchment')
+
+        nrows = self._flowdir.nrows
+        ncols = self._flowdir.ncols
+
+        # Initialise flowpaths data
+        nval = np.int64(len(idxcells_area))
+        flowpaths = -1*np.ones((nval, nval), dtype=np.int64)
+
+        # Compute flow paths
+        ierr = c_hydrodiy_gis.delineate_flowpaths_in_catchment(
+                    self.idxcell_outlet, \
+                    FLOWDIRCODE, self.flowdir.data, \
+                    self.idxcells_area, flowpaths)
+
+        if ierr>0:
+            raise ValueError(('c_hydrodiy_gis.delineate_'+
+                'flowpaths_in_catchment returns {0}').format(ierr))
+
+        self._idxcells_flowpaths = flowpaths
 
 
     def intersect(self, grid):
@@ -1060,9 +1117,9 @@ class Catchment(object):
                 'please use another outlet')
 
         xll, yll, csz, nrows, ncols = grid._getsize()
-        _, _, csz_area, _, _ = self._flowdir._getsize()
+        _, _, csz_area, _, _ = self.flowdir._getsize()
 
-        xy_area = self._flowdir.cell2coord(self._idxcells_area)
+        xy_area = self.flowdir.cell2coord(self._idxcells_area)
         npoints = np.zeros((1,), dtype=np.int64)
         idxcells = np.zeros(nrows*ncols, dtype=np.int64)
         weights = np.zeros(nrows*ncols, dtype=np.float64)
@@ -1140,7 +1197,6 @@ class Catchment(object):
         return area
 
 
-
     def plot_area(self, ax, *args, **kwargs):
         ''' Plot catchment area '''
 
@@ -1148,7 +1204,7 @@ class Catchment(object):
             raise ValueError('idxcells_boundary is None, ' + \
                 'please delineate the area')
 
-        xy = self._flowdir.cell2coord(self._idxcells_area)
+        xy = self.flowdir.cell2coord(self._idxcells_area)
         ax.plot(xy[:, 0], xy[:, 1], *args, **kwargs)
 
 
@@ -1159,7 +1215,7 @@ class Catchment(object):
             raise ValueError('idxcells_boundary is None, ' + \
                 'please delineate the area')
 
-        xy = self._flowdir.cell2coord(self._idxcells_boundary)
+        xy = self.flowdir.cell2coord(self._idxcells_boundary)
         ax.plot(xy[:, 0], xy[:, 1], *args, **kwargs)
 
 
@@ -1176,10 +1232,10 @@ class Catchment(object):
 
         dic = {
             'name': self.name,
-            'idxoutlet':self._idxoutlet,
+            'idxcell_outlet':self._idxcell_outlet,
             'idxinlets':inlets,
             'idxcells_area':list(self._idxcells_area),
-            'flowdir':self._flowdir.to_dict(),
+            'flowdir':self.flowdir.to_dict(),
         }
         return dic
 

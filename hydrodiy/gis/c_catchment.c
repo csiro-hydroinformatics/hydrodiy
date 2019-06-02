@@ -1,7 +1,8 @@
 #include "c_catchment.h"
 
 /* comparison function for qsort ***/
-static int compare(const void* p1, const void* p2){
+static int compare(const void* p1, const void* p2)
+{
     long long a,b;
     a = *(long long *)p1;
     b = *(long long *)p2;
@@ -11,7 +12,8 @@ static int compare(const void* p1, const void* p2){
     return 0;
 }
 
-long long celldist(long long nrows, long long ncols, long long n1, long long n2)
+long long celldist(long long nrows, long long ncols, long long n1,
+                        long long n2)
 {
     long long nxy1[2], nxy2[2], dx, dy;
 
@@ -31,114 +33,12 @@ long long celldist(long long nrows, long long ncols, long long n1, long long n2)
 }
 
 
-long long c_upstream(long long nrows, long long ncols,
-    long long * flowdircode, long long * flowdir,
-    long long nval, long long * idxdown, long long * idxup){
-
-    /* Determines the list of upstream cell.
-    Flow dir codes are organised as follows
-    * 0 1 2
-    * 3 X 5
-    * 6 7 8
-    **/
-
-    long long i, j, k, fd, idxcell, idxneighb;
-    long long neighbours[9];
-
-    for(i=0; i<nval; i++){
-        /* Determines neighbouring cells */
-        idxcell = idxdown[i];
-
-        if(idxcell<0 || idxcell >= nrows*ncols)
-            return CATCHMENT_ERROR + __LINE__;
-
-        c_neighbours(nrows, ncols, idxcell, neighbours);
-
-        /* loop through neighbours and determines if
-        they drain long longo downstream cell */
-        k = 0;
-        for(j=0; j<9; j++){
-            /* Get flow direction code of neighbours */
-            idxneighb = neighbours[j];
-
-            if(idxneighb == -1)
-                continue;
-
-            /* Skip if there is no neighbours or if
-                neighbours is sink */
-            fd = flowdir[idxneighb];
-
-            if(fd==0)
-                continue;
-
-            /* Check that flow direction points towards idxcell */
-            if(fd==flowdircode[8-j]){
-                idxup[9*i+k] = idxneighb;
-                k++;
-            }
-        }
-        for(j=k; j<9; j++)
-            idxup[9*i+j] = -1;
-    }
-    return 0;
-}
-
-
-long long c_downstream(long long nrows, long long ncols,
-    long long * flowdircode, long long * flowdir,
-    long long nval, long long * idxup, long long * idxdown){
-
-    /* Determines the downstream cell.
-    Flow dir codes are organised as follows
-    * 0 1 2
-    * 3 X 5
-    * 6 7 8
-    *
-    * if the current point is a sink (ie fd=0), then idxdown = -2
-    * if the current point links to outside of the grid then idxdown = -1
-    **/
-
-    long long i, j, fd, idxcell;
-    long long neighbours[9];
-
-    for(i=0; i<nval; i++)
-    {
-        /* Determines neighbouring cells */
-        idxcell = idxup[i];
-
-        if(idxcell<0 || idxcell >= nrows*ncols)
-            return CATCHMENT_ERROR + __LINE__;
-
-        c_neighbours(nrows, ncols, idxcell, neighbours);
-
-        /* Flow direction */
-        fd = flowdir[idxcell];
-
-        /* Default downstream */
-        idxdown[i] = -1;
-
-        if(fd==0){
-            idxdown[i] = -2;
-            continue;
-        }
-
-        for(j=0; j<9; j++){
-            if(fd == flowdircode[j]){
-                idxdown[i] = neighbours[j];
-                continue;
-            }
-        }
-    }
-
-    return 0;
-}
-
-
+/* Routine to delineate catchment area */
 long long c_delineate_area(long long nrows, long long ncols,
     long long* flowdircode, long long * flowdir,
     long long idxoutlet,
     long long ninlets, long long * idxinlets,
-    long long nval, long long * idxcells,
+    long long nval, long long * idxcells_area,
     long long * buffer1, long long * buffer2)
 {
 	long long i, k, l, m, idx;
@@ -149,7 +49,7 @@ long long c_delineate_area(long long nrows, long long ncols,
     if(nval<1)
         return CATCHMENT_ERROR + __LINE__;
 
-    /* Check cell */
+    /* Check cell is within the grid */
     if(idxoutlet<0 || idxoutlet>nrows*ncols-1)
         return CATCHMENT_ERROR + __LINE__;
 
@@ -157,15 +57,22 @@ long long c_delineate_area(long long nrows, long long ncols,
         if(idxinlets[m]<0 || idxinlets[m]>nrows*ncols-1)
             return CATCHMENT_ERROR + __LINE__;
 
-    /* Initialise algorithm with outlet cell */
+    /* Initialise algorithm by including outlet cell */
     i=0;
     nbuffer2 = 1;
     buffer2[i] = idxoutlet;
     nlayer = 0;
 
-    /* Infinite loop broken when i reaches nval */
-    while(nlayer>=0){
+    /* The algorithm use two buffer to identify points in the
+     * catchment area:
+     * - buffer1 : list of grid cells that are part of the catchment
+     *              area at the current step of the algorithm.
+     * - buffer2 : list of grid cells upstream of each
+     */
 
+    /* Infinite loop broken when i reaches nval */
+    while(nlayer>=0)
+    {
         /* Swap buffers */
         for(l=0; l<nbuffer2; l++)
             buffer1[l] = buffer2[l];
@@ -174,8 +81,8 @@ long long c_delineate_area(long long nrows, long long ncols,
         nbuffer2 = 0;
 
         /* Loop through content of first buffer (current points) */
-        for(l=0; l<nbuffer1; l++){
-
+        for(l=0; l<nbuffer1; l++)
+        {
             idxcell[0] = buffer1[l];
 
             /* Loop around current cell */
@@ -183,15 +90,16 @@ long long c_delineate_area(long long nrows, long long ncols,
                 1, idxcell, idxup);
 
             /* Populate second buffer (upstream points) */
-            for(k=0; k<9; k++){
+            for(k=0; k<9; k++)
+            {
                 idx = idxup[k];
                 //fprintf(stdout, " %d", idxup[k]);
-                if(idx>=0){
-
+                if(idx>=0)
+                {
                     /* TODO check that idx is not in idxcells
-                    to avoid circularity - this will make algorithm very slow
-                    A faster version would be to check circularity for buffer1
-                    only
+                    to avoid circularity - this will make algorithm very
+                    slow. A faster version would be to check circularity
+                    for buffer1 only.
 
                     for(l=0; l<i; l++)
                         if(idx == idxcell[i])
@@ -199,19 +107,22 @@ long long c_delineate_area(long long nrows, long long ncols,
                     */
 
                     /* Check cell is not in the list of inlets */
-                    for(m=0; m<ninlets; m++){
+                    for(m=0; m<ninlets; m++)
+                    {
                         if(idxinlets[m] == idx)
                             break;
                     }
 
                     /* If cells are upstream of idx cell, store them */
-                    if(m==ninlets){
-                        idxcells[i] = idx;
-                        buffer2[nbuffer2] = idx;
-
+                    if(m==ninlets)
+                    {
                         /* Stop loop if we reach end of vector */
                         if(i==nval-1)
                             return CATCHMENT_ERROR + __LINE__;
+
+                        /* Store the cell */
+                        idxcells_area[i] = idx;
+                        buffer2[nbuffer2] = idx;
 
                         /* Stop loop if we reach end of buffer */
                         if(nbuffer2==nval-1)
@@ -229,12 +140,13 @@ long long c_delineate_area(long long nrows, long long ncols,
             return 0;
 
         /* Add outlet in first layer */
-        if(nlayer==0){
-            idxcells[i] = idxoutlet;
-
+        if(nlayer==0)
+        {
+            /* Check we haven't reached the maximum number of cells */
             if(i==nval-1)
                 return CATCHMENT_ERROR + __LINE__;
 
+            idxcells_area[i] = idxoutlet;
             i++;
         }
 
@@ -253,11 +165,11 @@ long long c_delineate_boundary(long long nrows, long long ncols,
     long long nval,
     long long * idxcells_area,
     long long * buffer,
-    long long * grid_area,
+    long long * catchment_area_mask,
     long long * idxcells_boundary)
 {
     long long i, k, ngrid, nbuffer, shift[4], isout;
-    long long idxcell, idxcelln, idxcellp, distmax;
+    long long idxcell, idxcelln, distmax;
     long long next, buf, ibnd, start;
     long long nxycell[2], nxybuf[2], nxystart[2];
     long long dx, dy, dist, dmin, knext;
@@ -294,7 +206,7 @@ long long c_delineate_boundary(long long nrows, long long ncols,
         idxcell = idxcells_area[i];
 
         /* Check if cell is in  area */
-        if(grid_area[idxcell]!=1)
+        if(catchment_area_mask[idxcell]!=1)
             return CATCHMENT_ERROR + __LINE__;
 
         /* Check if neighbouring cells are in  area */
@@ -302,14 +214,26 @@ long long c_delineate_boundary(long long nrows, long long ncols,
         for(k=0; k<4; k++)
         {
             idxcelln = idxcell+shift[k];
+
+            /* Check if neighbouring cell is in the catchment
+             * area, provided it is in the grid. Otherwise
+             * assumes the neighbouring cell is out of the catchment area
+             * (i.e. set isout = 0) */
             if(idxcelln>=0 && idxcelln<ngrid)
-                isout *= (long long)(grid_area[idxcelln] == 1);
+                isout *= (long long)(catchment_area_mask[idxcelln] == 1);
+            else
+                isout = 0;
         }
 
         /* If at least one cell is out of the area, then
         * we are on the boundary */
         if(isout==0)
         {
+            /* Check we have enough space in the buffer */
+            if(nbuffer > nval)
+                return CATCHMENT_ERROR + __LINE__;
+
+            /* Store cell in the buffer */
             buffer[nbuffer] = idxcell;
             nbuffer++;
         }
@@ -349,7 +273,7 @@ long long c_delineate_boundary(long long nrows, long long ncols,
             dy = nxycell[1]-nxybuf[1];
             dist = dx*dx+dy*dy;
 
-            /* Find closest cell */
+            /* Find closest cell in the buffer */
             if(dist<dmin && dist >0)
             {
                 next = buf;
@@ -362,7 +286,8 @@ long long c_delineate_boundary(long long nrows, long long ncols,
                 break;
         }
 
-        /* Compute distance from start when approaching the end of the boundary
+        /* Compute distance from start when approaching the end of the
+         * boundary
          * points. This is to avoid loops */
         if(ibnd > (long long)((double)nbuffer*percmax))
         {
@@ -375,7 +300,7 @@ long long c_delineate_boundary(long long nrows, long long ncols,
                 break;
         }
 
-        /* Iterate if we have a neighbour, else return */
+        /* Iterate if we have a neighbour */
         buffer[knext] = -1;
         idxcell = next;
     }
@@ -393,6 +318,14 @@ long long c_exclude_zero_area_boundary(long long nval,
     long long ierr=0, i;
     double det, proj, norm, x1, y1, x2, y2, x3, y3;
 
+    if(nval < 2)
+        return CATCHMENT_ERROR + __LINE__;
+
+    /* Set the two first points as ok */
+    idxok[0] = 1;
+    idxok[1] = 1;
+
+    /* Loop through remaining points */
     for(i=2; i<nval; i++)
     {
         /* Get coordinates from three consecutive points */
@@ -417,11 +350,9 @@ long long c_exclude_zero_area_boundary(long long nval,
             proj = (x2-x1)*(x3-x1)+(y2-y1)*(y3-y1);
             norm = (x3-x1)*(x3-x1)+(y3-y1)*(y3-y1);
 
+            /* Point 2 is outside the line 1 to 3 */
             if(proj < 0 || proj > norm)
-            {
-                /* Point 2 is outside the line 1 to 3 */
                 idxok[i-1] = 0;
-            }
         }
     }
 
@@ -437,7 +368,6 @@ long long c_delineate_river(long long nrows, long long ncols,
     long long * idxcells,
     double * data)
 {
-
     long long i, idxup[1], idxdown[1], ierr;
     long long nx1, ny1, nx2, ny2, ncolsdata;
     double dx, dy, dist, xy[2];
@@ -500,249 +430,53 @@ long long c_delineate_river(long long nrows, long long ncols,
     return 0;
 }
 
-
-long long c_accumulate(long long nrows, long long ncols,
-    long long nprint, long long max_accumulated_cells,
-    double nodata_to_accumulate,
+long long c_delineate_flowpaths_in_catchment(long long nrows,
+    long long ncols,
     long long * flowdircode,
     long long * flowdir,
-    double * to_accumulate,
-    double * accumulation)
+    long long nval,
+    long long * idxcells_area,
+    long long idxcell_outlet,
+    long long * flowpaths)
 {
+    long long ierr, i, idxcell_up[1], idxcell_down[1], ipath;
 
-    long long accumulated_cells, i, ierr, ntot;
-    long long idxdown[1], idxup[1];
-    double accvalue;
-
-    /* Check inputs */
-    if(max_accumulated_cells < 1)
-            return CATCHMENT_ERROR + __LINE__;
-
-    if(nrows < 1 || nrows < 1)
-            return CATCHMENT_ERROR + __LINE__;
-
-    ntot = nrows*ncols;
-
-    /* print inputs */
-    fprintf(stdout, "\n\t-- Started accumulation for "
-                            "grid [%lldx%lld] --\n", nrows, ncols);
-    fprintf(stdout, "\tntot = %lld\n", ntot);
-    fprintf(stdout, "\tnprint = %lld\n", nprint);
-    fprintf(stdout, "\tmax_accumulated_cells = %lld\n",
-                        max_accumulated_cells);
-
-    for(i=0; i<ntot; i++)
-    {
-        if(i%nprint == 0)
-            fprintf(stdout, "\t\tCompleted accumulation ... %0.1f%%\n",
-                100*(double)(i)/(double)(ntot));
-
-        /* Find downstream cell */
-        idxup[0] = i;
-        idxdown[0] = 0;
-        accumulated_cells = 0;
-
-        /* Loop through cells */
-        while(accumulated_cells <= max_accumulated_cells)
-        {
-            ierr = c_downstream(nrows, ncols, flowdircode, flowdir,
-                        1, idxup, idxdown);
-
-            if(ierr>0)
-                return CATCHMENT_ERROR + __LINE__;
-
-            if(idxdown[0]<0)
-            {
-                accumulation[idxup[0]] = nodata_to_accumulate;
-                break;
-            }
-
-            /* Get accumulated value */
-            accvalue = to_accumulate[idxdown[0]];
-
-            /* Increase flow accumulation at downstream cell */
-            accumulation[idxdown[0]] += accvalue;
-
-            /* Loop */
-            accumulated_cells ++;
-            idxup[0] = idxdown[0];
-        }
-
-    }
-
-    return 0;
-}
-
-
-long long c_intersect(long long nrows, long long ncols,
-    double xll, double yll, double csz, double csz_area,
-    long long nval, double * xy_area,
-    long long ncells, long long * npoints,
-    long long * idxcells, double * weights)
-{
-
-    long long i, j, k, ierr, idxcell[1];
-    double xy[2], areafactor;
-
-    areafactor = (csz_area/csz)*(csz_area/csz);
-
-    j = 0;
+    /* Loop through all cells in catchment area */
     for(i=0; i<nval; i++)
     {
-        xy[0] = xy_area[2*i];
-        xy[1] = xy_area[2*i+1];
+        /* initialise */
+        *idxcell_up = idxcells_area[i];
+        *idxcell_down = -1;
+        ipath = 0;
 
-        /* Get cell number for coordinates */
-        ierr = c_coord2cell(nrows, ncols, xll, yll, csz, 1,
-                xy, idxcell);
-
-        if(ierr>0)
-            continue;
-
-        /* Look for already store cells and add weight */
-        for(k=0; k<j; k++){
-            if(idxcells[k] == idxcell[0]){
-                weights[k] += areafactor;
-                break;
-            }
-        }
-
-        /* If not found in existsting cells, add a new cell */
-        if(k==j){
-            idxcells[j] = idxcell[0];
-            weights[j] = areafactor;
-            j++;
-        }
-    }
-    npoints[0] = j;
-
-    return 0;
-}
-
-
-long long c_voronoi(long long nrows, long long ncols,
-    double xll, double yll, double csz,
-    long long ncells, long long * idxcells_area,
-    long long npoints, double * xypoints,
-    double * weights)
-{
-
-    long long i, j, jmin, ierr, idxcell[1];
-    double xy[2], dx, dy, dist, distmin;
-
-    for(j=0; j<npoints; j++)
-        weights[j] = 0;
-
-    for(i=0; i<ncells; i++)
-    {
-        /* Get cell number for coordinates */
-        idxcell[0] = idxcells_area[i];
-        xy[0] = xypoints[2*i];
-        xy[1] = xypoints[2*i+1];
-
-        ierr = c_cell2coord(nrows, ncols, xll, yll, csz, 1,
-                idxcell, xy);
-
-        if(ierr>0)
-            return CATCHMENT_ERROR + __LINE__;
-
-        /* Find closest point */
-        distmin = 1e30;
-        jmin = 0;
-        for(j=0; j<npoints; j++){
-            dx = xy[0]-xypoints[2*j];
-            dy = xy[1]-xypoints[2*j+1];
-            dist = sqrt(dx*dx+dy*dy);
-
-            if(dist<distmin){
-                distmin = dist;
-                jmin = j;
-            }
-        }
-
-        /* Store information */
-        weights[jmin] += 1;
-    }
-
-    /* Convert to weights in [0, 1] */
-    for(j=0; j<npoints; j++)
-        weights[j]/=(double)ncells;
-
-    return 0;
-}
-
-
-/*
-* Computes slope in a grid
-*
-* Flow dir codes are organised as follows
-* 0 1 2
-* 3 X 5
-* 6 7 8
-*/
-long long c_slope(long long nrows,
-    long long ncols,
-    long long nprint,
-    double cellsize,
-    long long * flowdircode,
-    long long * flowdir,
-    double * altitude,
-    double * slopeval)
-{
-
-    long long i, ierr, ntot, fd;
-    long long idxdown[1], idxup[1];
-    double altup, altdown, dist;
-    double sqrt2 = sqrt(2);
-
-    /* Check inputs */
-    //if(cellsize <= 1e-10)
-    //        return CATCHMENT_ERROR + __LINE__;
-
-    if(nrows < 1 || nrows < 1)
-            return CATCHMENT_ERROR + __LINE__;
-
-    ntot = nrows*ncols;
-
-    /* Print intputs */
-    fprintf(stdout, "\n\t-- Started splope calculation"
-                        " for grid [%lldx%lld] --\n", nrows, ncols);
-    fprintf(stdout, "\tntot = %lld\n", ntot);
-    fprintf(stdout, "\tnprint = %lld\n", nprint);
-    fprintf(stdout, "\tcellsize = %f\n", cellsize);
-
-    for(i=0; i<ntot; i++)
-    {
-        if(i%nprint == 0)
-            fprintf(stdout, "\t\tCompleted slope calculation ... %0.1f%%\n",
-                100*(double)(i)/(double)(ntot));
-
-        /* Find downstream cell */
-        idxup[0] = i;
-        idxdown[0] = 0;
-        ierr = c_downstream(nrows, ncols, flowdircode, flowdir,
-                    1, idxup, idxdown);
-
-        if(ierr>0)
-            return CATCHMENT_ERROR + __LINE__;
-
-        /* Extract altitude of both cells */
-        if(idxdown[0]>=0)
+        /* Go downstream until we reach the outlet */
+        while(ipath < nval)
         {
-            altup = altitude[i];
-            altdown = altitude[idxdown[0]];
+            /* find the downstream point */
+            ierr = c_downstream(nrows, ncols, flowdircode,
+                        flowdir, 1, idxcell_up, idxcell_down);
 
-            /* Compute slope */
-            fd = flowdir[i];
-            dist = cellsize;
-            if(fd == flowdircode[0] || fd == flowdircode[2]
-                        || fd == flowdircode[6] || fd == flowdircode[8])
-                dist *= sqrt2;
+            /* Break the loop if we go outside of grid limits */
+            if(*idxcell_down < 0)
+                break;
 
-            slopeval[i] = (altup-altdown)/dist;
+            /* Store downstream cell number */
+            flowpaths[ipath*nval + i] = *idxcell_up;
+
+            /* Break if we have reached the outlet cell */
+            if(*idxcell_down == idxcell_outlet)
+                break;
+
+            /* Iterate */
+            *idxcell_up = *idxcell_down;
+            ipath++;
         }
+
+        /* Store last cell number */
+        ipath++;
+        if(ipath < nval && *idxcell_down >= 0)
+            flowpaths[ipath*nval + i] = *idxcell_down;
     }
 
     return 0;
 }
-
