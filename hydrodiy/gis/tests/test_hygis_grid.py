@@ -587,30 +587,25 @@ class CatchmentTestCase(unittest.TestCase):
         self.assertTrue(ck)
 
 
-    def test_delineate_flowpaths(self):
+    def test_flowpathlengths(self):
         ''' Test flow path delineation '''
         nr = self.gr.nrows
         nc = self.gr.ncols
         ca = Catchment('test', self.gr)
 
         ca.delineate_area(27)
-        ca.delineate_flowpaths()
-        idxc = ca.idxcells_flowpaths
+        ca.compute_flowpathlengths()
+        paths = ca.flowpathlengths
 
-        expected = -1 * np.ones((11, 11), dtype=np.int64)
-        expected[:2, 0] = [20, 27]
-        expected[:1, 1] = 27
-        expected[:3, 2] = [13, 20, 27]
-        expected[:3, 3] = [14, 20, 27]
-        expected[:3, 4] = [15, 20, 27]
-        expected[:4, 5] = [7, 13, 20, 27]
-        expected[:4, 6] = [8, 14, 20, 27]
-        expected[:4, 7] = [9, 14, 20, 27]
-        expected[:5, 8] = [1, 7, 13, 20, 27]
-        expected[:5, 9] = [2, 8, 14, 20, 27]
-        expected[:5, 10] = [3, 9, 14, 20, 27]
+        expected = np.zeros((11, 3), dtype=np.float64)
+        expected[:, 1] = 27
+        expected[1, 1] = -2
+        expected[:, 0] = [20, 27, 13, 14, 15, 7, 8, 9, 1, 2, 3]
+        sq = math.sqrt(2)
+        expected[:, 2] = [sq, 0, 2*sq, 1+sq, 2*sq, 1+2*sq, 2+sq, \
+                            1+2*sq, 2+2*sq, 3+sq, 2+2*sq]
 
-        ck = np.allclose(idxc, expected)
+        ck = np.allclose(paths.values, expected)
         self.assertTrue(ck)
 
 

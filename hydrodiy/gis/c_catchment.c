@@ -430,16 +430,18 @@ long long c_delineate_river(long long nrows, long long ncols,
     return 0;
 }
 
-long long c_delineate_flowpaths_in_catchment(long long nrows,
+long long c_delineate_flowpathlengths_in_catchment(long long nrows,
     long long ncols,
     long long * flowdircode,
     long long * flowdir,
     long long nval,
     long long * idxcells_area,
     long long idxcell_outlet,
-    long long * flowpaths)
+    double * flowpathlengths)
 {
-    long long ierr, i, idxcell_up[1], idxcell_down[1], ipath;
+    long long ierr, i, ipath, idxcell_up[1], idxcell_down[1];
+    long long diff;
+    double squaredist, length;
 
     /* Loop through all cells in catchment area */
     for(i=0; i<nval; i++)
@@ -447,6 +449,7 @@ long long c_delineate_flowpaths_in_catchment(long long nrows,
         /* initialise */
         *idxcell_up = idxcells_area[i];
         *idxcell_down = -1;
+        length = 0;
         ipath = 0;
 
         /* Go downstream until we reach the outlet */
@@ -460,23 +463,38 @@ long long c_delineate_flowpaths_in_catchment(long long nrows,
             if(*idxcell_down < 0)
                 break;
 
-            /* Store downstream cell number */
-            flowpaths[ipath*nval + i] = *idxcell_up;
-
             /* Break if we have reached the outlet cell */
             if(*idxcell_down == idxcell_outlet)
                 break;
 
+            /* Compute distance between up and down cell */
+            diff = abs(*idxcell_down - *idxcell_up);
+            squaredist = diff == 1 || diff == ncols ? 1 : 2;
+
             /* Iterate */
             *idxcell_up = *idxcell_down;
-            ipath++;
+            ipath ++;
+            length += sqrt(squaredist);
         }
 
-        /* Store last cell number */
+        /* Last cell of path */
         ipath++;
         if(ipath < nval && *idxcell_down >= 0)
-            flowpaths[ipath*nval + i] = *idxcell_down;
+        {
+            /* Compute distance between up and down cell */
+            diff = abs(*idxcell_down - *idxcell_up);
+            squaredist = diff == 1 || diff == ncols ? 1 : 2;
+            length += sqrt(squaredist);
+        }
+
+        if(*idxcell_down < 0)
+            length = 0;
+
+        /* Store flow path length */
+        flowpathlengths[3*i] = (double) idxcells_area[i];
+        flowpathlengths[3*i+1] = (double) *idxcell_down;
+        flowpathlengths[3*i+2] = length;
     }
 
-    return 0;
+    return ierr;
 }

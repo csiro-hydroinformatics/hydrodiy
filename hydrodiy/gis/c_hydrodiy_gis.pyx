@@ -92,14 +92,14 @@ cdef extern from 'c_catchment.h':
         long long * idxcells,
         double * data)
 
-    long long c_delineate_flowpaths_in_catchment(long long nrows,
+    long long c_delineate_flowpathlengths_in_catchment(long long nrows,
         long long ncols,
         long long * flowdircode,
         long long * flowdir,
         long long nval,
         long long * idxcells_area,
         long long idxcell_outlet,
-        long long * flowpaths)
+        double * flowpathlengths)
 
 
 def __cinit__(self):
@@ -461,28 +461,28 @@ def points_inside_polygon(double atol, int nprint,
 
 
 
-def delineate_flowpaths_in_catchment(long long idxcell_outlet,
+def delineate_flowpathlengths_in_catchment(long long idxcell_outlet,
             np.ndarray[long long, ndim=2, mode='c'] flowdircode not None,
             np.ndarray[long long, ndim=2, mode='c'] flowdir not None,
             np.ndarray[long long, ndim=1, mode='c'] idxcells_area not None,
-            np.ndarray[long long, ndim=2, mode='c'] flowpaths not None):
+            np.ndarray[double, ndim=2, mode='c'] flowpathlengths not None):
 
     cdef long long ierr
 
     # check dimensions
     assert flowdircode.shape[0] == 3
     assert flowdircode.shape[1] == 3
-    assert flowpaths.shape[0] == idxcells_area.shape[0]
-    assert flowpaths.shape[1] == idxcells_area.shape[0]
+    assert flowpathlengths.shape[0] == idxcells_area.shape[0]
+    assert flowpathlengths.shape[1] == 3
 
-    ierr = c_delineate_flowpaths_in_catchment(
+    ierr = c_delineate_flowpathlengths_in_catchment(
             flowdir.shape[0], flowdir.shape[1],
             <long long*> np.PyArray_DATA(flowdircode),
             <long long*> np.PyArray_DATA(flowdir),
             idxcells_area.shape[0],
             <long long*> np.PyArray_DATA(idxcells_area),
             idxcell_outlet,
-            <long long*> np.PyArray_DATA(flowpaths))
+            <double*> np.PyArray_DATA(flowpathlengths))
 
     return ierr
 

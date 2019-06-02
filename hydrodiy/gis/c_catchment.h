@@ -37,12 +37,12 @@ long long c_delineate_river(long long nrows, long long ncols,
     long long * idxcells,
     double * data);
 
-long long c_delineate_flowpaths_in_catchment(long long nrows,
+long long c_delineate_flowpathlengths_in_catchment(long long nrows,
     long long ncols,
     long long * flowdircode,
     long long * flowdir,
     long long nval,
     long long * idxcells_area,
     long long idxcell_outlet,
-    long long * flowpaths);
+    double * flowpathlengths);
 

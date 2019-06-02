@@ -776,7 +776,7 @@ class Catchment(object):
         self._idxinlets = None
         self._idxcells_area = None
         self._idxcells_boundary = None
-        self._idxcells_flowpaths = None
+        self._flowpathlengths = None
         self._xycells_boundary = None
 
 
@@ -879,9 +879,9 @@ class Catchment(object):
         return self._idxcells_area
 
     @property
-    def idxcells_flowpaths(self):
-        ''' Get flowpaths cells '''
-        return self._idxcells_flowpaths
+    def flowpathlengths(self):
+        ''' Get flowpaths cells expressed in number of cells '''
+        return self._flowpathlengths
 
     @property
     def xycells_boundary(self):
@@ -1060,15 +1060,8 @@ class Catchment(object):
         self._xycells_boundary  = xy[idx]
 
 
-    def delineate_flowpaths(self):
-        ''' Delineate all flow paths in catchment
-
-        Returns
-        -----------
-        flowpaths : numpy.ndarray
-            Index of cells indicating the flowp paths in the catchment.
-            Each column contain a single flow path.
-        '''
+    def compute_flowpathlengths(self):
+        ''' Compute length of all flow paths in catchment. '''
         if not HAS_C_GIS_MODULE:
             raise ValueError('C module c_hydrodiy_gis is not available, '+\
                 'please run python setup.py build')
@@ -1087,19 +1080,21 @@ class Catchment(object):
 
         # Initialise flowpaths data
         nval = np.int64(len(idxcells_area))
-        flowpaths = -1*np.ones((nval, nval), dtype=np.int64)
+        flowpaths = np.zeros((nval, 3), dtype=np.float64)
 
         # Compute flow paths
-        ierr = c_hydrodiy_gis.delineate_flowpaths_in_catchment(
+        ierr = c_hydrodiy_gis.delineate_flowpathlengths_in_catchment(
                     self.idxcell_outlet, \
                     FLOWDIRCODE, self.flowdir.data, \
                     self.idxcells_area, flowpaths)
 
         if ierr>0:
             raise ValueError(('c_hydrodiy_gis.delineate_'+
-                'flowpaths_in_catchment returns {0}').format(ierr))
+                'flowpathlengths_in_catchment returns {0}').format(ierr))
 
-        self._idxcells_flowpaths = flowpaths
+        self._flowpathlengths = pd.DataFrame(flowpaths, \
+                                    columns=['idxcell_start', \
+                                        'idxcell_end', 'length[cell]'])
 
 
     def intersect(self, grid):
