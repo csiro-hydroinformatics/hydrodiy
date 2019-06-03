@@ -1035,10 +1035,10 @@ class Catchment(object):
         idx = idxcells_boundary >= 0
         idxcells_boundary = idxcells_boundary[idx]
 
-        if len(idxcells_boundary) >= 3:
-            # Generate coordinates for the boundary
-            xy = self._flowdir.cell2coord(idxcells_boundary)
+        # Generate coordinates for the boundary
+        xy = self._flowdir.cell2coord(idxcells_boundary)
 
+        if len(idxcells_boundary) >= 3:
             # Exclude zero area angles
             # to allow processing by GDAL
             nrows = len(xy)
