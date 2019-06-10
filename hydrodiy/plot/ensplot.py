@@ -45,7 +45,7 @@ def ensmetrics(obs, fcst, random_pit=True, stat='median'):
     is_sudo : numpy.ndarray
         Boolean telling if the pit value is sudo or not (i.e. censored)
     R2 : float
-        Pearson coefficient of correlation between obs and median or mean
+        Spearman correlation between obs and median or mean
         forecast
     bias : float
         Bias obs and median or mean forecast
@@ -66,7 +66,7 @@ def ensmetrics(obs, fcst, random_pit=True, stat='median'):
     pits, is_sudo = metrics.pit(obs, fcst, random=random_pit)
 
     # Correlation
-    R2 = metrics.corr(obs, fcst, stat=stat)
+    R2 = metrics.corr(obs, fcst, stat=stat, type='Spearman')
 
     # Bias
     if stat == 'mean':
