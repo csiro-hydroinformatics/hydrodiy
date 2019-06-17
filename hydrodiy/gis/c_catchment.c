@@ -439,7 +439,7 @@ long long c_delineate_flowpathlengths_in_catchment(long long nrows,
     long long idxcell_outlet,
     double * flowpathlengths)
 {
-    long long ierr, i, ipath, idxcell_up[1], idxcell_down[1];
+    long long ierr=0, ierr_down=0, i, ipath, idxcell_up[1], idxcell_down[1];
     long long diff;
     double squaredist, length;
 
@@ -456,11 +456,11 @@ long long c_delineate_flowpathlengths_in_catchment(long long nrows,
         while(ipath < nval)
         {
             /* find the downstream point */
-            ierr = c_downstream(nrows, ncols, flowdircode,
+            ierr_down = c_downstream(nrows, ncols, flowdircode,
                         flowdir, 1, idxcell_up, idxcell_down);
 
             /* Break the loop if we go outside of grid limits */
-            if(*idxcell_down < 0)
+            if(*idxcell_down < 0 || ierr_down > 0)
                 break;
 
             /* Break if we have reached the outlet cell */
