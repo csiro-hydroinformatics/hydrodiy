@@ -97,8 +97,8 @@ class BoxplotItem(object):
         markerfacecolor='none', \
         markeredgecolor='k', \
         markersize=5, \
-        showline=True, \
-        showtext=True):
+        show_line=True, \
+        show_text=True):
 
         # Attributes controlled by getters/setters
         self._linestyle = None
@@ -133,8 +133,8 @@ class BoxplotItem(object):
 
         self.textformat = textformat
 
-        self.showline = showline
-        self.showtext = showtext
+        self.show_line = show_line
+        self.show_text = show_text
 
 
     @property
@@ -235,7 +235,9 @@ class Boxplot(object):
 
     def __init__(self, data,
                 style='default', by=None, \
-                showtext=True, \
+                show_mean=True, \
+                show_median=True, \
+                show_text=True, \
                 centertext=False, \
                 linewidth=2, \
                 width_from_count=False,
@@ -254,7 +256,13 @@ class Boxplot(object):
             * narrow : Boxplot for large amount of data
         by : pandas.Series
             Categories used to split data
-        showtext : bool
+        show_mean : bool
+            Display mean as a dot
+        show_median : bool
+            Display median as a line
+        show_text : bool
+            Display summary statistics values
+        show_text : bool
             Display summary statistics values
         centertext : bool
             Center the text within the boxplot instead of on the side
@@ -295,13 +303,13 @@ class Boxplot(object):
                         ' dataframe:' +\
                         ' {0}'.format(str(err)))
 
+        # initialise objects
         self._ax = None
-
         self._data = data
-
         self._by = by
-
         self.elements = None
+        self.median = None
+        self.mean = None
 
         if box_coverage < 40.:
             raise BoxplotError('Box coverage cannot be below 40. '+\
@@ -319,11 +327,21 @@ class Boxplot(object):
 
         # Configure box plot formats depending on style
         if style == 'default':
-            self.median = BoxplotItem(linecolor=COLORS[3], \
+            if show_median:
+                self.median = BoxplotItem(linecolor=COLORS[3], \
                             fontcolor=COLORS[3], fontsize=9, \
                             marker='none',\
                             linewidth=linewidth, \
-                            showtext=showtext)
+                            show_text=show_text)
+
+            if show_mean:
+                self.mean = BoxplotItem(marker='o', \
+                            markerfacecolor=COLORS[4], \
+                            markeredgecolor=COLORS[4], \
+                            markersize=6, \
+                            show_line=False, \
+                            fontcolor=COLORS[4], \
+                            show_text=False)
 
             self.whiskers = BoxplotItem(linecolor=COLORS[0], \
                                 facecolor=COLORS[0], \
@@ -339,15 +357,18 @@ class Boxplot(object):
                             textformat = '%0.{0}f'.format(digitnumber), \
                             fontsize=8, \
                             linewidth=linewidth, \
-                            showtext=showtext)
-
+                            show_text=show_text)
 
         elif style == 'narrow':
-            self.median = BoxplotItem(marker='o', \
+            obj = BoxplotItem(marker='o', \
                             markeredgecolor=COLORS[0], \
                             markerfacecolor='w', \
-                            showline=False, \
-                            showtext=False)
+                            show_line=False, \
+                            show_text=False)
+            if show_median:
+                self.median = obj
+            else:
+                self.mean = obj
 
             self.whiskers = BoxplotItem(linecolor='none', \
                                 facecolor=COLORS[0], \
@@ -358,8 +379,7 @@ class Boxplot(object):
 
             self.box = BoxplotItem(linecolor='none', \
                             facecolor=COLORS[0], \
-                            width=0.6, showtext=False)
-
+                            width=0.6, show_text=False)
         else:
             raise BoxplotError('Expecting style in [default/narrow],'+\
                         ' got {0}'.format(style))
@@ -381,7 +401,7 @@ class Boxplot(object):
 
         self.minmax = BoxplotItem(markerfacecolor=COLORS[0], \
                             marker='none', \
-                            showline=False)
+                            show_line=False)
 
         # Compute boxplot stats
         self._compute()
@@ -463,46 +483,51 @@ class Boxplot(object):
         # Loop through stats
         self.elements = {}
         for i, colname in enumerate(stats.columns):
+            # initialise boxplot elements
+            element = {}
+
             # Box Widths
             bw = boxwidths[i]
 
-            # Draw median
+            # Draw median and mean
             x = [i-bw/2+xoffset, i+bw/2+xoffset]
-            med = stats.loc['50.0%', colname]
-            y = [med] * 2
-            valid_med = np.all(~np.isnan(med))
+            for statname in ['median', 'mean']:
+                stn = '50.0%' if statname == 'median' else 'mean'
+                value = stats.loc[stn, colname]
+                y = [value] * 2
+                valid_value = np.all(~np.isnan(value))
 
-            item = self.median
-            element = {}
+                item = getattr(self, statname)
+                if not item is None:
+                    if item.show_line and valid_value:
+                        ax.plot(x, y, lw=item.linewidth, \
+                            color=item.linecolor, \
+                            alpha=item.alpha)
+                        element[statname+'-line'] = ax.get_lines()[-1]
 
-            if item.showline and valid_med:
-                ax.plot(x, y, lw=item.linewidth, \
-                    color=item.linecolor, \
-                    alpha=item.alpha)
-                element['median-line'] = ax.get_lines()[-1]
+                    if item.marker != 'none':
+                        ax.plot(i+xoffset, value, marker=item.marker, \
+                            markeredgecolor=item.markeredgecolor, \
+                            markerfacecolor=item.markerfacecolor, \
+                            markersize=item.markersize, \
+                            alpha=item.alpha)
+                        element[statname+'-marker'] = ax.get_lines()[-1]
 
-            if item.marker != 'none':
-                ax.plot(i+xoffset, med, marker=item.marker, \
-                    markeredgecolor=item.markeredgecolor, \
-                    markerfacecolor=item.markerfacecolor, \
-                    markersize=item.markersize, \
-                    alpha=item.alpha)
-                element['median-marker'] = ax.get_lines()[-1]
+                    if item.show_text and valid_value:
+                        formatter = item.textformat
+                        xshift = 0
+                        if item.ha == 'left':
+                            formatter = ' '+formatter
+                            xshift = bw/2
 
-            if item.showtext and valid_med:
-                formatter = item.textformat
-                xshift = 0
-                if item.ha == 'left':
-                    formatter = ' '+formatter
-                    xshift = bw/2
-
-                medtext = formatter % med
-                element['median-text'] = ax.text(i+xshift+xoffset, \
-                        med, medtext, \
-                        fontsize=item.fontsize, \
-                        color=item.fontcolor, \
-                        va=item.va, ha=item.ha, \
-                        alpha=item.alpha)
+                        valuetext = formatter % value
+                        element[statname+'-text'] = \
+                            ax.text(i+xshift+xoffset, \
+                                value, valuetext, \
+                                fontsize=item.fontsize, \
+                                color=item.fontcolor, \
+                                va=item.va, ha=item.ha, \
+                                alpha=item.alpha)
 
             # Skip missing data
             q1 = stats.loc[bqq1txt, colname]
@@ -515,7 +540,7 @@ class Boxplot(object):
 
             # Draw box
             item = self.box
-            if item.facecolor !='none' or item.showline:
+            if item.facecolor !='none' or item.show_line:
                 # Remove rounding to avoid weird spikes
                 # when there are too many columns
                 boxstyle = item.boxstyle
@@ -538,7 +563,7 @@ class Boxplot(object):
 
             # Draw whiskers
             item = self.whiskers
-            if item.showline:
+            if item.show_line:
                 for cc in [[wqq1txt, bqq1txt], [wqq2txt, bqq2txt]]:
                     # Get y data
                     q1 = stats.loc[cc[0], colname]
@@ -571,7 +596,7 @@ class Boxplot(object):
 
             # Draw caps
             item = self.caps
-            if item.showline and cw>0:
+            if item.show_line and cw>0:
                 for qq in [wqq1txt, wqq2txt]:
                     q1 = stats.loc[qq, colname]
                     x = [i-cw/5+xoffset, i+cw/5+xoffset]
@@ -585,7 +610,7 @@ class Boxplot(object):
 
             # Box (quartile) values
             item = self.box
-            if item.showtext:
+            if item.show_text:
                 formatter = item.textformat
                 if item.ha == 'left':
                     formatter = ' '+formatter
@@ -682,7 +707,7 @@ class Boxplot(object):
             va = 'top'
 
         item = self.count
-        if item.showtext:
+        if item.show_text:
             # Get y coordinate from ax coordinates
             trans1 = ax.transAxes.transform
             trans2 = ax.transData.inverted().transform
@@ -701,5 +726,5 @@ class Boxplot(object):
                     self.elements[cn]['count-text'] = txt
 
         else:
-            raise BoxplotError('showtext property for count set to False')
+            raise BoxplotError('show_text property for count set to False')
 

@@ -89,7 +89,7 @@ class BoxplotTestCase(unittest.TestCase):
         bx = Boxplot(data=self.data)
         bx.median.linecolor = 'green'
         bx.box.linewidth = 5
-        bx.minmax.showline = True
+        bx.minmax.show_line = True
         bx.minmax.marker = '*'
         bx.minmax.markersize = 20
         bx.draw(ax=ax)
@@ -234,7 +234,7 @@ class BoxplotTestCase(unittest.TestCase):
         bx = Boxplot(data=df)
         bx.draw(ax=axs[0])
 
-        bx = Boxplot(data=df, showtext=False)
+        bx = Boxplot(data=df, show_text=False)
         bx.draw(ax=axs[1])
 
         fig.savefig(os.path.join(self.fimg, 'bx16_showtext.png'))
