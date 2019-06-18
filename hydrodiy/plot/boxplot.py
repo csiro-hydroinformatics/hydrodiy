@@ -386,13 +386,15 @@ class Boxplot(object):
 
         # Set text format
         for obj in [self.median, self.whiskers, self.box, self.caps]:
-            obj.textformat = '%0.{0}f'.format(digitnumber)
+            if not obj is None:
+                obj.textformat = '%0.{0}f'.format(digitnumber)
 
         self.centertext = centertext
         if centertext:
             for obj in [self.median, self.box, self.whiskers]:
-                obj.ha = 'center'
-                obj.va = 'bottom'
+                if not obj is None:
+                    obj.ha = 'center'
+                    obj.va = 'bottom'
             self.box.ha = 'left'
 
         # Items not affected by style
