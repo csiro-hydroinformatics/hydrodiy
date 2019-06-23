@@ -23,14 +23,15 @@ from hydrodiy.plot import putils
 # Select color scheme
 COLOR_SCHEME = putils.COLORS10
 
-def get_colors():
-    return cycle(COLOR_SCHEME)
+def get_colors(skip=0):
+    return cycle(COLOR_SCHEME[skip:])
 
 
 class Simplot(object):
     ''' Object to plot a summary of daily hydrological simulations '''
 
-    def __init__(self, obs, sim, \
+    def __init__(self, obs, sim, variable_name, \
+        data_unit='-', \
         sim_name = None,
         fig = None, \
         nfloods = 3, \
@@ -50,6 +51,11 @@ class Simplot(object):
             Times series of observed data
         sim : pandas.Series
             Times series of simulated data
+        variable_name : str
+            Variable name to be displayed in axis labels
+        data_unit : str
+            Unit for data to be displayed in axis labels.
+            Default is not unit (-).
         sim_name : str
             Name of simulated data to be used on the plots
         fig : matplotlib.Figure
@@ -75,6 +81,8 @@ class Simplot(object):
         '''
 
         # Properties
+        self.variable_name = variable_name
+        self.data_unit = data_unit
         self.samefloodyscale = samefloodyscale
         self.wateryear_start = wateryear_start
         self.fdc_zoom_xlim = [float(x) for x in list(fdc_zoom_xlim)]
@@ -111,8 +119,6 @@ class Simplot(object):
         fig_ncols = 3
         fig_nrows = 3 + (nfloods-1)//3
         self.gs = gridspec.GridSpec(fig_nrows, fig_ncols)
-                #width_ratios=[1] * fig_ncols,
-                #height_ratios=[0.5] * 1 + [1] * (fig_nrows-1))
 
 
     def _compute_idx_all(self):
@@ -273,7 +279,7 @@ class Simplot(object):
         ax.set_xticks(range(1, 13))
         ax.grid()
         ax.set_xlabel('Month')
-        ax.set_ylabel('Flow')
+        ax.set_ylabel('Monthly mean {} [{}]'.format(self.variable_name, self.data_unit))
         title = '({0}) Monthly means'.format(ax_letter)
         ax.set_title(title)
 
@@ -309,9 +315,9 @@ class Simplot(object):
 
         # Decorate
         ax.set_xlabel('Frequency')
-        ax.set_ylabel('Flow')
+        ax.set_ylabel('{} [{}]'.format(self.variable_name, self.data_unit))
 
-        title = '({0}) Flow duration curve {1}'.format(\
+        title = '({0}) Duration curve {1}'.format(\
                             ax_letter, title_postfix)
         ax.set_title(title)
 
@@ -358,8 +364,8 @@ class Simplot(object):
         colors = get_colors()
         for (cn, se), color in zip(dataf.items(), colors):
             label = cn if iflood == 0 else ''
-            ax.plot(se.index, se.values, color=color, lw=2, \
-                marker='o', label=label)
+            ax.plot(se.index, se.values, 'o-', color=color, lw=2, \
+                            label=label)
             lines[cn] = ax.get_lines()[-1]
 
         # Fix x axis
@@ -375,7 +381,7 @@ class Simplot(object):
             iflood+1, date_max)
         ax.set_title(title)
         ax.xaxis.grid()
-        ax.set_ylabel('Flow')
+        ax.set_ylabel('{} [{}]'.format(self.variable_name, self.data_unit))
 
         return lines
 
@@ -406,7 +412,7 @@ class Simplot(object):
 
         title = '({0}) Monthly time series'.format(ax_letter)
         ax.set_title(title)
-        ax.set_ylabel('Monthly flow')
+        ax.set_ylabel('Monthly {} [{}]'.format(self.variable_name, self.data_unit))
         ax.xaxis.grid()
 
         return lines
@@ -449,7 +455,7 @@ class Simplot(object):
         data = self.data
         obs = np.sort(data.loc[self.idx_all, data.columns[0]])
         lines = {}
-        colors = get_colors()
+        colors = get_colors(skip=1)
         for cn, color in zip(data.columns[1:], colors):
             sim = np.sort(data.loc[self.idx_all, cn])
             label = self._getname(cn)

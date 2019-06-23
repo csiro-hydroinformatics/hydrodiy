@@ -35,7 +35,7 @@ class SimplotTestCase(unittest.TestCase):
         sim2 = pd.Series(np.exp(np.random.normal(size=nval)), index=dt)
 
         plt.close('all')
-        sm = simplot.Simplot(obs, sim, sim_name='bidule')
+        sm = simplot.Simplot(obs, sim, 'Var', sim_name='bidule')
 
         sm.add_sim(sim2, name='truc')
         axb, axa, axfd, axfdl, axs, axf = sm.draw()
@@ -53,7 +53,7 @@ class SimplotTestCase(unittest.TestCase):
         sim2 = pd.Series(np.exp(np.random.normal(size=nval)), index=dt)
 
         plt.close('all')
-        sm = simplot.Simplot(obs, sim, sim_name='bidule', samefloodyscale=True)
+        sm = simplot.Simplot(obs, sim, 'Var', sim_name='bidule', samefloodyscale=True)
 
         sm.add_sim(sim2, name='truc')
         axb, axa, axfd, axfdl, axs, axf = sm.draw()
@@ -75,10 +75,26 @@ class SimplotTestCase(unittest.TestCase):
         sim = pd.Series(np.exp(np.random.normal(size=nval)), index=dt)
 
         plt.close('all')
-        sm = simplot.Simplot(obs, sim, sim_name='bidule', nfloods=10)
+        sm = simplot.Simplot(obs, sim1, 'Var', sim_name='bidule', nfloods=10)
         sm.draw()
 
         fp = os.path.join(self.fimg, 'simplot_nfloods.png')
+        sm.savefig(fp)
+
+
+    def test_nfloods(self):
+        dt = pd.date_range('2000-01-01', '2015-12-01')
+        nval = len(dt)
+
+        obs = pd.Series(np.exp(np.random.normal(size=nval)), index=dt)
+        sim1 = pd.Series(np.exp(np.random.normal(size=nval)), index=dt)
+        sim2 = pd.Series(np.exp(np.random.normal(size=nval)), index=dt)
+
+        plt.close('all')
+        sm = simplot.Simplot(obs, sim1, 'Var', sim_name='bidule')
+        sm.draw()
+
+        fp = os.path.join(self.fimg, 'simplot_add_sim.png')
         sm.savefig(fp)
 
 
@@ -90,7 +106,7 @@ class SimplotTestCase(unittest.TestCase):
         sim = pd.Series(np.exp(np.random.normal(size=nval)), index=dt)
 
         plt.close('all')
-        sm = simplot.Simplot(obs, sim)
+        sm = simplot.Simplot(obs, sim, 'Var')
         sm.draw()
 
         fp = os.path.join(self.fimg, 'simplot_monthly.png')
@@ -105,7 +121,7 @@ class SimplotTestCase(unittest.TestCase):
         sim = pd.Series(np.exp(np.random.normal(size=nval)), index=dt)
 
         plt.close('all')
-        sm = simplot.Simplot(obs, sim, sim_name='bidule')
+        sm = simplot.Simplot(obs, sim, 'Var', sim_name='bidule')
 
         axb, axa, axfd, axfdl, axs, axf = sm.draw()
 
@@ -129,7 +145,7 @@ class SimplotTestCase(unittest.TestCase):
         sim = pd.Series(np.exp(np.random.normal(size=nval)), index=dt)
 
         plt.close('all')
-        sm = simplot.Simplot(obs, sim, sim_name='bidule', \
+        sm = simplot.Simplot(obs, sim, 'Var', sim_name='bidule', \
                     fdc_zoom_xlim=[0., 0.2], \
                     fdc_zoom_ylog=False)
 
@@ -151,7 +167,7 @@ class SimplotTestCase(unittest.TestCase):
         sim = pd.Series(np.exp(np.random.normal(size=nval)), index=dt)
 
         plt.close('all')
-        sm = simplot.Simplot(obs, sim, sim_name='bidule')
+        sm = simplot.Simplot(obs, sim, 'Var', sim_name='bidule')
         axb, axa, axfd, axfdl, axs, axf = sm.draw()
 
         fp = os.path.join(self.fimg, 'simplot_colors.png')
