@@ -264,17 +264,19 @@ def gplot(grid, basemap_object, config):
     # Clip data to level range
     zval = np.clip(zval, config.clevs[0], config.clevs[-1])
 
-    # draw contour
-    contour_grid = bmap.contourf(xcoord, ycoord, zval, config.clevs, \
+    # draw contour plot
+    cf = bmap.contourf(xcoord, ycoord, zval, config.clevs, \
                 cmap=config.cmap, \
                 norm=config.norm)
 
+    # draw contour lines
+    cn = None
     if config.linewidth > 0.:
-        bmap.contour(xcoord, ycoord, zval, config.clevs, \
+        cn = bmap.contour(xcoord, ycoord, zval, config.clevs, \
                 linewidths=config.linewidth, \
                 colors=config.linecolor)
 
-    return contour_grid
+    return cf, cn
 
 
 def gbar(cbar_ax, config, contour_grid, legend=None):
