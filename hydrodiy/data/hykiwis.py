@@ -33,9 +33,13 @@ BASE_PARAMS = {\
 # Kiwis time series names
 TS_NAMES = {\
     'as_stored': 'DMQaQc.Merged.AsStored.1', \
+    'hourly': 'DMQaQc.Merged.HourlyMean.HR', \
     'daily_9am': 'DMQaQc.Merged.DailyMean.09HR', \
     'daily_9am_qa': 'PR01QaQc.Merged.DailyMean.09HR', \
-    'daily_12pm': 'PR02AVQaQc.Merged.DailyMean.24HR'
+    'daily_min': 'DMQaQc.Merged.DailyMin.24HR', \
+    'daily_max': 'DMQaQc.Merged.DailyMax.24HR', \
+    'monthly': 'DMQaQc.Merged.MonthlyMean.CalMonth', \
+    'yearly': 'DMQaQc.Merged.YearlyMean.CalYear'
 }
 
 # Default start year for data download
@@ -153,11 +157,16 @@ def get_tsattrs(siteid, ts_name, external=True):
         Site ID in Kiwis server
     ts_name : str
         Name of the Kiwis time series. Options are:
+        * as_stored : Series as provided by the data provider (e.g. streamflow
+                                data are continuous)
+        * hourly : Hourly aggregated series
         * daily_9am : Daily aggregated series from 9.00 to 9.00.
                         Timestamping at the end of the time step.
         * daily_9am_qa : Same than daily_9am with quality control
-        * as_stored : Series as provided by the data provider (e.g. streamflow
-                                data are continuous)
+        * daily_min : Minimum of provided value over 24 hour periods
+        * daily_max : Maximum of provided value over 24 hour periods
+        * monthly : Monthly aggregated values
+        * yearly : Yearly aggregated values
     external : bool
         Use Bureau of Meterology external Kiwis server.
         If False, use Bureau internal server

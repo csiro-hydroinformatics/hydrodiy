@@ -118,6 +118,28 @@ class HyKiwisTestCase(unittest.TestCase):
         self.assertTrue(np.allclose(v1, v2))
 
 
+    def test_getdata_timeseries(self):
+        ''' Test download timeseries data '''
+        for ts_name in hykiwis.TS_NAMES:
+            print(ts_name)
+            try:
+                attrs, url = hykiwis.get_tsattrs('410001', ts_name)
+
+                if attrs is None:
+                    raise ValueError()
+
+            except ValueError as err:
+                if str(err).startswith('Request returns no data'):
+                    continue
+
+            attrs = attrs[0]
+            ts_data, url = hykiwis.get_data(attrs, '2010-01-01', '2010-12-31')
+            print(len(ts_data))
+
+            self.assertTrue(isinstance(ts_data, pd.core.series.Series))
+            self.assertTrue(len(ts_data)>=1)
+
+
     def test_getdata_internal(self):
         ''' Test download data from internal.
             Skipped if there is no internal access to BOM Kiwis server
