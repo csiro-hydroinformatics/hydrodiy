@@ -297,5 +297,20 @@ class UtilsTestCase(unittest.TestCase):
                             rtol=1e-2))
 
 
+    def test_semicorr(self):
+        ''' Test semicorr '''
+        nsamples = 50000
+        nvars = 2
+        rho_true = 0.55
+        mean = np.array([0]*nvars)
+        cov = np.array([[1, rho_true], [rho_true, 1]])
+        samples = sutils.lhs_norm(nsamples, mean, cov)
+        unorm, eta, rho, rho_p, rho_m = sutils.semicorr(samples)
+
+        self.assertTrue(np.isclose(eta, 0.311, atol=1e-3))
+        self.assertTrue(np.isclose(rho_p, 0.311, atol=1e-3))
+        self.assertTrue(np.isclose(rho_m, 0.311, atol=1e-3))
+
+
 if __name__ == "__main__":
     unittest.main()

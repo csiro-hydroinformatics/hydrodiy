@@ -2,7 +2,7 @@ import os, math, re
 import warnings
 from datetime import datetime
 
-from scipy.stats import gaussian_kde, chi2
+from scipy.stats import gaussian_kde, chi2, norm
 
 has_cycler = False
 try:
@@ -809,3 +809,44 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap='viridis', \
                         '{0} ({1})'.format(icat, label))
 
     return plotted, cats
+
+
+def bivarplot(ax, xy, add_semicorr=True, marker='o', *args, **kwargs):
+    ''' Bivariate normal scores Plot
+
+    Useful to check symetry of correlation.
+    Semi-correlation are added in the top left corner.
+    See hydrodiy.stat.sutils.semicorr
+
+    Parameters
+    -----------
+    ax : matplotlib.axes
+        Axe to draw the line on
+    xy : numpy.ndarray
+    args, kwargs
+        Argument sent to matplotlib.pyplot.plot command for each
+
+    '''
+    # Compute normal standard variables and semi correlations
+    unorm, eta, rho, rho_p, rho_m = sutils.semicorr(xy)
+
+    # Plot
+    ax.plot(unorm[:, 0], unorm[:, 1], marker, *args, **kwargs)
+
+    line(ax, 1, 0, 0, 0, 'k--', lw=0.6)
+    line(ax, 0, 1, 0, 0, 'k--', lw=0.6)
+
+    # Add semi correlations
+    if add_semicorr:
+        text = r'$\rho$   {:5.2f}'.format(rho)
+        text += '\n'+r'$\eta$   {:5.2f}'.format(eta)
+        text += '\n'+r'$\rho^+$ {:5.2f}'.format(rho_p)
+        text += '\n'+r'$\rho^-$ {:5.2f}'.format(rho_m)
+        ax.text(0.02, 0.98, text, transform=ax.transAxes, \
+                va='top', ha='left')
+    # Decorate
+    ax.set_xlabel('Standard normal score 1 [-]')
+    ax.set_ylabel('Standard normal score 2 [-]')
+
+
+

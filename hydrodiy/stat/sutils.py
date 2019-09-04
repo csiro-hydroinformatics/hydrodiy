@@ -329,3 +329,53 @@ def lhs_norm(nsamples, mean, cov):
     return smp.T
 
 
+def semicorr(xy):
+    ''' Compute semi correlation of standard normal transform values
+    Useful to check symetry of correlations.
+
+    Parameters
+    -----------
+    xy : numpy.ndarray
+
+    Returns
+    -----------
+    unorm : numpy.ndarray
+        Standard normal transformed values
+    rho : float
+        Pearson correlation for the entire set
+    rho_p : float
+        Pearson correlation when both urnorm are >0
+    rho_m : float
+        Pearson correlation when both urnorm are <0
+    '''
+    # Check dimensions
+    nval, ncols = xy.shape
+    if ncols != 2:
+        raise ValueError('Expected a two columns array, got {}'.format(ncols))
+
+    # Compute normal standard variables
+    idx = np.sum(np.isnan(xy), axis=1) == 0
+    ranks = np.argsort(np.argsort(xy[idx, :], axis=0), axis=0)
+    nval = len(ranks)
+    unorm = norm.ppf((ranks+1)/(nval+1))
+
+    # Full correlations
+    rho = np.corrcoef(unorm.T)[0, 1]
+
+    # Theoretical semi-correlation with correlation = rho
+    # See Joe (), Dependence Modelling with Copulas, Page 71, Equation 2.59
+    beta0 = 0.25+math.asin(rho)/(2*math.pi)
+    v10 = (1+rho)/(2*beta0*math.sqrt(2*math.pi))
+    v20 = 1+rho*math.sqrt(1-rho**2)/(2*math.pi*beta0)
+    v11 = (v20-1+rho**2)/rho
+    eta = (v11-v10**2)/(v20-v10**2)
+
+    # Sample semi-correlations
+    idx = np.sum(unorm > 0, axis=1) == 2
+    rho_p = np.corrcoef(unorm[idx].T)[0, 1]
+
+    idx = np.sum(unorm < 0, axis=1) == 2
+    rho_m = np.corrcoef(unorm[idx].T)[0, 1]
+
+    return unorm, eta, rho, rho_p, rho_m
+
