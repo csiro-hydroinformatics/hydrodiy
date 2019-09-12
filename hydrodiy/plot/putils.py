@@ -729,7 +729,7 @@ def ecdfplot(ax, df, label_stat=None, label_stat_format='4.2f', \
 
 
 def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap='viridis', \
-                        fmt='0.2f', *args, **kwargs):
+                        fmt='0.2f', nval=False, *args, **kwargs):
     ''' Draw a scatter plot using different colors depending on categories
     defined by z. Be careful when z has a lot of zeros, quantile computation
     may lead to non-unique category boundaries.
@@ -752,16 +752,32 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap='viridis', \
     cmap : str
         Matplotlib color map name to change color for each category.
         Input data
+    fmnt : str
+        Number format to be used in labels
+    nval : bool
+        Add number of points in labels
     args, kwargs
         Argument sent to matplotlib.pyplot.plot command
 
     Returns
     -----------
-    plotted : dict
-        Dictionary containing plotting data
+    plotted : list
+        List of dictionaries for each categories. A dictionary contains:
+        idx :   Index of category items
+        label:  Label of category
+        color:  Color used for category
+        line:   matplotlib.Line object
+        x:      X coordinate
+        y:      Y coordinate
+
+    cats : pandas.Series
+        Series containing the category number for each item
     '''
     # Create categories
-    if not ncats is None:
+    if ncats is None and cuts is None:
+        raise ValueError('Cannot have both ncats and cuts set to None')
+
+    if not ncats is None and cuts is None:
         qq = np.linspace(0, 1, ncats+1)
         cuts = list(pd.Series(z).quantile(qq))
 
@@ -773,11 +789,8 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap='viridis', \
         raise ValueError('Non-unique category boundaries :{0}'.format(\
                 '/ '.join([str(u) for u in list(cuts)])))
 
+    ncats = len(cuts)-1
     cats = pd.cut(z, cuts, right=True, labels=False).astype(int)
-
-    if cats.max() != ncats-1:
-        raise ValueError('Expected cat.max to be equal to '+\
-                            '{0}, got {1}'.format(ncats-1, cats.max()))
 
     # Get colors for each category
     colors = cmap2colors(ncats, cmap)
@@ -790,23 +803,29 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap='viridis', \
         idx = cats == icat
         label = '[{0:{fmt}}, {1:{fmt}}]'.format(cuts[icat], \
                                             cuts[icat+1], fmt=fmt)
+        if nval:
+            label = '{} ({})'.format(label, np.sum(idx))
+
         if np.sum(idx) > 0:
-            ax.plot(x[idx], y[idx], 'o', color=colors[icat], label=label, \
-                                *args, **kwargs)
-
-            line = ax.get_lines()[-1]
-
-            # Store plotted data
-            dd = {'idx': idx, \
-                'label': label, \
-                'color': colors[icat], \
-                'line': line, \
-                'x': x[idx], 'y': y[idx]}
-
-            plotted.append(dd)
+            u, v = x[idx], y[idx]
         else:
+            u, v = [], []
             warnings.warn('No points falling in category '+\
                         '{0} ({1})'.format(icat, label))
+
+        ax.plot(u, v, 'o', color=colors[icat], label=label, \
+                                *args, **kwargs)
+
+        line = ax.get_lines()[-1]
+
+        # Store plotted data
+        dd = {'idx': idx, \
+            'label': label, \
+            'color': colors[icat], \
+            'line': line, \
+            'x': x[idx], 'y': y[idx]}
+
+        plotted.append(dd)
 
     return plotted, cats
 
