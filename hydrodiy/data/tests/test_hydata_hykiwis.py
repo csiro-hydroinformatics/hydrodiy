@@ -148,6 +148,7 @@ class HyKiwisTestCase(unittest.TestCase):
             self.skipTest('No internal access available')
 
         # Full download
+        attrs = None
         try:
             attrs, url = hykiwis.get_tsattrs('410001', 'daily_9am', \
                             external=False)
@@ -158,6 +159,10 @@ class HyKiwisTestCase(unittest.TestCase):
         except ValueError as err:
             if str(err).startswith('Request returns no data'):
                 self.skipTest('Could not get ts attributes, '+\
+                                'request returns no data')
+
+        if attrs is None:
+            self.skipTest('Could not get ts attributes, '+\
                                 'request returns no data')
 
         attrs = attrs[0]
@@ -185,6 +190,7 @@ class HyKiwisTestCase(unittest.TestCase):
         storages = storages[::40]
 
         for kiwisid, row in storages.iterrows():
+            attrs = None
             try:
                 attrs, url = hykiwis.get_tsattrs(kiwisid, 'daily_12pm')
 
@@ -194,6 +200,10 @@ class HyKiwisTestCase(unittest.TestCase):
             except ValueError as err:
                 if str(err).startswith('Request returns no data'):
                     self.skipTest('Could not get ts attributes, '+\
+                                    'request returns no data')
+
+            if attrs is None:
+                self.skipTest('Could not get ts attributes, '+\
                                     'request returns no data')
 
             attrs = attrs[0]
