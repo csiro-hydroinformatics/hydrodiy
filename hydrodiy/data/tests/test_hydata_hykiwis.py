@@ -33,6 +33,7 @@ class HyKiwisTestCase(unittest.TestCase):
 
     def test_getattrs(self):
         ''' Test get attributes '''
+        attrs = None
         try:
             attrs, url = hykiwis.get_tsattrs('410001', 'daily_9am')
 
@@ -43,13 +44,18 @@ class HyKiwisTestCase(unittest.TestCase):
             if str(err).startswith('Request returns no data'):
                 self.skipTest('Could not get ts attributes, '+\
                                 'request returns no data')
+
+        if attrs is None:
+            self.skipTest('Could not get ts attributes, '+\
+                                'request returns no data')
+
         attrs = attrs[0]
         self.assertTrue(isinstance(attrs, dict))
         self.assertEqual(attrs['station_name'], 'M/BIDGEE R @ WAGGA')
         self.assertEqual(attrs['ts_unitsymbol'], 'cumec')
         self.assertEqual(attrs['station_no'], '410001')
 
-
+        attrs = None
         try:
             attrs, url = hykiwis.get_tsattrs('613002', 'daily_9am')
 
@@ -61,6 +67,10 @@ class HyKiwisTestCase(unittest.TestCase):
                 self.skipTest('Could not get ts attributes, '+\
                                 'request returns no data')
 
+        if attrs is None:
+            self.skipTest('Could not get ts attributes, '+\
+                                'request returns no data')
+
         attrs = attrs[0]
         self.assertTrue(re.search('DINGO R', attrs['station_name'], \
                             re.IGNORECASE))
@@ -70,7 +80,7 @@ class HyKiwisTestCase(unittest.TestCase):
 
     def test_getattrs_multiple_series(self):
         ''' Test get attributes for sites with multiple series '''
-
+        attrs = None
         try:
             attrs, url = hykiwis.get_tsattrs('412010', 'as_stored')
 
@@ -82,13 +92,17 @@ class HyKiwisTestCase(unittest.TestCase):
                 self.skipTest('Could not get ts attributes, '+\
                                 'request returns no data')
 
+        if attrs is None:
+            self.skipTest('Could not get ts attributes, '+\
+                                'request returns no data')
+
         self.assertEqual(len(attrs), 6)
 
 
     def test_getdata_flow(self):
         ''' Test download flow data '''
 
-        # Full download
+        attrs = None
         try:
             attrs, url = hykiwis.get_tsattrs('410001', 'daily_9am')
 
@@ -98,6 +112,10 @@ class HyKiwisTestCase(unittest.TestCase):
         except ValueError as err:
             if str(err).startswith('Request returns no data'):
                 self.skipTest('Could not get ts attributes, '+\
+                                'request returns no data')
+
+        if attrs is None:
+            self.skipTest('Could not get ts attributes, '+\
                                 'request returns no data')
 
         attrs = attrs[0]
@@ -131,6 +149,10 @@ class HyKiwisTestCase(unittest.TestCase):
             except ValueError as err:
                 if str(err).startswith('Request returns no data'):
                     continue
+
+            if attrs is None:
+                self.skipTest('Could not get ts attributes, '+\
+                                    'request returns no data')
 
             attrs = attrs[0]
             ts_data, url = hykiwis.get_data(attrs, '2010-01-01', '2010-12-31')
