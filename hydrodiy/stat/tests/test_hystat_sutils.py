@@ -308,8 +308,8 @@ class UtilsTestCase(unittest.TestCase):
         unorm, eta, rho, rho_p, rho_m = sutils.semicorr(samples)
 
         self.assertTrue(np.isclose(eta, 0.311, atol=1e-3))
-        self.assertTrue(np.isclose(rho_p, 0.311, atol=1e-3))
-        self.assertTrue(np.isclose(rho_m, 0.311, atol=1e-3))
+        self.assertTrue(np.isclose(rho_p, 0.311, atol=1e-2))
+        self.assertTrue(np.isclose(rho_m, 0.311, atol=1e-2))
 
 
 if __name__ == "__main__":
