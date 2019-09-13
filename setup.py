@@ -74,6 +74,13 @@ setup(
     package_data = {
         "hydrodiy": ["gis/data/*.gz", \
             "gis/data/*.json", \
+            "gis/data/*.bil", \
+            "gis/data/*.zip", \
+            "gis/data/*.hdr", \
+            "gis/data/*.dbf", \
+            "gis/data/*.shp", \
+            "gis/data/*.shx", \
+            "gis/data/*.prj", \
             "data/data/*.csv", \
             "stat/data/*.zip",\
             "stat/data/*.csv"],

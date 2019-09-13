@@ -1,4 +1,6 @@
 recursive-include hydrodiy *zip
+recursive-include hydrodiy *bil
+recursive-include hydrodiy *hdr
 recursive-include hydrodiy *csv
 recursive-include hydrodiy *png
 recursive-include hydrodiy *pngw
