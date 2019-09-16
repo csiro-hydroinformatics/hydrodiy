@@ -1,0 +1,10 @@
+NROWS          691
+NCOLS          886
+XLLCORNER      112.0
+YLLCORNER      -44.5
+CELLSIZE       0.05
+NBITS          32
+PIXELTYPE      SIGNEDINT
+BYTEORDER      I
+NAME           AWAP
+COMMENT        Grid used in AWAP products

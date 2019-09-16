@@ -1,0 +1,10 @@
+NROWS          670
+NCOLS          813
+XLLCORNER      112.925
+YLLCORNER      -43.575
+CELLSIZE       0.05
+NBITS          16
+PIXELTYPE      SIGNEDINT
+BYTEORDER      I
+NAME           waterdyn_grid
+COMMENT        No comment
