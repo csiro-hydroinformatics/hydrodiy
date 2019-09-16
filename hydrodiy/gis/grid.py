@@ -1402,7 +1402,7 @@ def voronoi(catchment, xypoints):
 
 
 
-def get_mask(name):
+def get_mask(name, extract=False):
     ''' Get reference gridss defined in
     Bureau of meteorology products
 
@@ -1412,6 +1412,8 @@ def get_mask(name):
         Name of grid :
         - AWRAL : Grid used in AWRAL products
         - AWAP : Grid used in AWAP products
+    extract : bool
+        Force extraction of zip data
 
     Returns
     -----------
@@ -1420,7 +1422,6 @@ def get_mask(name):
         and 0 for cells outside the grid
 
     '''
-
     expected = ['AWRAL', 'AWAP', 'WATERDYN']
     if not name in expected:
         raise ValueError('Expected name in {0}, got {1}'.format(
@@ -1428,16 +1429,17 @@ def get_mask(name):
 
     fbase = '{0}_GRID'.format(name)
     fzip = os.path.join(F_HYGIS_DATA, '{0}.zip'.format(fbase))
-    fdata = os.path.join(F_HYGIS_DATA, '{0}.bil'.format(fbase))
+    fbil = os.path.join(F_HYGIS_DATA, '{0}.bil'.format(fbase))
+    fhdr = os.path.join(F_HYGIS_DATA, '{0}.hdr'.format(fbase))
 
     # Extract data from zipfile if it does not exist
-    if not os.path.exists(fdata):
+    if not os.path.exists(fbil) or not os.path.exists(fhdr) or extract:
         with zipfile.ZipFile(fzip, 'r') as zipf:
             zipf.extract('{0}.bil'.format(fbase), F_HYGIS_DATA)
             zipf.extract('{0}.hdr'.format(fbase), F_HYGIS_DATA)
 
     # Reads data
-    gr = Grid.from_header(fdata)
+    gr = Grid.from_header(fhdr)
 
     return gr
 
