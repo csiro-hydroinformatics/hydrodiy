@@ -27,7 +27,7 @@ from hydrodiy.plot import putils
 #----------------------------------------------------------------------
 
 # Data start
-start = datetime(2010, 1, 1)
+start = datetime(2015, 1, 1)
 
 # Upper Murray basin
 siteids = ['401012', '401203', '401549', '401211', '401204', '401201', \
@@ -71,14 +71,12 @@ for siteid in siteids+storages:
     # Set time series name
     if siteid in siteids:
         ts_name = 'daily_9am'
-        symbol = 'ML/d'
         type = 'flow'
         ksiteid = siteid
         dh = -9
 
     else:
-        ts_name = 'daily_12pm'
-        symbol = 'ML'
+        ts_name = 'daily_0am'
         type = 'storage'
         idx = storages_all.name.str.lower().str.findall(siteid)
         idx = idx.astype(bool).values
@@ -86,13 +84,16 @@ for siteid in siteids+storages:
         dh = 0
 
     # Download time series attributes
-    attrs, url = hykiwis.get_tsattrs(ksiteid, ts_name, external=True)
+    try:
+        attrs, url = hykiwis.get_tsattrs(ksiteid, ts_name, external=True)
 
-    # Use the first one
-    attrs = attrs[0]
+        # Use the first one
+        attrs = attrs[0]
 
-    # Download data for the first attribute
-    ts, url = hykiwis.get_data(attrs, start=start, external=True)
+        # Download data for the first attribute
+        ts, url = hykiwis.get_data(attrs, start=start, external=True)
+    except:
+        continue
 
     # Set same time for all series
     ts = ts.shift(periods=dh, freq='H')
@@ -100,38 +101,44 @@ for siteid in siteids+storages:
     # Convert flow to ML/d if needed
     conversion = 1.
     if attrs['ts_unitsymbol'] == 'cumec':
+        symbol = 'ML/d'
         conversion = 86.4
+    else:
+        symbol = attrs['ts_unitsymbol']
 
     data['{0}_{1}[{2}]'.format(type, siteid, symbol)] = ts * conversion
 
 
-# Store as csv
-LOGGER.info('Writing data to disk')
-data = pd.DataFrame(data)
-fd = os.path.join(fdata, 'kiwis_data.csv')
-comments = {'comment': 'Flow and storage data extracted from '+\
-                            'BOM-Water Data Online'}
-csv.write_csv(data, fd, comments, source_file, compress=False, \
-                write_index=True)
+if len(data)>0:
+    # Store as csv
+    LOGGER.info('Writing data to disk')
+    data = pd.DataFrame(data)
+    fd = os.path.join(fdata, 'kiwis_data.csv')
+    comments = {'comment': 'Flow and storage data extracted from '+\
+                                'BOM-Water Data Online'}
+    csv.write_csv(data, fd, comments, source_file, compress=False, \
+                    write_index=True)
 
-# plot data data
-plt.close('all')
-fig, axs = plt.subplots(nrows=2)
-axs = axs.flat
+    # plot data data
+    plt.close('all')
+    fig, axs = plt.subplots(nrows=2)
+    axs = axs.flat
 
-ax = axs[0]
-data.filter(regex='flow', axis=1).plot(ax=ax)
-ax.set_title('Flow data')
+    ax = axs[0]
+    data.filter(regex='flow', axis=1).plot(ax=ax)
+    ax.set_title('Flow data')
 
-ax = axs[1]
-data.filter(regex='storage', axis=1).plot(ax=ax)
-ax.set_title('Storage data')
+    ax = axs[1]
+    df = data.filter(regex='storage', axis=1)
+    df = df-df.min()
+    df.plot(ax=ax)
+    ax.set_title('Storage data')
 
-# Save plot to image
-fig.set_size_inches((15, 12))
-fig.tight_layout()
-fp = os.path.join(fimg, 'kiwis_data.png')
-fig.savefig(fp)
+    # Save plot to image
+    fig.set_size_inches((15, 12))
+    fig.tight_layout()
+    fp = os.path.join(fimg, 'kiwis_data.png')
+    fig.savefig(fp)
 
 
 LOGGER.info('Process completed')

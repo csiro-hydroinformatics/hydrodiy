@@ -34,6 +34,7 @@ BASE_PARAMS = {\
 TS_NAMES = {\
     'as_stored': 'DMQaQc.Merged.AsStored.1', \
     'hourly': 'DMQaQc.Merged.HourlyMean.HR', \
+    'daily_0am': 'DMQaQc.Merged.DailyMean.24HR', \
     'daily_9am': 'DMQaQc.Merged.DailyMean.09HR', \
     'daily_9am_qa': 'PR01QaQc.Merged.DailyMean.09HR', \
     'daily_min': 'DMQaQc.Merged.DailyMin.24HR', \
