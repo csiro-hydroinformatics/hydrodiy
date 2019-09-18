@@ -308,6 +308,11 @@ class UtilsTestCase(unittest.TestCase):
         expected = norm.ppf((kk+1)/(nsamples+1))
         self.assertTrue(np.allclose(unorm, expected))
 
+        samples = np.sort(samples)
+        _, unorm1 = sutils.standard_normal(samples)
+        _, unorm2 = sutils.standard_normal(samples, sorted=True)
+        self.assertTrue(np.allclose(unorm1, unorm2))
+
 
     def test_semicorr(self):
         ''' Test semicorr '''
