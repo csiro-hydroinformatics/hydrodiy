@@ -830,7 +830,8 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap='viridis', \
     return plotted, cats
 
 
-def bivarplot(ax, xy, add_semicorr=True, marker='o', *args, **kwargs):
+def bivarnplot(ax, xy, add_semicorr=True, namex='var 1', \
+                namey='var 2', marker='o', *args, **kwargs):
     ''' Bivariate normal scores Plot
 
     Useful to check symetry of correlation.
@@ -842,15 +843,31 @@ def bivarplot(ax, xy, add_semicorr=True, marker='o', *args, **kwargs):
     ax : matplotlib.axes
         Axe to draw the line on
     xy : numpy.ndarray
+    add_semicorr : bool
+        Add the semi correlation sample and theoretical values
+    namex : str
+        Name for variable displayed in X axis
+    namey : str
+        Name for variable displayed in Y axis
+    marker : str
+        Marker to use for the points displayed
     args, kwargs
         Argument sent to matplotlib.pyplot.plot command for each
-
     '''
+    # Select data
+    idx = np.sum(np.isnan(xy), axis=1) == 0
+    if np.sum(idx) < 2:
+        raise ValueError('Expected at least 2 data pairs with valid'+\
+                ' values for both, got {}'.format(np.sum(idx)))
+    xy = xy[idx]
+
     # Compute normal standard variables and semi correlations
-    unorm, eta, rho, rho_p, rho_m = sutils.semicorr(xy)
+    _, unorm0 = sutils.standard_normal(xy[:, 0])
+    _, unorm1 = sutils.standard_normal(xy[:, 1])
+    rho, eta, rho_p, rho_m = sutils.semicorr(xy)
 
     # Plot
-    ax.plot(unorm[:, 0], unorm[:, 1], marker, *args, **kwargs)
+    ax.plot(unorm0, unorm1, marker, *args, **kwargs)
 
     line(ax, 1, 0, 0, 0, 'k--', lw=0.6)
     line(ax, 0, 1, 0, 0, 'k--', lw=0.6)
@@ -864,8 +881,8 @@ def bivarplot(ax, xy, add_semicorr=True, marker='o', *args, **kwargs):
         ax.text(0.02, 0.98, text, transform=ax.transAxes, \
                 va='top', ha='left')
     # Decorate
-    ax.set_xlabel('Standard normal score 1 [-]')
-    ax.set_ylabel('Standard normal score 2 [-]')
+    ax.set_xlabel('Standard normal score for {} [-]'.format(namex))
+    ax.set_ylabel('Standard normal score for {} [-]'.format(namey))
 
 
 

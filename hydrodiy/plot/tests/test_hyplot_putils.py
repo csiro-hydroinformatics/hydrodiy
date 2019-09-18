@@ -463,14 +463,14 @@ class UtilsTestCase(unittest.TestCase):
         fig.savefig(fp)
 
 
-    def test_bivarplot(self):
+    def test_bivarnplot(self):
         ''' Test categorical scatter plot '''
         mean = [0, 0]
         cov = [[1, 0.7], [0.7, 1]]
         xy = np.random.multivariate_normal(mean, cov, size=100)
         fig, ax = plt.subplots()
-        putils.bivarplot(ax, xy)
-        fp = os.path.join(self.fimg, 'bivarplot.png')
+        putils.bivarnplot(ax, xy)
+        fp = os.path.join(self.fimg, 'bivarnplot.png')
         fig.savefig(fp)
 
 

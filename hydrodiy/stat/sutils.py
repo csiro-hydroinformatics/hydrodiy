@@ -329,35 +329,63 @@ def lhs_norm(nsamples, mean, cov):
     return smp.T
 
 
-def semicorr(xy):
+def standard_normal(x, cst=0., sorted=False):
+    ''' Compute normal standard variables
+
+     Parameters
+    -----------
+    x : numpy.ndarray
+        1D array containing data samples without nan.
+    cst: float
+        Constant used to compute plotting position.
+        See hydrodiy.stat.sutils.ppos
+    sorted : bool
+        Is x data sorted or not?
+
+    Returns
+    -----------
+    ranks : numpy.ndarray
+        Ranks within x vector
+    unorm : numpy.ndarray
+        Standard normal deviates
+    '''
+    if np.any(np.isnan(x)):
+        raise ValueError('Expected no nan values in x, found {}'.format(\
+                                np.sum(np.isnan(x))))
+    nval = len(x)
+    if sorted:
+        ranks = np.arange(1, nval+1)
+    else:
+        ranks = np.argsort(np.argsort(x))
+    unorm = norm.ppf((ranks+1-cst)/(nval+1-2*cst))
+    return ranks, unorm
+
+
+def semicorr(unorm):
     ''' Compute semi correlation of standard normal transform values
     Useful to check symetry of correlations.
 
     Parameters
     -----------
-    xy : numpy.ndarray
+    unorm : numpy.ndarray
+        2D array containing standard normal deviates.
+        See hydrodiy.stat.sutils.standard_normal
 
     Returns
     -----------
-    unorm : numpy.ndarray
-        Standard normal transformed values
     rho : float
         Pearson correlation for the entire set
+    eta : float
+        Semi-correlation for a bi-variate normal with correlation = rho
     rho_p : float
         Pearson correlation when both urnorm are >0
     rho_m : float
         Pearson correlation when both urnorm are <0
     '''
     # Check dimensions
-    nval, ncols = xy.shape
+    nval, ncols = unorm.shape
     if ncols != 2:
         raise ValueError('Expected a two columns array, got {}'.format(ncols))
-
-    # Compute normal standard variables
-    idx = np.sum(np.isnan(xy), axis=1) == 0
-    ranks = np.argsort(np.argsort(xy[idx, :], axis=0), axis=0)
-    nval = len(ranks)
-    unorm = norm.ppf((ranks+1)/(nval+1))
 
     # Full correlations
     rho = np.corrcoef(unorm.T)[0, 1]
@@ -377,5 +405,5 @@ def semicorr(xy):
     idx = np.sum(unorm < 0, axis=1) == 2
     rho_m = np.corrcoef(unorm[idx].T)[0, 1]
 
-    return unorm, eta, rho, rho_p, rho_m
+    return rho, eta, rho_p, rho_m
 

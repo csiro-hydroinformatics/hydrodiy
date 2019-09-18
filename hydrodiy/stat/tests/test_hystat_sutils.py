@@ -5,6 +5,7 @@ import numpy as np
 
 from scipy.special import kolmogorov
 from scipy.linalg import toeplitz
+from scipy.stats import norm, anderson
 
 import matplotlib.pyplot as plt
 
@@ -297,6 +298,17 @@ class UtilsTestCase(unittest.TestCase):
                             rtol=1e-2))
 
 
+    def test_standard_normal(self):
+        ''' Test semicorr '''
+        nsamples = 10
+        samples = np.random.uniform(size=nsamples)
+        ranks, unorm = sutils.standard_normal(samples)
+
+        kk = np.argsort(np.argsort(samples))
+        expected = norm.ppf((kk+1)/(nsamples+1))
+        self.assertTrue(np.allclose(unorm, expected))
+
+
     def test_semicorr(self):
         ''' Test semicorr '''
         nsamples = 50000
@@ -305,7 +317,11 @@ class UtilsTestCase(unittest.TestCase):
         mean = np.array([0]*nvars)
         cov = np.array([[1, rho_true], [rho_true, 1]])
         samples = sutils.lhs_norm(nsamples, mean, cov)
-        unorm, eta, rho, rho_p, rho_m = sutils.semicorr(samples)
+        r1, u1 = sutils.standard_normal(samples[:, 0])
+        r2, u2 = sutils.standard_normal(samples[:, 1])
+        unorm = np.column_stack([u1, u2])
+
+        rho, eta, rho_p, rho_m = sutils.semicorr(unorm)
 
         self.assertTrue(np.isclose(eta, 0.311, atol=1e-3))
         self.assertTrue(np.isclose(rho_p, 0.311, atol=1e-2))
