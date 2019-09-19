@@ -677,7 +677,7 @@ def qqplot(ax, data, addline=False, censor=None, *args, **kwargs):
 
 
 def ecdfplot(ax, df, label_stat=None, label_stat_format='4.2f', \
-            *args, **kwargs):
+            cst=0., *args, **kwargs):
     ''' Plot empirical cumulative density functions
 
     Parameters
@@ -688,25 +688,27 @@ def ecdfplot(ax, df, label_stat=None, label_stat_format='4.2f', \
         Input data
     label_stat : str
         Statistic use for the label, should be an attribute
-        of pandas.Series (e.g. mean or median).
+        of pandas.Series (e.g. mean, median or nunique).
         If None, does not print the label stat.
     label_stat_format : str
         Format to use for the label statistic value.
+    cst : float
+        Constant used to compute plotting positions
+        See hydrodiy.stat.sutils.ppos
     args, kwargs
         Argument sent to matplotlib.pyplot.plot command for each
 
     Returns
     -----------
     lines : dict
-        Dictionnary containing the line object for each column
-        in df
+        Dictionnary containing the line object for each column in df.
     '''
     lines = {}
     for name, se in df.iteritems():
         values = se.sort_values()
         values = values[~np.isnan(values)]
 
-        pp = sutils.ppos(len(values))
+        pp = sutils.ppos(len(values), cst=cst)
 
         label = name
         if not label_stat is None:

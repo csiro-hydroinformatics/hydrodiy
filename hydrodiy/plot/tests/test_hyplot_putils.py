@@ -401,11 +401,9 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_ecdfplot(self):
         ''' Test ecdf plots '''
-        df = {}
-        for i in range(4):
-            df['Var{0}'.format(i)] = np.random.normal(i, 1, size=1000)
-
-        df = pd.DataFrame(df)
+        df = np.random.normal(size=(1000, 4)) + np.arange(4)[None, :]
+        cc = ['Var{}'.format(i+1) for i in range(4)]
+        df = pd.DataFrame(df, columns=cc)
 
         fig, ax = plt.subplots()
         lines = putils.ecdfplot(ax, df)
@@ -417,13 +415,27 @@ class UtilsTestCase(unittest.TestCase):
         fig.savefig(fp)
 
 
+    def test_ecdfplot_nans(self):
+        ''' Test ecdf plots with nan '''
+        df = np.random.normal(size=(1000, 4)) + np.arange(4)[None, :]
+        cc = ['Var{}'.format(i+1) for i in range(4)]
+        df = pd.DataFrame(df, columns=cc)
+        df.loc[:800, 'Var1'] = np.nan
+        df.loc[:990, 'Var2'] = np.nan
+
+        fig, ax = plt.subplots()
+        lines = putils.ecdfplot(ax, df, label_stat='nunique', \
+                                    label_stat_format='0.0f')
+        ax.legend(loc=2)
+        fp = os.path.join(self.fimg, 'ecdfplot_nan.png')
+        fig.savefig(fp)
+
+
     def test_ecdfplot_labels(self):
         ''' Test ecdf plots with mean in labels'''
-        df = {}
-        for i in range(4):
-            df['Var{0}'.format(i)] = np.random.normal(i, 1, size=1000)
-
-        df = pd.DataFrame(df)
+        df = np.random.normal(size=(1000, 4)) + np.arange(4)[None, :]
+        cc = ['Var{}'.format(i+1) for i in range(4)]
+        df = pd.DataFrame(df, columns=cc)
 
         fig, ax = plt.subplots()
         lines = putils.ecdfplot(ax, df, 'std', '0.3f')
