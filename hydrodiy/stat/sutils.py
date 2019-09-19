@@ -358,6 +358,7 @@ def standard_normal(x, cst=0., sorted=False):
     else:
         ranks = np.argsort(np.argsort(x))
     unorm = norm.ppf((ranks+1-cst)/(nval+1-2*cst))
+
     return ranks, unorm
 
 
