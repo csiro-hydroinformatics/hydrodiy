@@ -1,5 +1,5 @@
 ''' Utility functions to process data '''
-
+import re
 from datetime import datetime
 from dateutil.relativedelta import relativedelta as delta
 
@@ -17,6 +17,33 @@ try:
     import c_hydrodiy_data
 except ImportError:
     HAS_C_DATA_MODULE = False
+
+
+def sub(text, to_replace):
+    ''' Replace in 'text' all occurences of any key in the
+    dictionary 'to_replace' by its corresponding value.
+
+    Code pasted from
+    http://code.activestate.com/recipes/81330-single-pass-multiple-replace/
+
+    Parameters
+    -----------
+    text : str
+        Input string.
+    to_replace : dict
+        Pattern to match and replace
+
+    Returns
+    -----------
+    replaced : str
+        Processed string.
+    '''
+
+    # Create a regular expression  from the dictionary keys
+    regex = re.compile("(%s)" % "|".join(map(re.escape, list(to_replace.keys()))))
+
+    # For each match, look-up corresponding value in dictionary
+    return regex.sub(lambda mo: to_replace[mo.string[mo.start():mo.end()]], text)
 
 
 def sequence_true(values):

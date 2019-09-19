@@ -164,6 +164,24 @@ class UtilsTestCase(unittest.TestCase):
         self.ftest = os.path.dirname(source_file)
 
 
+    def test_sub(self):
+        ''' Test replacing with sub '''
+        # Basic test
+        text0 = 'this is a weird sentence'
+        text1 = dutils.sub(text0, {'this': 'that', 'weird':'cool'})
+        self.assertEqual(text1, 'that is a cool sentence')
+
+        # With special characters in the source text
+        text0 = 'this is a [*.*) // weird sentence'
+        text1 = dutils.sub(text0, {'this': 'that', 'weird':'cool'})
+        self.assertEqual(text1, 'that is a [*.*) // cool sentence')
+
+        # With special characters in the source and replacement text
+        text0 = 'this is a [*.*) // weird sentence'
+        text1 = dutils.sub(text0, {'this': 'that.*', 'weird':'cool$'})
+        self.assertEqual(text1, 'that.* is a [*.*) // cool$ sentence')
+
+
     def test_sequence_true(self):
         ''' Test analysis of true sequence '''
 
