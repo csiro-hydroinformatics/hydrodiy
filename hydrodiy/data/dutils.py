@@ -23,27 +23,25 @@ def sub(text, to_replace):
     ''' Replace in 'text' all occurences of any key in the
     dictionary 'to_replace' by its corresponding value.
 
-    Code pasted from
-    http://code.activestate.com/recipes/81330-single-pass-multiple-replace/
-
     Parameters
     -----------
     text : str
         Input string.
     to_replace : dict
-        Pattern to match and replace
+        Pattern to match and replace.
+        Use an ordered dict (collections.OrderedDict) to
+        replace in a certain order.
 
     Returns
     -----------
     replaced : str
         Processed string.
     '''
+    replaced = text
+    for pattern, rep in to_replace.items():
+        replaced = re.sub(pattern, rep, replaced)
 
-    # Create a regular expression  from the dictionary keys
-    regex = re.compile("(%s)" % "|".join(map(re.escape, list(to_replace.keys()))))
-
-    # For each match, look-up corresponding value in dictionary
-    return regex.sub(lambda mo: to_replace[mo.string[mo.start():mo.end()]], text)
+    return replaced
 
 
 def sequence_true(values):

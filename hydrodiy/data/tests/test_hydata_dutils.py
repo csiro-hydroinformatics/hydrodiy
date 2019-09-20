@@ -181,6 +181,10 @@ class UtilsTestCase(unittest.TestCase):
         text1 = dutils.sub(text0, {'this': 'that.*', 'weird':'cool$'})
         self.assertEqual(text1, 'that.* is a [*.*) // cool$ sentence')
 
+        text0 = 'this_ab_'
+        text1 = dutils.sub(text0, {'_$': '', '_(?<!s)': ' '})
+        self.assertEqual(text1, 'this ab')
+
 
     def test_sequence_true(self):
         ''' Test analysis of true sequence '''
