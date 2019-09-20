@@ -39,13 +39,13 @@ sitepattern = args.sitepattern
 # Folders
 #----------------------------------------------------------------------
 source_file = os.path.abspath(__file__)
-froot = os.path.dirname(source_file)
-#froot = os.path.join(os.path.dirname(source_file), '..')
 
-fdata = froot
-#fdata = os.path.join(froot, 'data')
+#froot = os.path.dirname(source_file)
+froot = os.path.join(os.path.dirname(source_file), '..')
 
-fout = froot # os.path.join(froot, 'outputs')
+fdata = os.path.join(froot, 'data')
+
+fout = os.path.join(froot, 'outputs')
 os.makedirs(fout, exist_ok=True)
 
 basename = re.sub('\\.py.*', '', os.path.basename(source_file))

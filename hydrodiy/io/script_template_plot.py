@@ -16,7 +16,6 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-import matplotlib.dates as mdates
 #from matplotlib.backends.backend_pdf import PdfPages
 
 from hydrodiy.io import csv, iutils
@@ -74,9 +73,12 @@ putils.set_mpl()
 # Folders
 #----------------------------------------------------------------------
 source_file = os.path.abspath(__file__)
-froot = os.path.dirname(source_file)
+
+froot = os.path.join(os.path.dirname(source_file), '..')
+#froot = os.path.dirname(source_file)
 
 fdata = os.path.join(froot, 'data')
+
 fimg = os.path.join(froot, 'images')
 os.makedirs(fimg, exist_ok=True)
 
