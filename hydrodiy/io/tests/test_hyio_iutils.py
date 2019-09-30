@@ -64,10 +64,17 @@ class UtilsTestCase(unittest.TestCase):
         self.source_file = os.path.abspath(__file__)
         self.ftest = os.path.dirname(self.source_file)
 
+        self.frun = os.path.join(self.ftest, 'run_scripts')
+        self.fdata = os.path.join(self.frun, 'data')
+        self.fscripts = os.path.join(self.frun, 'scripts')
+        for f in [self.frun, self.fdata, self.fscripts]:
+            os.makedirs(f, exist_ok=True)
+
+
     def test_find_files(self):
         ''' Test find files '''
         # Recursive
-        folder = '%s/../..' % self.ftest
+        folder = os.path.join(self.ftest, '..', '..')
         pattern = '(_[\\d]{2}){3}( \\(|.txt)'
         found = iutils.find_files(folder, pattern)
         fn = [re.sub('_.*', '', os.path.basename(f))
@@ -87,11 +94,11 @@ class UtilsTestCase(unittest.TestCase):
         ''' Test running script template default '''
         sites = pd.DataFrame({'siteid':[1, 2, 3, 4], \
                     'id':['a', 'b', 'c', 'd']})
-        fs = os.path.join(self.ftest, 'sites.csv')
+        fs = os.path.join(self.fdata, 'sites.csv')
         csv.write_csv(sites, fs, 'site list', self.source_file)
 
         # Run defaut script file template
-        fs = os.path.join(self.ftest, 'script_test.py')
+        fs = os.path.join(self.fscripts, 'script_test.py')
         iutils.script_template(fs, 'test')
         stderr, hasError = run_script(fs)
         self.assertFalse(hasError)
@@ -99,21 +106,19 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_script_template_plot(self):
         ''' Test running script template plot '''
-
         if import_error:
             self.skipTest('Import error')
 
         sites = pd.DataFrame({'siteid':[1, 2, 3, 4], \
                     'id':['a', 'b', 'c', 'd']})
-        fs = os.path.join(self.ftest, 'sites.csv')
+        fs = os.path.join(self.fdata, 'sites.csv')
         csv.write_csv(sites, fs, 'site list', self.source_file)
 
         # Run plot script file template
-        fs = os.path.join(self.ftest, 'script_test.py')
+        fs = os.path.join(self.fscripts, 'script_test.py')
         iutils.script_template(fs, 'test', stype='plot')
         stderr, hasError = run_script(fs)
         self.assertFalse(hasError)
-
 
 
     def test_str2dict(self):
