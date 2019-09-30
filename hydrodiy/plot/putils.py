@@ -4,10 +4,10 @@ from datetime import datetime
 
 from scipy.stats import gaussian_kde, chi2, norm
 
-has_cycler = False
+HAS_CYCLER = False
 try:
     from cycler import cycler
-    has_cycler = True
+    HAS_CYCLER = True
 except ImportError:
     pass
 
@@ -44,9 +44,9 @@ COLORS_TAB = [mcolors.rgb2hex([float(coo)/255 for coo in co]) for co in [ \
 
 # Palette for color blind readers
 # see https://www.somersault1824.com/tips-for-designing-scientific-figures-for-color-blind-readers/
-COLORS_CBLIND = ['#000000', '#074750FE', '#009292', '#FE6CB5', \
-    '#FEB5DA', '#490092', '#006DDB', '#B66CFE', '#6DB6FE', \
-    '#B6DBFF', '#920000', '#924900', '#23FE22', '#FFFF6D']
+COLORS_CBLIND = ['#000000', '#074751', '#009292', '#FE6CB5', '#FEB5DA', \
+    '#490092', '#006DDB', '#B66CFE', '#6DB6FE', '#B6DBFF', \
+    '#920000', '#924900', '#DB6D00', '#23FE22', '#FFFF6D']
 
 
 def cmap2colors(ncols=10, cmap='Paired'):
@@ -495,7 +495,8 @@ def equation(tex, filename, \
     mpl.rc('text.latex', preamble=preamble)
 
 
-def set_mpl(color_theme='black', font_size=18, usetex=False):
+def set_mpl(color_theme='black', font_size=18, usetex=False, \
+                    color_cycle=COLORS_TAB):
     ''' Set convenient default matplotlib parameters
 
     Parameters
@@ -506,6 +507,8 @@ def set_mpl(color_theme='black', font_size=18, usetex=False):
         Font size
     usetex : bool
         Use tex mode or not
+    color_cycle : list
+        List of colors to cycle through.
     '''
 
     # Latex mode
@@ -520,10 +523,10 @@ def set_mpl(color_theme='black', font_size=18, usetex=False):
 
     # Set color cycle - depends on matplotlib version
     if 'axes.color_cycle' in mpl.rcParams:
-        mpl.rc('axes', color_cycle=COLORS10)
+        mpl.rc('axes', color_cycle=color_cycle)
     else:
-        if has_cycler:
-            mpl.rc('axes', prop_cycle=cycler('color', COLORS10))
+        if HAS_CYCLER:
+            mpl.rc('axes', prop_cycle=cycler('color', color_cycle))
         else:
             warnings.warn('Cannot set color cycle '+ \
                 'because cycler package is missing')
@@ -537,6 +540,7 @@ def set_mpl(color_theme='black', font_size=18, usetex=False):
     # Set legend properties
     mpl.rc('legend', fancybox=True)
     mpl.rc('legend', fontsize='small')
+    mpl.rc('legend', labelspacing=0.8)
     mpl.rc('legend', numpoints=1)
     mpl.rc('legend', markerscale=0.8)
 
