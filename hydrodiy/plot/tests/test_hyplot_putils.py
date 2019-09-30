@@ -29,6 +29,28 @@ class UtilsTestCase(unittest.TestCase):
         plt.close('all')
 
 
+    def test_color_sets(self):
+        ''' Test color sets '''
+        for cols in [[putils.COLORS_SLIDE_BACKGROUND], \
+                    putils.COLORS_BADGOOD, \
+                    putils.COLORS_TERCILES, putils.COLORS_TAB, \
+                        putils.COLORS_CBLIND]:
+
+            fig, ax = plt.subplots()
+            ax.plot([0, 1], [0, 1], color='none')
+
+            ncols = len(cols)
+            for icol, col in enumerate(cols):
+                r = Rectangle((icol/ncols, 0), \
+                                1./ncols, 1., facecolor=col)
+
+                ax.add_patch(r)
+
+            fig.set_size_inches((12, 5))
+            fp = os.path.join(self.fimg, 'colorset_C{:02d}.png'.format(ncols))
+            fig.savefig(fp)
+
+
     def test_colors2cmap(self):
         ''' Test conversion between color sets and color maps '''
         colors = {1:'#004C99', 0:'#FF9933', 0.3:'#FF99FF'}

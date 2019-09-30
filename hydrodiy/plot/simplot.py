@@ -21,7 +21,7 @@ from hydrodiy.stat import sutils
 from hydrodiy.plot import putils
 
 # Select color scheme
-COLOR_SCHEME = putils.COLORS10
+COLOR_SCHEME = putils.COLORS_TAB
 
 def get_colors(skip=0):
     return cycle(COLOR_SCHEME[skip:])

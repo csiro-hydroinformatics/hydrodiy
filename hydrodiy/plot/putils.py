@@ -32,14 +32,21 @@ from scipy.stats import norm
 from hydrodiy.stat import sutils, linreg
 
 # Some useful colors
-COLORS1 = '#002745'
-COLORS3 = ['#FF9933', '#64A0C8', '#005BBB']
-COLORS10 = [mcolors.rgb2hex([float(coo)/255 for coo in co]) for co in [ \
+COLORS_SLIDE_BACKGROUND = '#002745'
+COLORS_BADGOOD = ['#4D935F', '#915592']
+COLORS_TERCILES = ['#FF9933', '#64A0C8', '#005BBB']
+COLORS_TAB = [mcolors.rgb2hex([float(coo)/255 for coo in co]) for co in [ \
             (31, 119, 180), (255, 127, 14), (44, 160, 44), \
             (214, 39, 40), (148, 103, 189), (140, 86, 75), \
             (227, 119, 194), (127, 127, 127), (188, 189, 34), \
             (23, 190, 207)
         ] ]
+
+# Palette for color blind readers
+# see https://www.somersault1824.com/tips-for-designing-scientific-figures-for-color-blind-readers/
+COLORS_CBLIND = ['#000000', '#074750FE', '#009292', '#FE6CB5', \
+    '#FEB5DA', '#490092', '#006DDB', '#B66CFE', '#6DB6FE', \
+    '#B6DBFF', '#920000', '#924900', '#23FE22', '#FFFF6D']
 
 
 def cmap2colors(ncols=10, cmap='Paired'):

@@ -10,7 +10,7 @@ from matplotlib import lines
 from matplotlib.patches import FancyBboxPatch, BoxStyle
 import matplotlib.pyplot as plt
 
-COLORS = putils.COLORS10
+COLORS = putils.COLORS_TAB
 EPS = 1e-10
 
 class BoxplotError(Exception):
