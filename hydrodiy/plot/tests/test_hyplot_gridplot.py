@@ -36,6 +36,9 @@ class GridplotTestCase(unittest.TestCase):
 
         source_file = os.path.abspath(__file__)
         self.ftest = os.path.dirname(source_file)
+        self.fimg = os.path.join(self.ftest, 'images')
+        if not os.path.exists(self.fimg):
+            os.mkdir(self.fimg)
 
         varname = 'rainfall'
         vartype = 'totals'
@@ -81,14 +84,12 @@ class GridplotTestCase(unittest.TestCase):
 
         fig.set_size_inches((18, 12))
         fig.tight_layout()
-        fp = os.path.join(self.ftest, 'gsmooth.png')
+        fp = os.path.join(self.fimg, 'gsmooth.png')
         fig.savefig(fp)
 
 
     def test_gplot(self):
         plt.close('all')
-        putils.set_mpl('white')
-
         sm = gsmooth(self.grd, self.mask)
 
         for varname in VARNAMES:
@@ -107,15 +108,18 @@ class GridplotTestCase(unittest.TestCase):
                 sm2.data = dt/np.nanmax(dt)
             elif re.search('effective', varname):
                 sm2.data = sm2.data - 50
+            elif re.search('relative-metric', varname):
+                sm2.data = np.random.uniform(-3, 3, sm2.data.shape)
+                sm2 = gsmooth(sm2, self.mask, sigma=8)
 
             cfg = GridplotConfig(varname)
-            contf = gplot(sm, om.map, cfg)
+            cont_gr, cont_lines = gplot(sm2, om.map, cfg)
 
             cbar_ax = plt.subplot(gs[1, 2])
-            gbar(cbar_ax, cfg, contf)
+            gbar(cbar_ax, cfg, cont_gr)
 
             fig.tight_layout()
-            fp = os.path.join(self.ftest, 'gridplot_{0}.png'.format(varname))
+            fp = os.path.join(self.fimg, 'gridplot_{0}.png'.format(varname))
             fig.savefig(fp)
 
 
