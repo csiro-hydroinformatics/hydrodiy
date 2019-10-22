@@ -50,7 +50,7 @@ class GridplotTestCase(unittest.TestCase):
         # Generate random rainfall data
         grd = self.mask.clone(np.float64)
         xx, yy = np.meshgrid(np.linspace(0, 2*math.pi, grd.ncols), \
-                                            np.linspace(0, 2*math.pi, grd.nrows))
+                                 np.linspace(0, 2*math.pi, grd.nrows))
         grd.data = (np.cos(3*xx+6*yy)+1)/2
         grd.data[self.mask.data == 0] = np.nan
         self.grd = grd
@@ -113,7 +113,7 @@ class GridplotTestCase(unittest.TestCase):
             fig = plt.figure()
             gs = GridSpec(nrows=2, ncols=2, \
                 height_ratios=[2, 1], \
-                width_ratios=[4, 1])
+                width_ratios=[3, 1])
 
             ax = plt.subplot(gs[:,0])
             om = Oz(ax=ax)
@@ -132,6 +132,7 @@ class GridplotTestCase(unittest.TestCase):
             cbar_ax = plt.subplot(gs[0, 1])
             gbar(cbar_ax, cfg, cont_gr)
 
+            fig.set_size_inches((7, 6))
             fig.tight_layout()
             fp = os.path.join(self.fimg, 'gridplot_{0}.png'.format(varname))
             fig.savefig(fp)
@@ -146,12 +147,12 @@ class GridplotTestCase(unittest.TestCase):
         plt.close('all')
 
         fig = plt.figure()
-        gs = GridSpec(nrows=4, ncols=2, \
-            height_ratios=[2, 1, 2, 1], \
-            width_ratios=[4, 1])
+        gs = GridSpec(nrows=6, ncols=2, \
+            height_ratios=[2, 1, 2, 1, 2, 1], \
+            width_ratios=[5, 1])
 
         # Aspect
-        for iopt in range(2):
+        for iopt in range(3):
             ax = plt.subplot(gs[2*iopt:2*iopt+2, 0])
             om = Oz(ax=ax)
             bm = om.map
@@ -160,10 +161,13 @@ class GridplotTestCase(unittest.TestCase):
             cbar_ax = plt.subplot(gs[2*iopt, 1])
             if iopt == 0:
                 gbar(cbar_ax, cfg, cont_gr, aspect=20)
-            else:
+            elif iopt == 1:
                 gbar(cbar_ax, cfg, cont_gr, aspect=0.5)
+            elif iopt == 2:
+                gbar(cbar_ax, cfg, cont_gr, fraction=1.5, \
+                                    location='right', pad=0.5)
 
-        fig.set_size_inches((10, 12))
+        fig.set_size_inches((8, 18))
         fig.tight_layout()
         fp = os.path.join(self.fimg, 'gbar_options.png')
         fig.savefig(fp)

@@ -19,7 +19,8 @@ from  hydrodiy.plot import putils
 
 VARNAMES =  list(hywap.VARIABLES.keys()) + ['effective-rainfall', \
     'decile-rainfall', 'decile-temperature', 'evapotranspiration', \
-    'decile-effective-rainfall', 'soil-moisture', 'relative-metric']
+    'decile-effective-rainfall', 'soil-moisture', 'relative-metric',\
+    'bias']
 
 
 class GridplotConfig(object):
@@ -45,7 +46,7 @@ class GridplotConfig(object):
         self._default_values(varname)
 
     # setters and getters so that
-    # if one defines clevs, clevs_ticks and clevs_tick_labels
+    # if one defines clevs, clevs_ticks and clevs_tick_labels and norm
     # are defined automatically
     @property
     def clevs(self):
@@ -55,8 +56,11 @@ class GridplotConfig(object):
     @clevs.setter
     def clevs(self, value):
         self._clevs = np.atleast_1d(value).astype(np.float64)
-        self.clevs_ticks = self._clevs
 
+        # Side effects
+        self.clevs_ticks = self._clevs
+        self.norm = mpl.colors.Normalize(vmin=self._clevs[0],
+                                                vmax=self._clevs[-1])
 
     @property
     def clevs_ticks(self):
@@ -66,8 +70,8 @@ class GridplotConfig(object):
     @clevs_ticks.setter
     def clevs_ticks(self, value):
         self._clevs_ticks = np.atleast_1d(value).astype(np.float64)
-        self.clevs_tick_labels = self._clevs_ticks
-
+        self.clevs_tick_labels = ['{}'.format(lev) for lev \
+                                                in self._clevs_ticks]
 
     @property
     def clevs_tick_labels(self):
@@ -90,11 +94,12 @@ class GridplotConfig(object):
         if self._clevs is None or \
             self._clevs_ticks is None or \
             self._clevs_tick_labels is None:
-            raise ValueError('clevs, or clevs_ticks or clevs_tick_labels is None')
+            raise ValueError('clevs, or clevs_ticks or '+\
+                                    'clevs_tick_labels is None')
 
         if len(self._clevs_tick_labels) != len(self._clevs_ticks):
-            raise ValueError('Not the same number of tick levels and tick' + \
-                    ' labels')
+            raise ValueError('Not the same number of tick levels'+\
+                        ' and tick labels')
 
     def _default_values(self, varname):
         ''' Set default configuration values for specific variables '''
@@ -119,7 +124,6 @@ class GridplotConfig(object):
                     0.5:'#%02x%02x%02x' % (255, 255, 255),
                     0.:'#%02x%02x%02x' % (255, 25, 25)}
             self.cmap = putils.colors2cmap(cols)
-            self.norm = mpl.colors.Normalize(vmin=self.clevs[0], vmax=self.clevs[-1])
             self.legend_title = 'Rainfall\ndeciles'
             self.show_ticks = False
 
@@ -149,19 +153,18 @@ class GridplotConfig(object):
             cols = {0.:'#%02x%02x%02x' % (255, 229, 204),
                     1.:'#%02x%02x%02x' % (153, 76, 0)}
             self.cmap = putils.colors2cmap(cols)
-            self.norm = mpl.colors.Normalize(vmin=clevs[0], vmax=clevs[-1])
-            self.legend_title = 'Evapo-\ntranspiration'
+            self.legend_title = 'Evapo-\ntranspiration\n[mm]'
 
         elif varname == 'soil-moisture':
             self.clevs = np.arange(0, 1.05, 0.05)
             self.clevs_ticks = np.arange(0, 1.2, 0.2)
-            self.clevs_tick_labels = ['{0:3.0f}%'.format(l*100) \
+            self.clevs_tick_labels = ['{0:3.0f}'.format(l*100) \
                                                 for l in self.clevs_ticks]
             self.cmap = plt.cm.Blues
             self.linewidth = 0.
             self.norm = mpl.colors.Normalize(vmin=self.clevs[0], \
                                 vmax=self.clevs[-1])
-            self.legend_title = 'Soil Moisture'
+            self.legend_title = 'Soil Moisture [%]'
 
         elif varname == 'effective-rainfall':
             clevs = [-200, -100, -75, -50, -25, -10, -5, 0, \
@@ -176,7 +179,7 @@ class GridplotConfig(object):
             self.linewidth = 0
             self.norm = mpl.colors.SymLogNorm(10., \
                                 vmin=clevs[0], vmax=clevs[-1])
-            self.legend_title = 'Effective\nRainfall'
+            self.legend_title = 'Effective\nRainfall [mm]'
 
         elif varname == 'rainfall':
             clevs = [0, 1, 5, 10, 25, 50, 100, 200, 300, 400, 600, 800, 1000]
@@ -187,7 +190,7 @@ class GridplotConfig(object):
             self.linewidth = 0
             self.norm = mpl.colors.SymLogNorm(10., \
                                 vmin=clevs[0], vmax=clevs[-1])
-            self.legend_title = 'Rainfall\nTotals'
+            self.legend_title = 'Rainfall\nTotals [mm]'
 
         elif varname == 'temperature':
             clevs = [-20] + list(range(-9, 51, 3)) + [60]
@@ -196,8 +199,7 @@ class GridplotConfig(object):
 
             self.linewidth = 0
             self.cmap = plt.get_cmap('gist_rainbow_r')
-            self.norm = mpl.colors.Normalize(vmin=clevs[0], vmax=clevs[-1])
-            self.legend_title = 'Temperature'
+            self.legend_title = 'Temperature [C]'
 
         elif varname == 'vprp':
             self._default_values('temperature')
@@ -216,19 +218,32 @@ class GridplotConfig(object):
         elif varname == 'relative-metric':
             self.clevs = [-1, -0.5, -0.05, 0.05, 0.5, 1.]
             self.clevs_ticks = [-0.75, -0.255, 0, 0.255, 0.75]
-            self.clevs_tick_labels = ['Much lower\nthan benchmark\n(-1, -0.5)', \
+            self.clevs_tick_labels = ['Much lower\n'+\
+                            'than benchmark\n(-1, -0.5)', \
                 'Lower than\nbenchmark\n(-0.5, -0.05)', \
                 'Same than\nbenchmark\n(-0.05, +0.05)', \
                 'Higher than\nbenchmark\n(+0.05, +0.5)', \
                 'Much higher than\nbenchmark\n(+0.5, +1)']
 
             self.cmap = 'PiYG'
-            self.norm = mpl.colors.Normalize(vmin=self.clevs[0], vmax=self.clevs[-1])
-            self.legend_title = 'Relative\nmetric'
+            self.legend_title = 'Relative\nmetric [-]'
             self.show_ticks = False
 
+        elif varname == 'bias':
+            self._default_values('relative-metric')
+            self.legend_title = 'Bias [%]'
+            self.clevs = [-1, -0.5, -0.1, 0.1, 0.5, 1.]
+            self.clevs_ticks = [-0.75, -0.3, 0, 0.3, 0.75]
+            self.clevs_tick_labels = ['Large under\n'+\
+                            'prediction\n(-100%, -50%)', \
+                'Under-prediction\n(-50%, -10%)', \
+                'Insignificant\nbias\n(-10%, +10%)', \
+                'Over-prediction\n(+10%, +50%)', \
+                'Large\nOver-prediction\n(+50%, +100%)']
 
-def gsmooth(grid, mask=None, coastwin=50, sigma=5., minval=-np.inf, eps=1e-6):
+
+def gsmooth(grid, mask=None, coastwin=50, sigma=5., \
+                                    minval=-np.inf, eps=1e-6):
     ''' Smooth gridded value to improve look of map '''
 
     smooth = grid.clone(dtype=np.float64)
@@ -306,14 +321,23 @@ def gplot(grid, basemap_object, config):
     return contour_grid, contour_lines
 
 
-def gbar(cbar_ax, config, contour_grid, aspect=10):
-    ''' Draw a color bar associated with a gridplot '''
+def gbar(cbar_ax, config, contour_grid, **kwargs):
+    ''' Draw a color bar associated with a gridplot
+
+        kwargs are passed to matplotlib.colorbar.make_axes
+        default values used are:
+            fraction = 1.
+            pad = 0.1
+            aspect = 10
+    '''
+    # Default kwargs args
+    kw = {'fraction': 1., 'pad': 0.1, 'aspect': 10}
+    for key, value in kwargs.items():
+        kw[key] = kwargs[key]
 
     # Create colorbar axes within the prescribed axes
     # to allow the use of kwargs
-    cbar_ax_inside, kw = mpl.colorbar.make_axes(cbar_ax, fraction=1., \
-                                                        location='left', \
-                                                        aspect=aspect)
+    cbar_ax_inside, kw = mpl.colorbar.make_axes(cbar_ax, **kw)
     colorb = plt.colorbar(contour_grid, cax=cbar_ax_inside)
     cbar_ax.axis('off')
 
