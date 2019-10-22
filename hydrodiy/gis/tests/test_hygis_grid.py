@@ -66,11 +66,22 @@ class GridTestCase(unittest.TestCase):
 
     def test_clone(self):
         gr = Grid(**self.config)
-        gr.data = np.random.uniform(0, 1, (gr.nrows, gr.ncols))
+        data_ini = np.random.uniform(0, 1, (gr.nrows, gr.ncols))
+        gr.data = data_ini.copy()
 
-        grc = gr.clone(np.int32)
-        ck = np.allclose(grc.data, 0.)
-        ck = ck & (gr.data.shape == grc.data.shape)
+        # Test data is copied accross
+        grc = gr.clone()
+        ck = np.allclose(grc.data, gr.data)
+        self.assertTrue(ck)
+
+        # Check the original grid is not changing
+        grc.data[0, :] = 100
+        ck = np.allclose(gr.data, data_ini)
+        self.assertTrue(ck)
+
+        # Test cloning works when changing type
+        grci = gr.clone(np.int32)
+        ck = np.allclose(grci.data, 0)
         self.assertTrue(ck)
 
 
