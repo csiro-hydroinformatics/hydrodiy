@@ -38,7 +38,8 @@ class GridplotConfig(object):
         self.linecolor = '#%02x%02x%02x' % (150, 150, 150)
         self.varname = varname
         self.show_ticks = True
-        self.legend = ''
+        self.legend_title = ''
+        self.legend_fontsize = 8
 
         # Refine default values based on variable name
         self._default_values(varname)
@@ -119,9 +120,8 @@ class GridplotConfig(object):
                     0.:'#%02x%02x%02x' % (255, 25, 25)}
             self.cmap = putils.colors2cmap(cols)
             self.norm = mpl.colors.Normalize(vmin=self.clevs[0], vmax=self.clevs[-1])
-            self.legend = 'Rainfall deciles'
+            self.legend_title = 'Rainfall\ndeciles'
             self.show_ticks = False
-            self.contour_format = None
 
         if varname == 'decile-temperature':
             self._default_values('decile-rainfall')
@@ -130,8 +130,7 @@ class GridplotConfig(object):
                     0.5:'#%02x%02x%02x' % (255, 255, 255),
                     0.:'#%02x%02x%02x' % (0, 153, 204)}
             self.cmap = putils.colors2cmap(cols)
-            self.legend = 'Temperature deciles'
-            self.contour_format = None
+            self.legend_title = 'Temperature deciles'
 
         if varname == 'decile-effective-rainfall':
             self._default_values('decile-rainfall')
@@ -140,8 +139,7 @@ class GridplotConfig(object):
                     0.5:'#%02x%02x%02x' % (254, 254, 228),
                     0.:'#%02x%02x%02x' % (254, 118, 37)}
             self.cmap = putils.colors2cmap(cols)
-            self.legend = 'Temperature deciles'
-            self.contour_format = None
+            self.legend_title = 'Temperature\ndeciles'
 
         elif varname == 'evapotranspiration':
             clevs = [0, 10, 50, 80, 100, 120, 160, 200, 250, 300, 350]
@@ -152,8 +150,7 @@ class GridplotConfig(object):
                     1.:'#%02x%02x%02x' % (153, 76, 0)}
             self.cmap = putils.colors2cmap(cols)
             self.norm = mpl.colors.Normalize(vmin=clevs[0], vmax=clevs[-1])
-            self.legend = 'Evapotranspiration'
-            self.contour_format = '%0.0f'
+            self.legend_title = 'Evapo-\ntranspiration'
 
         elif varname == 'soil-moisture':
             self.clevs = np.arange(0, 1.05, 0.05)
@@ -164,8 +161,7 @@ class GridplotConfig(object):
             self.linewidth = 0.
             self.norm = mpl.colors.Normalize(vmin=self.clevs[0], \
                                 vmax=self.clevs[-1])
-            self.legend = 'Soil Moisture'
-            self.contour_format = '%0.2f'
+            self.legend_title = 'Soil Moisture'
 
         elif varname == 'effective-rainfall':
             clevs = [-200, -100, -75, -50, -25, -10, -5, 0, \
@@ -180,19 +176,18 @@ class GridplotConfig(object):
             self.linewidth = 0
             self.norm = mpl.colors.SymLogNorm(10., \
                                 vmin=clevs[0], vmax=clevs[-1])
-            self.legend = 'Effective Rainfall'
-            self.contour_format = '%0.0f'
+            self.legend_title = 'Effective\nRainfall'
 
         elif varname == 'rainfall':
             clevs = [0, 1, 5, 10, 25, 50, 100, 200, 300, 400, 600, 800, 1000]
             self.clevs = clevs
+            self.cmap = 'Blues'
             self.clevs_tick_labels = clevs[:-1] + ['']
 
             self.linewidth = 0
             self.norm = mpl.colors.SymLogNorm(10., \
                                 vmin=clevs[0], vmax=clevs[-1])
-            self.legend = 'Rainfall Totals'
-            self.contour_format = '%0.0f'
+            self.legend_title = 'Rainfall\nTotals'
 
         elif varname == 'temperature':
             clevs = [-20] + list(range(-9, 51, 3)) + [60]
@@ -202,24 +197,21 @@ class GridplotConfig(object):
             self.linewidth = 0
             self.cmap = plt.get_cmap('gist_rainbow_r')
             self.norm = mpl.colors.Normalize(vmin=clevs[0], vmax=clevs[-1])
-            self.legend = 'Temperature'
-            self.contour_format = '%0.0f'
+            self.legend_title = 'Temperature'
 
         elif varname == 'vprp':
             self._default_values('temperature')
             clevs = list(range(0, 42, 2))
             self.clevs = clevs
             self.clevs_tick_labels = clevs[:-1] + ['']
-            self.legend = 'Vapour Pressure'
-            self.contour_format = '%0.0f'
+            self.legend_title = 'Vapour\nPressure'
 
         elif varname == 'solar':
             self._default_values('temperature')
             clevs = list(range(0, 43, 3))
             self.clevs = clevs
             self.clevs_tick_labels = clevs[:-1] + ['']
-            self.legend = 'Solar Radiation'
-            self.contour_format = '%0.0f'
+            self.legend_title = 'Solar\nRadiation'
 
         elif varname == 'relative-metric':
             self.clevs = [-1, -0.5, -0.05, 0.05, 0.5, 1.]
@@ -232,12 +224,11 @@ class GridplotConfig(object):
 
             self.cmap = 'PiYG'
             self.norm = mpl.colors.Normalize(vmin=self.clevs[0], vmax=self.clevs[-1])
-            self.legend = 'Relative metric'
+            self.legend_title = 'Relative\nmetric'
             self.show_ticks = False
-            self.contour_format = '%+0.2f'
 
 
-def gsmooth(grid, mask=None, sigma=5., minval=-np.inf, eps=1e-6):
+def gsmooth(grid, mask=None, coastwin=50, sigma=5., minval=-np.inf, eps=1e-6):
     ''' Smooth gridded value to improve look of map '''
 
     smooth = grid.clone(dtype=np.float64)
@@ -247,7 +238,7 @@ def gsmooth(grid, mask=None, sigma=5., minval=-np.inf, eps=1e-6):
     ixm, iym = np.where(np.isnan(z0) | (z0<minval-eps))
     ixnm, iynm = np.where(~np.isnan(z0) & (z0>=minval-eps))
     z0[ixm, iym] = -np.inf
-    z1 = maximum_filter(z0, size=50, mode='nearest')
+    z1 = maximum_filter(z0, size=coastwin, mode='nearest')
     z1[ixnm, iynm] = z0[ixnm, iynm]
 
     # Smooth
@@ -270,7 +261,7 @@ def gsmooth(grid, mask=None, sigma=5., minval=-np.inf, eps=1e-6):
 
 
 def gplot(grid, basemap_object, config):
-    ''' Plot gridded data '''
+    ''' Plot gridded data on a basemap object '''
 
     # Get cell coordinates
     ncells = grid.nrows*grid.ncols
@@ -315,16 +306,21 @@ def gplot(grid, basemap_object, config):
     return contour_grid, contour_lines
 
 
-def gbar(cbar_ax, config, contour_grid, legend=None):
-    ''' Draw a color bar to plot '''
+def gbar(cbar_ax, config, contour_grid, aspect=10):
+    ''' Draw a color bar associated with a gridplot '''
 
-    # Create colorbar axe
-    colorb = plt.colorbar(contour_grid, cax=cbar_ax)
+    # Create colorbar axes within the prescribed axes
+    # to allow the use of kwargs
+    cbar_ax_inside, kw = mpl.colorbar.make_axes(cbar_ax, fraction=1., \
+                                                        location='left', \
+                                                        aspect=aspect)
+    colorb = plt.colorbar(contour_grid, cax=cbar_ax_inside)
+    cbar_ax.axis('off')
 
     # Ticks and tick labels
     colorb.set_ticks(config.clevs_ticks)
     colorb.ax.set_yticklabels(config.clevs_tick_labels, \
-        fontsize=8, \
+        fontsize=config.legend_fontsize, \
         va='center')
 
     # Remove tick marks if needed
@@ -332,11 +328,8 @@ def gbar(cbar_ax, config, contour_grid, legend=None):
         colorb.ax.tick_params(axis='y', which='both', length=0)
 
     # Legend text
-    if legend is None:
-        legend = config.legend
-
-    colorb.ax.text(0.0, 1.07, legend,
-                size=12, fontsize=8)
+    colorb.ax.text(0.0, 1.07, config.legend_title,
+                size=12, fontsize=config.legend_fontsize+1)
 
     return colorb
 

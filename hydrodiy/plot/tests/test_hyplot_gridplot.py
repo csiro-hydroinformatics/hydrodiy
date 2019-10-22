@@ -48,11 +48,11 @@ class GridplotTestCase(unittest.TestCase):
         self.mask = get_mask('AWAP')
 
         # Generate random rainfall data
-        grd = self.mask.clone()
-        nval = grd.nrows*grd.ncols
-        data = np.maximum(np.random.normal(loc=100, scale=50, size=nval), 0)
-        grd.data = data.reshape((grd.nrows, grd.ncols))
-
+        grd = self.mask.clone(np.float64)
+        xx, yy = np.meshgrid(np.linspace(0, 2*math.pi, grd.ncols), \
+                                            np.linspace(0, 2*math.pi, grd.nrows))
+        grd.data = (np.cos(3*xx+6*yy)+1)/2
+        grd.data[self.mask.data == 0] = np.nan
         self.grd = grd
 
     def test_get_gconfig(self):
@@ -62,25 +62,41 @@ class GridplotTestCase(unittest.TestCase):
 
 
     def test_gsmooth(self):
+        ''' Test grid smoother '''
         plt.close('all')
         fig, axs = plt.subplots(ncols=3, nrows=2)
 
-        self.grd.plot(axs[0, 0], cmap='Blues')
+        grd = self.grd.clone()
+        grd.data += np.random.uniform(-0.8, 0.8, size=grd.data.shape)
 
-        sm = gsmooth(self.grd, self.mask, sigma=1e-5)
-        sm.plot(axs[1, 0], cmap='Blues')
+        ax = axs[0, 0]
+        grd.plot(ax, cmap='Blues')
+        ax.set_title('Raw gridded data')
 
-        sm = gsmooth(self.grd)
-        sm.plot(axs[0, 1], cmap='Blues')
+        ax = axs[1, 0]
+        sm = gsmooth(grd, self.mask, sigma=1e-5)
+        sm.plot(ax, cmap='Blues')
+        ax.set_title('Mask applied with insignificant smoothing')
 
-        sm = gsmooth(self.grd, self.mask)
-        sm.plot(axs[1, 1], cmap='Blues')
+        ax = axs[0, 1]
+        sm = gsmooth(grd)
+        sm.plot(ax, cmap='Blues')
+        ax.set_title('Default smoothing options')
 
-        sm = gsmooth(self.grd, sigma=50.)
-        sm.plot(axs[0, 2], cmap='Blues')
+        ax = axs[1, 1]
+        sm = gsmooth(grd, self.mask)
+        sm.plot(ax, cmap='Blues')
+        ax.set_title('Mask applied with default smoothing')
 
-        sm = gsmooth(self.grd, self.mask, sigma=50.)
-        sm.plot(axs[1, 2], cmap='Blues')
+        ax = axs[0, 2]
+        sm = gsmooth(grd, sigma=10.)
+        sm.plot(ax, cmap='Blues')
+        ax.set_title('No mask applied with large smoothing')
+
+        ax = axs[1, 2]
+        sm = gsmooth(grd, self.mask, sigma=10.)
+        sm.plot(ax, cmap='Blues')
+        ax.set_title('Mask applied with large smoothing')
 
         fig.set_size_inches((18, 12))
         fig.tight_layout()
@@ -89,38 +105,68 @@ class GridplotTestCase(unittest.TestCase):
 
 
     def test_gplot(self):
+        ''' Test gplot generation for different variables '''
         plt.close('all')
-        sm = gsmooth(self.grd, self.mask)
 
         for varname in VARNAMES:
+            print('Grid plot for {}'.format(varname))
             fig = plt.figure()
-            gs = GridSpec(nrows=3, ncols=3, \
-                height_ratios=[1, 4, 1], \
-                width_ratios=[6, 1, 1])
+            gs = GridSpec(nrows=2, ncols=2, \
+                height_ratios=[2, 1], \
+                width_ratios=[4, 1])
 
             ax = plt.subplot(gs[:,0])
             om = Oz(ax=ax)
             bm = om.map
 
-            sm2 = sm.clone()
-            if re.search('decile|moisture', varname):
-                dt = sm2.data
-                sm2.data = dt/np.nanmax(dt)
-            elif re.search('effective', varname):
-                sm2.data = sm2.data - 50
-            elif re.search('relative-metric', varname):
-                sm2.data = np.random.uniform(-3, 3, sm2.data.shape)
-                sm2 = gsmooth(sm2, self.mask, sigma=8)
-
+            # Get config
             cfg = GridplotConfig(varname)
-            cont_gr, cont_lines = gplot(sm2, om.map, cfg)
 
-            cbar_ax = plt.subplot(gs[1, 2])
+            # generate data
+            grd = self.grd.clone()
+            y0, y1 = cfg.clevs[0], cfg.clevs[-1]
+            grd.data = y0 + (y1-y0)*grd.data
+
+            # Plot
+            cont_gr, cont_lines = gplot(grd, om.map, cfg)
+            cbar_ax = plt.subplot(gs[0, 1])
             gbar(cbar_ax, cfg, cont_gr)
 
             fig.tight_layout()
             fp = os.path.join(self.fimg, 'gridplot_{0}.png'.format(varname))
             fig.savefig(fp)
+
+
+    def test_gbar_options(self):
+        ''' Test gplot generation with customised options '''
+
+        grd = self.grd
+        cfg = GridplotConfig('soil-moisture')
+
+        plt.close('all')
+
+        fig = plt.figure()
+        gs = GridSpec(nrows=4, ncols=2, \
+            height_ratios=[2, 1, 2, 1], \
+            width_ratios=[4, 1])
+
+        # Aspect
+        for iopt in range(2):
+            ax = plt.subplot(gs[2*iopt:2*iopt+2, 0])
+            om = Oz(ax=ax)
+            bm = om.map
+            cont_gr, cont_lines = gplot(grd, om.map, cfg)
+
+            cbar_ax = plt.subplot(gs[2*iopt, 1])
+            if iopt == 0:
+                gbar(cbar_ax, cfg, cont_gr, aspect=20)
+            else:
+                gbar(cbar_ax, cfg, cont_gr, aspect=0.5)
+
+        fig.set_size_inches((10, 12))
+        fig.tight_layout()
+        fp = os.path.join(self.fimg, 'gbar_options.png')
+        fig.savefig(fp)
 
 
 if __name__ == "__main__":
