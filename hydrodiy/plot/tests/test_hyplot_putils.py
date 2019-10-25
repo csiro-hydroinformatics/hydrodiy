@@ -21,8 +21,10 @@ class UtilsTestCase(unittest.TestCase):
         source_file = os.path.abspath(__file__)
         self.test = os.path.dirname(source_file)
         self.fimg = os.path.join(self.test, 'images')
-        if not os.path.exists(self.fimg):
+        try:
             os.mkdir(self.fimg)
+        except:
+            pass
 
         # Reset matplotlib defaults
         mpl.rcdefaults()
@@ -31,10 +33,11 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_color_sets(self):
         ''' Test color sets '''
-        for cols in [[putils.COLORS_SLIDE_BACKGROUND], \
-                    putils.COLORS_BADGOOD, \
-                    putils.COLORS_TERCILES, putils.COLORS_TAB, \
-                        putils.COLORS_CBLIND]:
+        for colname in ['slide_background', 'badgood', 'terciles', \
+                            'cblind', 'safe']:
+            cols = getattr(putils, 'COLORS_{}'.format(colname.upper()))
+            if isinstance(cols, str):
+                cols = [cols]
 
             fig, ax = plt.subplots()
             ax.plot([0, 1], [0, 1], color='none')
@@ -43,11 +46,10 @@ class UtilsTestCase(unittest.TestCase):
             for icol, col in enumerate(cols):
                 r = Rectangle((icol/ncols, 0), \
                                 1./ncols, 1., facecolor=col)
-
                 ax.add_patch(r)
 
             fig.set_size_inches((12, 5))
-            fp = os.path.join(self.fimg, 'colorset_C{:02d}.png'.format(ncols))
+            fp = os.path.join(self.fimg, 'colorset_{}.png'.format(colname))
             fig.savefig(fp)
 
 
@@ -86,6 +88,24 @@ class UtilsTestCase(unittest.TestCase):
         cmap = cm.get_cmap('Reds')
         colors = putils.cmap2colors(ncols=10, cmap=cmap)
         self.assertTrue(len(colors) == 10)
+
+        for cmap in ['safe', 'PiYG']:
+            fig, ax = plt.subplots()
+            ax.plot([0, 1], [0, 1], color='none')
+
+            ncols = 10
+            cols = putils.cmap2colors(ncols, cmap)
+
+            for icol, col in enumerate(cols):
+                r = Rectangle((icol/ncols, 0), \
+                                1./ncols, 1., facecolor=col)
+
+                ax.add_patch(r)
+
+            fig.set_size_inches((12, 5))
+            fp = os.path.join(self.fimg, 'cmap2colors_{}.png'.format(cmap))
+            fig.savefig(fp)
+
 
 
     def test_line(self):

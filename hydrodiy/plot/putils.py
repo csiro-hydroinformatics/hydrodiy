@@ -49,6 +49,11 @@ COLORS_CBLIND = ['#000000', '#074751', '#009292', '#FE6CB5', '#FEB5DA', \
     '#920000', '#924900', '#DB6D00', '#23FE22', '#FFFF6D']
 
 
+# Palette safe for a range of uses (cf PuOr palette)
+# see http://colorbrewer2.org/
+COLORS_SAFE = ['#E66101', '#FDB863', '#B2ABD2', '#5E3C99']
+
+
 def cmap2colors(ncols=10, cmap='Paired'):
     ''' Generates a set of colors from a colormap
 
@@ -66,7 +71,11 @@ def cmap2colors(ncols=10, cmap='Paired'):
     '''
 
     if isinstance(cmap, str):
-        cmapn = cm.get_cmap(cmap, ncols)
+        if cmap == 'safe':
+            cmapn = colors2cmap({0.:COLORS_SAFE[0], 0.5: '#A0A0A0', 1.:COLORS_SAFE[-1]})
+        else:
+            cmapn = cm.get_cmap(cmap, ncols)
+
         return [rgb2hex(cmapn(i)) for i in range(cmapn.N)]
     else:
         ii = np.linspace(0, cmap.N, ncols+2)
@@ -530,6 +539,9 @@ def set_mpl(color_theme='black', font_size=18, usetex=False, \
         else:
             warnings.warn('Cannot set color cycle '+ \
                 'because cycler package is missing')
+
+    # Default colormap
+    mpl.rc('image', cmap='PiYG')
 
     # Ticker line width than default
     mpl.rc('lines', linewidth=2)
