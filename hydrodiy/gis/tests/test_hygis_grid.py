@@ -877,6 +877,18 @@ class RefGridsTestCase(unittest.TestCase):
         self.assertEqual(gr.yllcorner, -44.)
         self.assertEqual(np.sum(gr.data), 281655)
 
+
+    def test_awral_drainage(self):
+        ''' Test awral drainage mask '''
+        gr = get_mask('AWRAL_DRAINAGE')
+        self.assertEqual(gr.nrows, 681)
+        self.assertEqual(gr.ncols, 841)
+        self.assertEqual(gr.xllcorner, 112.)
+        self.assertEqual(gr.yllcorner, -44.)
+        v = np.unique(gr.data.flatten())
+        self.assertTrue(np.allclose(v, np.arange(14)))
+
+
     def test_awap(self):
         ''' Test awap mask '''
         gr = get_mask('AWAP')

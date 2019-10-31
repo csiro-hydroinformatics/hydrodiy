@@ -1422,7 +1422,7 @@ def get_mask(name, extract=False):
         and 0 for cells outside the grid
 
     '''
-    expected = ['AWRAL', 'AWAP', 'WATERDYN']
+    expected = ['AWRAL', 'AWAP', 'WATERDYN', 'AWRAL_DRAINAGE']
     if not name in expected:
         raise ValueError('Expected name in {0}, got {1}'.format(
             '/'.join(expected), name))
