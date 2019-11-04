@@ -95,7 +95,7 @@ class GridplotConfig(object):
         self.is_valid()
         return self._clevs_contour
 
-    @clevs.setter
+    @clevs_contour.setter
     def clevs_contour(self, value):
         value = np.sort(np.atleast_1d(value).astype(np.float64))
 
