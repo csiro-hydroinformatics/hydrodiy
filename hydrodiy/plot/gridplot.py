@@ -22,6 +22,10 @@ VARNAMES =  list(hywap.VARIABLES.keys()) + ['effective-rainfall', \
     'decile-effective-rainfall', 'soil-moisture', 'relative-metric',\
     'bias']
 
+def vect2txt(x):
+    text = ', '.join(['{:0.2f}'.format(v) for v in x])
+    return text
+
 
 class GridplotConfig(object):
     ''' Class containing gridplot configuration data '''
@@ -30,20 +34,37 @@ class GridplotConfig(object):
         # Set default values
         self.cmap = plt.cm.RdBu
         self._clevs = None
+        self._clevs_contour = None
         self._clevs_ticks = None
         self._clevs_tick_labels = None
         self.norm = None
-        self.contour_format = None
+        self.contour_text_format = '%0.1f'
+        self.contour_text_color = 'k'
         self.contour_fontsize = 8
-        self.linewidth = 0.8
-        self.linecolor = '#%02x%02x%02x' % (150, 150, 150)
-        self.varname = varname
+        self.contour_linewidth = 0.8
+        self.contour_linecolor = '#%02x%02x%02x' % (150, 150, 150)
         self.show_ticks = True
         self.legend_title = ''
         self.legend_fontsize = 8
 
         # Refine default values based on variable name
         self._default_values(varname)
+
+
+    def __str__(self):
+        ''' Pretty print of config object '''
+        text =  ' clevs: {}\n'.format(vect2txt(self.clevs))
+        text += ' clevs_contour: {}\n'.format(vect2txt(self.clevs_contour))
+        text += ' clevs_ticks: {}\n'.format(vect2txt(self.clevs_ticks))
+        text += ' norm: {}\n'.format(self.norm.__class__.__name__)
+
+        for attr in ['cmap', 'contour_text_format', 'contour_fontsize', \
+                        'contour_linewidth', 'contour_linecolor', \
+                        'show_ticks', 'legend_title', 'legend_fontsize']:
+            t = re.sub('\n', ' ', '{}'.format(getattr(self, attr)))
+            text += ' {}: {}\n'.format(attr, t)
+
+        return text
 
     # setters and getters so that
     # if one defines clevs, clevs_ticks and clevs_tick_labels and norm
@@ -55,12 +76,40 @@ class GridplotConfig(object):
 
     @clevs.setter
     def clevs(self, value):
-        self._clevs = np.atleast_1d(value).astype(np.float64)
+        self._clevs = np.sort(np.atleast_1d(value).astype(np.float64))
 
         # Side effects
         self.clevs_ticks = self._clevs
-        self.norm = mpl.colors.Normalize(vmin=self._clevs[0],
+        self.clevs_contour = self._clevs
+
+        if self.norm is None:
+            self.norm = mpl.colors.Normalize(vmin=self._clevs[0],
                                                 vmax=self._clevs[-1])
+        else:
+            self.norm.vmin = self._clevs[0]
+            self.norm.vmax = self._clevs[-1]
+
+
+    @property
+    def clevs_contour(self):
+        self.is_valid()
+        return self._clevs_contour
+
+    @clevs.setter
+    def clevs_contour(self, value):
+        value = np.sort(np.atleast_1d(value).astype(np.float64))
+
+        # Check range
+        if value[0] < self.clevs[0]:
+            raise ValueError('Expected min(clevs_contour) '+\
+                '>= {}, got {}'.format(self.clevs[0], value[0]))
+
+        if value[-1] > self.clevs[-1]:
+            raise ValueError('Expected max(clevs_contour) '+\
+                '<= {}, got {}'.format(self.clevs[-1], value[-1]))
+
+        self._clevs_contour = value
+
 
     @property
     def clevs_ticks(self):
@@ -119,6 +168,7 @@ class GridplotConfig(object):
                 'Below Average', 'Average', \
                 'Above Average', 'Very Much\nAbove Average', \
                 'Highest\non record']
+            self.clevs_contour = [0.1, 0.9]
 
             cols = {1.:'#%02x%02x%02x' % (0, 0, 255),
                     0.5:'#%02x%02x%02x' % (255, 255, 255),
@@ -148,6 +198,8 @@ class GridplotConfig(object):
         elif varname == 'evapotranspiration':
             clevs = [0, 10, 50, 80, 100, 120, 160, 200, 250, 300, 350]
             self.clevs = clevs
+            self.clevs_contour = [50, 100, 200]
+            self.contour_text_format = '%0.0f'
             self.clevs_tick_labels = clevs[:-1] + ['']
 
             cols = {0.:'#%02x%02x%02x' % (255, 229, 204),
@@ -157,11 +209,12 @@ class GridplotConfig(object):
 
         elif varname == 'soil-moisture':
             self.clevs = np.arange(0, 1.05, 0.05)
+            self.clevs_contour = [0.1, 0.9]
             self.clevs_ticks = np.arange(0, 1.2, 0.2)
             self.clevs_tick_labels = ['{0:3.0f}'.format(l*100) \
                                                 for l in self.clevs_ticks]
             self.cmap = plt.cm.Blues
-            self.linewidth = 0.
+            self.contour_linewidth = 0.
             self.norm = mpl.colors.Normalize(vmin=self.clevs[0], \
                                 vmax=self.clevs[-1])
             self.legend_title = 'Soil Moisture [%]'
@@ -170,13 +223,15 @@ class GridplotConfig(object):
             clevs = [-200, -100, -75, -50, -25, -10, -5, 0, \
                 5, 10, 25, 50, 75, 100, 200]
             self.clevs = clevs
+            self.clevs_contour = [-100, -10, 10, 100]
+            self.contour_text_format = '%0.0f'
             self.clevs_tick_labels = [''] + clevs[1:-1] + ['']
 
             cols = {0.:'#%02x%02x%02x' % (255, 76, 0), \
                     0.5:'#%02x%02x%02x' % (255, 255, 255), \
                     1.:'#%02x%02x%02x' % (40, 178, 157)}
             self.cmap = putils.colors2cmap(cols)
-            self.linewidth = 0
+            self.contour_linewidth = 0
             self.norm = mpl.colors.SymLogNorm(10., \
                                 vmin=clevs[0], vmax=clevs[-1])
             self.legend_title = 'Effective\nRainfall [mm]'
@@ -184,10 +239,12 @@ class GridplotConfig(object):
         elif varname == 'rainfall':
             clevs = [0, 1, 5, 10, 25, 50, 100, 200, 300, 400, 600, 800, 1000]
             self.clevs = clevs
+            self.clevs_contour = [1, 10, 100, 200]
+            self.contour_text_format = '%0.0f'
             self.cmap = 'Blues'
             self.clevs_tick_labels = clevs[:-1] + ['']
 
-            self.linewidth = 0
+            self.contour_linewidth = 0
             self.norm = mpl.colors.SymLogNorm(10., \
                                 vmin=clevs[0], vmax=clevs[-1])
             self.legend_title = 'Rainfall\nTotals [mm]'
@@ -195,9 +252,10 @@ class GridplotConfig(object):
         elif varname == 'temperature':
             clevs = [-20] + list(range(-9, 51, 3)) + [60]
             self.clevs = clevs
+            self.clevs_contour = [0, 10, 20, 30]
             self.clevs_tick_labels = clevs[:-1] + ['']
 
-            self.linewidth = 0
+            self.contour_linewidth = 0
             self.cmap = plt.get_cmap('gist_rainbow_r')
             self.legend_title = 'Temperature [C]'
 
@@ -205,6 +263,7 @@ class GridplotConfig(object):
             self._default_values('temperature')
             clevs = list(range(0, 42, 2))
             self.clevs = clevs
+            self.clevs_contour = [0, 10, 20, 30]
             self.clevs_tick_labels = clevs[:-1] + ['']
             self.legend_title = 'Vapour\nPressure'
 
@@ -212,11 +271,13 @@ class GridplotConfig(object):
             self._default_values('temperature')
             clevs = list(range(0, 43, 3))
             self.clevs = clevs
+            self.clevs_contour = [0, 10, 20, 30]
             self.clevs_tick_labels = clevs[:-1] + ['']
             self.legend_title = 'Solar\nRadiation'
 
         elif varname == 'relative-metric':
             self.clevs = [-1, -0.5, -0.05, 0.05, 0.5, 1.]
+            self.clevs_contour = [-0.5, 0, 0.5]
             self.clevs_ticks = [-0.75, -0.255, 0, 0.255, 0.75]
             self.clevs_tick_labels = ['Much lower\n'+\
                             'than benchmark\n(-1, -0.5)', \
@@ -233,6 +294,7 @@ class GridplotConfig(object):
             self._default_values('relative-metric')
             self.legend_title = 'Bias [%]'
             self.clevs = [-1, -0.5, -0.1, 0.1, 0.5, 1.]
+            self.clevs_contour = [-0.5, 0, 0.5]
             self.clevs_ticks = [-0.75, -0.3, 0, 0.3, 0.75]
             self.clevs_tick_labels = ['Large under\n'+\
                             'prediction\n(-100%, -50%)', \
@@ -302,21 +364,22 @@ def gplot(grid, basemap_object, config):
 
     # draw contour lines
     contour_lines = None
-    if config.linewidth > 0.:
-        contour_lines = bmap.contour(xcoord, ycoord, zval, config.clevs, \
-                linewidths=config.linewidth, \
-                colors=config.linecolor)
+    if config.contour_linewidth > 0.:
+        contour_lines = bmap.contour(xcoord, ycoord, zval, config.clevs_contour, \
+                contour_linewidths=config.contour_linewidth, \
+                colors=config.contour_linecolor)
 
         # Set continuous line style
         for line in contour_lines.collections:
             line.set_linestyle('-')
 
         # Show levels
-        if config.contour_format is not None:
-            contour_labs = bmap.ax.clabel(contour_lines, config.clevs, \
-                            fmt=config.contour_format, \
-                            colors='k', \
-                            fontsize=config.contour_fontsize)
+        if config.contour_text_format is not None:
+            contour_labs = bmap.ax.clabel(contour_lines, config.clevs_contour, \
+                        fmt=config.contour_text_format, \
+                        colors=config.contour_text_color, \
+                        fontsize=config.contour_fontsize)
+
 
     return contour_grid, contour_lines
 

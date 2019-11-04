@@ -55,10 +55,17 @@ class GridplotTestCase(unittest.TestCase):
         grd.data[self.mask.data == 0] = np.nan
         self.grd = grd
 
+
     def test_get_gconfig(self):
         for varname in VARNAMES:
             cfg = GridplotConfig(varname)
             cfg.is_valid()
+
+
+    def test_gconfig2str(self):
+        for varname in VARNAMES:
+            cfg = GridplotConfig(varname)
+            str(cfg)
 
 
     def test_gsmooth(self):
@@ -106,10 +113,9 @@ class GridplotTestCase(unittest.TestCase):
 
     def test_gplot(self):
         ''' Test gplot generation for different variables '''
-        plt.close('all')
-
         for varname in VARNAMES:
             print('Grid plot for {}'.format(varname))
+            plt.close('all')
             fig = plt.figure()
             gs = GridSpec(nrows=2, ncols=2, \
                 height_ratios=[2, 1], \
@@ -117,10 +123,12 @@ class GridplotTestCase(unittest.TestCase):
 
             ax = plt.subplot(gs[:,0])
             om = Oz(ax=ax)
-            bm = om.map
 
             # Get config
             cfg = GridplotConfig(varname)
+
+            # Set linewidth to see contours
+            cfg.contour_linewidth = 0.8
 
             # generate data
             grd = self.grd.clone()
@@ -136,6 +144,42 @@ class GridplotTestCase(unittest.TestCase):
             fig.tight_layout()
             fp = os.path.join(self.fimg, 'gridplot_{0}.png'.format(varname))
             fig.savefig(fp)
+
+
+    def test_gplot_tweak_config(self):
+        ''' Test tweaking plot config '''
+        plt.close('all')
+        fig = plt.figure()
+        gs = GridSpec(nrows=2, ncols=2, \
+            height_ratios=[2, 1], \
+            width_ratios=[3, 1])
+
+        ax = plt.subplot(gs[:,0])
+        om = Oz(ax=ax)
+
+        # Get config
+        cfg = GridplotConfig('rainfall')
+        cfg.cmap = 'Reds'
+        cfg.clevs = [0, 50, 100, 150, 200]
+        cfg.clevs_contour = [50, 150]
+        cfg.contour_linewidth = 2
+
+        # generate data
+        grd = self.grd.clone()
+        y0, y1 = cfg.clevs[0], cfg.clevs[-1]
+        grd.data = y0 + (y1-y0)*grd.data
+
+        # Plot
+        cont_gr, cont_lines = gplot(grd, om.map, cfg)
+        cbar_ax = plt.subplot(gs[0, 1])
+        gbar(cbar_ax, cfg, cont_gr)
+
+        fig.set_size_inches((7, 6))
+        fig.tight_layout()
+        fp = os.path.join(self.fimg, 'gridplot_tweak_config.png')
+        fig.savefig(fp)
+
+
 
 
     def test_gbar_options(self):
@@ -175,5 +219,5 @@ class GridplotTestCase(unittest.TestCase):
 
 if __name__ == "__main__":
 
-    if import_ok:
+    if not import_error:
         unittest.main()
