@@ -170,8 +170,8 @@ class EnsplotTestCase(unittest.TestCase):
 
         perf = pd.DataFrame(perf).T
         self.assertEqual(perf.shape, (13, 4))
-        self.assertEqual(list(perf.columns), \
-                    ['R2', 'alpha', 'bias', 'crps_ss'])
+        self.assertCountEqual(list(perf.columns), \
+                    ['alpha', 'bias', 'crps_ss', 'R2'])
 
         fp = os.path.join(self.fimg, 'overviewplot.png')
         mep.set_overview_fig('Title')
