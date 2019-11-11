@@ -104,7 +104,7 @@ class CastTestCase(unittest.TestCase):
         try:
             ycast = dutils.cast(x, y)
         except TypeError as err:
-            self.assertTrue(str(err).startswith('only length-1 arrays'))
+            self.assertTrue(str(err).startswith('only '))
         else:
             raise ValueError('Problem in error handling')
 
