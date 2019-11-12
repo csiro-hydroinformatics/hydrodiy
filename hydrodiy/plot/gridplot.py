@@ -3,6 +3,7 @@
 import re
 import os
 import datetime
+import warnings
 
 import numpy as np
 from scipy.ndimage import gaussian_filter, maximum_filter
@@ -365,7 +366,8 @@ def gplot(grid, basemap_object, config):
     # draw contour lines
     contour_lines = None
     if config.contour_linewidth > 0.:
-        contour_lines = bmap.contour(xcoord, ycoord, zval, config.clevs_contour, \
+        contour_lines = bmap.contour(xcoord, ycoord, zval, \
+                config.clevs_contour, \
                 contour_linewidths=config.contour_linewidth, \
                 colors=config.contour_linecolor)
 
@@ -375,11 +377,15 @@ def gplot(grid, basemap_object, config):
 
         # Show levels
         if config.contour_text_format is not None:
-            contour_labs = bmap.ax.clabel(contour_lines, config.clevs_contour, \
+            try:
+                contour_labs = bmap.ax.clabel(contour_lines, \
+                        config.clevs_contour, \
                         fmt=config.contour_text_format, \
                         colors=config.contour_text_color, \
                         fontsize=config.contour_fontsize)
-
+            except ValueError as err:
+                warnings.warn('Cannot draw contour lines: {}'.format(\
+                                    str(err)))
 
     return contour_grid, contour_lines
 
