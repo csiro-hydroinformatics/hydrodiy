@@ -518,11 +518,14 @@ class MonthlyEnsplot(object):
 
         # Loop through months
         perf = {}
+        axs = {}
         for month in range(13):
             if month == 0:
                 ax = self.fig.add_subplot(gs[-1, :])
             else:
                 ax = self.fig.add_subplot(gs[(month-1)%3, (month-1)//3])
+
+            axs[month] = ax
 
             # Draw monthly plot
             perf[month] = self.monthplot(month, ax, \
@@ -531,7 +534,7 @@ class MonthlyEnsplot(object):
 
         self.gridspec = gs
 
-        return perf
+        return axs, perf
 
 
     def set_overview_fig(self, title='', figsize=(26, 18)):
