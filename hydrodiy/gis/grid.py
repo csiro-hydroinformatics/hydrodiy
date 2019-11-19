@@ -241,6 +241,22 @@ class Grid(object):
 
 
     @property
+    def xvalues(self):
+        ''' Return coordinates along grid columns (x) '''
+        cells = np.arange(self.ncols)
+        xv = self.cell2coord(cells)
+        return xv[:, 0]
+
+
+    @property
+    def yvalues(self):
+        ''' Return coordinates along grid rows (y) '''
+        cells = np.arange(0, self.nrows*self.ncols, self.ncols)
+        xv = self.cell2coord(cells)
+        return xv[:, 1]
+
+
+    @property
     def data(self):
         ''' Get grid data '''
         return self._data

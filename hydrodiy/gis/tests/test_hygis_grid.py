@@ -64,6 +64,15 @@ class GridTestCase(unittest.TestCase):
         self.assertTrue(ck)
 
 
+    def test_xvalues_ylalues(self):
+        ''' test x and y coords of grid '''
+        gr = Grid(**self.config)
+
+        xv, yv = gr.xvalues, gr.yvalues
+        self.assertTrue(np.allclose(xv, np.arange(130, 140, 2)))
+        self.assertTrue(np.allclose(yv, np.arange(-39, -25, 2)[::-1]))
+
+
     def test_clone(self):
         gr = Grid(**self.config)
         data_ini = np.random.uniform(0, 1, (gr.nrows, gr.ncols))
