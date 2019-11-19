@@ -55,6 +55,11 @@ class GridTestCase(unittest.TestCase):
         self.assertTrue(gr.name == self.config['name'])
 
 
+    def test_shape(self):
+        gr = Grid(**self.config)
+        self.assertEqual(gr.shape, (7, 5))
+
+
     def test_dtype(self):
         gr = Grid(**self.config)
         gr.data = np.random.uniform(0, 1, (gr.nrows, gr.ncols))

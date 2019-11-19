@@ -241,6 +241,12 @@ class Grid(object):
 
 
     @property
+    def shape(self):
+        ''' Return data grid shape '''
+        return self._data.shape
+
+
+    @property
     def xvalues(self):
         ''' Return coordinates along grid columns (x) '''
         cells = np.arange(self.ncols)
