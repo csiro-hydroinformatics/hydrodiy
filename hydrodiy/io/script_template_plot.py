@@ -69,6 +69,12 @@ putils.set_mpl()
 #    x2, y2 = np.array(coords).T
 #    return x2, y2
 
+#def lonlat2map(x, y, map):
+#    ''' Convert long/lat to basemap.map coordinates '''
+#    coords = [map(xx, yy) for xx, yy in zip(x, y)]
+#    x2, y2 = np.array(coords).T
+#    return x2, y2
+
 #----------------------------------------------------------------------
 # Folders
 #----------------------------------------------------------------------
