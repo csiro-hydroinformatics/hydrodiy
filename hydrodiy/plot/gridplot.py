@@ -8,17 +8,25 @@ import warnings
 import numpy as np
 from scipy.ndimage import gaussian_filter, maximum_filter
 
-from mpl_toolkits.basemap import cm as cm
-
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from hydrodiy.data import hywap
+HAS_BASEMAP = False
+try:
+    from mpl_toolkits import basemap
+    HAS_BASEMAP = True
+except (ImportError, FileNotFoundError) as err:
+    pass
+
+from hydrodiy.data.hywap import VARIABLES
 from  hydrodiy.plot import putils
 
+class HYPlotGridplotError(Exception):
+    pass
 
-VARNAMES =  list(hywap.VARIABLES.keys()) + ['effective-rainfall', \
+
+VARNAMES =  list(VARIABLES.keys()) + ['effective-rainfall', \
     'decile-rainfall', 'decile-temperature', 'evapotranspiration', \
     'decile-effective-rainfall', 'soil-moisture', 'relative-metric',\
     'bias']
@@ -338,8 +346,22 @@ def gsmooth(grid, mask=None, coastwin=50, sigma=5., \
 
 
 
-def gplot(grid, basemap_object, config):
-    ''' Plot gridded data on a basemap object '''
+def gplot(grid, config, plotting_object):
+    ''' Plot gridded data on a basemap object
+
+    Plot data on Australia map
+
+    Parameters
+    -----------
+    grid : hydrodiy.gis.grid.Grid
+        Grid data to be plotted
+    config : hydrodiy.plot.gridplot.GridplotConfig
+        Plotting configuration.
+    plotting_obect : mpl_toolkits.basemap.map  or
+                        matplotlib.axes.Axes
+        Plotting object to be used. If an axes is used, data
+        is plotted without projection.
+    '''
 
     # Get cell coordinates
     ncells = grid.nrows*grid.ncols
@@ -347,11 +369,19 @@ def gplot(grid, basemap_object, config):
     llongs = xycoords[:, 0]
     llats = xycoords[:, 1]
 
-    # Project to basemap
-    bmap = basemap_object
-    xcoord, ycoord = bmap(llongs, llats)
-    zval = grid.data.copy()
+    # Setup plotting objects
+    if not isinstance(plotting_object, mpl.axes.Axes):
+        plotobj = plotting_object.map
+        ax = plotobj.ax
+        # Project to basemap
+        xcoord, ycoord = plotobj(llongs, llats)
+    else:
+        # If not basemap object provided, then use raw coordinates
+        plotobj = plotting_object
+        ax = plotobj
+        xcoord, ycoord = llongs, llats
 
+    zval = grid.data.copy()
     xcoord = xcoord.reshape(zval.shape)
     ycoord = ycoord.reshape(zval.shape)
 
@@ -359,14 +389,14 @@ def gplot(grid, basemap_object, config):
     zval = np.clip(zval, config.clevs[0], config.clevs[-1])
 
     # draw contour plot
-    contour_grid = bmap.contourf(xcoord, ycoord, zval, config.clevs, \
+    contour_grid = plotobj.contourf(xcoord, ycoord, zval, config.clevs, \
                 cmap=config.cmap, \
                 norm=config.norm)
 
     # draw contour lines
     contour_lines = None
     if config.contour_linewidth > 0.:
-        contour_lines = bmap.contour(xcoord, ycoord, zval, \
+        contour_lines = plotobj.contour(xcoord, ycoord, zval, \
                 config.clevs_contour, \
                 contour_linewidths=config.contour_linewidth, \
                 colors=config.contour_linecolor)
@@ -378,7 +408,7 @@ def gplot(grid, basemap_object, config):
         # Show levels
         if config.contour_text_format is not None:
             try:
-                contour_labs = bmap.ax.clabel(contour_lines, \
+                contour_labs = ax.clabel(contour_lines, \
                         config.clevs_contour, \
                         fmt=config.contour_text_format, \
                         colors=config.contour_text_color, \

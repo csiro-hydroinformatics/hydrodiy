@@ -12,15 +12,9 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
 # Skip if package cannot be imported (circleci build)
-import_error = True
-try:
-    from hydrodiy.gis.oz import Oz
-    from hydrodiy.plot.gridplot import GridplotConfig, gplot, gsmooth
-    from hydrodiy.plot.gridplot import VARNAMES, gbar
-
-    import_error = False
-except ImportError:
-    pass
+from hydrodiy.gis.oz import Oz, HAS_BASEMAP
+from hydrodiy.plot.gridplot import GridplotConfig, gplot, gsmooth
+from hydrodiy.plot.gridplot import VARNAMES, gbar
 
 from hydrodiy.data.hywap import get_data
 from hydrodiy.plot import putils
@@ -31,8 +25,6 @@ class GridplotTestCase(unittest.TestCase):
 
     def setUp(self):
         print('\t=> GridplotTestCase (hyplot)')
-        if import_error:
-            self.skipTest('Import error')
 
         source_file = os.path.abspath(__file__)
         self.ftest = os.path.dirname(source_file)
@@ -122,7 +114,10 @@ class GridplotTestCase(unittest.TestCase):
                 width_ratios=[3, 1])
 
             ax = plt.subplot(gs[:,0])
-            om = Oz(ax=ax)
+            if HAS_BASEMAP:
+                omap = Oz(ax=ax).map
+            else:
+                omap = ax
 
             # Get config
             cfg = GridplotConfig(varname)
@@ -136,7 +131,7 @@ class GridplotTestCase(unittest.TestCase):
             grd.data = y0 + (y1-y0)*grd.data
 
             # Plot
-            cont_gr, cont_lines = gplot(grd, om.map, cfg)
+            cont_gr, cont_lines = gplot(grd, cfg, omap)
             cbar_ax = plt.subplot(gs[0, 1])
             gbar(cbar_ax, cfg, cont_gr)
 
@@ -155,7 +150,10 @@ class GridplotTestCase(unittest.TestCase):
             width_ratios=[3, 1])
 
         ax = plt.subplot(gs[:,0])
-        om = Oz(ax=ax)
+        if HAS_BASEMAP:
+            omap = Oz(ax=ax).map
+        else:
+            omap = ax
 
         # Get config
         cfg = GridplotConfig('rainfall')
@@ -170,7 +168,7 @@ class GridplotTestCase(unittest.TestCase):
         grd.data = y0 + (y1-y0)*grd.data
 
         # Plot
-        cont_gr, cont_lines = gplot(grd, om.map, cfg)
+        cont_gr, cont_lines = gplot(grd, cfg, omap)
         cbar_ax = plt.subplot(gs[0, 1])
         gbar(cbar_ax, cfg, cont_gr)
 
@@ -178,8 +176,6 @@ class GridplotTestCase(unittest.TestCase):
         fig.tight_layout()
         fp = os.path.join(self.fimg, 'gridplot_tweak_config.png')
         fig.savefig(fp)
-
-
 
 
     def test_gbar_options(self):
@@ -198,9 +194,12 @@ class GridplotTestCase(unittest.TestCase):
         # Aspect
         for iopt in range(3):
             ax = plt.subplot(gs[2*iopt:2*iopt+2, 0])
-            om = Oz(ax=ax)
-            bm = om.map
-            cont_gr, cont_lines = gplot(grd, om.map, cfg)
+            if HAS_BASEMAP:
+                omap = Oz(ax=ax).map
+            else:
+                omap = ax
+
+            cont_gr, cont_lines = gplot(grd, cfg, omap)
 
             cbar_ax = plt.subplot(gs[2*iopt, 1])
             if iopt == 0:
@@ -218,6 +217,4 @@ class GridplotTestCase(unittest.TestCase):
 
 
 if __name__ == "__main__":
-
-    if not import_error:
-        unittest.main()
+    unittest.main()
