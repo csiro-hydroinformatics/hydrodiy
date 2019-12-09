@@ -2,7 +2,6 @@ import numpy as np
 import math
 import matplotlib.image as mpimg
 
-import requests
 import time
 
 from hydrodiy.stat import sutils
