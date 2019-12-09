@@ -508,7 +508,6 @@ class MonthlyEnsplot(object):
 
     def overviewplot(self, show_scatter=True, show_pit=True):
         ''' Draw a figure with forecast data for all months '''
-
         # Plot options
         loc_pit = 1 if show_pit else -1
         loc_scatter = 2 if show_scatter else -1
@@ -525,14 +524,16 @@ class MonthlyEnsplot(object):
             else:
                 ax = self.fig.add_subplot(gs[(month-1)%3, (month-1)//3])
 
-            axs[month] = ax
-
             # Draw monthly plot
             perf[month] = self.monthplot(month, ax, \
                             loc_pit = loc_pit, \
                             loc_scatter = loc_scatter)
+            # Save plot
+            axs[month] = ax
 
         self.gridspec = gs
+        perf = pd.DataFrame(perf).T
+        perf.index.name = 'month'
 
         return axs, perf
 

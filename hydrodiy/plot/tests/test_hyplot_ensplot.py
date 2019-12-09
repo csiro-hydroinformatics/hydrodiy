@@ -166,9 +166,8 @@ class EnsplotTestCase(unittest.TestCase):
         fig = plt.figure()
 
         mep = MonthlyEnsplot(self.obs, self.fcst, self.fcdates, fig)
-        perf = mep.overviewplot()
+        axs, perf = mep.overviewplot()
 
-        perf = pd.DataFrame(perf).T
         self.assertEqual(perf.shape, (13, 4))
         self.assertCountEqual(list(perf.columns), \
                     ['alpha', 'bias', 'crps_ss', 'R2'])
