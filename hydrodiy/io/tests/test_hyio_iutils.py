@@ -262,7 +262,7 @@ class UtilsTestCase(unittest.TestCase):
         ''' Test reading log data '''
         flog = os.path.join(self.ftest, 'logfile.log')
         logs = iutils.read_logfile(flog)
-        self.assertEqual(list(logs.columns), \
+        self.assertCountEqual(list(logs.columns), \
                 ['asctime', 'levelname', 'message', 'name', 'context'])
 
         self.assertEqual(logs.shape, (70, 5))

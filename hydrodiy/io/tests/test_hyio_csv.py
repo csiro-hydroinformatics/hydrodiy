@@ -66,7 +66,11 @@ class CsvTestCase(unittest.TestCase):
         self.assertTrue(comment['written_on'] == '2014-08-12 12:41')
 
         d = data.index[0]
-        self.assertTrue(isinstance(d, pd.tslib.Timestamp))
+        try:
+            self.assertTrue(isinstance(d, pd.tslib.Timestamp))
+        except AttributeError:
+            # To handle new versions of pandas
+            self.assertTrue(isinstance(d, pd.Timestamp))
 
 
     def test_read_csv5(self):
@@ -115,7 +119,11 @@ class CsvTestCase(unittest.TestCase):
         self.assertTrue(int(comment['ncol']) == nc)
 
         d = df1exp.index[0]
-        self.assertTrue(isinstance(d, pd.tslib.Timestamp))
+        try:
+            self.assertTrue(isinstance(d, pd.tslib.Timestamp))
+        except AttributeError:
+            # To handle new versions of Pandas
+            self.assertTrue(isinstance(d, pd.Timestamp))
 
         self.assertTrue(np.allclose(np.round(df1.values, 5), df1exp))
         self.assertTrue(np.allclose(df1, df2exp))
