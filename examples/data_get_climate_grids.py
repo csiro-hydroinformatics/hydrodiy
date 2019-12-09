@@ -14,6 +14,9 @@ import pandas as pd
 from datetime import datetime
 from dateutil.relativedelta import relativedelta as delta
 
+import matplotlib as mpl
+mpl.use('Agg')
+
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
@@ -22,14 +25,11 @@ from hydrodiy.io import iutils
 
 from hydrodiy.gis.grid import get_mask
 
-try:
-    from hydrodiy.gis.oz import Oz
-except ImportError:
-    print('Cannot import oz. Skip this example')
-    sys.exit()
+from hydrodiy.gis.oz import Oz, HAS_BASEMAP
 
 from hydrodiy.plot.gridplot import gplot, gsmooth, GridplotConfig
 from hydrodiy.plot.gridplot import gbar
+
 
 #----------------------------------------------------------------------
 # Config
@@ -66,6 +66,10 @@ os.makedirs(fimg, exist_ok=True)
 basename = re.sub('\\.py.*', '', os.path.basename(source_file))
 LOGGER = iutils.get_logger(basename)
 
+
+if not HAS_BASEMAP:
+    LOGGER.error('No basemap package, skip example')
+    sys.exit()
 
 #----------------------------------------------------------------------
 # Process
