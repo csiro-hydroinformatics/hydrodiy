@@ -9,7 +9,15 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 from matplotlib.collections import PatchCollection
 
-from mpl_toolkits import basemap
+class HYGisOzError(Exception):
+    pass
+
+HAS_BASEMAP = False
+try:
+    from mpl_toolkits import basemap
+    HAS_BASEMAP = True
+except (ImportError, FileNotFoundError) as err:
+    pass
 
 # Decompress australia shoreline shapefile
 FDATA = pkg_resources.resource_filename(__name__, 'data')
@@ -68,6 +76,8 @@ class Oz:
         >>> om.plot(x, y, 'o')
 
         '''
+        if not HAS_BASEMAP:
+            raise HYGisOzError('Basemap package could not be imported')
 
         self.ulat = ulat
         self.llat = llat
