@@ -14,6 +14,10 @@ import numpy as np
 import pandas as pd
 
 import matplotlib as mpl
+
+# Select backend
+mpl.use('Agg')
+
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 #from matplotlib.backends.backend_pdf import PdfPages
