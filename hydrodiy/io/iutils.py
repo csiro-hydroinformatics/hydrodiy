@@ -22,7 +22,7 @@ import requests
 import numpy as np
 import pandas as pd
 
-def find_files(folder, pattern, recursive=True):
+def find_files(folder, pattern, recursive=True, flags=0):
     ''' Find files recursively based on regexp pattern search
 
     Parameters
@@ -33,6 +33,8 @@ def find_files(folder, pattern, recursive=True):
         Regexp pattern to be used. See re.search function
     recursive : bool
         Search folder recursively or not
+    flags : int
+        Flags used in re.search (e.g. re.IGNORECASE)
 
     Returns
     -----------
@@ -54,13 +56,13 @@ def find_files(folder, pattern, recursive=True):
         for root, dirs, files in os.walk(folder):
             for filename in files:
                 fn = os.path.join(root, filename)
-                if not re.search(pattern, fn) is None:
+                if not re.search(pattern, fn, flags) is None:
                     found.append(fn)
     else:
         files = next(os.walk(folder))[2]
         for filename in files:
             fn = os.path.join(folder, filename)
-            if not re.search(pattern, fn) is None:
+            if not re.search(pattern, fn, flags) is None:
                 found.append(fn)
 
     return found
