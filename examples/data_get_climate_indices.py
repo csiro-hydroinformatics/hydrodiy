@@ -78,11 +78,12 @@ for indn in indices:
     data.append(series)
 
     # --- Plot the data --
-    plt.close('all')
-    fig, ax = plt.subplots()
-    series.plot(ax=ax)
-    ax.set_title(indn.upper())
-    fig.savefig(os.path.join(fimg, '{0}.png'.format(indn)))
+    if len(series) > 0:
+        plt.close('all')
+        fig, ax = plt.subplots()
+        series.plot(ax=ax)
+        ax.set_title(indn.upper())
+        fig.savefig(os.path.join(fimg, '{0}.png'.format(indn)))
 
 # Save all indices to disk
 data = pd.concat(data, axis=1)
