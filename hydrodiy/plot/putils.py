@@ -887,12 +887,13 @@ def bivarnplot(ax, xy, add_semicorr=True, namex='var 1', \
     xy = xy[idx]
 
     # Compute normal standard variables and semi correlations
-    _, unorm0 = sutils.standard_normal(xy[:, 0])
-    _, unorm1 = sutils.standard_normal(xy[:, 1])
-    rho, eta, rho_p, rho_m = sutils.semicorr(xy)
+    unorm = np.zeros_like(xy)
+    _, unorm[:, 0] = sutils.standard_normal(xy[:, 0])
+    _, unorm[:, 1] = sutils.standard_normal(xy[:, 1])
+    rho, eta, rho_p, rho_m = sutils.semicorr(unorm)
 
     # Plot
-    ax.plot(unorm0, unorm1, marker, *args, **kwargs)
+    ax.plot(unorm[:, 0], unorm[:, 1], marker, *args, **kwargs)
 
     line(ax, 1, 0, 0, 0, 'k--', lw=0.6)
     line(ax, 0, 1, 0, 0, 'k--', lw=0.6)
