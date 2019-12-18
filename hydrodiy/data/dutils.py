@@ -565,3 +565,37 @@ def var2h(se, maxgapsec=5*86400, display=False):
     return hvalues
 
 
+def oz_timezone(lon, lat):
+    ''' Returns the time zone in Australia for a particular location.
+    Does not take into account the Eastern border NSW/QLD along
+    Border Rivers.
+
+    Parameters
+    -----------
+    lon : float
+        Longitude
+    lat : float
+        Latitude
+
+    Returns
+    -----------
+    tz : string
+        Time zone compatible with pytz package naming convention.
+    '''
+    if lon < 129.:
+        return 'Australia/Perth'
+    elif lon < 141.:
+        if lat < -26.:
+            return 'Australia/Adelaide'
+        else:
+            if lon > 138.:
+                return 'Australia/Brisbane'
+            else:
+                return 'Australia/Darwin'
+    else:
+        if lat < -29:
+            return 'Australia/Sydney'
+        else:
+            return 'Australia/Brisbane'
+
+

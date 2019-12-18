@@ -538,5 +538,38 @@ class UtilsTestCase(unittest.TestCase):
         self.assertTrue(np.allclose(af[isok], expected[isok]))
 
 
+    def test_oz_timezone(self):
+        ''' Test time zones in Australia '''
+        tz = dutils.oz_timezone(147.83, -30.54)
+        self.assertEqual(tz, 'Australia/Sydney')
+
+        tz = dutils.oz_timezone(147.17, -41.42)
+        self.assertEqual(tz, 'Australia/Sydney')
+
+        tz = dutils.oz_timezone(142.11, -37.459)
+        self.assertEqual(tz, 'Australia/Sydney')
+
+        tz = dutils.oz_timezone(141.5, -28.557)
+        self.assertEqual(tz, 'Australia/Brisbane')
+
+        tz = dutils.oz_timezone(138.25, -25.425)
+        self.assertEqual(tz, 'Australia/Brisbane')
+
+        tz = dutils.oz_timezone(137.59, -16.869)
+        self.assertEqual(tz, 'Australia/Darwin')
+
+        tz = dutils.oz_timezone(140.09, -26.767)
+        self.assertEqual(tz, 'Australia/Adelaide')
+
+        tz = dutils.oz_timezone(129.374, -29.823)
+        self.assertEqual(tz, 'Australia/Adelaide')
+
+        tz = dutils.oz_timezone(128.451, -18.627)
+        self.assertEqual(tz, 'Australia/Perth')
+
+        tz = dutils.oz_timezone(117.245, -34.181)
+        self.assertEqual(tz, 'Australia/Perth')
+
+
 if __name__ == "__main__":
     unittest.main()
