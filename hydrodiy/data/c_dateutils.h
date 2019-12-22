@@ -1,6 +1,5 @@
-
-#ifndef __DATEUTILS__
-#define __DATEUTILS__
+#ifndef __HY_DATA_DATEUTILS__
+#define __HY_DATA_DATEUTILS__
 
 #include <math.h>
 #include <stdlib.h>

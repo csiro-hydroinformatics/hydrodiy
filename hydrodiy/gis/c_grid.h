@@ -1,3 +1,6 @@
+#ifndef __HY_GIS_GRID__
+#define __HY_GIS_GRID__
+
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -77,3 +80,4 @@ long long c_slope(long long nrows,
     double * altitude,
     double * slopeval);
 
+#endif

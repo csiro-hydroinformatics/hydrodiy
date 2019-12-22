@@ -1,3 +1,7 @@
+#ifndef __HY_STAT_OLSLEVERAGE__
+#define __HY_STAT_OLSLEVERAGE__
+
+
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -20,3 +24,4 @@
 int c_olsleverage(int nval, int npreds, double * predictors,
         double * tXXinv, double* leverage);
 
+#endif

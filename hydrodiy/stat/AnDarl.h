@@ -1,3 +1,6 @@
+#ifndef __HY_STAT_AD2__
+#define __HY_STAT_AD2__
+
 #include <stdio.h>
 #include <math.h>
 #include <errno.h>
@@ -14,3 +17,4 @@ double AD(int n,double z);
 
 int ADtest(int n, double *x, double *outputs);
 
+#endif

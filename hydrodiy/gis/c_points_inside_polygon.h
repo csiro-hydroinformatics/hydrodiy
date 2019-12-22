@@ -1,3 +1,6 @@
+#ifndef __HY_GIS_PTSINSIDEPOLY__
+#define __HY_GIS_PTSINSIDEPOLY__
+
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -11,3 +14,4 @@ int c_inside(int nprint, int npoints, double * points,
     double * polygon_xlim, double * polygon_ylim,
     int * inside);
 
+#endif

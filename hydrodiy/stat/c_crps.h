@@ -1,3 +1,6 @@
+#ifndef __HY_STAT_CRPS__
+#define __HY_STAT_CRPS__
+
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -12,3 +15,4 @@ int c_crps(int nval,int ncol,
     double* reliability_table,
     double* crps_decompos);
 
+#endif

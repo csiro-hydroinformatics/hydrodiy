@@ -1,3 +1,6 @@
+#ifndef __HY_STAT_DSCORE__
+#define __HY_STAT_DSCORE__
+
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -9,3 +12,4 @@
 int c_ensrank(double eps, int nval, int ncol, double* sim,
         double * fmat, double * ranks);
 
+#endif

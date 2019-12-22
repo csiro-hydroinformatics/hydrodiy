@@ -1,3 +1,6 @@
+#ifndef __HY_GIS_CATCHMENT__
+#define __HY_GIS_CATCHMENT__
+
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -46,3 +49,4 @@ long long c_delineate_flowpathlengths_in_catchment(long long nrows,
     long long idxcell_outlet,
     double * flowpathlengths);
 
+#endif
