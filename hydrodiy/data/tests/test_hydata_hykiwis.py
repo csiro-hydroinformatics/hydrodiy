@@ -119,7 +119,13 @@ class HyKiwisTestCase(unittest.TestCase):
                                 'request returns no data')
 
         attrs = attrs[0]
-        ts_data1, url = hykiwis.get_data(attrs)
+        try:
+            ts_data1, url = hykiwis.get_data(attrs)
+        except ValueError as err:
+            if str(err).startswith('Request returns error'):
+                self.skipTest('Could not get data, '+\
+                                'request returns error')
+
         self.assertTrue(isinstance(ts_data1, pd.core.series.Series))
         self.assertEqual(ts_data1.index[0].year, hykiwis.START_YEAR)
 
@@ -155,7 +161,14 @@ class HyKiwisTestCase(unittest.TestCase):
                                     'request returns no data')
 
             attrs = attrs[0]
-            ts_data, url = hykiwis.get_data(attrs, '2010-01-01', '2010-12-31')
+            try:
+                ts_data, url = hykiwis.get_data(attrs, \
+                                    '2010-01-01', '2010-12-31')
+            except ValueError as err:
+                if str(err).startswith('Request returns error'):
+                    self.skipTest('Could not get data, '+\
+                                    'request returns error')
+
             print(len(ts_data))
 
             self.assertTrue(isinstance(ts_data, pd.core.series.Series))
@@ -214,23 +227,30 @@ class HyKiwisTestCase(unittest.TestCase):
         for kiwisid, row in storages.iterrows():
             attrs = None
             try:
-                attrs, url = hykiwis.get_tsattrs(kiwisid, 'daily_12pm')
-
-                if attrs is None:
-                    raise ValueError()
+                attrs, url = hykiwis.get_tsattrs(kiwisid, 'as_stored')
 
             except ValueError as err:
                 if str(err).startswith('Request returns no data'):
-                    self.skipTest('Could not get ts attributes, '+\
-                                    'request returns no data')
+                    print('Error in getting attribue for site {}'.format(\
+                                        kiwisid))
 
             if attrs is None:
-                self.skipTest('Could not get ts attributes, '+\
-                                    'request returns no data')
+                print('Attribue for site {} is None'.format(kiwisid))
+                continue
 
-            attrs = attrs[0]
-            ts_data1, url = hykiwis.get_data(attrs)
+
+            try:
+                ts_data1, url = hykiwis.get_data(attrs[0], \
+                                            start='2018-01-01', \
+                                            end='2018-03-01')
+            except ValueError as err:
+                if str(err).startswith('Request returns no data'):
+                    print('.. no data in request for storage {}'.format(\
+                                            kiwisid))
+                    continue
+
             self.assertTrue(isinstance(ts_data1, pd.core.series.Series))
+            print('.. downloaded storage data for {}'.format(kiwisid))
 
 
 if __name__ == "__main__":

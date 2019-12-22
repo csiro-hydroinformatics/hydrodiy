@@ -222,7 +222,8 @@ def get_tsattrs(siteid, ts_name, external=True):
             raise ValueError(mess)
 
     if re.search('No matches', ''.join(js_data[0])):
-        mess = 'Request returns no data, no matches in Kiwis server. URL={}'.format(req.url)
+        mess = 'Request returns no data, no matches in'+\
+                    ' Kiwis server. URL={}'.format(req.url)
         raise ValueError(mess)
 
     # Format attributes
