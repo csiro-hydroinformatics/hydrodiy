@@ -134,7 +134,11 @@ class GridplotTestCase(unittest.TestCase):
             # Plot
             cont_gr, cont_lines = gplot(grd, cfg, omap)
             cbar_ax = plt.subplot(gs[0, 1])
-            gbar(cbar_ax, cfg, cont_gr)
+            dticks = True
+            if re.search('decile|relative', varname):
+                dticks = False
+
+            gbar(cbar_ax, cfg, cont_gr, draw_ticks=dticks)
 
             fig.set_size_inches((7, 6))
             fig.tight_layout()

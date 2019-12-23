@@ -55,7 +55,6 @@ class GridplotConfig(object):
         self.show_ticks = True
         self.legend_title = ''
         self.legend_fontsize = 8
-        self.legend_tick_centered = False
 
         # Refine default values based on variable name
         self._default_values(varname)
@@ -193,7 +192,6 @@ class GridplotConfig(object):
             self.cmap = putils.colors2cmap(cols)
             self.legend_title = 'Rainfall\ndeciles'
             self.show_ticks = False
-            self.legend_tick_centered = True
 
         if varname == 'decile-temperature':
             self._default_values('decile-rainfall')
@@ -203,7 +201,6 @@ class GridplotConfig(object):
                     0.:'#%02x%02x%02x' % (0, 153, 204)}
             self.cmap = putils.colors2cmap(cols)
             self.legend_title = 'Temperature deciles'
-            self.legend_tick_centered = True
 
         if varname == 'decile-effective-rainfall':
             self._default_values('decile-rainfall')
@@ -213,7 +210,6 @@ class GridplotConfig(object):
                     0.:'#%02x%02x%02x' % (254, 118, 37)}
             self.cmap = putils.colors2cmap(cols)
             self.legend_title = 'Effective rainfall\ndeciles'
-            self.legend_tick_centered = True
 
         elif varname == 'evapotranspiration':
             clevs = [0, 10, 50, 80, 100, 120, 160, 200, 250, 300, 350]
@@ -237,7 +233,7 @@ class GridplotConfig(object):
             self.contour_linewidth = 0.
             self.norm = mpl.colors.Normalize(vmin=self.clevs[0], \
                                 vmax=self.clevs[-1])
-            self.legend_title = 'Soil Moisture [%]'
+            self.legend_title = 'Soil Moisture\n[%]'
 
         elif varname == 'effective-rainfall':
             clevs = [-200, -100, -75, -50, -25, -10, -5, 0, \
@@ -309,7 +305,6 @@ class GridplotConfig(object):
             self.cmap = 'PiYG'
             self.legend_title = 'Relative\nmetric [-]'
             self.show_ticks = False
-            self.legend_tick_centered = True
 
         elif varname == 'relative-bias':
             self._default_values('relative-metric')
@@ -323,7 +318,6 @@ class GridplotConfig(object):
                 'Insignificant\nbias\n(-10%, +10%)', \
                 'Over-prediction\n(+10%, +50%)', \
                 'Large\nOver-prediction\n(+50%, +100%)']
-            self.legend_tick_centered = True
 
 
 def gsmooth(grid, mask=None, coastwin=50, sigma=5., \
@@ -451,34 +445,41 @@ def gplot(grid, config, plotting_object):
 
 
 def gbar(cbar_ax, config, contour_grid, rect=[0, 0, 0.6, 0.95], \
-                delta=0.01):
+                delta=0.01, draw_ticks=True):
     ''' Draw a color bar associated with a gridplot
 
     '''
-    # Plot color bar
-    ticks = config.clevs
+    # Check argument
+    config.is_valid()
 
-    nticks = len(ticks)
+    clevs = config.clevs
+    clevs_ticks = config.clevs_ticks
+
+    # Plotting variables
+    nlevs = len(clevs)
     xx = np.repeat(np.array([rect[0], rect[2]])[None, :], \
-                        nticks, axis=0)
-    y = np.linspace(rect[1], rect[3], nticks)
-    yy = np.column_stack([y, y])
+                        nlevs, axis=0)
+    ylevs = np.linspace(rect[1], rect[3], nlevs)
+    yylevs = np.column_stack([ylevs, ylevs])
 
-    cbar_ax.pcolor(xx, yy, ticks[:, None], cmap=config.cmap, \
+    # Plot color bar
+    cbar_ax.pcolor(xx, yylevs, clevs_ticks[:, None], cmap=config.cmap, \
                         norm=config.norm)
 
     cbar_ax.plot([rect[0], rect[0], rect[2], rect[2], rect[0]], \
                 [rect[1], rect[3], rect[3], rect[1], rect[1]], 'k-', lw=0.5)
 
     # Set labels
+    yticks = np.interp(clevs_ticks, clevs, ylevs)
     dx = (rect[2]-rect[0])/10
-    for lab, pos in zip(config.clevs_tick_labels, y):
+    for lab, pos in zip(config.clevs_tick_labels, yticks):
         # Tick label
         cbar_ax.text(rect[2]+dx, pos, lab, \
                     ha='left', va='center', \
                     fontsize=config.legend_fontsize)
         # Tick mark
-        cbar_ax.plot([rect[2]-dx, rect[2]-dx/5], [pos]*2, 'k-', \
+        if draw_ticks:
+            cbar_ax.plot([rect[2]-dx, rect[2]], [pos]*2, 'k-', \
                             lw=0.5)
 
     # Legend
