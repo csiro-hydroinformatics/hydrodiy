@@ -106,19 +106,26 @@ class GridplotConfig(object):
 
     @clevs_contour.setter
     def clevs_contour(self, value):
-        value = np.sort(np.atleast_1d(value).astype(np.float64))
+        # No clevs
+        self._clevs_contour = None
 
-        # Check range
-        if value[0] < self.clevs[0]:
-            raise ValueError('Expected min(clevs_contour) '+\
-                '>= {}, got {}'.format(self.clevs[0], value[0]))
+        # Check object has len
+        try:
+            if len(value) > 0:
+                value = np.sort(np.atleast_1d(value).astype(np.float64))
 
-        if value[-1] > self.clevs[-1]:
-            raise ValueError('Expected max(clevs_contour) '+\
-                '<= {}, got {}'.format(self.clevs[-1], value[-1]))
+                # Check range
+                if value[0] < self.clevs[0]:
+                    raise ValueError('Expected min(clevs_contour) '+\
+                        '>= {}, got {}'.format(self.clevs[0], value[0]))
 
-        self._clevs_contour = value
+                if value[-1] > self.clevs[-1]:
+                    raise ValueError('Expected max(clevs_contour) '+\
+                        '<= {}, got {}'.format(self.clevs[-1], value[-1]))
 
+                self._clevs_contour = value
+        except TypeError:
+            pass
 
     @property
     def clevs_ticks(self):
@@ -316,19 +323,15 @@ class GridplotConfig(object):
 def gsmooth(grid, mask=None, coastwin=50, sigma=5., \
                                     minval=-np.inf, eps=1e-6):
     ''' Smooth gridded value to improve look of map '''
+    # Check coastwin param
+    if coastwin < 10*sigma:
+        warnings.warn('Expected coastwin > 10 x sigma, got '+
+                'coastwin={:0.1f} sigma={:0.1f}'.format(coastwin, \
+                    sigma))
 
+    # Set up smooth grid
     smooth = grid.clone(dtype=np.float64)
-    z0 = smooth.data
-
-    # Gapfill with nearest neighbour
-    ixm, iym = np.where(np.isnan(z0) | (z0<minval-eps))
-    ixnm, iynm = np.where(~np.isnan(z0) & (z0>=minval-eps))
-    z0[ixm, iym] = -np.inf
-    z1 = maximum_filter(z0, size=coastwin, mode='nearest')
-    z1[ixnm, iynm] = z0[ixnm, iynm]
-
-    # Smooth
-    z2 = gaussian_filter(z1, sigma=sigma, mode='nearest')
+    z0 = grid.data.copy()
 
     # Cut mask
     if not mask is None:
@@ -337,9 +340,29 @@ def gsmooth(grid, mask=None, coastwin=50, sigma=5., \
             raise ValueError('Mask does not have the same '+
                 'geometry than input grid')
 
-        ixm, iym = np.where(mask.data == 0)
-        z2[ixm, iym] = np.nan
+        # Check mask as integer dtype
+        if not issubclass(mask.data.dtype.type, np.integer):
+            raise ValueError('Expected integer dtype for mask, '+\
+                        'got {}'.format(mask.dtype))
 
+        # Set mask
+        z0[mask.data == 0] = np.nan
+
+    # Gapfill with nearest neighbour
+    idx = np.isnan(z0) | (z0<minval-eps)
+    z0[idx] = -np.inf
+
+    z1 = maximum_filter(z0, size=coastwin, mode='nearest')
+    z1[~idx] = z0[~idx]
+
+    # Smooth
+    z2 = gaussian_filter(z1, sigma=sigma, mode='nearest')
+
+    # Final mask cut
+    if not mask is None:
+        z2[mask.data == 0] = np.nan
+
+    # Store
     smooth.data = z2
 
     return smooth
@@ -406,7 +429,8 @@ def gplot(grid, config, plotting_object):
             line.set_linestyle('-')
 
         # Show levels
-        if config.contour_text_format is not None:
+        if (config.contour_text_format is not None) and \
+                    (config.clevs_contour is not None):
             try:
                 contour_labs = ax.clabel(contour_lines, \
                         config.clevs_contour, \

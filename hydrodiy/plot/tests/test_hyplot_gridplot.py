@@ -66,6 +66,7 @@ class GridplotTestCase(unittest.TestCase):
         fig, axs = plt.subplots(ncols=3, nrows=2)
 
         grd = self.grd.clone()
+        grd.data[np.isnan(grd.data)] = -1
         grd.data += np.random.uniform(-0.8, 0.8, size=grd.data.shape)
 
         ax = axs[0, 0]
@@ -85,7 +86,7 @@ class GridplotTestCase(unittest.TestCase):
         ax = axs[1, 1]
         sm = gsmooth(grd, self.mask)
         sm.plot(ax, cmap='Blues')
-        ax.set_title('Mask applied with default smoothing')
+        ax.set_title('No mask applied with default smoothing')
 
         ax = axs[0, 2]
         sm = gsmooth(grd, sigma=10.)
@@ -93,7 +94,7 @@ class GridplotTestCase(unittest.TestCase):
         ax.set_title('No mask applied with large smoothing')
 
         ax = axs[1, 2]
-        sm = gsmooth(grd, self.mask, sigma=10.)
+        sm = gsmooth(grd, self.mask, coastwin=100, sigma=10.)
         sm.plot(ax, cmap='Blues')
         ax.set_title('Mask applied with large smoothing')
 
@@ -115,7 +116,7 @@ class GridplotTestCase(unittest.TestCase):
 
             ax = plt.subplot(gs[:,0])
             if HAS_BASEMAP:
-                omap = Oz(ax=ax).map
+                omap = Oz(ax=ax)
             else:
                 omap = ax
 
@@ -151,7 +152,7 @@ class GridplotTestCase(unittest.TestCase):
 
         ax = plt.subplot(gs[:,0])
         if HAS_BASEMAP:
-            omap = Oz(ax=ax).map
+            omap = Oz(ax=ax)
         else:
             omap = ax
 
@@ -195,7 +196,7 @@ class GridplotTestCase(unittest.TestCase):
         for iopt in range(3):
             ax = plt.subplot(gs[2*iopt:2*iopt+2, 0])
             if HAS_BASEMAP:
-                omap = Oz(ax=ax).map
+                omap = Oz(ax=ax)
             else:
                 omap = ax
 
