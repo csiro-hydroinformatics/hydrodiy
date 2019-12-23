@@ -29,7 +29,7 @@ class HYPlotGridplotError(Exception):
 VARNAMES =  list(VARIABLES.keys()) + ['effective-rainfall', \
     'decile-rainfall', 'decile-temperature', 'evapotranspiration', \
     'decile-effective-rainfall', 'soil-moisture', 'relative-metric',\
-    'bias']
+    'relative-bias']
 
 def vect2txt(x):
     text = ', '.join(['{:0.2f}'.format(v) for v in x])
@@ -55,6 +55,7 @@ class GridplotConfig(object):
         self.show_ticks = True
         self.legend_title = ''
         self.legend_fontsize = 8
+        self.legend_tick_centered = False
 
         # Refine default values based on variable name
         self._default_values(varname)
@@ -192,6 +193,7 @@ class GridplotConfig(object):
             self.cmap = putils.colors2cmap(cols)
             self.legend_title = 'Rainfall\ndeciles'
             self.show_ticks = False
+            self.legend_tick_centered = True
 
         if varname == 'decile-temperature':
             self._default_values('decile-rainfall')
@@ -201,6 +203,7 @@ class GridplotConfig(object):
                     0.:'#%02x%02x%02x' % (0, 153, 204)}
             self.cmap = putils.colors2cmap(cols)
             self.legend_title = 'Temperature deciles'
+            self.legend_tick_centered = True
 
         if varname == 'decile-effective-rainfall':
             self._default_values('decile-rainfall')
@@ -209,7 +212,8 @@ class GridplotConfig(object):
                     0.5:'#%02x%02x%02x' % (254, 254, 228),
                     0.:'#%02x%02x%02x' % (254, 118, 37)}
             self.cmap = putils.colors2cmap(cols)
-            self.legend_title = 'Temperature\ndeciles'
+            self.legend_title = 'Effective rainfall\ndeciles'
+            self.legend_tick_centered = True
 
         elif varname == 'evapotranspiration':
             clevs = [0, 10, 50, 80, 100, 120, 160, 200, 250, 300, 350]
@@ -305,10 +309,11 @@ class GridplotConfig(object):
             self.cmap = 'PiYG'
             self.legend_title = 'Relative\nmetric [-]'
             self.show_ticks = False
+            self.legend_tick_centered = True
 
-        elif varname == 'bias':
+        elif varname == 'relative-bias':
             self._default_values('relative-metric')
-            self.legend_title = 'Bias [%]'
+            self.legend_title = 'Relative\nBias [%]'
             self.clevs = [-1, -0.5, -0.1, 0.1, 0.5, 1.]
             self.clevs_contour = [-0.5, 0, 0.5]
             self.clevs_ticks = [-0.75, -0.3, 0, 0.3, 0.75]
@@ -318,6 +323,7 @@ class GridplotConfig(object):
                 'Insignificant\nbias\n(-10%, +10%)', \
                 'Over-prediction\n(+10%, +50%)', \
                 'Large\nOver-prediction\n(+50%, +100%)']
+            self.legend_tick_centered = True
 
 
 def gsmooth(grid, mask=None, coastwin=50, sigma=5., \
@@ -444,40 +450,47 @@ def gplot(grid, config, plotting_object):
     return contour_grid, contour_lines
 
 
-def gbar(cbar_ax, config, contour_grid, **kwargs):
+def gbar(cbar_ax, config, contour_grid, rect=[0, 0, 0.6, 0.95], \
+                delta=0.01):
     ''' Draw a color bar associated with a gridplot
 
-        kwargs are passed to matplotlib.colorbar.make_axes
-        default values used are:
-            fraction = 1.
-            pad = 0.1
-            aspect = 10
     '''
-    # Default kwargs args
-    kw = {'fraction': 1., 'pad': 0.1, 'aspect': 10}
-    for key, value in kwargs.items():
-        kw[key] = kwargs[key]
+    # Plot color bar
+    ticks = config.clevs
 
-    # Create colorbar axes within the prescribed axes
-    # to allow the use of kwargs
-    cbar_ax_inside, kw = mpl.colorbar.make_axes(cbar_ax, **kw)
-    colorb = plt.colorbar(contour_grid, cax=cbar_ax_inside)
+    nticks = len(ticks)
+    xx = np.repeat(np.array([rect[0], rect[2]])[None, :], \
+                        nticks, axis=0)
+    y = np.linspace(rect[1], rect[3], nticks)
+    yy = np.column_stack([y, y])
+
+    cbar_ax.pcolor(xx, yy, ticks[:, None], cmap=config.cmap, \
+                        norm=config.norm)
+
+    cbar_ax.plot([rect[0], rect[0], rect[2], rect[2], rect[0]], \
+                [rect[1], rect[3], rect[3], rect[1], rect[1]], 'k-', lw=0.5)
+
+    # Set labels
+    dx = (rect[2]-rect[0])/10
+    for lab, pos in zip(config.clevs_tick_labels, y):
+        # Tick label
+        cbar_ax.text(rect[2]+dx, pos, lab, \
+                    ha='left', va='center', \
+                    fontsize=config.legend_fontsize)
+        # Tick mark
+        cbar_ax.plot([rect[2]-dx, rect[2]-dx/5], [pos]*2, 'k-', \
+                            lw=0.5)
+
+    # Legend
+    title = cbar_ax.text(rect[0]+delta, \
+                rect[3]+delta, \
+                config.legend_title, \
+                va='bottom', ha='left', \
+                fontsize=config.legend_fontsize)
+
+    # Final
+    cbar_ax.set_yticks([])
+    cbar_ax.set_xticks([])
+    cbar_ax.set_xlim([-delta/2, 1+delta/2])
+    cbar_ax.set_ylim([-delta/2, 1+delta/2])
     cbar_ax.axis('off')
-
-    # Ticks and tick labels
-    colorb.set_ticks(config.clevs_ticks)
-    colorb.ax.set_yticklabels(config.clevs_tick_labels, \
-        fontsize=config.legend_fontsize, \
-        va='center')
-
-    # Remove tick marks if needed
-    if not config.show_ticks:
-        colorb.ax.tick_params(axis='y', which='both', length=0)
-
-    # Legend text
-    colorb.ax.text(0.0, 1.07, config.legend_title,
-                size=12, fontsize=config.legend_fontsize+1)
-
-    return colorb
-
-

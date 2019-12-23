@@ -112,7 +112,7 @@ class GridplotTestCase(unittest.TestCase):
             fig = plt.figure()
             gs = GridSpec(nrows=2, ncols=2, \
                 height_ratios=[2, 1], \
-                width_ratios=[3, 1])
+                width_ratios=[7, 1])
 
             ax = plt.subplot(gs[:,0])
             if HAS_BASEMAP:
@@ -179,22 +179,23 @@ class GridplotTestCase(unittest.TestCase):
         fig.savefig(fp)
 
 
-    def test_gbar_options(self):
+    def test_gbar_rect(self):
         ''' Test gplot generation with customised options '''
 
+        cfg = GridplotConfig('rainfall')
         grd = self.grd
-        cfg = GridplotConfig('soil-moisture')
+        y0, y1 = cfg.clevs[0], cfg.clevs[-1]
+        grd.data = y0 + (y1-y0)*grd.data
 
         plt.close('all')
 
         fig = plt.figure()
-        gs = GridSpec(nrows=6, ncols=2, \
-            height_ratios=[2, 1, 2, 1, 2, 1], \
-            width_ratios=[5, 1])
+        gs = GridSpec(nrows=2, ncols=6, \
+            height_ratios=[2, 1], \
+            width_ratios=[8, 1, 8, 1, 8, 1])
 
-        # Aspect
-        for iopt in range(3):
-            ax = plt.subplot(gs[2*iopt:2*iopt+2, 0])
+        for iplot in range(3):
+            ax = plt.subplot(gs[:, 2*iplot])
             if HAS_BASEMAP:
                 omap = Oz(ax=ax)
             else:
@@ -202,18 +203,17 @@ class GridplotTestCase(unittest.TestCase):
 
             cont_gr, cont_lines = gplot(grd, cfg, omap)
 
-            cbar_ax = plt.subplot(gs[2*iopt, 1])
-            if iopt == 0:
-                gbar(cbar_ax, cfg, cont_gr, aspect=20)
-            elif iopt == 1:
-                gbar(cbar_ax, cfg, cont_gr, aspect=0.5)
-            elif iopt == 2:
-                gbar(cbar_ax, cfg, cont_gr, fraction=1.5, \
-                                    location='right', pad=0.5)
+            cbar_ax = plt.subplot(gs[0, 2*iplot+1])
+            if iplot == 0:
+                gbar(cbar_ax, cfg, cont_gr, rect=[0.2, 0.1, 1, 1])
+            elif iplot == 1:
+                gbar(cbar_ax, cfg, cont_gr, rect=[0., 0., 0.6, 0.5])
+            elif iplot == 2:
+                gbar(cbar_ax, cfg, cont_gr, rect=[0.2, 0.1, 0.6, 0.5])
 
-        fig.set_size_inches((8, 18))
+        fig.set_size_inches((20, 8))
         fig.tight_layout()
-        fp = os.path.join(self.fimg, 'gbar_options.png')
+        fp = os.path.join(self.fimg, 'gbar_rect.png')
         fig.savefig(fp)
 
 
