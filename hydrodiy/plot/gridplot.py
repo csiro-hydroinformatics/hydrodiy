@@ -292,18 +292,22 @@ class GridplotConfig(object):
             self.legend_title = 'Solar\nRadiation'
 
         elif varname == 'relative-metric':
-            self.clevs = [-1, -0.5, -0.05, 0.05, 0.5, 1.]
-            self.clevs_contour = [-0.5, 0, 0.5]
-            self.clevs_ticks = [-0.75, -0.255, 0, 0.255, 0.75]
-            self.clevs_tick_labels = ['Much lower\n'+\
-                            'than benchmark\n(-1, -0.5)', \
-                'Lower than\nbenchmark\n(-0.5, -0.05)', \
+            self.clevs = [-1, -0.5, -0.2, -0.05, 0.05, 0.2, 0.5, 1.]
+            self.clevs_contour = [-0.2, 0, 0.2]
+            self.clevs_ticks = [-0.75, -0.35, -0.125, 0, 0.125, 0.35, 0.75]
+            self.clevs_tick_labels = [\
+                'Very much lower\n than benchmark\n(-1, -0.5)', \
+                'Much lower\n than benchmark\n(-0.5, -0.2)', \
+                'Lower than\nbenchmark\n(-0.2, -0.05)', \
                 'Same than\nbenchmark\n(-0.05, +0.05)', \
-                'Higher than\nbenchmark\n(+0.05, +0.5)', \
-                'Much higher than\nbenchmark\n(+0.5, +1)']
+                'Higher than\nbenchmark\n(+0.05, +0.2)', \
+                'Much higher than\nbenchmark\n(+0.2, +0.5)',\
+                'Very much higher than\nbenchmark\n(+0.5, +1)']
 
             self.cmap = 'PiYG'
             self.legend_title = 'Relative\nmetric [-]'
+            self.norm = mpl.colors.SymLogNorm(linthresh=0.1, \
+                                vmin=self.clevs[0], vmax=self.clevs[-1])
             self.show_ticks = False
 
         elif varname == 'relative-bias':
@@ -463,7 +467,7 @@ def gbar(cbar_ax, config, contour_grid, rect=[0, 0, 0.6, 0.95], \
     yylevs = np.column_stack([ylevs, ylevs])
 
     # Plot color bar
-    cbar_ax.pcolor(xx, yylevs, clevs_ticks[:, None], cmap=config.cmap, \
+    cbar_ax.pcolor(xx, yylevs, clevs[:, None], cmap=config.cmap, \
                         norm=config.norm)
 
     cbar_ax.plot([rect[0], rect[0], rect[2], rect[2], rect[0]], \
