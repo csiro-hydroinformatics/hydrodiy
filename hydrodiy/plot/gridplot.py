@@ -236,7 +236,7 @@ class GridplotConfig(object):
             self.legend_title = 'Soil Moisture\n[%]'
 
         elif varname == 'effective-rainfall':
-            clevs = [-200, -100, -75, -50, -25, -10, -5, 0, \
+            clevs = [-200, -100, -75, -50, -25, -10, -5, \
                 5, 10, 25, 50, 75, 100, 200]
             self.clevs = clevs
             self.clevs_contour = [-100, -10, 10, 100]
@@ -465,9 +465,10 @@ def gbar(cbar_ax, config, contour_grid, rect=[0, 0, 0.6, 0.95], \
                         nlevs, axis=0)
     ylevs = np.linspace(rect[1], rect[3], nlevs)
     yylevs = np.column_stack([ylevs, ylevs])
+    zzlevs = (clevs[1:]+clevs[:-1])/2
 
     # Plot color bar
-    cbar_ax.pcolor(xx, yylevs, clevs[:, None], cmap=config.cmap, \
+    cbar_ax.pcolor(xx, yylevs, zzlevs[:, None], cmap=config.cmap, \
                         norm=config.norm)
 
     cbar_ax.plot([rect[0], rect[0], rect[2], rect[2], rect[0]], \
