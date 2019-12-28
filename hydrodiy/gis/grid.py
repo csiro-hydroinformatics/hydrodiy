@@ -361,9 +361,9 @@ class Grid(object):
         '''
         identical = grd.ncols == self.ncols
         identical = identical & (grd.nrows == self.nrows)
-        identical = identical & np.allclose(grd.xllcorner, self.xllcorner)
-        identical = identical & np.allclose(grd.yllcorner, self.yllcorner)
-        identical = identical & np.allclose(grd.cellsize, self.cellsize)
+        identical = identical & np.isclose(grd.xllcorner, self.xllcorner)
+        identical = identical & np.isclose(grd.yllcorner, self.yllcorner)
+        identical = identical & np.isclose(grd.cellsize, self.cellsize)
 
         return identical
 
