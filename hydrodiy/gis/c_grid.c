@@ -1,14 +1,17 @@
 #include "c_grid.h"
 
-double clipd(double x, double x0, double x1){
+double clipd(double x, double x0, double x1)
+{
     return x<x0 ? x0 : x>x1 ? x1 : x;
 }
 
-long long clipi(long long x,long long x0, long long x1){
+long long clipi(long long x,long long x0, long long x1)
+{
     return x<x0 ? x0 : x>x1 ? x1 : x;
 }
 
-long long getnxy(long long ncols, long long idxcell, long long *nxy){
+long long getnxy(long long ncols, long long idxcell, long long *nxy)
+{
     /* Returns the coordinates of cell idxcell as [icol, irow]
         (cell numbers are increasing horizontally)
     */
@@ -17,6 +20,16 @@ long long getnxy(long long ncols, long long idxcell, long long *nxy){
     return 0;
 }
 
+long long getcoord(long long nrows, long long ncols, double xll, double yll,
+                double csz, long long idxcell, double *coord){
+    /* Returns the coordinates of cell idxcell as [x, y]
+        (cell numbers are increasing horizontally)
+    */
+    long long irow = idxcell%ncols;
+    coord[0] = xll+csz*(double)irow;
+    coord[1] = yll+csz*(double)(nrows-1-(idxcell-irow)/ncols);
+    return 0;
+}
 
 long long c_coord2cell(long long nrows, long long ncols,
     double xll, double yll, double csz,
@@ -39,17 +52,45 @@ long long c_coord2cell(long long nrows, long long ncols,
     return ierr;
 }
 
+long long c_cell2rowcol(long long nrows, long long ncols,
+    long long nval, long long * idxcell, long long * rowcols)
+{
+    long long ierr, i, icell, rowcol[2];
+    ierr = 0;
+
+    for(i=0; i<nval; i++)
+    {
+        icell = idxcell[i];
+
+        if(icell<0 || icell>=nrows*ncols)
+        {
+            rowcols[2*i] = -1;
+            rowcols[2*i+1] = -1;
+        }
+        else
+        {
+            /* Compute coordinates of cell center */
+            getnxy(ncols, icell, rowcol);
+            rowcols[2*i] = rowcol[0];
+            rowcols[2*i+1] = rowcol[1];
+        }
+    }
+
+    return ierr;
+}
+
 long long c_cell2coord(long long nrows, long long ncols,
     double xll, double yll, double csz,
     long long nval, long long * idxcell, double * xycoords)
 {
     long long ierr, i, icell;
-    ierr = 0;
-    double nan;
+    double xy[2], nan;
     static double zero = 0.0;
 
     /* nan value if not defined */
     nan = 1./zero * zero;
+
+    ierr = 0;
 
     for(i=0; i<nval; i++)
     {
@@ -63,8 +104,9 @@ long long c_cell2coord(long long nrows, long long ncols,
         else
         {
             /* Compute coordinates of cell center */
-            xycoords[2*i] = icell%ncols*csz+xll;
-            xycoords[2*i+1] = (nrows-1-(icell-icell%ncols)/ncols)*csz+yll;
+            getcoord(nrows, ncols, xll, yll, csz, icell, xy);
+            xycoords[2*i] = xy[0];
+            xycoords[2*i+1] = xy[1];
         }
     }
 
@@ -130,6 +172,8 @@ long long c_slice(long long nrows, long long ncols,
 
     /* Initialise */
     tol = 1e-10;
+    xy1[0] = 0;
+    xy1[1] = 0;
 
 	/* Linear long longerpolation
 	* Given 3 points (x1,y1,z1) (x2,y2,z2) (x3,y3,z3), The plan (x,y,z)
@@ -150,9 +194,8 @@ long long c_slice(long long nrows, long long ncols,
             continue;
 
         /* Convert to xy of nearest cell */
-        ierr = c_cell2coord(nrows, ncols, xll, yll, csz, 1,
-                                            idxcell1, xy1);
-        if(ierr > 0 || isnan(*xy1))
+        ierr = getcoord(nrows, ncols, xll, yll, csz, *idxcell1, xy1);
+        if(ierr > 0)
             continue;
 
         /* Set default value */
@@ -445,7 +488,7 @@ long long c_voronoi(long long nrows, long long ncols,
     double * weights)
 {
 
-    long long i, j, jmin, ierr, idxcell[1];
+    long long i, j, jmin, ierr, idxcell;
     double xy[2], dx, dy, dist, distmin;
 
     for(j=0; j<npoints; j++)
@@ -454,13 +497,11 @@ long long c_voronoi(long long nrows, long long ncols,
     for(i=0; i<ncells; i++)
     {
         /* Get cell number for coordinates */
-        idxcell[0] = idxcells_area[i];
+        idxcell = idxcells_area[i];
         xy[0] = xypoints[2*i];
         xy[1] = xypoints[2*i+1];
 
-        ierr = c_cell2coord(nrows, ncols, xll, yll, csz, 1,
-                idxcell, xy);
-
+        ierr = getcoord(nrows, ncols, xll, yll, csz, idxcell, xy);
         if(ierr>0)
             return GRID_ERROR + __LINE__;
 

@@ -254,6 +254,10 @@ class GridTestCase(unittest.TestCase):
         ck = np.allclose(xycoords0, xycoords2)
         self.assertTrue(ck)
 
+        rowcol = gr.cell2rowcol(idxcell)
+        cka = np.allclose(rowcol[:, 1], np.repeat(np.arange(7), 5))
+        ckb = np.allclose(rowcol[:, 0], np.concatenate([np.arange(5)]*7))
+        self.assertTrue(cka & ckb)
 
     def test_slice(self):
         if not HAS_C_GIS_MODULE:
@@ -787,7 +791,6 @@ class CatchmentTestCase(unittest.TestCase):
         xy = [[0., 0.], [0., 5.], [5., 0.], [5., 5.]]
 
         we = voronoi(ca, xy)
-
         self.assertTrue(np.allclose(we, [1./11, 6./11, 1./11, 3./11]))
 
 

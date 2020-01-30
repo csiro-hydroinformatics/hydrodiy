@@ -540,22 +540,63 @@ class Grid(object):
             y coords in second column.
 
         '''
+        xll, yll, csz, nrows, ncols = self._getsize()
+
         if not HAS_C_GIS_MODULE:
             raise ValueError('C module c_hydrodiy_gis is not available, '+\
                 'please run python setup.py build')
-
-        xll, yll, csz, nrows, ncols = self._getsize()
 
         idxcells = np.ascontiguousarray(np.atleast_1d(idxcells), \
                                                         dtype=np.int64)
         xycoords = np.zeros((len(idxcells), 2)).astype(np.float64)
 
-        ierr = c_hydrodiy_gis.cell2coord(nrows, ncols, xll, yll,
-                                        csz, idxcells, xycoords)
+        ierr = c_hydrodiy_gis.cell2coord(nrows, ncols, xll, yll, csz,
+                                        idxcells, xycoords)
         if ierr>0:
             raise ValueError('c_hydrodiy_gis.cell2coord returns '+str(ierr))
 
         return xycoords
+
+
+    def cell2rowcol(self, idxcells):
+        ''' Return row and column number from cell number
+            Cells are counted from the top left corner, row by row
+            starting from 0.
+
+        Example for a 4x4 grid with (xll,yll)=(0,0):
+         0  1  2  3        (0, 3)  (1, 3) (2, 3) (3, 3)
+         4  5  6  7   ->   (0, 2)  (1, 2) (2, 2) (3, 2)
+         8  9 10 11        (0, 1)  (1, 1) (2, 1) (3, 1)
+        12 13 14 15        (0, 0)  (1, 0) (2, 0) (3, 0)
+
+        Parameters
+        -----------
+        idxcell : numpy.ndarray
+            1D array containing cell numbers
+
+        Returns
+        -----------
+        rowcols : numpy.ndarray
+            2D array with row first column and
+            column in second column.
+
+        '''
+        xll, yll, csz, nrows, ncols = self._getsize()
+
+        if not HAS_C_GIS_MODULE:
+            raise ValueError('C module c_hydrodiy_gis is not available, '+\
+                'please run python setup.py build')
+
+        idxcells = np.ascontiguousarray(np.atleast_1d(idxcells), \
+                                                        dtype=np.int64)
+        rowcols = np.zeros((len(idxcells), 2)).astype(np.int64)
+
+        ierr = c_hydrodiy_gis.cell2rowcol(nrows, ncols,
+                                        idxcells, rowcols)
+        if ierr>0:
+            raise ValueError('c_hydrodiy_gis.cell2rowcol returns '+str(ierr))
+
+        return rowcols
 
 
     def neighbours(self, idxcell):
@@ -696,6 +737,7 @@ class Grid(object):
         # Set data
         dt = self._data[ny1:ny0+1, nx0:nx1+1]
         grid.data = dt
+        grid.clip_coords = [ny1, ny0, nx0, nx1]
 
         return grid
 

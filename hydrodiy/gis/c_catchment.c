@@ -403,8 +403,7 @@ long long c_delineate_river(long long nrows, long long ncols,
         data[ncolsdata*i+2] = dy;
 
         /* coordinates */
-        ierr = c_cell2coord(nrows, ncols,
-            xll, yll, csz, 1, idxup,xy);
+        ierr = getcoord(nrows, ncols, xll, yll, csz, *idxup, xy);
         if(ierr>0)
             return CATCHMENT_ERROR + __LINE__;
 

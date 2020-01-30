@@ -16,10 +16,16 @@ long long clipi(long long x, long long x0, long long x1);
 
 long long getnxy(long long ncols, long long idxcell, long long *nxy);
 
+long long getcoord(long long nrows, long long ncols, double xll, double yll,
+                double csz, long long idxcell, double *coord);
 
 long long c_coord2cell(long long nrows, long long ncols,
     double xll, double yll, double csz,
     long long nval, double * xycoords, long long * idxcell);
+
+
+long long c_cell2rowcol(long long nrows, long long ncols,
+    long long nval, long long * idxcell, long long * rowcols);
 
 
 long long c_cell2coord(long long nrows, long long ncols,
