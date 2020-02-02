@@ -71,8 +71,8 @@ long long c_cell2rowcol(long long nrows, long long ncols,
         {
             /* Compute coordinates of cell center */
             getnxy(ncols, icell, rowcol);
-            rowcols[2*i] = rowcol[0];
-            rowcols[2*i+1] = rowcol[1];
+            rowcols[2*i+1] = rowcol[0]; // column number
+            rowcols[2*i] = rowcol[1]; // row number
         }
     }
 

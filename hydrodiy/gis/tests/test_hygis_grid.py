@@ -255,8 +255,8 @@ class GridTestCase(unittest.TestCase):
         self.assertTrue(ck)
 
         rowcol = gr.cell2rowcol(idxcell)
-        cka = np.allclose(rowcol[:, 1], np.repeat(np.arange(7), 5))
-        ckb = np.allclose(rowcol[:, 0], np.concatenate([np.arange(5)]*7))
+        cka = np.allclose(rowcol[:, 0], np.repeat(np.arange(7), 5))
+        ckb = np.allclose(rowcol[:, 1], np.concatenate([np.arange(5)]*7))
         self.assertTrue(cka & ckb)
 
     def test_slice(self):

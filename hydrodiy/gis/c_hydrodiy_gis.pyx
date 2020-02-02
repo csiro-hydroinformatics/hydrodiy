@@ -17,7 +17,7 @@ cdef extern from 'c_grid.h':
         long long nval, double * xycoords, long long * idxcell)
 
     long long c_cell2rowcol(long long nrows, long long ncols,
-        long long nval, long long * idxcell, long long * rowcols);
+        long long nval, long long * idxcell, long long * rowcols)
 
     long long c_cell2coord(long long nrows, long long ncols,
         double xll, double yll, double csz,
@@ -126,21 +126,38 @@ def coord2cell(long long nrows, long long ncols, double xll, double yll,
     return ierr
 
 
-def cell2coord(long long nrows, long long ncols, double xll, double yll,
-        double csz,
+def cell2coord(long long nrows, long long ncols,
+        double xll, double yll, double csz,
         np.ndarray[long long, ndim=1, mode='c'] idxcell not None,
-		np.ndarray[double, ndim=2, mode='c'] xycoords not None):
+	np.ndarray[double, ndim=2, mode='c'] coords not None):
 
     cdef long long ierr
 
     # check dimensions
-    assert xycoords.shape[0] == idxcell.shape[0]
-    assert xycoords.shape[1] == 2
+    assert coords.shape[0] == idxcell.shape[0]
+    assert coords.shape[1] == 2
 
     ierr = c_cell2coord(nrows, ncols, xll, yll, csz,
-			xycoords.shape[0],
-            <long long*> np.PyArray_DATA(idxcell),
-            <double*> np.PyArray_DATA(xycoords))
+                    coords.shape[0],
+                    <long long*> np.PyArray_DATA(idxcell),
+                    <double*> np.PyArray_DATA(coords))
+
+    return ierr
+
+def cell2rowcol(long long nrows, long long ncols,
+        np.ndarray[long long, ndim=1, mode='c'] idxcell not None,
+	np.ndarray[long long, ndim=2, mode='c'] rowcols not None):
+
+    cdef long long ierr
+
+    # check dimensions
+    assert rowcols.shape[0] == idxcell.shape[0]
+    assert rowcols.shape[1] == 2
+
+    ierr = c_cell2rowcol(nrows, ncols,
+                    rowcols.shape[0],
+                    <long long*> np.PyArray_DATA(idxcell),
+                    <long long*> np.PyArray_DATA(rowcols))
 
     return ierr
 
