@@ -42,7 +42,7 @@ else:
                 'hydrodiy/stat/c_crps.c',
                 'hydrodiy/stat/c_dscore.c',
                 'hydrodiy/stat/c_olsleverage.c',
-                'hydrodiy/stat/c_ar1.c',
+                'hydrodiy/stat/c_armodel.c',
                 'hydrodiy/stat/ADinf.c',
                 'hydrodiy/stat/AnDarl.c',
                 'hydrodiy/stat/c_andersondarling.c'

@@ -3,13 +3,15 @@ cimport numpy as np
 
 np.import_array()
 
-cdef extern from 'c_ar1.h':
-    int c_ar1innov(int nval, int ncol, double yini, double * alpha,
-            double * innov, double* outputs)
+cdef extern from 'c_armodel.h':
+    int c_armodel_sim(int nval, int ncol, int nparams,
+            double simini, double * params,
+            double * innov, double* outputs);
 
-cdef extern from 'c_ar1.h':
-    int c_ar1inverse(int nval, int ncol, double yini, double * alpha,
-            double * inputs, double* innov)
+    int c_armodel_residual(int nval, int ncol, int nparams,
+            double stateini, double * params,
+            double * inputs, double* residuals);
+
 
 cdef extern from 'c_crps.h':
     int c_crps(int nval,int ncol,
@@ -57,42 +59,42 @@ def olsleverage(np.ndarray[double, ndim=2, mode='c'] predictors not None,
     return ierr
 
 
-def ar1innov(double  yini,
-        np.ndarray[double, ndim=1, mode='c'] alpha not None,
+def armodel_sim(double  simini,
+        np.ndarray[double, ndim=1, mode='c'] params not None,
         np.ndarray[double, ndim=2, mode='c'] inputs not None,
         np.ndarray[double, ndim=2, mode='c'] outputs not None):
 
     cdef int ierr
 
     # check dimensions
-    assert alpha.shape[0] == outputs.shape[0]
     assert inputs.shape[0] == outputs.shape[0]
     assert inputs.shape[1] == outputs.shape[1]
 
-    ierr = c_ar1innov(inputs.shape[0], inputs.shape[1], yini,
-            <double*> np.PyArray_DATA(alpha),
+    ierr = c_armodel_sim(inputs.shape[0], inputs.shape[1],
+            params.shape[0], simini,
+            <double*> np.PyArray_DATA(params),
             <double*> np.PyArray_DATA(inputs),
             <double*> np.PyArray_DATA(outputs))
 
     return ierr
 
 
-def ar1inverse(double yini,
-        np.ndarray[double, ndim=1, mode='c'] alpha not None,
+def armodel_residual(double stateini,
+        np.ndarray[double, ndim=1, mode='c'] params not None,
         np.ndarray[double, ndim=2, mode='c'] inputs not None,
-        np.ndarray[double, ndim=2, mode='c'] innov not None):
+        np.ndarray[double, ndim=2, mode='c'] residuals not None):
 
     cdef int ierr
 
     # check dimensions
-    assert alpha.shape[0] == innov.shape[0]
-    assert inputs.shape[0] == innov.shape[0]
-    assert inputs.shape[1] == innov.shape[1]
+    assert inputs.shape[0] == residuals.shape[0]
+    assert inputs.shape[1] == residuals.shape[1]
 
-    ierr = c_ar1inverse(inputs.shape[0], inputs.shape[1], yini,
-            <double*> np.PyArray_DATA(alpha),
+    ierr = c_armodel_residual(inputs.shape[0], inputs.shape[1],
+            params.shape[0], stateini,
+            <double*> np.PyArray_DATA(params),
             <double*> np.PyArray_DATA(inputs),
-            <double*> np.PyArray_DATA(innov))
+            <double*> np.PyArray_DATA(residuals))
 
     return ierr
 

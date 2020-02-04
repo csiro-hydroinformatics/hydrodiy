@@ -109,35 +109,36 @@ def acf(data, maxlag=1, idx=None):
     return acf_values, cov[0]
 
 
-def ar1innov(alpha, innov, yini=0.):
-    ''' Compute AR1 time series from innovation
+def armodel_sim(params, innov, simini=0.):
+    ''' Simulate outputs from an AR model.
+
     If there are nan in innov, the function produces nan, but
-    the internal states a kept in memory.
+    the internal states are kept in memory.
 
     Parameters
     -----------
-    alpha : float or np.ndarray
-        AR1 coefficient. If a float is given, the
+    params : float or np.ndarray
+        AR coefficients. If a float is given, the
         value is repeated n times across the time series
     innov : numpy.ndarray
         Innovation time series. [n, p] array:
         - n is the number of time steps
         - p is the number of time series to process
-    yini : float
+    simini : float
         Initial condition
 
     Returns
     -----------
     outputs : numpy.ndarray
-        Time series of AR1 simulations. [n, p] or [n] array
-        if p=1
+        Time series of AR simulations. [n, p] or [n] array
+        if p=1.
 
     Example
     -----------
     >>> nval = 100
     >>> innov1 = np.random.normal(size=nval)
-    >>> data = sutils.ar1innov(0.95, innov1)
-    >>> innov2 = sutils.ar1inverse(0.95, data)
+    >>> data = sutils.armodel_sim(0.95, innov1)
+    >>> innov2 = sutils.armodel_residual(0.95, data)
     >>> np.allclose(innov1, innov2)
     True
 
@@ -146,67 +147,63 @@ def ar1innov(alpha, innov, yini=0.):
         raise ValueError('C module c_hydrodiy_stat is not available, '+\
                 'please run python setup.py build')
 
-    shape = innov.shape
-    innov = np.atleast_2d(innov).astype(np.float64)
+    simini = np.float64(simini)
 
-    yini = np.float64(yini)
+    shape_innov = innov.shape
+    innov = np.atleast_2d(innov).astype(np.float64)
 
     # Transpose 1d array
     if innov.shape[0] == 1:
         innov = innov.T
 
+    shape = innov.shape
+
     # set the array contiguous to work with C
     if not innov.flags['C_CONTIGUOUS']:
         innov = np.ascontiguousarray(innov)
 
-    # Set alpha
-    alpha = np.atleast_1d(alpha).astype(np.float64)
-    if np.prod(alpha.shape) == 1:
-        alpha = np.ones(innov.shape[0]) * alpha[0]
-
-    if alpha.shape[0] != innov.shape[0]:
-        raise ValueError('Expected alpha of length {0}, got {1}'.format(\
-            innov.shape[0], alpha.shape[0]))
+    # Set params
+    params = np.atleast_1d(params).astype(np.float64)
 
     # initialise outputs
-    outputs = np.zeros(innov.shape, np.float64)
+    outputs = np.zeros(shape, np.float64)
 
     # Run model
-    ierr = c_hydrodiy_stat.ar1innov(yini, alpha, innov, outputs)
+    ierr = c_hydrodiy_stat.armodel_sim(simini, params, innov, outputs)
     if ierr!=0:
-        raise ValueError('ar1innov returns %d'%ierr)
+        raise ValueError('c_hydrodiy_stat.armodel_sim returns %d'%ierr)
 
-    return np.reshape(outputs, shape)
+    return np.reshape(outputs, shape_innov)
 
 
-def ar1inverse(alpha, inputs, yini=0):
-    ''' Compute innovations from an AR1 time series
+def armodel_residual(params, inputs, stateini=0):
+    ''' Compute residuals of an AR model.
     If there are nan in inputs, the function produces nan, but
-    the internal states a kept in memory.
+    the internal states are kept in memory.
 
     Parameters
     -----------
-    alpha : float or np.ndarray
-        AR1 coefficient. If a float is given, the
+    params : float or np.ndarray
+        AR coefficient. If a float is given, the
         value is repeated n times across the time series
     inputs : numpy.ndarray
         AR1 time series. [n, p] array
         - n is the number of time steps
         - p is the number of time series to process
-    yini : float
+    stateini : float
         Initial condition
 
     Returns
     -----------
-    innov : numpy.ndarray
-        Time series of innovations. [n, p] array
+    residuals : numpy.ndarray
+        Time series of residuals. [n, p] array
 
     Example
     -----------
     >>> nval = 100
     >>> innov1 = np.random.normal(size=nval)
-    >>> data = sutils.ar1innov(0.95, innov1)
-    >>> innov2 = sutils.ar1inverse(0.95, data)
+    >>> data = sutils.armodel_sim(0.95, innov1)
+    >>> innov2 = sutils.armodel_residual(0.95, data)
     >>> np.allclose(innov1, innov2)
     True
 
@@ -215,35 +212,34 @@ def ar1inverse(alpha, inputs, yini=0):
         raise ValueError('C module c_hydrodiy_stat is not available, '+\
                 'please run python setup.py build')
 
-    shape = inputs.shape
+    stateini = np.float64(stateini)
+
+    shape_inputs = inputs.shape
     inputs = np.atleast_2d(inputs).astype(np.float64)
 
     # Transpose 1d array
     if inputs.shape[0] == 1:
         inputs = inputs.T
 
+    shape = inputs.shape
+
     # set the array contiguous to work with C
     if not inputs.flags['C_CONTIGUOUS']:
         inputs = np.ascontiguousarray(inputs)
 
-    # Set alpha
-    alpha = np.atleast_1d(alpha).astype(np.float64)
-    if np.prod(alpha.shape) == 1:
-        alpha = np.ones(inputs.shape[0]) * alpha[0]
-
-    if alpha.shape[0] != inputs.shape[0]:
-        raise ValueError('Expected alpha of length {0}, got {1}'.format(\
-            inputs.shape[0], alpha.shape[0]))
+    # Set params
+    params = np.atleast_1d(params).astype(np.float64)
 
     # Initialise innov
-    innov = np.zeros(inputs.shape, np.float64)
+    residuals = np.zeros(shape, np.float64)
 
     # Run model
-    ierr = c_hydrodiy_stat.ar1inverse(yini, alpha, inputs, innov)
+    ierr = c_hydrodiy_stat.armodel_residual(stateini,
+                        params, inputs, residuals)
     if ierr!=0:
-        raise ValueError('c_hystat.ar1inverse returns %d'%ierr)
+        raise ValueError('c_hydrodiy_stat.armodel_residual returns %d'%ierr)
 
-    return np.reshape(innov, shape)
+    return np.reshape(residuals, shape_inputs)
 
 
 def lhs(nsamples, pmin, pmax):
