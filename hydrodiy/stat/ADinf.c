@@ -114,7 +114,7 @@ double cPhi(double x)
     double h,a,b,z,t,s,pwr;
     int i,j;
 
-    j=(fabs(x)+1.)/2.;
+    j=(int)((fabs(x)+1.)/2.);
     a=v[j];
     z=2*j;
     h=fabs(x)-z;

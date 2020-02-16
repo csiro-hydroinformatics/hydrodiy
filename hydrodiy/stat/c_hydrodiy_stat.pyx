@@ -3,12 +3,14 @@ cimport numpy as np
 
 np.import_array()
 
-cdef extern from 'c_armodel.h':
-    int c_armodel_sim(int nval, int ncol, int nparams,
+cdef extern from 'c_armodels.h':
+    int c_armodel_sim(int nval, int ncols, int nparams,
+            int fillnan,
             double simini, double * params,
             double * innov, double* outputs);
 
-    int c_armodel_residual(int nval, int ncol, int nparams,
+    int c_armodel_residual(int nval, int ncols, int nparams,
+            int fillnan,
             double stateini, double * params,
             double * inputs, double* residuals);
 
@@ -59,7 +61,7 @@ def olsleverage(np.ndarray[double, ndim=2, mode='c'] predictors not None,
     return ierr
 
 
-def armodel_sim(double  simini,
+def armodel_sim(double  simini, int fillnan,
         np.ndarray[double, ndim=1, mode='c'] params not None,
         np.ndarray[double, ndim=2, mode='c'] inputs not None,
         np.ndarray[double, ndim=2, mode='c'] outputs not None):
@@ -71,7 +73,7 @@ def armodel_sim(double  simini,
     assert inputs.shape[1] == outputs.shape[1]
 
     ierr = c_armodel_sim(inputs.shape[0], inputs.shape[1],
-            params.shape[0], simini,
+            params.shape[0], fillnan, simini,
             <double*> np.PyArray_DATA(params),
             <double*> np.PyArray_DATA(inputs),
             <double*> np.PyArray_DATA(outputs))
@@ -79,7 +81,7 @@ def armodel_sim(double  simini,
     return ierr
 
 
-def armodel_residual(double stateini,
+def armodel_residual(double stateini, int fillnan,
         np.ndarray[double, ndim=1, mode='c'] params not None,
         np.ndarray[double, ndim=2, mode='c'] inputs not None,
         np.ndarray[double, ndim=2, mode='c'] residuals not None):
@@ -91,7 +93,7 @@ def armodel_residual(double stateini,
     assert inputs.shape[1] == residuals.shape[1]
 
     ierr = c_armodel_residual(inputs.shape[0], inputs.shape[1],
-            params.shape[0], stateini,
+            params.shape[0], fillnan, stateini,
             <double*> np.PyArray_DATA(params),
             <double*> np.PyArray_DATA(inputs),
             <double*> np.PyArray_DATA(residuals))
