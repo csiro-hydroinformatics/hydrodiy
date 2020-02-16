@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 
 from hydrodiy.io import csv
 from hydrodiy.stat import sutils
-from hydrodiy.stat.sutils import HAS_C_STAT_MODULE
 
 np.random.seed(0)
 
@@ -105,120 +104,6 @@ class UtilsTestCase(unittest.TestCase):
         acf2, cov = sutils.acf(data, idx=data<=0)
         self.assertTrue(np.allclose([acf1[0], acf2[0]], [rho1, rho2], \
                             atol=1e-2))
-
-
-    def test_armodel_sim(self):
-        ''' Tesdt armodel_sim '''
-        if not HAS_C_STAT_MODULE:
-            self.skipTest('Missing C module c_hydrodiy_stat')
-
-        nval = 10
-        params = 0.9
-        simini = 10
-
-        # Check 1d and 2d config
-        for ncol in [1, 4]:
-            if ncol == 1:
-                innov = np.random.normal(size=nval)
-            else:
-                innov = np.random.normal(size=(nval, ncol))
-
-            outputs = sutils.armodel_sim(params, innov, simini)
-            for j in range(ncol):
-                y0 = simini
-                expected = np.zeros(nval)
-                for i in range(nval):
-                    if ncol == 1:
-                        expected[i] = params*y0 + innov[i]
-                    else:
-                        expected[i] = params*y0 + innov[i, j]
-
-                    y0 = expected[i]
-
-                if ncol == 1:
-                    self.assertTrue(np.allclose(outputs, expected))
-                else:
-                    self.assertTrue(np.allclose(outputs[:, j], expected))
-
-
-    def test_armodel_residual(self):
-        ''' Test armodel_residual '''
-        if not HAS_C_STAT_MODULE:
-            self.skipTest('Missing C module c_hydrodiy_stat')
-
-        nval = 10
-        params = 0.9
-        simini = 10
-
-        # Check 1d and 2d config
-        for ncol in [1, 4]:
-            if ncol == 1:
-                innov = np.random.normal(size=nval)
-            else:
-                innov = np.random.normal(size=(nval, ncol))
-
-            outputs = sutils.armodel_sim(params, innov, simini)
-            innov2 = sutils.armodel_residual(params, outputs, simini)
-
-            for j in range(ncol):
-                prev = simini
-                expected = np.zeros(nval)
-                for i in range(nval):
-                    if ncol == 1:
-                        value = outputs[i]
-                    else:
-                        value = outputs[i, j]
-
-                    expected[i] = value-params*prev
-                    prev = value
-
-                if ncol == 1:
-                    self.assertTrue(np.allclose(innov2, expected))
-                else:
-                    self.assertTrue(np.allclose(innov2[:, j], expected))
-
-
-    def test_armodel_forward_backward(self):
-        if not HAS_C_STAT_MODULE:
-            self.skipTest('Missing C module c_hydrodiy_stat')
-
-        nval = 100
-        params = 0.9
-        yini = 10
-
-        # Check 1d and 2d config
-        for ncol in [10]: #[1, 10]:
-            if ncol == 1:
-                innov0 = np.random.normal(size=nval)
-            else:
-                innov0 = np.random.normal(size=(nval, ncol))
-
-            y = sutils.armodel_sim(params, innov0, yini)
-            self.assertEqual(innov0.shape, y.shape)
-
-            innov = sutils.armodel_residual(params, y, yini)
-            y2 = sutils.armodel_sim(params, innov, yini)
-            self.assertTrue(np.allclose(y, y2))
-
-
-    def test_armodel_nan(self):
-        if not HAS_C_STAT_MODULE:
-            self.skipTest('Missing C module c_hydrodiy_stat')
-
-        nval = 20
-        innov = np.random.normal(size=nval)
-        innov[5:10] = np.nan
-        params = 0.9
-        yini = 10
-
-        # AR1 keeps last value before nans
-        y = sutils.armodel_sim(params, innov, yini)
-        y2 = sutils.armodel_sim(params, innov[10:], y[4]*params**5)
-        self.assertTrue(np.allclose(y[10:], y2))
-
-        innov = sutils.armodel_residual(params, y, yini)
-        innov2 = sutils.armodel_residual(params, y[10:], innov[4]*params**5)
-        self.assertTrue(np.allclose(innov[11:], innov2[1:]))
 
 
     def test_lhs_error(self):
