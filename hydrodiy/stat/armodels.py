@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.linalg import toeplitz
 
 # Try to import C code
 HAS_C_STAT_MODULE = True
@@ -146,3 +147,29 @@ def armodel_residual(params, inputs, sim_mean=None, sim_ini=None):
 
     return np.reshape(residuals, shape_inputs)
 
+
+def yule_walker(acf):
+    ''' Compute AR model parameter using the Yule-Walker rule.
+    See https://en.wikipedia.org/wiki/Autoregressive_model#Yule%E2%80%93Walker_equations
+
+    Code implemented as per
+    http://mpastell.com/pweave/_downloads/AR_yw.html
+
+    acf can be computed using hydrodiy.stat.sutils.acf function.
+
+    Parameters
+    -----------
+    acf : numpy.ndarray
+        Vector of lagged auto-correlations coefficients.
+        The first element of acf should be 1.
+        The size of the vector defines the order minus 1
+        (e.g. len(acf) = 2 leads to an AR1 model).
+
+    Returns
+    -----------
+    params : numpy.ndarray
+        Parameters of the AR model.
+    '''
+    order = len(acf)-1
+    R = toeplitz(acf[:order])
+    return np.dot(np.linalg.inv(R), acf[1:])

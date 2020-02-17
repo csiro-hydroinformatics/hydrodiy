@@ -10,9 +10,10 @@ from scipy.stats import norm, anderson
 import matplotlib.pyplot as plt
 
 from hydrodiy.io import csv
-from hydrodiy.stat import armodels
+from hydrodiy.stat import sutils
 from hydrodiy.stat.armodels import HAS_C_STAT_MODULE, \
-                                armodel_sim, armodel_residual
+                                armodel_sim, armodel_residual, \
+                                yule_walker
 
 np.random.seed(0)
 
@@ -126,6 +127,25 @@ class ARModelsTestCase(unittest.TestCase):
                     prev_centered[k] = value
 
         self.assertTrue(np.allclose(residuals, expected))
+
+
+    def test_yule_walker(self):
+        ''' Test yule-walker '''
+        nval = 100000
+        innov = np.random.normal(size=nval)
+        params = np.array([0.8, -0.1])
+        yini = 10
+        ymean = 20
+        y = armodel_sim(params, innov, ymean, yini)
+
+        acf, _ = sutils.acf(y, maxlag=3)
+        params = yule_walker(acf)
+
+        # Not sure about this test
+        # TODO check it makes sense
+        self.assertTrue(np.allclose(params, \
+                            [0.67, -0.02], \
+                            rtol=0., atol=1e-2))
 
 
 if __name__ == "__main__":
