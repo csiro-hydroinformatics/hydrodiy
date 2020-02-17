@@ -1,8 +1,6 @@
 import os, re, math
 import unittest
 import warnings
-import numpy as np
-import pandas as pd
 from itertools import product as prod
 
 from scipy.stats import norm, lognorm, spearmanr
@@ -12,6 +10,9 @@ import zipfile
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+
+import numpy as np
+import pandas as pd
 
 from hydrodiy.stat import metrics
 from hydrodiy.io import csv
