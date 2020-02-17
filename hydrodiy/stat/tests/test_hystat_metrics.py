@@ -3,14 +3,17 @@ import unittest
 import warnings
 from itertools import product as prod
 
-from scipy.stats import norm, lognorm, spearmanr
 import time
 import zipfile
 
-import matplotlib
-matplotlib.use('Agg')
+import mpl
+if os.environ.get('DISPLAY','') == '':
+    print('no display found. Using non-interactive Agg backend')
+    mpl.use('Agg')
+
 import matplotlib.pyplot as plt
 
+from scipy.stats import norm, lognorm, spearmanr
 import numpy as np
 import pandas as pd
 
