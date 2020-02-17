@@ -10,16 +10,14 @@
 
 #define ARMODEL_NPARAMSMAX 10
 
-double get_nan(void);
-
-int c_armodel_sim(int nval, int ncols, int nparams,
-        int fillnan,
-        double simini, double * params,
+int c_armodel_sim(int nval, int nparams,
+        double sim_mean,
+        double sim_ini, double * params,
         double * innov, double* outputs);
 
-int c_armodel_residual(int nval, int ncols, int nparams,
-        int fillnan,
-        double stateini, double * params,
+int c_armodel_residual(int nval, int nparams,
+        double sim_mean,
+        double sim_ini, double * params,
         double * inputs, double* residuals);
 
 #endif

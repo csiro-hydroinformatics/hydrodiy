@@ -10,7 +10,7 @@ from scipy.stats import norm, anderson
 import matplotlib.pyplot as plt
 
 from hydrodiy.io import csv
-from hydrodiy.stat import sutils
+from hydrodiy.stat import sutils, armodels
 
 np.random.seed(0)
 
@@ -35,6 +35,7 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_acf_error(self):
+        ''' Test acf error '''
         data = np.random.uniform(size=20)
         try:
             acf, cov = sutils.acf(data, idx=(data>0.5)[2:])
@@ -45,14 +46,13 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_acf_all(self):
-        if not HAS_C_STAT_MODULE:
-            self.skipTest('Missing C module c_hydrodiy_stat')
+        ''' Test acf '''
 
         nval = 100000
         rho = 0.8
         sig = 2
         innov = np.random.normal(size=nval, scale=sig*math.sqrt(1-rho**2))
-        x = sutils.armodel_sim(rho, innov)
+        x = armodels.armodel_sim(rho, innov)
 
         maxlag = 10
         acf, cov = sutils.acf(x, maxlag)
@@ -63,12 +63,15 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_acf_r(self):
+        ''' Compare acf with R '''
         for i in range(1, 5):
-            fd = os.path.join(self.ftest, 'data', 'acf{0}_data.csv'.format(i))
+            fd = os.path.join(self.ftest, 'data', \
+                                'acf{0}_data.csv'.format(i))
             data, _ = csv.read_csv(fd)
             data = np.squeeze(data.values)
 
-            fr = os.path.join(self.ftest, 'data', 'acf{0}_result.csv'.format(i))
+            fr = os.path.join(self.ftest, 'data', \
+                                'acf{0}_result.csv'.format(i))
             expected, _ = csv.read_csv(fr)
             expected = expected['acf'].values[1:]
 
@@ -85,18 +88,16 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_acf_idx(self):
-        if not HAS_C_STAT_MODULE:
-            self.skipTest('Missing C module c_hydrodiy_stat')
-
+        ''' Test acf with index selection '''
         nval = 5000
         sig = 2
         rho1 = 0.7
         innov = np.random.normal(size=nval//2, scale=sig*math.sqrt(1-rho1**2))
-        x1 = 10*sig + sutils.armodel_sim(rho1, innov)
+        x1 = 10*sig + armodels.armodel_sim(rho1, innov)
 
         rho2 = 0.1
         innov = np.random.normal(size=nval//2, scale=sig*math.sqrt(1-rho2**2))
-        x2 = -10*sig + sutils.armodel_sim(rho2, innov)
+        x2 = -10*sig + armodels.armodel_sim(rho2, innov)
 
         data = np.concatenate([x1, x2])
 
@@ -192,7 +193,7 @@ class UtilsTestCase(unittest.TestCase):
 
         self.assertTrue(np.isclose(eta, 0.311, atol=1e-2))
         self.assertTrue(np.isclose(rho_p, 0.311, atol=1e-2))
-        self.assertTrue(np.isclose(rho_m, 0.311, atol=1e-2))
+        self.assertTrue(np.isclose(rho_m, 0.311, atol=5e-2))
 
 
 if __name__ == "__main__":

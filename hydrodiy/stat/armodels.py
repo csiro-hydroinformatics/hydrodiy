@@ -1,9 +1,4 @@
-import re
-import math
 import numpy as np
-import pandas as pd
-
-from scipy.stats import norm
 
 # Try to import C code
 HAS_C_STAT_MODULE = True
@@ -13,7 +8,7 @@ except ImportError:
     HAS_C_STAT_MODULE = False
 
 
-def armodel_sim(params, innov, simini=0., fillnan=False):
+def armodel_sim(params, innov, sim_mean=0., sim_ini=None):
     ''' Simulate outputs from an AR model.
 
     If there are nan in innov, the function produces nan, but
@@ -28,10 +23,10 @@ def armodel_sim(params, innov, simini=0., fillnan=False):
         Innovation time series. [n, p] array:
         - n is the number of time steps
         - p is the number of time series to process
-    simini : float
-        Initial condition
-    fillnan : bool
-        Infill nan values with simini or not.
+    sim_mean : float
+        Average of output.
+    sim_ini : float
+        Initial condition. If None, set to sim_mean.
 
     Returns
     -----------
@@ -53,17 +48,14 @@ def armodel_sim(params, innov, simini=0., fillnan=False):
         raise ValueError('C module c_hydrodiy_stat is not available, '+\
                 'please run python setup.py build')
 
-    simini = np.float64(simini)
+    sim_mean = np.float64(sim_mean)
+    if sim_ini is None:
+        sim_ini = sim_mean
+    else:
+        sim_ini = np.float64(sim_ini)
 
     shape_innov = innov.shape
-    innov = np.atleast_2d(innov).astype(np.float64)
-    fillnan = np.int32(fillnan)
-
-    # Transpose 1d array
-    if innov.shape[0] == 1:
-        innov = innov.T
-
-    shape = innov.shape
+    innov = np.atleast_1d(innov).astype(np.float64)
 
     # set the array contiguous to work with C
     if not innov.flags['C_CONTIGUOUS']:
@@ -73,20 +65,22 @@ def armodel_sim(params, innov, simini=0., fillnan=False):
     params = np.atleast_1d(params).astype(np.float64)
 
     # initialise outputs
-    outputs = np.zeros(shape, np.float64)
+    outputs = np.zeros_like(innov)
 
     # Run model
-    ierr = c_hydrodiy_stat.armodel_sim(simini, fillnan, params, innov, outputs)
+    ierr = c_hydrodiy_stat.armodel_sim(sim_mean, sim_ini, params, \
+                                            innov, outputs)
     if ierr!=0:
         raise ValueError('c_hydrodiy_stat.armodel_sim returns %d'%ierr)
 
     return np.reshape(outputs, shape_innov)
 
 
-def armodel_residual(params, inputs, stateini=0, fillnan=False):
+def armodel_residual(params, inputs, sim_mean=None, sim_ini=None):
     ''' Compute residuals of an AR model.
-    If there are nan in inputs, the function produces nan, but
-    the internal states are kept in memory.
+    If there are nan in inputs, the function will estimate the previous
+    values by applying the same AR model with a converging value
+    towards sim_ini.
 
     Parameters
     -----------
@@ -97,10 +91,10 @@ def armodel_residual(params, inputs, stateini=0, fillnan=False):
         AR1 time series. [n, p] array
         - n is the number of time steps
         - p is the number of time series to process
-    stateini : float
-        Initial condition
-    fillnan : bool
-        Infill nan values with stateini or not.
+    sim_mean : float
+        Average of output. If None set to mean(inputs)
+    sim_ini : float
+        Initial condition. If None, set to sim_mean.
 
     Returns
     -----------
@@ -121,17 +115,18 @@ def armodel_residual(params, inputs, stateini=0, fillnan=False):
         raise ValueError('C module c_hydrodiy_stat is not available, '+\
                 'please run python setup.py build')
 
-    stateini = np.float64(stateini)
+    if sim_mean is None:
+        sim_mean = np.nanmean(inputs).astype(np.float64)
+    else:
+        sim_mean = np.float64(sim_mean)
+
+    if sim_ini is None:
+        sim_ini = sim_mean
+    else:
+        sim_ini = np.float64(sim_ini)
 
     shape_inputs = inputs.shape
-    inputs = np.atleast_2d(inputs).astype(np.float64)
-    fillnan = np.int32(fillnan)
-
-    # Transpose 1d array
-    if inputs.shape[0] == 1:
-        inputs = inputs.T
-
-    shape = inputs.shape
+    inputs = np.atleast_1d(inputs).astype(np.float64)
 
     # set the array contiguous to work with C
     if not inputs.flags['C_CONTIGUOUS']:
@@ -141,10 +136,10 @@ def armodel_residual(params, inputs, stateini=0, fillnan=False):
     params = np.atleast_1d(params).astype(np.float64)
 
     # Initialise innov
-    residuals = np.zeros(shape, np.float64)
+    residuals = np.zeros_like(inputs)
 
     # Run model
-    ierr = c_hydrodiy_stat.armodel_residual(stateini, fillnan, \
+    ierr = c_hydrodiy_stat.armodel_residual(sim_mean, sim_ini, \
                         params, inputs, residuals)
     if ierr!=0:
         raise ValueError('c_hydrodiy_stat.armodel_residual returns %d'%ierr)
