@@ -23,8 +23,10 @@ BOM_FTP = 'ftp.bom.gov.au'
 BOM_SOI_DIR = 'anon/home/ncc/www/sco/soi'
 BOM_SOI_FILE = 'soiplaintext.html'
 
+BOM_IOD_URL = 'http://www.bom.gov.au/climate/enso/iod_1.txt'
+
 INDEX_NAMES = ['nao', 'pdo', 'soi', 'pna', \
-                'nino12', 'nino34', 'nino4', 'ao']
+                'nino12', 'nino34', 'nino4', 'ao', 'iod']
 
 def get_data(index, timeout=300):
     ''' Download climate indices time series from NOAA and BoM
@@ -62,6 +64,9 @@ def get_data(index, timeout=300):
     elif re.search('nino', index):
         url = re.sub('long', 'long.anom', url)
 
+    elif index == 'iod':
+        url = BOM_IOD_URL
+
     elif not index in INDEX_NAMES:
         raise ValueError('Index index({0}) is not in {1}'.format(index, \
                 ','.join(INDEX_NAMES)))
@@ -85,6 +90,15 @@ def get_data(index, timeout=300):
         data = json.loads(txt)
         series = pd.Series({pd.to_datetime(k, format='%Y%m'):
                     data['data'][k] for k in data['data']})
+
+    elif index == 'iod':
+        stream = StringIO(txt)
+        data = pd.read_csv(stream, index_col=None, header=None, \
+                                sep=',', engine='python')
+        data.columns = ['start', 'end', 'value']
+        data.loc[:, 'start'] = pd.to_datetime(data.start, format='%Y%m%d')
+        series = pd.Series(data.value.values, index=data.start, \
+                        name='{}[{}]'.format(index, url))
 
     else:
         # Convert to dataframe (tried read_csv but failed)
