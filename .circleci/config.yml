@@ -63,9 +63,6 @@ jobs:
           command: |
             . venv/bin/activate
 
-            # Fix matplotlib display issue
-            export DISPLAY=0.0
-
             # Install package and build binaries
             python setup.py build_ext --inplace --force
             

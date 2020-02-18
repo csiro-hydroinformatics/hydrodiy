@@ -8,6 +8,7 @@ import zipfile
 
 import matplotlib as mpl
 mpl.use('Agg')
+print('Using {} backend'.format(mpl.get_backend()))
 
 import matplotlib.pyplot as plt
 
