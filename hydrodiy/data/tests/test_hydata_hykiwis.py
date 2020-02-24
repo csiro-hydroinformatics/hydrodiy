@@ -253,5 +253,33 @@ class HyKiwisTestCase(unittest.TestCase):
             print('.. downloaded storage data for {}'.format(kiwisid))
 
 
+    def test_getdata_timezone(self):
+        ''' Test download timeseries data '''
+        ts_name = 'hourly'
+        try:
+            attrs, url = hykiwis.get_tsattrs('410001', ts_name)
+
+            if attrs is None:
+                raise ValueError()
+
+        except ValueError as err:
+            pass
+
+        if attrs is None:
+            self.skipTest('Could not get ts attributes, '+\
+                                'request returns no data')
+
+        attrs = attrs[0]
+        try:
+            ts_data, url = hykiwis.get_data(attrs, \
+                                '2010-01-01', '2010-01-31', \
+                                timezone='Australia/Sydney')
+        except ValueError as err:
+            if str(err).startswith('Request returns error'):
+                self.skipTest('Could not get data, '+\
+                                'request returns error')
+
+        self.assertTrue(str(ts_data.index[0]).endswith('+11:00'))
+
 if __name__ == "__main__":
     unittest.main()

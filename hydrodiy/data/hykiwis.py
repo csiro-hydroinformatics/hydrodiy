@@ -236,7 +236,7 @@ def get_tsattrs(siteid, ts_name, external=True):
 
 
 def get_data(tsattrs, start=None, end=None, external=True, \
-    keep_timezone=False):
+                                timezone=None):
     ''' Download time series  data from meta data info
 
     Parameters
@@ -303,9 +303,14 @@ def get_data(tsattrs, start=None, end=None, external=True, \
         d = pd.DataFrame(js[0]['data'], columns=['time', 'value'])
 
         # Discard time zone
-        if keep_timezone:
-            time = pd.to_datetime(d['time'])
+        if not timezone is None:
+            # to_datetime seems to be converting to UTC
+            time = pd.to_datetime(d['time']).dt.tz_localize('UTC')
+
+            # Localise time zone
+            time = time.dt.tz_convert(timezone)
         else:
+            # Remove all timezone reference
             time = pd.to_datetime(d['time'].apply(lambda x: \
                                     re.sub('\+.*', '', x)))
 
