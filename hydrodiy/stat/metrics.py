@@ -824,4 +824,104 @@ def relative_percentile_error(obs, sim, percentile_range, \
     return rperr, perc
 
 
+def binary(confusion_matrix=None):
+    ''' Metrics computed from binary forecasts
+    See https://en.wikipedia.org/wiki/Confusion_matrix and
+    Stephenson (2000) for the list of scores.
 
+    Stephenson, David B. "Use of the odds ratio for diagnosing
+    forecast skill." Weather and Forecasting 15.2 (2000): 221-232.
+
+    Parameters
+    -----------
+    confusion_matrix : np.array
+        Confusion matrix (superseeds obs and sim if not None)
+        Organised as follows:
+        | true_positive, false positive |
+        | false_negative, true_negative |
+
+    Returns
+    -----------
+    scores : dict
+        The binary metrics computed ire as follows:
+        * truepos: Number of cases with concurrent sim and obs
+        * falsepos: Number of cases with sim, but no-obs
+        * trueneg: Number of cases with concurrent no-sim and no-obs
+        * falseneg: Number of cases with no-sim, but obs
+        * bias : Proportion of number of forecast events over number of obs
+                            events
+        * hit_rate: Proportion of correct forecasts given obs happened
+                     This is also called sensitivity or recall.
+        * precision: Proportion of correct forecasts given sim happened
+        * false_alarm: Proportion of incorrect forecasts given obs happened
+                     This is also called miss rate or false negative rate.
+        * accuracy: Proportion of correct predictions (i.e. truepos+trueneg)
+                    compared to total number of events. This is also
+                    called proportion correct.
+        * F1: F score. This is the harmonic mean of hit rate and precision.
+        * MCC: Matthews correlation coefficient. This is identical to the square root
+                    of the normalised Chi-squared measures of association (also
+                    referred to as "Phi").
+
+        In addition, some scores are computed from random forecasts
+        (_random suffix added).
+    '''
+    # Process confusion matrix
+    confusion_matrix = np.array(confusion_matrix, dtype=np.int64)
+    if confusion_matrix.shape != (2, 2):
+        raise ValueError('Expected confusion matrix of shape '+\
+            '(2, 2), got {}'.format(confusion_matrix.shape))
+
+    ((TP, FP), (FN, TN)) = confusion_matrix
+
+    Pobs = TP+FN
+    Nobs = TN+FP
+    Psim = TP+FP
+    Nsim = TN+FN
+    nval = Pobs+Nobs
+
+    # Compute odds ratio
+    H = TP/Pobs
+    F = FP/Nobs
+    theta = H*(1-F)/(1-H)/F
+    MCC = (TP*TN-FP*FN)/math.sqrt((TP+FP)*(TP+FN)*(TN+FP)*(TN+FN))
+
+    # Random values
+    TP_rand = Pobs*Psim/nval
+    TN_rand = Nobs*Nsim/nval
+    FP_rand = Nobs*Psim/nval
+    FN_rand = Pobs*Nsim/nval
+
+    # Random scores
+    H_random = TP_rand/Pobs
+    F_random = FP_rand/Nobs
+    theta_random = H_random*(1-F_random)/(1-H_random)/F_random
+    MCC_random = (TP_rand*TN_rand-FP_rand*FN_rand)\
+                        /math.sqrt((TP_rand+FP_rand)*(TP_rand+FN_rand)\
+                            *(TN_rand+FP_rand)*(TN_rand+FN_rand))
+
+    # Generate scores
+    scores = {
+        'truepos': TP, 'falsepos': FP, \
+        'trueneg': TN, 'falseneg': FN, \
+        'bias': Psim/Pobs, \
+        'hitrate': H, \
+        'precision': TP/Psim, \
+        'falsealarm': F, \
+        'accuracy': (TP+TN)/nval, \
+        'F1':  2*TP/(2*TP+FP+FN), \
+        'MCC': MCC, \
+        'oddsratio': theta, \
+        'oddsrationss': (theta-1)/(theta+1), \
+
+        'accuracy_random': (TP_rand+TN_rand)/nval, \
+        'hitrate_random': TP_rand/(TP_rand+FN_rand), \
+        'falsealarm_random': FP_rand/(FP_rand+TN_rand), \
+        'precision_random': TP_rand/(TP_rand+FP_rand), \
+        'accuracy_random': (TP_rand+TN_rand)/nval, \
+        'MCC_random': MCC_random, \
+        'oddsratio_random': theta_random, \
+        'F1_random':  2*TP_rand/(2*TP_rand+FP_rand+FN_rand)
+    }
+
+    return scores
