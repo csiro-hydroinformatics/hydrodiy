@@ -211,8 +211,8 @@ class UtilsTestCase(unittest.TestCase):
         mean = np.array([0]*nvars)
         cov = np.array([[1, rho_true], [rho_true, 1]])
         samples = sutils.lhs_norm(nsamples, mean, cov)
-        r1, u1 = sutils.standard_normal(samples[:, 0])
-        r2, u2 = sutils.standard_normal(samples[:, 1])
+        u1, r1 = sutils.standard_normal(samples[:, 0])
+        u2, r2 = sutils.standard_normal(samples[:, 1])
         unorm = np.column_stack([u1, u2])
 
         rho, eta, rho_p, rho_m = sutils.semicorr(unorm)
