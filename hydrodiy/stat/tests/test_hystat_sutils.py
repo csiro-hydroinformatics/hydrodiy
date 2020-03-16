@@ -162,19 +162,45 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_standard_normal(self):
-        ''' Test semicorr '''
+        ''' Test standard normal computation '''
         nsamples = 10
         samples = np.random.uniform(size=nsamples)
-        ranks, unorm = sutils.standard_normal(samples)
+        unorm, _ = sutils.standard_normal(samples)
 
         kk = np.argsort(np.argsort(samples))
         expected = norm.ppf((kk+1)/(nsamples+1))
         self.assertTrue(np.allclose(unorm, expected))
 
         samples = np.sort(samples)
-        _, unorm1 = sutils.standard_normal(samples)
-        _, unorm2 = sutils.standard_normal(samples, sorted=True)
+        unorm1, _ = sutils.standard_normal(samples)
+        unorm2, _ = sutils.standard_normal(samples, sorted=True)
+
         self.assertTrue(np.allclose(unorm1, unorm2))
+
+
+    def test_standard_normal_ties(self):
+        ''' Test standard normal computation with ties '''
+        nsamples = 50
+        samples = np.random.uniform(size=nsamples)
+        idx = samples > 0.6
+        samples[idx] = 0.6
+        unorm, rk = sutils.standard_normal(samples)
+
+        n = np.sum(idx)
+        r = (2*nsamples-n-1)/2
+        self.assertTrue(np.allclose(rk[idx], r))
+
+        kk = np.argsort(np.argsort(samples)).astype(float)
+        kk[idx] = r
+        expected = norm.ppf((kk+1)/(nsamples+1))
+        self.assertTrue(np.allclose(unorm, expected))
+
+        # Different method for rank calculation
+        unorm, rk = sutils.standard_normal(samples, rank_method='min')
+        self.assertTrue(np.allclose(rk[idx], nsamples-n))
+
+        unorm, rk = sutils.standard_normal(samples, rank_method='max')
+        self.assertTrue(np.allclose(rk[idx], nsamples-1))
 
 
     def test_semicorr(self):

@@ -184,7 +184,7 @@ def lhs_norm(nsamples, mean, cov):
     return smp.T
 
 
-def standard_normal(x, cst=0., sorted=False):
+def standard_normal(x, cst=0., sorted=False, rank_method='average'):
     ''' Compute normal standard variables
 
      Parameters
@@ -196,6 +196,9 @@ def standard_normal(x, cst=0., sorted=False):
         See hydrodiy.stat.sutils.ppos
     sorted : bool
         Is x data sorted or not?
+    rank_method : string
+        Method to compute ranks.
+        See pandas.Series.rank
 
     Returns
     -----------
@@ -211,10 +214,11 @@ def standard_normal(x, cst=0., sorted=False):
     if sorted:
         ranks = np.arange(nval)
     else:
-        ranks = np.argsort(np.argsort(x))
+        ranks = pd.Series(x).rank(method=rank_method)-1
+
     unorm = norm.ppf((ranks+1-cst)/(nval+1-2*cst))
 
-    return ranks, unorm
+    return unorm, ranks
 
 
 def semicorr(unorm):
