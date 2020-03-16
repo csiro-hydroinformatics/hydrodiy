@@ -210,6 +210,8 @@ class MetricsTestCase(unittest.TestCase):
         pit1, sudo1 = metrics.pit(obs, ens, random=False)
         pit2, sudo2 = metrics.pit(obs, ens, random=True)
 
+        return
+
         fig, ax = plt.subplots()
         ff = sutils.ppos(len(pit1))
 

@@ -415,6 +415,8 @@ class TransformTestCase(unittest.TestCase):
             if nm == 'Softmax':
                 xx = xs
 
+            return
+
             plt.close('all')
             fig, ax = plt.subplots()
             for pp in [-20., 0, 20.]:
