@@ -415,10 +415,13 @@ class TransformTestCase(unittest.TestCase):
             if nm == 'Softmax':
                 xx = xs
 
-            return
-
             plt.close('all')
-            fig, ax = plt.subplots()
+
+            try:
+                fig, ax = plt.subplots()
+            except:
+                self.skipTest('Cannot initialise matplotlib, not too sure why')
+
             for pp in [-20., 0, 20.]:
                 trans.reset()
                 trans.params.values = trans.params.defaults * (1.+pp/100)

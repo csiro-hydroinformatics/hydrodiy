@@ -102,7 +102,7 @@ class MetricsTestCase(unittest.TestCase):
 
 
     def test_crps_csiro(self):
-        ''' Compare CRPS calculation with code from CSIRO '''
+        ''' Compare CRPS calculation with reference code '''
         if not HAS_C_STAT_MODULE:
             self.skipTest('Missing C module c_hydrodiy_stat')
 
@@ -120,7 +120,7 @@ class MetricsTestCase(unittest.TestCase):
 
             cr, _ = metrics.crps(obs, ens)
 
-            # CSIRO computation
+            # Reference computation
             ccr = [crps_csiro(forc, o) for forc, o in zip(ens, obs)]
             self.assertTrue(np.isclose(cr.crps, np.mean(ccr)))
 
@@ -210,9 +210,12 @@ class MetricsTestCase(unittest.TestCase):
         pit1, sudo1 = metrics.pit(obs, ens, random=False)
         pit2, sudo2 = metrics.pit(obs, ens, random=True)
 
-        return
+        plt.close('all')
+        try:
+            fig, ax = plt.subplots()
+        except:
+            self.skipTest('Cannot initialise matplotlib, not too sure why')
 
-        fig, ax = plt.subplots()
         ff = sutils.ppos(len(pit1))
 
         kk = np.argsort(pit1)
