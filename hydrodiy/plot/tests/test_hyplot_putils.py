@@ -498,6 +498,18 @@ class UtilsTestCase(unittest.TestCase):
         fig.savefig(fp)
 
 
+    def test_scattercat_cat(self):
+        ''' Test categorical scatter plot using categorical data '''
+        x, y, z = np.random.uniform(0, 1, size=(100, 3)).T
+        z = pd.Categorical(['oui' if zz > 0.7 else 'non' for zz in z])
+        fig, ax = plt.subplots()
+        plotted, cats = putils.scattercat(ax, x, y, z, 5, \
+                                markersize=12, alpha=0.6)
+        ax.legend(loc=2, title='categories')
+        fp = os.path.join(self.fimg, 'scattercat_cat.png')
+        fig.savefig(fp)
+
+
     def test_interpolate_color(self):
         ''' Test color interpolation '''
         fig, ax = plt.subplots()

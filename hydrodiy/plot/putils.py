@@ -798,11 +798,13 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap='viridis', \
     cats : pandas.Series
         Series containing the category number for each item
     '''
-    # Create categories
-    if ncats is None and cuts is None:
-        raise ValueError('Cannot have both ncats and cuts set to None')
+    # Check z is categorical
+    if isinstance(z, pd.core.categorical.Categorical):
+        ncats = None
+        cuts = None
 
-    if not ncats is None and cuts is None:
+    if ncats is not None or cuts is not None:
+        # Create categories
         qq = np.linspace(0, 1, ncats+1)
         cuts = list(pd.Series(z).quantile(qq))
 
@@ -810,12 +812,24 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap='viridis', \
         cuts[0] = z.min()-1e-10
         cuts[-1] = z.max()+1e-10
 
-    if len(set(cuts)) != len(cuts):
-        raise ValueError('Non-unique category boundaries :{0}'.format(\
-                '/ '.join([str(u) for u in list(cuts)])))
+        # Create categories
+        ncats = len(cuts)-1
+        cats = pd.cut(z, cuts, right=True, labels=False).astype(int)
 
-    ncats = len(cuts)-1
-    cats = pd.cut(z, cuts, right=True, labels=False).astype(int)
+        if len(set(cuts)) != len(cuts):
+            raise ValueError('Non-unique category boundaries :{0}'.format(\
+                    '/ '.join([str(u) for u in list(cuts)])))
+
+        # Create labels
+        labels = ['[{0:{fmt}}, {1:{fmt}}]'.format(cuts[icat], \
+                                            cuts[icat+1], fmt=fmt) \
+                                                for icat in range(ncats)]
+    else:
+        # Use categorical data properties
+        z = pd.Categorical(z)
+        labels = z.categories.values
+        ncats = len(labels)
+        cats = z.codes
 
     # Get colors for each category
     colors = cmap2colors(ncats, cmap)
@@ -826,10 +840,7 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap='viridis', \
     for icat in range(ncats):
         # Plot category
         idx = cats == icat
-        label = '[{0:{fmt}}, {1:{fmt}}]'.format(cuts[icat], \
-                                            cuts[icat+1], fmt=fmt)
-        if nval:
-            label = '{} ({})'.format(label, np.sum(idx))
+        label = labels[icat]
 
         if np.sum(idx) > 0:
             u, v = x[idx], y[idx]
