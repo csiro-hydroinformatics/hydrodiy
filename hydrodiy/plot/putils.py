@@ -799,37 +799,40 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap='viridis', \
         Series containing the category number for each item
     '''
     # Check z is categorical
-    if isinstance(z, pd.core.categorical.Categorical):
-        ncats = None
-        cuts = None
-
-    if ncats is not None or cuts is not None:
-        # Create categories
-        qq = np.linspace(0, 1, ncats+1)
-        cuts = list(pd.Series(z).quantile(qq))
-
-        # make sure the cuts cover the full range
-        cuts[0] = z.min()-1e-10
-        cuts[-1] = z.max()+1e-10
-
-        # Create categories
-        ncats = len(cuts)-1
-        cats = pd.cut(z, cuts, right=True, labels=False).astype(int)
-
-        if len(set(cuts)) != len(cuts):
-            raise ValueError('Non-unique category boundaries :{0}'.format(\
-                    '/ '.join([str(u) for u in list(cuts)])))
-
-        # Create labels
-        labels = ['[{0:{fmt}}, {1:{fmt}}]'.format(cuts[icat], \
-                                            cuts[icat+1], fmt=fmt) \
-                                                for icat in range(ncats)]
-    else:
+    z = pd.Series(z)
+    if isinstance(z, pd.core.categorical.Categorical) or \
+                z.dtype == 'category':
         # Use categorical data properties
         z = pd.Categorical(z)
         labels = z.categories.values
         ncats = len(labels)
         cats = z.codes
+    else:
+        if ncats is not None or cuts is not None:
+            if cuts is None:
+                # Create categories
+                qq = np.linspace(0, 1, ncats+1)
+                cuts = list(z.quantile(qq))
+
+            # make sure the cuts cover the full range
+            cuts[0] = z.min()-1e-10
+            cuts[-1] = z.max()+1e-10
+
+            # Create categories
+            ncats = len(cuts)-1
+            cats = pd.cut(z, cuts, right=True, labels=False).astype(int)
+
+            if len(set(cuts)) != len(cuts):
+                raise ValueError(\
+                        'Non-unique category boundaries :{0}'.format(\
+                            '/ '.join([str(u) for u in list(cuts)])))
+
+            # Create labels
+            labels = ['[{0:{fmt}}, {1:{fmt}}]'.format(cuts[icat], \
+                                           cuts[icat+1], fmt=fmt) \
+                                               for icat in range(ncats)]
+        else:
+            raise ValueError('Expected ncats or cuts to be not-None')
 
     # Get colors for each category
     colors = cmap2colors(ncats, cmap)
@@ -899,8 +902,8 @@ def bivarnplot(ax, xy, add_semicorr=True, namex='var 1', \
 
     # Compute normal standard variables and semi correlations
     unorm = np.zeros_like(xy)
-    _, unorm[:, 0] = sutils.standard_normal(xy[:, 0])
-    _, unorm[:, 1] = sutils.standard_normal(xy[:, 1])
+    unorm[:, 0], _ = sutils.standard_normal(xy[:, 0])
+    unorm[:, 1], _ = sutils.standard_normal(xy[:, 1])
     rho, eta, rho_p, rho_m = sutils.semicorr(unorm)
 
     # Plot
