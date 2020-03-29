@@ -502,10 +502,21 @@ class UtilsTestCase(unittest.TestCase):
         ''' Test categorical scatter plot using categorical data '''
         x, y, z = np.random.uniform(0, 1, size=(100, 3)).T
         z = pd.Categorical(['oui' if zz > 0.7 else 'non' for zz in z])
-        fig, ax = plt.subplots()
+
+        # Plot categorical data
+        fig, axs = plt.subplots(ncols=2)
+        ax = axs[0]
         plotted, cats = putils.scattercat(ax, x, y, z, 5, \
                                 markersize=12, alpha=0.6)
         ax.legend(loc=2, title='categories')
+
+        # Plot categorical data extracted from a dataframe
+        ax = axs[1]
+        df = pd.DataFrame({'z': z, 'a': np.nan})
+        plotted, cats = putils.scattercat(ax, x, y, df.loc[:, 'z'], 5, \
+                                markersize=12, alpha=0.6)
+        ax.legend(loc=2, title='categories')
+
         fp = os.path.join(self.fimg, 'scattercat_cat.png')
         fig.savefig(fp)
 

@@ -798,10 +798,12 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap='viridis', \
     cats : pandas.Series
         Series containing the category number for each item
     '''
-    # Check z is categorical
     z = pd.Series(z)
-    if isinstance(z, pd.core.categorical.Categorical) or \
-                z.dtype == 'category':
+
+    # Check z is categorical
+    # See  https://pandas.pydata.org/pandas-docs/version/0.17.0/categorical.html
+    # Cell [176]
+    if hasattr(z, 'cat'):
         # Use categorical data properties
         z = pd.Categorical(z)
         labels = z.categories.values
