@@ -798,6 +798,16 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap='viridis', \
     cats : pandas.Series
         Series containing the category number for each item
     '''
+    # Check inputs
+    if not len(x) == len(y):
+        raise ValueError('Expected x and y of same length, got '+\
+                'len(x)={}, len(y)={}'.format(len(x), len(y)))
+
+    if not len(x) == len(z):
+        raise ValueError('Expected x and z of same length, got '+\
+                'len(x)={}, len(z)={}'.format(len(x), len(z)))
+
+    # Format categorical data
     z = pd.Series(z)
 
     # Check z is categorical
