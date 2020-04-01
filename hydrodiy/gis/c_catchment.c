@@ -273,6 +273,24 @@ long long c_delineate_boundary(long long nrows, long long ncols,
             dy = nxycell[1]-nxybuf[1];
             dist = dx*dx+dy*dy;
 
+            /* check that both cells have a common neighbour
+            * outside of the boundaries otherwise we can create
+            * loops in the boundary when there is a choke in the boundaries
+            * (or peninsula with a very small neck).
+            *
+            * Algorithm:
+            * - loop through neighbours of cell "idxcell" and select
+            *   cell numbers outside of area
+            * - same with cell "buf".
+            * - Stop if the one selected neighbour from idxcell is
+            *   identical the a selected neighbour from buf.
+            * - If no common selected neighbour is identifed, set dist
+            *   to -1 (i.e. do not consider idxcell and buf as neighbours
+            *   on the boundary)
+            */
+
+            /* !! TODO !! */
+
             /* Find closest cell in the buffer */
             if(dist<dmin && dist >0)
             {
@@ -318,41 +336,40 @@ long long c_exclude_zero_area_boundary(long long nval,
     long long ierr=0, i;
     double det, proj, norm, x1, y1, x2, y2, x3, y3;
 
-    if(nval < 2)
+    if(nval <= 2)
         return CATCHMENT_ERROR + __LINE__;
 
-    /* Set the two first points as ok */
+    /* Set first and last as ok */
     idxok[0] = 1;
-    idxok[1] = 1;
+    idxok[nval-1] = 1;
 
     /* Loop through remaining points */
-    for(i=2; i<nval; i++)
+    for(i=1; i<nval-1; i++)
     {
         /* Get coordinates from three consecutive points */
-        x1 = xycoords[(i-2)*2];
-        y1 = xycoords[(i-2)*2+1];
-        x2 = xycoords[(i-1)*2];
-        y2 = xycoords[(i-1)*2+1];
-        x3 = xycoords[i*2];
-        y3 = xycoords[i*2+1];
-
-        /* By default, we assume that point is ok */
-        idxok[i] = 1;
+        x1 = xycoords[(i-1)*2];
+        y1 = xycoords[(i-1)*2+1];
+        x2 = xycoords[i*2];
+        y2 = xycoords[i*2+1];
+        x3 = xycoords[(i+1)*2];
+        y3 = xycoords[(i+1)*2+1];
 
         /* Check if the points are aligned
          * by computing determinant */
         det = fabs(y3*x2-y2*x3-x1*y3+x3*y1+x1*y2-x2*y1);
 
-        /* Determinant is zero, so points are aligned */
         if(det < deteps)
         {
-            /* Compute the projection of P1P2 on P1P3 */
-            proj = (x2-x1)*(x3-x1)+(y2-y1)*(y3-y1);
-            norm = (x3-x1)*(x3-x1)+(y3-y1)*(y3-y1);
-
-            /* Point 2 is outside the line 1 to 3 */
-            if(proj < 0 || proj > norm)
-                idxok[i-1] = 0;
+            /* Determinant is zero, so points are aligned.
+             * Flag point as not ok */
+            idxok[i] = 1;
+        }
+        else
+        {
+            /* Determinant is not zero, so points are not
+            * aligned. Flag the point as valid and shift
+            * i1 and i2 to the next pair */
+            idxok[i] = 1;
         }
     }
 

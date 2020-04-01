@@ -42,7 +42,9 @@ class GridTestCase(unittest.TestCase):
 
         source_file = os.path.abspath(__file__)
         self.ftest = os.path.dirname(source_file)
-
+        self.fimg = os.path.join(self.ftest, 'images')
+        if not os.path.exists(self.fimg):
+            os.mkdir(self.fimg)
 
     def test_print(self):
         gr = Grid(**self.config)
@@ -314,7 +316,8 @@ class GridTestCase(unittest.TestCase):
         plt.close('all')
         fig, ax = plt.subplots()
         gr.plot(ax, interpolation='nearest')
-        fp = re.sub('hdr', 'png', filename)
+        fp = os.path.join(self.fimg, \
+                        re.sub('hdr', 'png', os.path.basename(filename)))
         fig.savefig(fp)
 
 
@@ -465,6 +468,9 @@ class CatchmentTestCase(unittest.TestCase):
 
         source_file = os.path.abspath(__file__)
         self.ftest = os.path.dirname(source_file)
+        self.fimg = os.path.join(self.ftest, 'images')
+        if not os.path.exists(self.fimg):
+            os.mkdir(self.fimg)
 
         nrows = 6
         gr = Grid(nrows, nrows, dtype=np.int32, nodata=-1)
@@ -815,7 +821,8 @@ class CatchmentTestCase(unittest.TestCase):
 
         logacc.plot(ax, interpolation='nearest', cmap='Blues')
 
-        fileplot = re.sub('\\.bil', '.png', fileacc)
+        fileplot = os.path.join(self.fimg, \
+                        re.sub('\\.bil', '.png', os.path.basename(fileacc)))
         fig.savefig(fileplot)
 
 
@@ -872,7 +879,9 @@ class CatchmentTestCase(unittest.TestCase):
 
             fig.set_size_inches((15, 15))
             fig.tight_layout()
-            fp = re.sub('\\.hdr', '_plot.png', filename)
+            fp = os.path.join(self.fimg, \
+                        re.sub('\\.hdr', '_plot.png', \
+                            os.path.basename(filename)))
             fig.savefig(fp)
 
 
