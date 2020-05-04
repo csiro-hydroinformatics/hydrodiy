@@ -779,13 +779,42 @@ class MetricsTestCase(unittest.TestCase):
         self.assertTrue(np.allclose(perc.rel_perc_err, errm))
 
 
+    def test_confusion_matrix(self):
+        ''' Test computation of confusion matrix '''
+
+        for i in range(10):
+            # 2x2 confusion matrix
+            o, s = [np.random.choice([0, 1], size=100) for i in range(2)]
+            m = metrics.confusion_matrix(o, s)
+
+            o = o.astype(bool)
+            s = s.astype(bool)
+            mexpected = [[np.sum(~o & ~s), np.sum(~o & s)], \
+                        [np.sum(o & ~s), np.sum(o & s)]]
+
+            self.assertTrue(np.allclose(m, mexpected))
+
+            # 5x5 confusion matrix
+            o, s = [np.random.choice(np.arange(5), size=100) for i in range(2)]
+            m = metrics.confusion_matrix(o, s)
+
+            mexpected = np.zeros((5, 5))
+            for i, j in prod(range(5), range(5)):
+                n = np.sum((o == i) & (s == j))
+                mexpected[i, j] = n
+
+            self.assertTrue(np.allclose(m, mexpected))
+
+
+
     def test_binary(self):
         ''' Test binary metrics '''
         # Generating Finley forecasts table
         # using dummy variables
         # see Stephenson, David B. "Use of the odds ratio for diagnosing
         #   forecast skill." Weather and Forecasting 15.2 (2000): 221-232.
-        mat = [[28, 72], [23, 2680]]
+        # Re-organised confusion matrix to match the function definition
+        mat = [[2680, 72], [23, 28]]
         scores, scores_rand = metrics.binary(mat)
 
         # tests

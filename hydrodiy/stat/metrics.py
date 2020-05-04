@@ -824,10 +824,34 @@ def relative_percentile_error(obs, sim, percentile_range, \
     return rperr, perc
 
 
-def binary(confusion_matrix):
+def confusion_matrix(obs, sim):
+    ''' Compute confusion matrix from binary forecats
+
+    Parameters
+    -----------
+    obs : np.array
+        True/False observed
+    sim : np.array
+        True/False forecast
+
+    Returns
+    -----------
+     conf_mat : np.array
+        Confusion matrix organised as follows:
+            | true_positive, false positive |
+            | false_negative, true_negative |
+    '''
+    # Check inputs
+    obs = np.array(obs).astype(np.int64)
+    sim = np.array(sim).astype(np.int64)
+    return pd.crosstab(obs, sim)
+
+
+def binary(conf_mat):
     ''' Metrics computed from binary forecasts
     See https://en.wikipedia.org/wiki/Confusion_matrix and
-    Stephenson (2000) and Stephenson et al. (2008) for the definition of scores.
+    Stephenson (2000) and Stephenson et al. (2008) for the
+    definition of scores.
 
     Stephenson, David B. "Use of the odds ratio for diagnosing
     forecast skill." Weather and Forecasting 15.2 (2000): 221-232.
@@ -838,10 +862,13 @@ def binary(confusion_matrix):
 
     Parameters
     -----------
-    confusion_matrix : np.array
-        Confusion matrix organised as follows:
-            | true_positive, false positive |
-            | false_negative, true_negative |
+    conf_mat : np.array
+        Confusion matrix organised as follows (caution this may be different
+        from litterature):
+            | true_negative, false positive |
+            | false_negative, true_positive |
+
+        See hydrodiy.stats.metrics.confusion_matrix
 
     Returns
     -----------
@@ -875,15 +902,15 @@ def binary(confusion_matrix):
         precision, MCC, oddsratio, F1.
     '''
     # Process confusion matrix
-    confusion_matrix = np.array(confusion_matrix, dtype=np.int64)
-    if confusion_matrix.shape != (2, 2):
+    conf_mat = np.array(conf_mat, dtype=np.int64)
+    if conf_mat.shape != (2, 2):
         raise ValueError('Expected confusion matrix of shape '+\
-            '(2, 2), got {}'.format(confusion_matrix.shape))
+            '(2, 2), got {}'.format(conf_mat.shape))
     # TP: true positive (hit)
     # FP: false positive (false alarm)
     # FN: false negative (miss)
     # TN: true negative (hit)
-    ((TP, FP), (FN, TN)) = confusion_matrix
+    ((TN, FP), (FN, TP)) = conf_mat
 
     Pobs = TP+FN
     Nobs = TN+FP
@@ -895,8 +922,20 @@ def binary(confusion_matrix):
     H = TP/Pobs
     F = FP/Nobs
     theta = H*(1-F)/(1-H)/F
+
+    LOR = np.nan
+    if H>0 and H<1 and F>0 and F<1:
+        LOR = math.log(theta)
+
     MCC = (TP*TN-FP*FN)/math.sqrt((TP+FP)*(TP+FN)*(TN+FP)*(TN+FN))
-    EDS = 2*math.log(Pobs/nval)/math.log(TP/nval)-1
+
+    EDS = np.nan
+    if TP > 0:
+        EDS = 2*math.log(Pobs/nval)/math.log(TP/nval)-1
+
+    ORSS = np.nan
+    if theta>-1 and theta<1:
+        ORSS = (theta-1)/(theta+1)
 
     # Random values
     TP_rand = Pobs*Psim/nval
@@ -923,8 +962,8 @@ def binary(confusion_matrix):
         'accuracy': (TP+TN)/nval, \
         'F1':  2*TP/(2*TP+FP+FN), \
         'MCC': MCC, \
-        'LOR': math.log(theta), \
-        'ORSS': (theta-1)/(theta+1), \
+        'LOR': LOR, \
+        'ORSS': ORSS, \
         'EDS': EDS
     }
 
