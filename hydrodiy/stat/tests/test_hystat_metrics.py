@@ -786,7 +786,7 @@ class MetricsTestCase(unittest.TestCase):
         # see Stephenson, David B. "Use of the odds ratio for diagnosing
         #   forecast skill." Weather and Forecasting 15.2 (2000): 221-232.
         mat = [[28, 72], [23, 2680]]
-        scores = metrics.binary(mat)
+        scores, scores_rand = metrics.binary(mat)
 
         # tests
         self.assertEqual(scores['truepos'], 28)
@@ -798,20 +798,21 @@ class MetricsTestCase(unittest.TestCase):
         self.assertTrue(np.isclose(scores['bias'], 1.96, rtol=0, atol=1e-3))
         self.assertTrue(np.isclose(scores['hitrate'], 0.549, rtol=0, atol=1e-3))
         self.assertTrue(np.isclose(scores['falsealarm'], 0.026, rtol=0, atol=1e-3))
-        self.assertTrue(np.isclose(scores['oddsratio'], 45.314, rtol=0, atol=1e-3))
+        self.assertTrue(np.isclose(scores['LOR'], math.log(45.314), rtol=0, atol=1e-3))
         # .. not exactly the value reported by Stepenson due to rounding
-        self.assertTrue(np.isclose(scores['hitrate_random'], 0.035, rtol=0, atol=1e-3))
-        self.assertTrue(np.isclose(scores['falsealarm_random'], 0.036, rtol=0, atol=1e-3))
+        self.assertTrue(np.isclose(scores_rand['hitrate'], 0.035, rtol=0, atol=1e-3))
+        self.assertTrue(np.isclose(scores_rand['falsealarm'], 0.036, rtol=0, atol=1e-3))
 
         # See Table 7 in Stephenson, 2000
         #.. corresponds to the square root of the Pearson
         self.assertTrue(np.isclose(scores['MCC'], math.sqrt(0.142), rtol=0, atol=1e-3))
-        self.assertTrue(np.isclose(scores['MCC_random'], 0.0, rtol=0, atol=1e-3))
+        self.assertTrue(np.isclose(scores_rand['MCC'], 0.0, rtol=0, atol=1e-3))
         self.assertTrue(np.isclose(scores['accuracy'], 0.966, rtol=0, atol=1e-3))
-        self.assertTrue(np.isclose(scores['accuracy_random'], 0.948, rtol=0, atol=1e-3))
+        self.assertTrue(np.isclose(scores_rand['accuracy'], 0.948, rtol=0, atol=1e-3))
 
         # Additional scores
         self.assertTrue(np.isclose(scores['precision'], 0.28, rtol=0, atol=1e-3))
+        self.assertTrue(np.isclose(scores['EDS'], 0.7396, rtol=0, atol=1e-3))
 
 
 if __name__ == "__main__":

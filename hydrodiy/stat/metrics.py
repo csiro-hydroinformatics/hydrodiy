@@ -824,21 +824,24 @@ def relative_percentile_error(obs, sim, percentile_range, \
     return rperr, perc
 
 
-def binary(confusion_matrix=None):
+def binary(confusion_matrix):
     ''' Metrics computed from binary forecasts
     See https://en.wikipedia.org/wiki/Confusion_matrix and
-    Stephenson (2000) for the list of scores.
+    Stephenson (2000) and Stephenson et al. (2008) for the definition of scores.
 
     Stephenson, David B. "Use of the odds ratio for diagnosing
     forecast skill." Weather and Forecasting 15.2 (2000): 221-232.
 
+    Stephenson, David B., et al. "The extreme dependency score: a
+    non-vanishing measure for forecasts of rare events."
+    Meteorological Applications 15.1 (2008): 41-50.
+
     Parameters
     -----------
     confusion_matrix : np.array
-        Confusion matrix (superseeds obs and sim if not None)
-        Organised as follows:
-        | true_positive, false positive |
-        | false_negative, true_negative |
+        Confusion matrix organised as follows:
+            | true_positive, false positive |
+            | false_negative, true_negative |
 
     Returns
     -----------
@@ -862,16 +865,24 @@ def binary(confusion_matrix=None):
         * MCC: Matthews correlation coefficient. This is identical to the square root
                     of the normalised Chi-squared measures of association (also
                     referred to as "Phi").
+        * LOR: Log odds ratio.
+        * ORSS: Odd ratio skill score
+        * EDS: Extreme dependency score (see Stephenson et al., 2008)
 
-        In addition, some scores are computed from random forecasts
-        (_random suffix added).
+    scores_rand : dict
+        Scores computed when forecast and obs are considered independent.
+        The following scores are computed: accuracy, hitrate, falsealarm,
+        precision, MCC, oddsratio, F1.
     '''
     # Process confusion matrix
     confusion_matrix = np.array(confusion_matrix, dtype=np.int64)
     if confusion_matrix.shape != (2, 2):
         raise ValueError('Expected confusion matrix of shape '+\
             '(2, 2), got {}'.format(confusion_matrix.shape))
-
+    # TP: true positive (hit)
+    # FP: false positive (false alarm)
+    # FN: false negative (miss)
+    # TN: true negative (hit)
     ((TP, FP), (FN, TN)) = confusion_matrix
 
     Pobs = TP+FN
@@ -880,11 +891,12 @@ def binary(confusion_matrix=None):
     Nsim = TN+FN
     nval = Pobs+Nobs
 
-    # Compute odds ratio
+    # Compute scores
     H = TP/Pobs
     F = FP/Nobs
     theta = H*(1-F)/(1-H)/F
     MCC = (TP*TN-FP*FN)/math.sqrt((TP+FP)*(TP+FN)*(TN+FP)*(TN+FN))
+    EDS = 2*math.log(Pobs/nval)/math.log(TP/nval)-1
 
     # Random values
     TP_rand = Pobs*Psim/nval
@@ -893,10 +905,10 @@ def binary(confusion_matrix=None):
     FN_rand = Pobs*Nsim/nval
 
     # Random scores
-    H_random = TP_rand/Pobs
-    F_random = FP_rand/Nobs
-    theta_random = H_random*(1-F_random)/(1-H_random)/F_random
-    MCC_random = (TP_rand*TN_rand-FP_rand*FN_rand)\
+    H_rand = TP_rand/Pobs
+    F_rand = FP_rand/Nobs
+    theta_rand = H_rand*(1-F_rand)/(1-H_rand)/F_rand
+    MCC_rand = (TP_rand*TN_rand-FP_rand*FN_rand)\
                         /math.sqrt((TP_rand+FP_rand)*(TP_rand+FN_rand)\
                             *(TN_rand+FP_rand)*(TN_rand+FN_rand))
 
@@ -911,17 +923,19 @@ def binary(confusion_matrix=None):
         'accuracy': (TP+TN)/nval, \
         'F1':  2*TP/(2*TP+FP+FN), \
         'MCC': MCC, \
-        'oddsratio': theta, \
-        'oddsrationss': (theta-1)/(theta+1), \
-
-        'accuracy_random': (TP_rand+TN_rand)/nval, \
-        'hitrate_random': TP_rand/(TP_rand+FN_rand), \
-        'falsealarm_random': FP_rand/(FP_rand+TN_rand), \
-        'precision_random': TP_rand/(TP_rand+FP_rand), \
-        'accuracy_random': (TP_rand+TN_rand)/nval, \
-        'MCC_random': MCC_random, \
-        'oddsratio_random': theta_random, \
-        'F1_random':  2*TP_rand/(2*TP_rand+FP_rand+FN_rand)
+        'LOR': math.log(theta), \
+        'ORSS': (theta-1)/(theta+1), \
+        'EDS': EDS
     }
 
-    return scores
+    scores_rand = {
+        'accuracy': (TP_rand+TN_rand)/nval, \
+        'hitrate': TP_rand/(TP_rand+FN_rand), \
+        'falsealarm': FP_rand/(FP_rand+TN_rand), \
+        'precision': TP_rand/(TP_rand+FP_rand), \
+        'MCC': MCC_rand, \
+        'LOR': math.log(theta_rand), \
+        'F1':  2*TP_rand/(2*TP_rand+FP_rand+FN_rand)
+    }
+
+    return scores, scores_rand
