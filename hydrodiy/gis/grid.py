@@ -750,12 +750,10 @@ class Grid(object):
         -----------
         ax : matplotlib.axes
             Axe to draw the grid on
-
         '''
         xll, yll, csz, nr, nc = self._getsize()
         extent = [xll, xll+csz*nc, yll, yll+csz*nr]
-        cax = ax.imshow(self.data, extent=extent, *args, **kwargs)
-        return cax
+        return ax.imshow(self.data, extent=extent, *args, **kwargs)
 
 
     def clone(self, dtype=None):
@@ -1046,8 +1044,9 @@ class Catchment(object):
                         ' delineate the area')
 
         xy = self._flowdir.cell2coord(self._idxcells_area)
-        return np.min(xy[:, 0]), np.max(xy[:, 0]), \
-                np.min(xy[:, 1]), np.max(xy[:, 1]),
+        cz = self.flowdir.cellsize
+        return np.min(xy[:, 0])-cz/2, np.max(xy[:, 0])+cz/2, \
+                np.min(xy[:, 1])-cz/2, np.max(xy[:, 1])+cz/2,
 
 
     def upstream(self, idxdown):

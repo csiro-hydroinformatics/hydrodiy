@@ -7,8 +7,8 @@ import warnings
 
 import zipfile
 
-import matplotlib
-matplotlib.use('Agg')
+#import matplotlib
+#matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
 
@@ -535,7 +535,7 @@ class CatchmentTestCase(unittest.TestCase):
         ca = Catchment('test', self.gr)
         ca.delineate_area(27)
         ext = ca.extent()
-        self.assertEqual(ext, (1., 3., 1., 5.))
+        self.assertEqual(ext, (1., 4., 1., 6.))
 
 
     def test_delineate_area(self):
@@ -579,6 +579,7 @@ class CatchmentTestCase(unittest.TestCase):
         nc = self.gr.ncols
 
         dat = delineate_river(self.gr, 1)
+
         idxc = dat['idxcell']
         dat = dat.values
 
@@ -599,11 +600,11 @@ class CatchmentTestCase(unittest.TestCase):
         ck = np.allclose(dat[:, 2], expected)
         self.assertTrue(ck)
 
-        expected = [1., 1., 1., 2., 3., 3.]
+        expected = [1.5, 1.5, 1.5, 2.5, 3.5, 3.5]
         ck = np.allclose(dat[:, 3], expected)
         self.assertTrue(ck)
 
-        expected = range(6)[::-1]
+        expected = np.arange(6)[::-1]+0.5
         ck = np.allclose(dat[:, 4], expected)
         self.assertTrue(ck)
 
@@ -677,18 +678,22 @@ class CatchmentTestCase(unittest.TestCase):
         ca = Catchment('test', self.gr)
         ca.delineate_area(27)
 
-        xll = self.gr.xllcorner+1
-        yll = self.gr.yllcorner+1
-        csz = 3
-        gr = Grid(2, 2, xllcorner=xll,
+        xll = ca.flowdir.xllcorner+1
+        yll = ca.flowdir.yllcorner+1
+        csz = 2
+        gr = Grid(3, 3, xllcorner=xll,
             yllcorner=yll, cellsize=csz)
 
-        idx, w, gra = ca.intersect(gr)
+        gra, idx, w = ca.intersect(gr)
 
-        ck = np.allclose(idx, [2, 3, 0, 1])
-        ck = ck & np.allclose(w, [1./9, 1./9, 2./3, 1./3])
-        ck = ck & np.allclose(gra.data, np.array([[2./3, 1./3], \
-                                                [1./9, 1./9]]))
+        ck = np.allclose(idx, [6, 7, 3, 4, 0, 1])
+        self.assertTrue(ck)
+
+        ck = np.allclose(w, [0.25, 0.25, 1., 0.5, 0.5, 0.25])
+        self.assertTrue(ck)
+
+        ck = np.allclose(gra.data, np.array([[0.5, 0.25], \
+                                                [1., 0.5], [0.25, 0.25]]))
         self.assertTrue(ck)
 
 
@@ -721,7 +726,7 @@ class CatchmentTestCase(unittest.TestCase):
         gda94 = pyproj.Proj('+init=EPSG:3112')
         area = ca.compute_area(gda94)
 
-        ck = np.allclose(area, 59780.087434986817)
+        ck = np.allclose(area, 60120.97484329)
         self.assertTrue(ck)
 
 
