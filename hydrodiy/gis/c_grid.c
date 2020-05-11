@@ -13,7 +13,11 @@ long long clipi(long long x,long long x0, long long x1)
 long long getnxy(long long ncols, long long idxcell, long long *nxy)
 {
     /* Returns the coordinates of cell idxcell as [icol, irow]
-        (cell numbers are increasing horizontally)
+       Comments:
+       - cell numbers are increasing from left to right first, up to
+       bottom.
+       - row number are increasing from bottom to top
+       - col number are increasing from left to right
     */
     nxy[0] = idxcell%ncols;
     nxy[1] = (idxcell-nxy[0])/ncols;
@@ -23,11 +27,17 @@ long long getnxy(long long ncols, long long idxcell, long long *nxy)
 long long getcoord(long long nrows, long long ncols, double xll, double yll,
                 double csz, long long idxcell, double *coord){
     /* Returns the coordinates of cell idxcell as [x, y]
-        (cell numbers are increasing horizontally)
+       Comments:
+       - cell numbers are increasing from left to right first, up to
+         bottom.
+       - row number are increasing from bottom to top
+       - col number are increasing from left to right
+       - coordinates correspond to the centre of the cell.
     */
-    long long irow = idxcell%ncols;
-    coord[0] = xll+csz*(double)irow;
-    coord[1] = yll+csz*(double)(nrows-1-(idxcell-irow)/ncols);
+    long long nxy[2];
+    getnxy(ncols, idxcell, nxy);
+    coord[0] = xll+csz*((double)nxy[0]+0.5);
+    coord[1] = yll+csz*((double)(nrows-1-nxy[1])+0.5);
     return 0;
 }
 
@@ -40,8 +50,8 @@ long long c_coord2cell(long long nrows, long long ncols,
 
     for(i=0; i<nval; i++)
     {
-        nx = (long long)rint((xycoords[2*i]-xll)/csz);
-        ny = nrows-1-(long long)rint((xycoords[2*i+1]-yll)/csz);
+        nx = (long long)((xycoords[2*i]-xll)/csz);
+        ny = nrows-1-(long long)((xycoords[2*i+1]-yll)/csz);
 
         if(nx<0 || nx>=ncols || ny<0 || ny>=nrows)
             idxcell[i] = -1;
@@ -193,7 +203,7 @@ long long c_slice(long long nrows, long long ncols,
         if(ierr > 0 || *idxcell1 < 0)
             continue;
 
-        /* Convert to xy of nearest cell */
+        /* Convert to coordinate of center of nearest cell */
         ierr = getcoord(nrows, ncols, xll, yll, csz, *idxcell1, xy1);
         if(ierr > 0)
             continue;
@@ -211,7 +221,6 @@ long long c_slice(long long nrows, long long ncols,
 	    xy2[1] = xy1[1];
 	    if(fabs(dx)>tol)
             xy2[0]=xy1[0]+dx/fabs(dx)*csz;
-
 
         xy3[0] = xy1[0];
         xy3[1] = xy1[1];
@@ -461,7 +470,8 @@ long long c_intersect(long long nrows, long long ncols,
             continue;
 
         /* Look for already store cells and add weight */
-        for(k=0; k<j; k++){
+        for(k=0; k<j; k++)
+        {
             if(idxcells[k] == idxcell[0]){
                 weights[k] += areafactor;
                 break;
@@ -469,7 +479,8 @@ long long c_intersect(long long nrows, long long ncols,
         }
 
         /* If not found in existsting cells, add a new cell */
-        if(k==j){
+        if(k==j)
+        {
             idxcells[j] = idxcell[0];
             weights[j] = areafactor;
             j++;

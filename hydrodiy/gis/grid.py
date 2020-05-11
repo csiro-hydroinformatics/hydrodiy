@@ -102,6 +102,18 @@ class Grid(object):
         str += '\tno_data_value : {0}\n'.format(self.nodata)
         str += '\tcomment  : {0}\n'.format(self.comment)
 
+        # Add attributes from parent grid if any
+        if hasattr(self, 'parentgrid_ncols'):
+            str += '\n\t--- PARENT GRID ---\n'
+
+        for attr in ['name', 'ncols', 'nrows', 'cellsize', \
+                        'xllcorner', 'yllcorner', 'rows_start', \
+                        'rows_end', 'cols_start', 'cols_end']:
+            pattr = 'parentgrid_'+attr
+            if hasattr(self, pattr):
+                str += '\t{} : {}\n'.format(\
+                    re.sub('parentgrid_', '', pattr), getattr(self, pattr))
+
         return str
 
 
@@ -137,6 +149,7 @@ class Grid(object):
             'byteorder' : 'i', \
             'comment': 'No comment'
         }
+        parent_config = {}
 
         # Read property from header
         with open(fileheader, 'r') as fh:
@@ -150,10 +163,16 @@ class Grid(object):
                     elif pname.startswith('n') and \
                                 not pname.startswith('nodata'):
                         pvalue = int(line[1].strip())
+                    elif pname.startswith('parentgrid_n'):
+                        pvalue = int(line[1].strip())
                     else:
                         pvalue = float(line[1].strip())
 
-                    config[pname] = pvalue
+                    if pname.startswith('parent'):
+                        parent_config[pname] = pvalue
+                    else:
+                        config[pname] = pvalue
+
                 except ValueError:
                     warnings.warn(('Header field {0} cannot be' + \
                             +'processed').format(pname))
@@ -207,6 +226,11 @@ class Grid(object):
         if os.path.exists(filedata):
             grid.load(filedata)
 
+        # Adds parent meta data
+        if len(parent_config) > 0:
+            for key, value in parent_config.items():
+                setattr(grid, key, value)
+
         return grid
 
 
@@ -245,6 +269,16 @@ class Grid(object):
         ''' Return data grid shape '''
         return self._data.shape
 
+    @property
+    def xlim(self):
+        ''' Return x limits '''
+        return self.xllcorner, self.xllcorner+self.ncols*self.cellsize
+
+    @property
+    def ylim(self):
+        ''' Return y limits '''
+        return self.yllcorner, self.yllcorner+self.nrows*self.cellsize
+
 
     @property
     def xvalues(self):
@@ -274,7 +308,8 @@ class Grid(object):
         _value = np.ascontiguousarray(np.atleast_2d(value))
 
         if _value.ndim != 2:
-            raise ValueError('Expected 2d array, got {0} dimensions'.format(\
+            raise ValueError('Expected 2d array, got '+\
+                                '{0} dimensions'.format(\
                                 _value.ndim))
 
         nrows, ncols = _value.shape
@@ -346,6 +381,20 @@ class Grid(object):
         self._data = np.minimum(self._data, self._maxdata)
 
 
+    def set_parent_attributes(self, grid, row_start, row_end, \
+                    col_start, col_end):
+        ''' Set parent attributes when clipping a grid '''
+
+        for attr in ['name', 'ncols', 'nrows', 'cellsize', \
+                        'xllcorner', 'yllcorner']:
+            setattr(self, 'parentgrid_'+attr, getattr(grid, attr))
+
+        self.parentgrid_rows_start = row_start
+        self.parentgrid_rows_end = row_end
+        self.parentgrid_cols_start = col_start
+        self.parentgrid_cols_end = col_end
+
+
     def same_geometry(self, grd):
         ''' Check another grid has the same geometry
 
@@ -407,6 +456,14 @@ class Grid(object):
             'comment': self.comment
         }
 
+        # Add attributes from parent grid if any
+        for attr in ['nrows', 'ncols', 'xllcorner', \
+                        'yllcorner', 'rows_start', 'rows_end', \
+                        'cols_start', 'cols_end']:
+            pattr = 'parentgrid_'+attr
+            if hasattr(self, pattr):
+                js[pattr] = getattr(self, pattr)
+
         return js
 
 
@@ -459,6 +516,15 @@ class Grid(object):
                 comment = 'No comment'
             fh.write('{0:<14} {1}\n'.format('COMMENT', comment))
 
+            # Parent attributes
+            for attr in ['nrows', 'ncols', 'xllcorner', \
+                        'yllcorner', 'rows_start', 'rows_end', \
+                        'cols_start', 'cols_end']:
+                pattr = 'parentgrid_'+attr
+                if hasattr(self, pattr):
+                    fh.write('{0:<22} {1}\n'.format(pattr.upper(), \
+                                getattr(self, pattr)))
+
         # Print data
         self._data.tofile(filename)
 
@@ -478,10 +544,8 @@ class Grid(object):
 
     def coord2cell(self, xycoords):
         ''' Return cell number from coordinates.
-            Cells are counted from the top left corner, row by row
-            starting from 0.
-
-        Example for a 4x4 grid:
+        Cells are counted from the top left corner,
+        row by row from top to bottom. Example for a 4x4 grid:
          0  1  2  3
          4  5  6  7
          8  9 10 11
@@ -518,11 +582,14 @@ class Grid(object):
 
 
     def cell2coord(self, idxcells):
-        ''' Return coordinate from cell number
-            Cells are counted from the top left corner, row by row
-            starting from 0.
+        ''' Return coordinate from cell number.
+        For idxcells data, cells are counted from the top left corner,
+        row by row from top to bottom.
 
-        Example for a 4x4 grid with (xll,yll)=(0,0):
+        For coords data, x coords increase from left to right and
+        y coords increase from bottom to top.
+
+        Example for a 4x4 grid with (xll,yll)=(0,0) and cellsize=1:
          0  1  2  3        (0, 3)  (1, 3) (2, 3) (3, 3)
          4  5  6  7   ->   (0, 2)  (1, 2) (2, 2) (3, 2)
          8  9 10 11        (0, 1)  (1, 1) (2, 1) (3, 1)
@@ -560,14 +627,17 @@ class Grid(object):
 
     def cell2rowcol(self, idxcells):
         ''' Return row and column number from cell number
-            Cells are counted from the top left corner, row by row
-            starting from 0.
+        For idxcells data, cells are counted from the top left corner,
+        row by row from top to bottom.
+
+        For rowcol data, columns are counted from left to right.
+        rows are counted from top to bottom.
 
         Example for a 4x4 grid with (xll,yll)=(0,0):
-         0  1  2  3        (0, 3)  (1, 3) (2, 3) (3, 3)
-         4  5  6  7   ->   (0, 2)  (1, 2) (2, 2) (3, 2)
-         8  9 10 11        (0, 1)  (1, 1) (2, 1) (3, 1)
-        12 13 14 15        (0, 0)  (1, 0) (2, 0) (3, 0)
+         0  1  2  3        (0, 0)  (0, 1) (0, 2) (0, 3)
+         4  5  6  7   ->   (1, 0)  (1, 1) (1, 2) (1, 3)
+         8  9 10 11        (2, 0)  (2, 1) (2, 2) (2, 3)
+        12 13 14 15        (3, 0)  (3, 1) (3, 2) (3, 3)
 
         Parameters
         -----------
@@ -594,7 +664,8 @@ class Grid(object):
         ierr = c_hydrodiy_gis.cell2rowcol(nrows, ncols,
                                         idxcells, rowcols)
         if ierr>0:
-            raise ValueError('c_hydrodiy_gis.cell2rowcol returns '+str(ierr))
+            raise ValueError('c_hydrodiy_gis.cell2rowcol returns '\
+                                                    +str(ierr))
 
         return rowcols
 
@@ -710,34 +781,33 @@ class Grid(object):
 
     def clip(self, xll, yll, xur, yur):
         ''' Clip the current grid to a smaller area '''
-
+        # Process coordinates
         xy = [[xll, yll], [xur, yur]]
         idxcell0, idxcell1 = self.coord2cell(xy)
-
-        ncols = self.ncols
-        nx0 = idxcell0%ncols
-        ny0 = (idxcell0-nx0)//ncols
-
-        nx1 = idxcell1%ncols
-        ny1 = (idxcell1-nx1)//ncols
+        rowcols = self.cell2rowcol([idxcell0, idxcell1])
 
         # Create grid
         name = self.name + '_clip'
-        ncols = nx1+1-nx0
-        nrows = ny0+1-ny1
+        nrows = rowcols[0, 0] - rowcols[1, 0]+1
+        ncols = rowcols[1, 1] - rowcols[0, 1]+1
         xy = self.cell2coord(idxcell0)
-        xll = xy[0, 0]
-        yll = xy[0, 1]
-
+        xllg = xy[0, 0]-self.cellsize/2
+        yllg = xy[0, 1]-self.cellsize/2
         grid = Grid(name, ncols, nrows, cellsize=self.cellsize,
-                xllcorner=xll, yllcorner=yll,
+                xllcorner=xllg, yllcorner=yllg,
                 dtype=self.dtype,
                 nodata=self.nodata)
 
+        grid.comment = 'Clip of grid '+\
+                '{} on the box [{}, {}, {}, {}]'.format(\
+                        self.name, xll, yll, xur, yur)
         # Set data
-        dt = self._data[ny1:ny0+1, nx0:nx1+1]
-        grid.data = dt
-        grid.clip_coords = [ny1, ny0, nx0, nx1]
+        row0, row1 = rowcols[::-1][:, 0]
+        col0, col1 = rowcols[:, 1]
+        grid.data = self._data[row0:row1+1, col0:col1+1]
+
+        # Set parent grid attributes
+        grid.set_parent_attributes(self, row0, row1, col0, col1)
 
         return grid
 
@@ -820,13 +890,11 @@ class Grid(object):
 
         # Get list of cells inside polygon
         inside = gutils.points_inside_polygon(points, polygon)
-        points = points[inside, :]
+        inside = inside.astype(bool)
 
-        cells_inside = pd.DataFrame({'x':points[:, 0], \
-                    'y':points[:, 1], \
-                    'cell':ncells[inside]})
-
-        return cells_inside
+        return pd.DataFrame({'x': points[inside, 0], \
+                    'y': points[inside, 1], \
+                    'cell': ncells[inside]})
 
 
 
@@ -1162,7 +1230,29 @@ class Catchment(object):
 
 
     def intersect(self, grid):
-        ''' Intersect catchment area with other grid '''
+        ''' Intersect catchment area with other grid and compute
+        the weight of each cell from the new grid falling into the
+        catchment.
+
+        Parameters
+        -----------
+        grid : hydrodiy.grid.Grid
+            Input grid (a.g. rainfall data grid).
+
+        Returns
+        -----------
+        area_grid : hydrodiy.grid.Grid
+            Grid matrix. This is the subset of the input grid encapsulating
+            the catchment area. The grid values are cell weights.
+            The grid contains information about start/end rows and columns
+            in the input grid. This information is useful to extract data
+            from the input grid quickly.
+        idxcells : numpy.ndarray
+            List of cells from the input grid falling into the catchment.
+        weights :  numpy.ndarray
+            List of cell weights.
+
+        '''
         if not HAS_C_GIS_MODULE:
             raise ValueError('C module c_hydrodiy_gis is not available, '+\
                 'please run python setup.py build')
@@ -1183,7 +1273,7 @@ class Catchment(object):
         idxcells = np.zeros(nrows*ncols, dtype=np.int64)
         weights = np.zeros(nrows*ncols, dtype=np.float64)
 
-        # Compute river path
+        # Compute intersection
         ierr = c_hydrodiy_gis.intersect(nrows, ncols,
             xll, yll, csz, csz_area,
             xy_area, npoints, idxcells, weights)
@@ -1195,7 +1285,42 @@ class Catchment(object):
         idxcells = idxcells[:npoints[0]]
         weights = weights[:npoints[0]]
 
-        return idxcells, weights
+        # Get coordinates of lower left point
+        coords = grid.cell2coord(idxcells)
+        axll = np.min(coords[:, 0])-grid.cellsize/2
+        ayll = np.min(coords[:, 1])-grid.cellsize/2
+
+        # Weight grid
+        rowcols = grid.cell2rowcol(idxcells)
+        rows = np.unique(rowcols[:, 0])
+        row_start, row_end = np.min(rows), np.max(rows)
+        anrows = len(rows)
+
+        cols = np.unique(rowcols[:, 1])
+        col_start, col_end = np.min(cols), np.max(cols)
+        ancols = len(cols)
+
+        weights_array = np.zeros((anrows, ancols))
+        weights_array[(rowcols[:, 0]-row_start)[:, None], \
+                    (rowcols[:, 1]-col_start)[:, None]] = weights[:, None]
+
+        # Generate grid object
+        area_grid = Grid('area_grid', \
+                        ncols=ancols, nrows=anrows, \
+                        cellsize=grid.cellsize, \
+                        xllcorner=axll, yllcorner=ayll, \
+                        dtype=np.float64, nodata=0, \
+                        comment='Area grid for catchment '+\
+                                '[{}] intersected with grid [{}]'.format(\
+                                        self.name, grid.name))
+        area_grid.data = weights_array
+
+        # Set additional attributes to area grid
+        # to keep info
+        area_grid.set_parent_attributes(grid, row_start, row_end, \
+                                            col_start, col_end)
+
+        return area_grid, idxcells, weights
 
 
     def isin(self, idxcell):

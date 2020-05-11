@@ -25,7 +25,7 @@ from hydrodiy.io import csv
 
 source_file = os.path.abspath(__file__)
 
-run_advanced = True
+RUN_ADVANCED = True
 
 
 class GridTestCase(unittest.TestCase):
@@ -71,13 +71,13 @@ class GridTestCase(unittest.TestCase):
         self.assertTrue(ck)
 
 
-    def test_xvalues_ylalues(self):
+    def test_xvalues_yvalues(self):
         ''' test x and y coords of grid '''
         gr = Grid(**self.config)
 
         xv, yv = gr.xvalues, gr.yvalues
-        self.assertTrue(np.allclose(xv, np.arange(130, 140, 2)))
-        self.assertTrue(np.allclose(yv, np.arange(-39, -25, 2)[::-1]))
+        self.assertTrue(np.allclose(xv, np.arange(131, 141, 2)))
+        self.assertTrue(np.allclose(yv, np.arange(-38, -24, 2)[::-1]))
 
 
     def test_clone(self):
@@ -243,8 +243,7 @@ class GridTestCase(unittest.TestCase):
         xxg, yyg = np.meshgrid(xx, yy)
         xycoords0 = np.concatenate([xxg.flat[:][:, None],
                     yyg.flat[:][:, None]], axis=1)
-        xycoords1 = xycoords0 + np.random.uniform(-csz/2, csz/2,
-                        xycoords0.shape)
+        xycoords1 = xycoords0 + np.random.uniform(0, csz, xycoords0.shape)
 
         # Get cell index and test
         idxcell = gr.coord2cell(xycoords1)
@@ -253,13 +252,14 @@ class GridTestCase(unittest.TestCase):
 
         # Get cell coordinate from index and test
         xycoords2 = gr.cell2coord(idxcell)
-        ck = np.allclose(xycoords0, xycoords2)
+        ck = np.allclose(xycoords0+csz/2, xycoords2)
         self.assertTrue(ck)
 
         rowcol = gr.cell2rowcol(idxcell)
         cka = np.allclose(rowcol[:, 0], np.repeat(np.arange(7), 5))
         ckb = np.allclose(rowcol[:, 1], np.concatenate([np.arange(5)]*7))
         self.assertTrue(cka & ckb)
+
 
     def test_slice(self):
         if not HAS_C_GIS_MODULE:
@@ -269,17 +269,15 @@ class GridTestCase(unittest.TestCase):
         gr = Grid('test', ndim)
         vect = np.arange(0, int(ndim/2)+1)+1.
         vect = np.concatenate([vect[::-1], vect[1:]])
-        gr.data = np.repeat(vect.reshape((1, ndim)), ndim, 0)
+        gr.data = np.array([vect+i for i in range(ndim)])
 
         # Slicing a valley...
-        xyslice = np.vstack([np.arange(0, 11)+0.1, [5.1]*11]).T
+        xyslice = np.vstack([np.arange(1, 11)+0.1, [5.2]*10]).T
         zslice = gr.slice(xyslice)
 
-        expect = vect
-        expect[:ndim//2] -= 0.1
-        expect[ndim//2:-1] += 0.1
+        expect = [ 10.7,   9.7,   8.7,   7.7,   6.7,   6.9, \
+                        7.9,   8.9,   9.9,  10.9]
         ck = np.allclose(zslice, expect)
-
         self.assertTrue(ck)
 
 
@@ -337,11 +335,14 @@ class GridTestCase(unittest.TestCase):
 
         gr = Grid(**self.config)
         gr.data = np.arange(gr.nrows*gr.ncols).reshape((gr.nrows, gr.ncols))
-        grclip = gr.clip(132.1, -35.1, 137.6, -26.9)
+        xll, yll = 132.1, -35.1
+        xur, yur = 137.6, -26.9
+        grclip = gr.clip(xll, yll, xur, yur)
 
-        expected = gr.data[0:5, 1:5]
-        ck = np.allclose(expected, grclip.data)
-        self.assertTrue(ck)
+        expected = gr.data[0:6, 1:4]
+        self.assertTrue(np.allclose(expected, grclip.data))
+        self.assertTrue((grclip.xlim[0] < xll) & (grclip.xlim[1] > xur))
+        self.assertTrue((grclip.ylim[0] < yll) & (grclip.ylim[1] > yur))
 
 
     def test_minmaxdata(self):
@@ -452,9 +453,9 @@ class GridTestCase(unittest.TestCase):
         inside = gr.cells_inside_polygon(polygon)
 
         fe = os.path.join(self.ftest, 'grid_cells_inside_polygon.csv')
-        expected = pd.read_csv(fe).iloc[:, 1:].cell
-        result = np.where(inside.cell == 1)[0]
-        self.assertTrue(np.allclose(result, expected))
+        expected = pd.read_csv(fe)
+
+        self.assertTrue(np.allclose(inside, expected))
 
 
 
@@ -682,9 +683,12 @@ class CatchmentTestCase(unittest.TestCase):
         gr = Grid(2, 2, xllcorner=xll,
             yllcorner=yll, cellsize=csz)
 
-        idx, w = ca.intersect(gr)
+        idx, w, gra = ca.intersect(gr)
+
         ck = np.allclose(idx, [2, 3, 0, 1])
         ck = ck & np.allclose(w, [1./9, 1./9, 2./3, 1./3])
+        ck = ck & np.allclose(gra.data, np.array([[2./3, 1./3], \
+                                                [1./9, 1./9]]))
         self.assertTrue(ck)
 
 
@@ -801,7 +805,7 @@ class CatchmentTestCase(unittest.TestCase):
 
 
     def test_accumulate_advanced(self):
-        if not run_advanced:
+        if not RUN_ADVANCED:
             self.skipTest('Skipping advanced grid tests')
 
         filename = os.path.join(self.ftest, 'fdtest.hdr')
@@ -827,22 +831,20 @@ class CatchmentTestCase(unittest.TestCase):
 
 
     def test_delineate_advanced(self):
-        if not run_advanced:
+        if not RUN_ADVANCED:
             self.skipTest('Skipping advanced grid tests')
 
-        config = [
-            {'outletxy':[147.72, -37.26], 'upstreamxy':[147.9, -37.0],
+        configs = [
+            {'outletxy':[147.7225, -37.2575], 'upstreamxy':[147.9, -37.0],
                 'filename':'flowdir_223202.hdr'},
-            {'outletxy':[145.93375, -17.99375], 'upstreamxy': [145.7, -17.8],
+            {'outletxy':[145.934, -17.9935], 'upstreamxy': [145.7, -17.8],
                 'filename':'fdtest.hdr'}
         ]
 
-        for cfg in config:
-
+        for cfg in configs:
             outletxy = cfg['outletxy']
             upstreamxy = cfg['upstreamxy']
             filename = os.path.join(self.ftest, cfg['filename'])
-
             flowdir = Grid.from_header(filename)
 
             ca = Catchment('test', flowdir)
@@ -856,6 +858,25 @@ class CatchmentTestCase(unittest.TestCase):
             idxcell = flowdir.coord2cell(upstreamxy)
             datariver = delineate_river(flowdir, idxcell, nval=160)
 
+            # Get grid array
+            cellsize = 0.1
+            xllcorner = np.floor(flowdir.xllcorner*100)/100
+            yllcorner = np.floor(flowdir.yllcorner*100)/100
+            nrows = np.ceil(flowdir.nrows*flowdir.cellsize/cellsize)
+            ncols = np.ceil(flowdir.ncols*flowdir.cellsize/cellsize)
+            coarse_grid = Grid('coarse', ncols=ncols, \
+                    nrows=nrows, xllcorner=xllcorner, yllcorner=yllcorner, \
+                    cellsize=cellsize)
+
+            gri, idxi, wi = ca.intersect(coarse_grid)
+            coordi = coarse_grid.cell2coord(idxi)
+
+            fi = os.path.join(self.fimg, \
+                        re.sub('\\.hdr', '_intersect.bil', \
+                            os.path.basename(filename)))
+            gri.dtype = np.float32
+            gri.save(fi)
+
             # Plots
             plt.close('all')
             fig, ax = plt.subplots()
@@ -867,6 +888,12 @@ class CatchmentTestCase(unittest.TestCase):
             data = np.log(data)/math.log(2)
             flowdir.data = data
             flowdir.plot(ax, interpolation='nearest', cmap='Blues')
+
+            # Plot intersect
+            gri.data = np.power(gri.data, 0.2)
+            gri.plot(ax, alpha=0.5, cmap='Reds')
+            ax.plot(coordi[:, 0], coordi[:, 1], '+', markersize=20, \
+                                    color='r')
 
             # plot catchment
             ca.plot_area(ax, '+', markersize=2)
@@ -883,6 +910,7 @@ class CatchmentTestCase(unittest.TestCase):
                         re.sub('\\.hdr', '_plot.png', \
                             os.path.basename(filename)))
             fig.savefig(fp)
+
 
 
 class RefGridsTestCase(unittest.TestCase):
