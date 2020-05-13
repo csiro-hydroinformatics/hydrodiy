@@ -466,13 +466,13 @@ long long c_intersect(long long nrows, long long ncols,
         ierr = c_coord2cell(nrows, ncols, xll, yll, csz, 1,
                 xy, idxcell);
 
-        if(ierr>0)
+        if(ierr>0 || *idxcell<0)
             continue;
 
         /* Look for already store cells and add weight */
         for(k=0; k<j; k++)
         {
-            if(idxcells[k] == idxcell[0]){
+            if(idxcells[k] == *idxcell){
                 weights[k] += areafactor;
                 break;
             }
@@ -481,7 +481,7 @@ long long c_intersect(long long nrows, long long ncols,
         /* If not found in existsting cells, add a new cell */
         if(k==j)
         {
-            idxcells[j] = idxcell[0];
+            idxcells[j] = *idxcell;
             weights[j] = areafactor;
             j++;
         }

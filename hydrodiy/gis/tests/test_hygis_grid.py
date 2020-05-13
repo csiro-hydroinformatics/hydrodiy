@@ -4,6 +4,7 @@ import unittest
 import numpy as np
 import pandas as pd
 import warnings
+from scipy.spatial.distance import pdist, squareform
 
 import zipfile
 
@@ -316,6 +317,35 @@ class GridTestCase(unittest.TestCase):
         gr.plot(ax, interpolation='nearest')
         fp = os.path.join(self.fimg, \
                         re.sub('hdr', 'png', os.path.basename(filename)))
+        fig.savefig(fp)
+
+
+    def test_plot_values(self):
+        ''' Test showing grid values '''
+        ngrid = 20
+        gr = Grid('test', xllcorner=0, yllcorner=0, cellsize=1, \
+                            nrows=ngrid, ncols=ngrid)
+
+        # Generate smooth random data
+        x = np.linspace(0, 1, ngrid)
+        x, y = np.meshgrid(x, x)
+        xy = np.column_stack([x.ravel(), y.ravel()])
+        dist = squareform(pdist(xy))
+        Sigma = np.exp(-dist**2*4)
+        m = np.zeros(ngrid*ngrid)
+
+        d = np.random.multivariate_normal(mean=m, cov=Sigma)
+        gr.data = d.reshape((ngrid, ngrid))
+
+        plt.close('all')
+        fig, ax = plt.subplots()
+        gr.plot(ax, interpolation='nearest')
+        gr.plot_values(ax, fmt='0.1f', fontsize=7, fontweight='bold', \
+                                            color='w')
+
+        fig.set_size_inches((10, 10))
+        fig.tight_layout()
+        fp = os.path.join(self.fimg, 'test_plot_values.png')
         fig.savefig(fp)
 
 

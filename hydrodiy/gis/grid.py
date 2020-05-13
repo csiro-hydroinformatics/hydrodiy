@@ -750,11 +750,45 @@ class Grid(object):
         -----------
         ax : matplotlib.axes
             Axe to draw the grid on
+
+        args, kwargs: arguments passed to ax.imshow
         '''
         xll, yll, csz, nr, nc = self._getsize()
         extent = [xll, xll+csz*nc, yll, yll+csz*nr]
+        if np.any(np.isnan(extent)):
+            raise ValueError(('Cannot plot grid when one of '+\
+                        'xllcorner(()), '+\
+                        'yllcorner({}), cellsize({}), nrows({}), '+\
+                        'ncols({}) is nan').format(xll, yll, csz, nr, nc))
+
         return ax.imshow(self.data, extent=extent, *args, **kwargs)
 
+
+    def plot_values(self, ax, fmt='0.2f', *args, **kwargs):
+        ''' Plot grid values. This is a basic plotting
+        function. For more advanced plots, use
+        hydrodiy.plot.gridplot
+
+        Parameters
+        -----------
+        ax : matplotlib.axes
+            Axe to draw the grid on
+        fmt : str
+            Number formatting
+
+        args, kwargs: arguments passed to ax.text
+        '''
+        txt =[]
+        idxcells = np.arange(self.nrows*self.ncols)
+        coords = self.cell2coord(idxcells)
+        data = self.data.flat
+        for i in  idxcells:
+            lab = '{:{fmt}}'.format(data[i], fmt=fmt)
+            t = ax.text(coords[i, 0], coords[i, 1], lab, va='center', \
+                            ha='center', *args, **kwargs)
+            txt.append(t)
+
+        return txt
 
     def clone(self, dtype=None):
         ''' Clone the current grid object and change dtype if needed
@@ -1256,11 +1290,11 @@ class Catchment(object):
             raise ValueError('C module c_hydrodiy_gis is not available, '+\
                 'please run python setup.py build')
 
-        if self._idxcells_area is None:
+        if self.idxcells_area is None:
             raise ValueError('idxcells_area is None, ' + \
                 'please delineate the area')
 
-        if len(self._idxcells_area)==0:
+        if len(self.idxcells_area)==0:
             raise ValueError('No cells in idxcells_area, ' + \
                 'please use another outlet')
 

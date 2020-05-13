@@ -20,7 +20,7 @@ from hydrodiy.gis.grid import accumulate, voronoi, delineate_river
 
 # Define coordinates of catchment outlet
 # used to delineate catchment boundaries
-outletxy = [145.93375, -17.99375]
+outletxy = [145.9335, -17.9935]
 
 # Define coordinate of upstream point
 # used to delineate the river path
@@ -62,6 +62,13 @@ ca.delineate_boundary()
 idxcell = flowdir.coord2cell(upstreamxy)
 datariver = delineate_river(flowdir, idxcell, nval=160)
 
+# Intersect with a coarser grid
+coarse = Grid('coarse', nrows=9, ncols=9, \
+                xllcorner=flowdir.xllcorner, \
+                yllcorner=flowdir.yllcorner, \
+                cellsize=0.1)
+gri, _, _ = ca.intersect(coarse)
+
 #----------------------------------------------------------------------
 # Plots
 #----------------------------------------------------------------------
@@ -77,6 +84,10 @@ data = np.log(data)/math.log(2)
 flowdir.data = data
 flowdir.plot(ax, interpolation='nearest', cmap='Blues')
 
+# Plot intersect
+gri.plot(ax=ax, cmap='Reds', alpha=0.3)
+gri.plot_values(ax=ax, fontsize=20, color='w', fontweight='bold')
+
 # plot catchment
 ca.plot_area(ax, '+', markersize=2)
 
@@ -86,8 +97,10 @@ ca.plot_boundary(ax, color='green', lw=4)
 # plot river
 ax.plot(datariver['x'], datariver['y'], 'r', lw=3)
 
+# Save image
 fig.set_size_inches((15, 15))
 fig.tight_layout()
-fp = os.path.join(fimg, re.sub('\\.bil', '_plot.png', os.path.basename(fgrid)))
+fp = os.path.join(fimg, \
+            re.sub('\\.bil', '_plot.png', os.path.basename(fgrid)))
 fig.savefig(fp)
 
