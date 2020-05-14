@@ -15,7 +15,7 @@ import warnings
 from datetime import datetime
 from dateutil.relativedelta import relativedelta as delta
 
-from requests.exceptions import ReadTimeout, HTTPError
+from requests.exceptions import ReadTimeout, HTTPError, ConnectionError
 
 import matplotlib as mpl
 mpl.use('Agg')
@@ -70,6 +70,9 @@ for indn in indices:
         continue
     except HTTPError as err:
         warnings.warn('Requests has generated an HTTP error: {0}'.format(\
+                                    str(err)))
+    except ConnectionError as err:
+        warnings.warn('Requests has generated a connection error: {0}'.format(\
                                     str(err)))
         continue
 
