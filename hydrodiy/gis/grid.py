@@ -1644,7 +1644,8 @@ def get_mask(name, extract=False):
         and 0 for cells outside the grid
 
     '''
-    expected = ['AWRAL', 'AWAP', 'WATERDYN', 'AWRAL_DRAINAGE']
+    expected = ['AWRAL', 'AWAP', 'WATERDYN', \
+                    'AWRAL_DRAINAGE', 'DLCD']
     if not name in expected:
         raise ValueError('Expected name in {0}, got {1}'.format(
             '/'.join(expected), name))
@@ -1657,8 +1658,14 @@ def get_mask(name, extract=False):
     # Extract data from zipfile if it does not exist
     if not os.path.exists(fbil) or not os.path.exists(fhdr) or extract:
         with zipfile.ZipFile(fzip, 'r') as zipf:
-            zipf.extract('{0}.bil'.format(fbase), F_HYGIS_DATA)
+            # Extract header
             zipf.extract('{0}.hdr'.format(fbase), F_HYGIS_DATA)
+
+            # Try extract data
+            try:
+                zipf.extract('{0}.bil'.format(fbase), F_HYGIS_DATA)
+            except KeyError:
+                pass
 
     # Reads data
     gr = Grid.from_header(fhdr)

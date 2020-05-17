@@ -996,6 +996,21 @@ class RefGridsTestCase(unittest.TestCase):
         self.assertEqual(gr.yllcorner, -43.575)
         self.assertEqual(np.sum(gr.data), 274845)
 
+    def test_dlcd(self):
+        ''' Test DLCD mask '''
+        gr = get_mask('DLCD')
+
+        self.assertEqual(gr.nrows, 14902)
+        self.assertEqual(gr.ncols, 19161)
+        self.assertEqual(gr.xllcorner, 110.)
+        self.assertEqual(gr.yllcorner, -45.0048)
+
+        gr.dtype = np.float32
+        gr.data = np.random.uniform(0, 1, size=(gr.nrows, gr.ncols))
+
+        fg = '/home/jlerat/Gis/GA/test.bil'
+        gr.save(fg)
+
 
 if __name__ == "__main__":
     unittest.main()
