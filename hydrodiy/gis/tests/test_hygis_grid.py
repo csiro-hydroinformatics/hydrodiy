@@ -998,8 +998,9 @@ class RefGridsTestCase(unittest.TestCase):
 
     def test_dlcd(self):
         ''' Test DLCD mask '''
-        gr = get_mask('DLCD')
+        self.skipTest('Skipping this test - too high memory consumption')
 
+        gr = get_mask('DLCD')
         self.assertEqual(gr.nrows, 14902)
         self.assertEqual(gr.ncols, 19161)
         self.assertEqual(gr.xllcorner, 110.)
