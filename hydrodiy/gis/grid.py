@@ -23,6 +23,7 @@ except ImportError:
     HAS_C_GIS_MODULE = False
 
 from hydrodiy.gis import gutils
+from hydrodiy.io import csv
 
 # Codes indicating the flow direction for a cell
 # using ESRI convention
@@ -37,6 +38,16 @@ FLOWDIRCODE = np.array([[32, 64, 128],
 
 # Path to hygis data
 F_HYGIS_DATA = pkg_resources.resource_filename(__name__, 'data')
+
+
+# AWRAL subgrids
+FZIP_AWRAL_SUBGRIDS = os.path.join(F_HYGIS_DATA, 'AWRAL_SUBGRIDS.zip')
+with zipfile.ZipFile(FZIP_AWRAL_SUBGRIDS, 'r') as archive:
+    AWRAL_SUBGRIDS, _ = csv.read_csv('awra_grids.csv', archive=archive)
+
+AWRAL_SUBGRIDS.loc[:, 'gridid'] = 'AWRAL_'\
+                                    + AWRAL_SUBGRIDS.entity_type.str.upper() \
+                                    + '_' + AWRAL_SUBGRIDS.name_short.str.upper()
 
 
 class Grid(object):
@@ -1643,6 +1654,9 @@ def get_mask(name, extract=False):
         - WATERDYN : Grid used in CSIRO waterdyn products
         - AWRAL_DRAINAGE : Grid used in AWRAL products with drainage divisions
         - DLCD : Grid used by Geoscience Australia DLCD product (land cover)
+        - .. all AWRAL subgrids stored in the
+            hydrodiy/hygis/data/AWRAL_SUBGRIDS.zip file.
+
     extract : bool
         Force extraction of zip data
 
@@ -1653,31 +1667,63 @@ def get_mask(name, extract=False):
         and 0 for cells outside the grid
 
     '''
-    expected = ['AWRAL', 'AWAP', 'WATERDYN', \
-                    'AWRAL_DRAINAGE', 'DLCD']
+    expected = ['AWRAL', 'AWAP', 'WATERDYN', 'DLCD'] +\
+                list(AWRAL_SUBGRIDS.gridid)
+
     if not name in expected:
         raise ValueError('Expected name in {0}, got {1}'.format(
             '/'.join(expected), name))
 
-    fbase = '{0}_GRID'.format(name)
-    fzip = os.path.join(F_HYGIS_DATA, '{0}.zip'.format(fbase))
-    fbil = os.path.join(F_HYGIS_DATA, '{0}.bil'.format(fbase))
-    fhdr = os.path.join(F_HYGIS_DATA, '{0}.hdr'.format(fbase))
+    idx = AWRAL_SUBGRIDS.gridid == name
+    if np.sum(idx) > 0:
+        # Process AWRAL subgrids
+        info = AWRAL_SUBGRIDS.loc[idx, :].iloc[0]
 
-    # Extract data from zipfile if it does not exist
-    if not os.path.exists(fbil) or not os.path.exists(fhdr) or extract:
-        with zipfile.ZipFile(fzip, 'r') as zipf:
-            # Extract header
-            zipf.extract('{0}.hdr'.format(fbase), F_HYGIS_DATA)
+        # Extract from zip
+        with zipfile.ZipFile(FZIP_AWRAL_SUBGRIDS, 'r') as archive:
+            to_delete = []
+            for ext in ['hdr', 'bil']:
+                fsrc = '{}/{}.{}'.format(info.entity_type, \
+                                re.sub('\..*$', '', info.grid_file), ext)
+                fdest = os.path.join(F_HYGIS_DATA, \
+                                '{}.{}'.format(name, ext))
+                with archive.open(fsrc) as fo, open(fdest, 'wb') as fd:
+                        fd.write(fo.read())
 
-            # Try extract data
-            try:
-                zipf.extract('{0}.bil'.format(fbase), F_HYGIS_DATA)
-            except KeyError:
-                pass
+                to_delete.append(fdest)
 
-    # Reads data
-    gr = Grid.from_header(fhdr)
+        # Reads data
+        gr = Grid.from_header(fdest)
+
+        # Clean dir
+        for f in to_delete:
+            os.remove(f)
+            if os.path.exists(f):
+                warnings.warn('Could not delete file {}'.format(f))
+
+        return gr
+
+    else:
+        # Process base grids
+        fbase = '{0}_GRID'.format(name)
+        fzip = os.path.join(F_HYGIS_DATA, '{0}.zip'.format(fbase))
+        fbil = os.path.join(F_HYGIS_DATA, '{0}.bil'.format(fbase))
+        fhdr = os.path.join(F_HYGIS_DATA, '{0}.hdr'.format(fbase))
+
+        # Extract data from zipfile if it does not exist
+        if not os.path.exists(fbil) or not os.path.exists(fhdr) or extract:
+            with zipfile.ZipFile(fzip, 'r') as zipf:
+                # Extract header
+                zipf.extract('{0}.hdr'.format(fbase), F_HYGIS_DATA)
+
+                # Try extract data
+                try:
+                    zipf.extract('{0}.bil'.format(fbase), F_HYGIS_DATA)
+                except KeyError:
+                    pass
+
+        # Reads data
+        gr = Grid.from_header(fhdr)
 
     return gr
 

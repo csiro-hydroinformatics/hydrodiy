@@ -21,7 +21,7 @@ except ImportError:
 
 from hydrodiy.gis.grid import Grid, Catchment, HAS_C_GIS_MODULE
 from hydrodiy.gis.grid import accumulate, voronoi, delineate_river, slope
-from hydrodiy.gis.grid import get_mask
+from hydrodiy.gis.grid import get_mask, AWRAL_SUBGRIDS
 from hydrodiy.io import csv
 
 source_file = os.path.abspath(__file__)
@@ -967,17 +967,6 @@ class RefGridsTestCase(unittest.TestCase):
         self.assertEqual(np.sum(gr.data), 281655)
 
 
-    def test_awral_drainage(self):
-        ''' Test awral drainage mask '''
-        gr = get_mask('AWRAL_DRAINAGE')
-        self.assertEqual(gr.nrows, 681)
-        self.assertEqual(gr.ncols, 841)
-        self.assertEqual(gr.xllcorner, 112.)
-        self.assertEqual(gr.yllcorner, -44.)
-        v = np.unique(gr.data.flatten())
-        self.assertTrue(np.allclose(v, np.arange(14)))
-
-
     def test_awap(self):
         ''' Test awap mask '''
         gr = get_mask('AWAP')
@@ -992,8 +981,8 @@ class RefGridsTestCase(unittest.TestCase):
         gr = get_mask('WATERDYN')
         self.assertEqual(gr.nrows, 670)
         self.assertEqual(gr.ncols, 813)
-        self.assertEqual(gr.xllcorner, 112.925)
-        self.assertEqual(gr.yllcorner, -43.575)
+        self.assertTrue(np.isclose(gr.xllcorner, 112.925))
+        self.assertTrue(np.isclose(gr.yllcorner, -43.575))
         self.assertEqual(np.sum(gr.data), 274845)
 
     def test_dlcd(self):
@@ -1003,14 +992,31 @@ class RefGridsTestCase(unittest.TestCase):
         gr = get_mask('DLCD')
         self.assertEqual(gr.nrows, 14902)
         self.assertEqual(gr.ncols, 19161)
-        self.assertEqual(gr.xllcorner, 110.)
-        self.assertEqual(gr.yllcorner, -45.0048)
+        self.assertTrue(np.isclose(gr.xllcorner, 110.))
+        self.assertTrue(np.isclose(gr.yllcorner, -45.0048))
 
-        gr.dtype = np.float32
-        gr.data = np.random.uniform(0, 1, size=(gr.nrows, gr.ncols))
+    def test_awral_subgrids(self):
+        ''' Test awral subgrids mask '''
+        for name in AWRAL_SUBGRIDS.gridid:
+            gr = get_mask(name)
 
-        fg = '/home/jlerat/Gis/GA/test.bil'
-        gr.save(fg)
+            if name == 'AWRAL_RIVER_MURRUMBIDGEE_RIVER':
+                self.assertEqual(gr.nrows, 47)
+                self.assertEqual(gr.ncols, 128)
+                self.assertTrue(np.isclose(gr.xllcorner, 143.2))
+                self.assertTrue(np.isclose(gr.yllcorner, -36.55))
+                v = np.unique(gr.data.flatten())
+                self.assertTrue(np.allclose(v, [0, 1]))
+
+            elif name == 'AWRAL_DRAINAGE_MURRAY_DARLING_BASIN':
+                self.assertEqual(gr.nrows, 261)
+                self.assertEqual(gr.ncols, 278)
+                self.assertTrue(np.isclose(gr.xllcorner, 138.55))
+                self.assertTrue(np.isclose(gr.yllcorner, -37.65))
+                v = np.unique(gr.data.flatten())
+                self.assertTrue(np.allclose(v, [0, 1]))
+
+
 
 
 if __name__ == "__main__":
