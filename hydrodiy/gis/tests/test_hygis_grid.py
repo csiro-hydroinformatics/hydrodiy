@@ -957,6 +957,13 @@ class RefGridsTestCase(unittest.TestCase):
         self.ftest = os.path.dirname(source_file)
 
 
+    def test_name_error(self):
+        ''' Test mask error '''
+        try:
+            gr = get_mask('AWRAL_RIVER_BIDULE')
+        except ValueError as err:
+            self.assertTrue(str(err).startswith('Expected name in'))
+
     def test_awral(self):
         ''' Test awral mask '''
         gr = get_mask('AWRAL')
@@ -995,12 +1002,13 @@ class RefGridsTestCase(unittest.TestCase):
         self.assertTrue(np.isclose(gr.xllcorner, 110.))
         self.assertTrue(np.isclose(gr.yllcorner, -45.0048))
 
+
     def test_awral_subgrids(self):
         ''' Test awral subgrids mask '''
         for name in AWRAL_SUBGRIDS.gridid:
             gr = get_mask(name)
 
-            if name == 'AWRAL_RIVER_MURRUMBIDGEE_RIVER':
+            if name == 'AWRAL_RIVER_MURRUMBIDGEE':
                 self.assertEqual(gr.nrows, 47)
                 self.assertEqual(gr.ncols, 128)
                 self.assertTrue(np.isclose(gr.xllcorner, 143.2))
@@ -1008,15 +1016,13 @@ class RefGridsTestCase(unittest.TestCase):
                 v = np.unique(gr.data.flatten())
                 self.assertTrue(np.allclose(v, [0, 1]))
 
-            elif name == 'AWRAL_DRAINAGE_MURRAY_DARLING_BASIN':
+            elif name == 'AWRAL_DRAINAGE_MURRAY_DARLING':
                 self.assertEqual(gr.nrows, 261)
                 self.assertEqual(gr.ncols, 278)
                 self.assertTrue(np.isclose(gr.xllcorner, 138.55))
                 self.assertTrue(np.isclose(gr.yllcorner, -37.65))
                 v = np.unique(gr.data.flatten())
                 self.assertTrue(np.allclose(v, [0, 1]))
-
-
 
 
 if __name__ == "__main__":

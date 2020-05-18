@@ -1667,16 +1667,12 @@ def get_mask(name, extract=False):
         and 0 for cells outside the grid
 
     '''
-    expected = ['AWRAL', 'AWAP', 'WATERDYN', 'DLCD'] +\
-                list(AWRAL_SUBGRIDS.gridid)
+    expected_base = ['AWRAL', 'AWAP', 'WATERDYN', 'DLCD']
+    expected_subgrids = list(AWRAL_SUBGRIDS.gridid)
 
-    if not name in expected:
-        raise ValueError('Expected name in {0}, got {1}'.format(
-            '/'.join(expected), name))
-
-    idx = AWRAL_SUBGRIDS.gridid == name
-    if np.sum(idx) > 0:
+    if name in expected_subgrids:
         # Process AWRAL subgrids
+        idx = AWRAL_SUBGRIDS.gridid == name
         info = AWRAL_SUBGRIDS.loc[idx, :].iloc[0]
 
         # Extract from zip
@@ -1703,7 +1699,7 @@ def get_mask(name, extract=False):
 
         return gr
 
-    else:
+    elif name in expected_base:
         # Process base grids
         fbase = '{0}_GRID'.format(name)
         fzip = os.path.join(F_HYGIS_DATA, '{0}.zip'.format(fbase))
@@ -1724,6 +1720,10 @@ def get_mask(name, extract=False):
 
         # Reads data
         gr = Grid.from_header(fhdr)
+
+    else:
+        raise ValueError('Expected name in {0} or AWRAL subgrids id, got {1}'.format(
+            '/'.join(expected_base), name))
 
     return gr
 
