@@ -1638,7 +1638,11 @@ def get_mask(name, extract=False):
     name : str
         Name of grid :
         - AWRAL : Grid used in AWRAL products
+            This grid is also used by QLD/SILO products.
         - AWAP : Grid used in AWAP products
+        - WATERDYN : Grid used in CSIRO waterdyn products
+        - AWRAL_DRAINAGE : Grid used in AWRAL products with drainage divisions
+        - DLCD : Grid used by Geoscience Australia DLCD product (land cover)
     extract : bool
         Force extraction of zip data
 
