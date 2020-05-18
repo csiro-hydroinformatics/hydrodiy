@@ -1286,6 +1286,11 @@ class Catchment(object):
             List of cell weights.
 
         '''
+        if grid.cellsize < self.flowdir.cellsize*2:
+            warnings.warn(('Cellsize of intersecting grid ({}) is smaller'+\
+                ' than twice the cellsize of flow directon grid ({})').format(\
+                        grid.cellsize, self.flowdir.cellsize))
+
         if not HAS_C_GIS_MODULE:
             raise ValueError('C module c_hydrodiy_gis is not available, '+\
                 'please run python setup.py build')
@@ -1327,11 +1332,11 @@ class Catchment(object):
         rowcols = grid.cell2rowcol(idxcells)
         rows = np.unique(rowcols[:, 0])
         row_start, row_end = np.min(rows), np.max(rows)
-        anrows = len(rows)
+        anrows = row_end-row_start + 1
 
         cols = np.unique(rowcols[:, 1])
         col_start, col_end = np.min(cols), np.max(cols)
-        ancols = len(cols)
+        ancols = col_end-col_start + 1
 
         weights_array = np.zeros((anrows, ancols))
         weights_array[(rowcols[:, 0]-row_start)[:, None], \
