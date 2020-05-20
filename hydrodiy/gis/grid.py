@@ -1693,7 +1693,9 @@ def get_mask(name, extract=False):
 
         # Clean dir
         for f in to_delete:
-            os.remove(f)
+            if os.path.exists(f):
+                os.remove(f)
+            # Could not delete the file
             if os.path.exists(f):
                 warnings.warn('Could not delete file {}'.format(f))
 
