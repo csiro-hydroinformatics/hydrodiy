@@ -532,8 +532,8 @@ class GridTestCase(unittest.TestCase):
 
         fe = os.path.join(self.ftest, 'grid_cells_inside_polygon.csv')
         expected = pd.read_csv(fe)
-
-        self.assertTrue(np.allclose(inside, expected))
+        for cn in inside.columns:
+            self.assertTrue(np.allclose(inside.loc[:, cn], expected.loc[:, cn]))
 
 
 
