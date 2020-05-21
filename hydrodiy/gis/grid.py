@@ -5,6 +5,8 @@ import pkg_resources
 import math
 import copy
 import zipfile
+from io import BytesIO, StringIO
+from tempfile import TemporaryFile
 import warnings
 
 from datetime import datetime
@@ -129,28 +131,24 @@ class Grid(object):
 
 
     @classmethod
-    def from_header(cls, filename):
-        ''' Create grid from header file
+    def from_stream(cls, stream_header, stream_data=None):
+        ''' Create grid from file-like stream.
 
         Parameters
         -----------
-        fileheader : str
-            Path to the header file or BIL file
+        stream_header : io.StringIO or _io.TextIOWrapper
+            File-like stream pointing towards header file.
+
+        stream_data : io.BytesIO or _io.BufferedReader
+            File-like stream pointing towards data file.
 
         Returns
         -----------
         grid : hydrodiy.grid.Grid
             Grid instance
         '''
-
-        fileheader = re.sub('(bil|flt)$', 'hdr', filename)
-
-        if not os.path.exists(fileheader):
-            raise ValueError(('File {0} does not '+
-                'exist').format(fileheader))
-
+        # initialise config
         config = {
-            'name' : re.sub('\\..*$', '', os.path.basename(fileheader)), \
             'xllcorner' : 0., \
             'yllcorner' : 0., \
             'cellsize': 1., \
@@ -160,34 +158,41 @@ class Grid(object):
             'byteorder' : 'i', \
             'comment': 'No comment'
         }
+
+        # Define name if available
+        if hasattr(stream_header, 'name'):
+            config['name'] = os.path.splitext(os.path.basename(stream_header.name))[0]
+        else:
+            config['name'] = 'no_name'
+
         parent_config = {}
 
         # Read property from header
-        with open(fileheader, 'r') as fh:
-            for line in fh.readlines():
-                line = re.split(' ', re.sub(' +', ' ', line))
-                pname = line[0].lower()
-                try:
-                    if pname in ['pixeltype', 'byteorder',
-                        'layout', 'comment', 'name']:
-                        pvalue = ' '.join(line[1:]).strip().lower()
-                    elif pname.startswith('n') and \
-                                not pname.startswith('nodata'):
-                        pvalue = int(line[1].strip())
-                    elif pname.startswith('parentgrid_n'):
-                        pvalue = int(line[1].strip())
-                    else:
-                        pvalue = float(line[1].strip())
+        stream_header.seek(0)
+        for line in stream_header.readlines():
+            line = re.split(' ', re.sub(' +', ' ', line))
+            pname = line[0].lower()
+            try:
+                if pname in ['pixeltype', 'byteorder',
+                    'layout', 'comment', 'name']:
+                    pvalue = ' '.join(line[1:]).strip().lower()
+                elif pname.startswith('n') and \
+                            not pname.startswith('nodata'):
+                    pvalue = int(line[1].strip())
+                elif pname.startswith('parentgrid_n'):
+                    pvalue = int(line[1].strip())
+                else:
+                    pvalue = float(line[1].strip())
 
-                    if pname.startswith('parent'):
-                        parent_config[pname] = pvalue
-                    else:
-                        config[pname] = pvalue
+                if pname.startswith('parent'):
+                    parent_config[pname] = pvalue
+                else:
+                    config[pname] = pvalue
 
-                except ValueError:
-                    warnings.warn(('Header field {0} cannot be' + \
-                            +'processed').format(pname))
-                    pass
+            except ValueError:
+                warnings.warn(('Header field {0} cannot be' + \
+                        +'processed').format(pname))
+                pass
 
         # Define dtype
         if config['byteorder'] == 'm':
@@ -222,7 +227,6 @@ class Grid(object):
         # Rename nodata_value to nodata
         if 'nodata_value' in config:
             config['nodata'] = config['nodata_value']
-            config.pop('nodata_value')
 
         # Filters config data
         keys = ['name', 'ncols', 'nrows', 'cellsize', 'comment', \
@@ -233,9 +237,9 @@ class Grid(object):
         grid = Grid(**config)
 
         # Reads data if bil file is there
-        filedata = re.sub('hdr$', 'bil',fileheader)
-        if os.path.exists(filedata):
-            grid.load(filedata)
+        if not stream_data is None:
+            stream_data.seek(0)
+            grid.load(stream_data)
 
         # Adds parent meta data
         if len(parent_config) > 0:
@@ -243,6 +247,74 @@ class Grid(object):
                 setattr(grid, key, value)
 
         return grid
+
+
+    @classmethod
+    def from_header(cls, fileheader):
+        ''' Create grid from header file
+
+        Parameters
+        -----------
+        fileheader : str
+            Path to the header file (or BIL file)
+
+        Returns
+        -----------
+        grid : hydrodiy.grid.Grid
+            Grid instance
+        '''
+        # Generate file paths
+        base = os.path.splitext(fileheader)[0]
+        fileheader = base + '.hdr'
+        filedata = base + '.bil'
+
+        if not os.path.exists(fileheader):
+            raise ValueError(('File {0} does not '+
+                'exist').format(fileheader))
+
+        with open(fileheader, 'r') as fh:
+            if os.path.exists(filedata):
+                with open(filedata, 'rb') as fd:
+                    return cls.from_stream(fh, fd)
+            else:
+                return cls.from_stream(fh)
+
+
+    @classmethod
+    def from_zip(cls, zipfilepath, fileheader_in_zip):
+        ''' Create grid from zip file
+
+        Parameters
+        -----------
+        zipfilepath : str
+            Path to the zip file
+        fileheader_in_zip : str
+            Path to the header file within the zip archive
+
+        Returns
+        -----------
+        grid : hydrodiy.grid.Grid
+            Grid instance
+        '''
+        # Generate file paths
+        base = os.path.splitext(fileheader_in_zip)[0]
+        fileheader = base + '.hdr'
+        filedata = base + '.bil'
+
+        # Open zipfile
+        with zipfile.ZipFile(zipfilepath, 'r') as archive:
+            fh = StringIO(archive.open(fileheader).read().decode())
+
+            if not filedata in archive.namelist():
+                # No data, just header
+                return Grid.from_stream(fh)
+            else:
+                with TemporaryFile() as fd:
+                    # Reads data to temporary file
+                    # (numpy does not support reading from a BytesIO stream)
+                    fd.write(archive.open(filedata).read())
+
+                    return Grid.from_stream(fh, fd)
 
 
     @classmethod
@@ -428,21 +500,16 @@ class Grid(object):
         return identical
 
 
-    def load(self, filename):
+    def load(self, stream_data):
         ''' Load data from file
 
         Parameters
         -----------
-        filename : str
-            Path to the binary data (only BIL file format at the moment)
+        stream_data : io.ByteIO or str
+            Stream to binary data (only BIL file format at the moment) or
+            File path.
         '''
-        if not filename.endswith('bil'):
-            raise ValueError('Only bil format recognised')
-
-        if not os.path.exists(filename):
-            raise ValueError('File {0} does not exist'.format(filename))
-
-        data = np.fromfile(filename, self.dtype)
+        data = np.fromfile(stream_data, self.dtype)
 
         nval = self.nrows * self.ncols
         if len(data) != nval:
@@ -1640,7 +1707,7 @@ def voronoi(catchment, xypoints):
 
 
 
-def get_mask(name, extract=False):
+def get_mask(name):
     ''' Get reference gridss defined in
     Bureau of meteorology products
 
@@ -1675,53 +1742,22 @@ def get_mask(name, extract=False):
         idx = AWRAL_SUBGRIDS.gridid == name
         info = AWRAL_SUBGRIDS.loc[idx, :].iloc[0]
 
-        # Extract from zip
-        with zipfile.ZipFile(FZIP_AWRAL_SUBGRIDS, 'r') as archive:
-            to_delete = []
-            for ext in ['hdr', 'bil']:
-                fsrc = '{}/{}.{}'.format(info.entity_type, \
-                                re.sub('\..*$', '', info.grid_file), ext)
-                fdest = os.path.join(F_HYGIS_DATA, \
-                                '{}.{}'.format(name, ext))
-                with archive.open(fsrc) as fo, open(fdest, 'wb') as fd:
-                        fd.write(fo.read())
-
-                to_delete.append(fdest)
+        # Generate file names
+        fh = '{}/{}.hdr'.format(info.entity_type, re.sub('\..*$', '', info.grid_file))
 
         # Reads data
-        gr = Grid.from_header(fdest)
-
-        # Clean dir
-        for f in to_delete:
-            if os.path.exists(f):
-                os.remove(f)
-            # Could not delete the file
-            if os.path.exists(f):
-                warnings.warn('Could not delete file {}'.format(f))
+        gr = Grid.from_zip(FZIP_AWRAL_SUBGRIDS, fh)
 
         return gr
 
     elif name in expected_base:
-        # Process base grids
+        # Generate file names
         fbase = '{0}_GRID'.format(name)
         fzip = os.path.join(F_HYGIS_DATA, '{0}.zip'.format(fbase))
-        fbil = os.path.join(F_HYGIS_DATA, '{0}.bil'.format(fbase))
-        fhdr = os.path.join(F_HYGIS_DATA, '{0}.hdr'.format(fbase))
-
-        # Extract data from zipfile if it does not exist
-        if not os.path.exists(fbil) or not os.path.exists(fhdr) or extract:
-            with zipfile.ZipFile(fzip, 'r') as zipf:
-                # Extract header
-                zipf.extract('{0}.hdr'.format(fbase), F_HYGIS_DATA)
-
-                # Try extract data
-                try:
-                    zipf.extract('{0}.bil'.format(fbase), F_HYGIS_DATA)
-                except KeyError:
-                    pass
+        fhdr = '{0}.hdr'.format(fbase)
 
         # Reads data
-        gr = Grid.from_header(fhdr)
+        gr = Grid.from_zip(fzip, fhdr)
 
     else:
         raise ValueError('Expected name in {0} or AWRAL subgrids id, got {1}'.format(

@@ -4,6 +4,7 @@ import unittest
 import numpy as np
 import pandas as pd
 import warnings
+import zipfile
 from scipy.spatial.distance import pdist, squareform
 
 import zipfile
@@ -282,6 +283,53 @@ class GridTestCase(unittest.TestCase):
         self.assertTrue(ck)
 
 
+    def test_from_stream(self):
+        ''' Test loading grid from stream '''
+        # Header only
+        fileheader = os.path.join(self.ftest, 'fdtest.hdr')
+        with open(fileheader, 'r') as fh:
+            gr = Grid.from_stream(fh)
+
+        def test_grid(gr):
+            ck = gr.nrows == 283
+            ck &= (gr.ncols == 293)
+            ck &= np.isclose(gr.xllcorner, 145.44625)
+            ck &= np.isclose(gr.yllcorner, -18.291250)
+            ck &= np.isclose(gr.cellsize,  0.0025)
+            ck &= (gr.nodata == 32767)
+            ck &= (gr.name == 'fdtest')
+            ck &= (gr.comment == 'No comment')
+            return ck
+
+        self.assertTrue(test_grid(gr))
+
+        # Header and data
+        filedata = os.path.join(self.ftest, 'fdtest.bil')
+
+        with open(fileheader, 'r') as fh, open(filedata, 'rb') as fd:
+            gr = Grid.from_stream(fh, fd)
+
+        self.assertTrue(test_grid(gr))
+
+
+    def test_from_zip(self):
+        ''' Test loading grid from stream piped from zipfile '''
+        filezip = os.path.join(self.ftest, 'flowdir_223202.zip')
+        fileheader = 'subdir/flowdir_223202.hdr'
+        gr = Grid.from_zip(filezip, fileheader)
+
+        ck = gr.nrows == 241
+        ck &= (gr.ncols == 260)
+        ck &= np.isclose(gr.xllcorner, 147.45125)
+        ck &= np.isclose(gr.yllcorner, -37.45125)
+        ck &= np.isclose(gr.cellsize,  0.0025)
+        ck &= (gr.nodata == 0)
+        ck &= (gr.name == 'no_name')
+        ck &= (gr.comment == 'No comment')
+        ck &= np.isclose(gr.data.mean(), 30.12049154165337)
+        self.assertTrue(ck)
+
+
     def test_from_header(self):
         filename = os.path.join(self.ftest, 'header.hdr')
         try:
@@ -291,13 +339,13 @@ class GridTestCase(unittest.TestCase):
             return
 
         ck = gr.nrows == 13857
-        ck = ck & (gr.ncols == 16440)
-        ck = ck & (gr.xllcorner == 112.90125)
-        ck = ck & (gr.yllcorner == -43.74375)
-        ck = ck & (gr.cellsize == 0.0025)
-        ck = ck & (gr.nodata == 32767)
-        ck = ck & (gr.name == 'mygrid')
-        ck = ck & (gr.comment == 'testing header')
+        ck &= (gr.ncols == 16440)
+        ck &= (gr.xllcorner == 112.90125)
+        ck &= (gr.yllcorner == -43.74375)
+        ck &= (gr.cellsize == 0.0025)
+        ck &= (gr.nodata == 32767)
+        ck &= (gr.name == 'mygrid')
+        ck &= (gr.comment == 'testing header')
 
         self.assertTrue(ck)
 
