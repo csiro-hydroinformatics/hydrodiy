@@ -795,8 +795,9 @@ class MetricsTestCase(unittest.TestCase):
             self.assertTrue(np.allclose(m, mexpected))
 
             # 5x5 confusion matrix
-            o, s = [np.random.choice(np.arange(5), size=100) for i in range(2)]
-            m = metrics.confusion_matrix(o, s)
+            o, s = [np.random.choice(np.arange(5), size=100) \
+                                    for i in range(2)]
+            m = metrics.confusion_matrix(o, s, ncat=5)
 
             mexpected = np.zeros((5, 5))
             for i, j in prod(range(5), range(5)):
@@ -805,6 +806,24 @@ class MetricsTestCase(unittest.TestCase):
 
             self.assertTrue(np.allclose(m, mexpected))
 
+
+    def test_confusion_matrix_missing(self):
+        ''' Test computation of confusion matrix with missing categories '''
+
+        o = np.random.choice([0, 1], size=100)
+        s = np.ones(100, dtype=int)
+        m = metrics.confusion_matrix(o, s)
+        self.assertTrue(np.allclose(m.loc[:, 0], [0, 0]))
+
+        o = np.zeros(100, dtype=int)
+        m = metrics.confusion_matrix(o, s)
+        self.assertTrue(np.allclose(m.loc[:, 0], [0, 0]))
+        self.assertTrue(np.allclose(m.loc[1, :], [0, 0]))
+
+        o, s = [np.random.choice([0, 1, 3, 4], size=100) for i in [0, 1]]
+        m = metrics.confusion_matrix(o, s, ncat=5)
+        self.assertTrue(np.allclose(m.loc[:, 2], [0]*5))
+        self.assertTrue(np.allclose(m.loc[2, :], [0]*5))
 
 
     def test_binary(self):

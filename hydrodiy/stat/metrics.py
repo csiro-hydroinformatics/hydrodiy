@@ -824,7 +824,7 @@ def relative_percentile_error(obs, sim, percentile_range, \
     return rperr, perc
 
 
-def confusion_matrix(obs, sim):
+def confusion_matrix(obs, sim, ncat=2):
     ''' Compute confusion matrix from binary forecats
 
     Parameters
@@ -842,9 +842,25 @@ def confusion_matrix(obs, sim):
             | false_negative, true_negative |
     '''
     # Check inputs
-    obs = np.array(obs).astype(np.int64)
-    sim = np.array(sim).astype(np.int64)
-    return pd.crosstab(obs, sim)
+    obs = np.array(obs).astype(np.int32)
+    sim = np.array(sim).astype(np.int32)
+
+    # First pass using pandas
+    cm = pd.crosstab(obs, sim)
+
+    # Add missing rows and columns
+    if cm.shape != (ncat, ncat):
+        for icat in range(ncat):
+            if not icat in cm.columns:
+                cm.loc[:, icat] = 0
+            if not icat in cm.index:
+                cm.loc[icat, :] = 0
+
+        # Re-order
+        cm = cm.loc[:, np.arange(ncat)]
+        cm = cm.loc[np.arange(ncat), :]
+
+    return cm
 
 
 def binary(conf_mat):
