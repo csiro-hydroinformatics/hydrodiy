@@ -824,7 +824,7 @@ def relative_percentile_error(obs, sim, percentile_range, \
     return rperr, perc
 
 
-def confusion_matrix(obs, sim, ncat=2):
+def confusion_matrix(obs, sim, ncat=None):
     ''' Compute confusion matrix from binary forecats
 
     Parameters
@@ -833,13 +833,17 @@ def confusion_matrix(obs, sim, ncat=2):
         True/False observed
     sim : np.array
         True/False forecast
+    ncat : int
+        Number of expected categories. If None will
+        infer from categories present in obs and sim.
 
     Returns
     -----------
      conf_mat : np.array
-        Confusion matrix organised as follows:
-            | true_positive, false positive |
-            | false_negative, true_negative |
+        Confusion matrix. For binary forecasts, it is organised
+        as follows:
+            | True Negatives,  False Positives |
+            | False Negatives, True Positives  |
     '''
     # Check inputs
     obs = np.array(obs).astype(np.int32)
@@ -847,6 +851,11 @@ def confusion_matrix(obs, sim, ncat=2):
 
     # First pass using pandas
     cm = pd.crosstab(obs, sim)
+
+    # Infer number of categories
+    if ncat is None:
+        cats = np.concatenate([cm.index.values, cm.columns.values])
+        ncat = len(np.unique(cats))
 
     # Add missing rows and columns
     if cm.shape != (ncat, ncat):
@@ -881,8 +890,8 @@ def binary(conf_mat):
     conf_mat : np.array
         Confusion matrix organised as follows (caution this may be different
         from litterature):
-            | true_negative, false positive |
-            | false_negative, true_positive |
+            | True Negatives,  False Positives |
+            | False Negatives, True Positives  |
 
         See hydrodiy.stats.metrics.confusion_matrix
 

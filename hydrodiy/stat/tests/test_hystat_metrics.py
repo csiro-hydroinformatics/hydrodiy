@@ -797,7 +797,7 @@ class MetricsTestCase(unittest.TestCase):
             # 5x5 confusion matrix
             o, s = [np.random.choice(np.arange(5), size=100) \
                                     for i in range(2)]
-            m = metrics.confusion_matrix(o, s, ncat=5)
+            m = metrics.confusion_matrix(o, s) #, ncat=5)
 
             mexpected = np.zeros((5, 5))
             for i, j in prod(range(5), range(5)):
