@@ -388,6 +388,18 @@ def gplot(grid, config, plotting_object):
                         matplotlib.axes.Axes
         Plotting object to be used. If an axes is used, data
         is plotted without projection.
+
+    Returns
+    -----------
+    contour_grid : matplotlib.contour.QuadContourSet
+        Contour grid.
+    contour_lines : matplotlib.contour.QuadContourSet
+        Contour lines.
+    xcoord : numpy.ndarray
+        Projected X coordinates.
+
+    ycoord : numpy.ndarray
+        Projected Y coordinates.
     '''
 
     # Get cell coordinates
@@ -445,7 +457,7 @@ def gplot(grid, config, plotting_object):
                 warnings.warn('Cannot draw contour lines: {}'.format(\
                                     str(err)))
 
-    return contour_grid, contour_lines
+    return contour_grid, contour_lines, xcoord, ycoord
 
 
 def gbar(cbar_ax, config, contour_grid, rect=[0, 0, 0.6, 0.95], \
