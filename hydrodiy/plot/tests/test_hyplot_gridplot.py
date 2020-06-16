@@ -132,7 +132,7 @@ class GridplotTestCase(unittest.TestCase):
             grd.data = y0 + (y1-y0)*grd.data
 
             # Plot
-            cont_gr, cont_lines = gplot(grd, cfg, omap)
+            cont_gr, cont_lines, _, _ = gplot(grd, cfg, omap)
             cbar_ax = plt.subplot(gs[0, 1])
             dticks = True
             if re.search('decile|relative', varname):
@@ -173,7 +173,7 @@ class GridplotTestCase(unittest.TestCase):
         grd.data = y0 + (y1-y0)*grd.data
 
         # Plot
-        cont_gr, cont_lines = gplot(grd, cfg, omap)
+        cont_gr, cont_lines, _, _ = gplot(grd, cfg, omap)
         cbar_ax = plt.subplot(gs[0, 1])
         gbar(cbar_ax, cfg, cont_gr)
 
@@ -205,7 +205,7 @@ class GridplotTestCase(unittest.TestCase):
             else:
                 omap = ax
 
-            cont_gr, cont_lines = gplot(grd, cfg, omap)
+            cont_gr, cont_lines, _, _ = gplot(grd, cfg, omap)
 
             cbar_ax = plt.subplot(gs[0, 2*iplot+1])
             if iplot == 0:
