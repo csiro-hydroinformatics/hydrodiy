@@ -887,7 +887,12 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap='viridis', \
                         '{0} ({1})'.format(icat, label))
 
         # Plot category
-        ax.plot(u, v, 'o', color=col, label=label, \
+        if 'color' in kwargs:
+            ax.plot(u, v, 'o', label=label, \
+                                markersize=markersize, \
+                                *args, **kwargs)
+        else:
+            ax.plot(u, v, 'o', color=col, label=label, \
                                 markersize=markersize, \
                                 *args, **kwargs)
 
