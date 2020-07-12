@@ -754,10 +754,12 @@ def ecdfplot(ax, df, label_stat=None, label_stat_format='4.2f', \
 
 
 def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap='viridis', \
-                        fmt='0.2f', nval=False, *args, **kwargs):
-    ''' Draw a scatter plot using different colors depending on categories
-    defined by z. Be careful when z has a lot of zeros, quantile computation
-    may lead to non-unique category boundaries.
+                        markersizemin=8, markersizemax=8, \
+                        fmt='0.2f', nval=False, \
+                        *args, **kwargs):
+    ''' Draw a scatter plot using different colors or markersize depending
+    on categories defined by z. Be careful when z has a lot of zeros,
+    quantile computation may lead to non-unique category boundaries.
 
     Parameters
     -----------
@@ -777,6 +779,10 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap='viridis', \
     cmap : str
         Matplotlib color map name to change color for each category.
         Input data
+    markersizemin : float
+        Minimum size of marker
+    markersizemax : float
+        Maximum size of marker
     fmnt : str
         Number format to be used in labels
     nval : bool
@@ -827,8 +833,10 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap='viridis', \
                 cuts = list(z.quantile(qq))
 
             # make sure the cuts cover the full range
-            cuts[0] = z.min()-1e-10
-            cuts[-1] = z.max()+1e-10
+            if cuts[0] >= z.min():
+                cuts[0] = z.min()-1e-10
+            if cuts[-1] <= z.max():
+                cuts[-1] = z.max()+1e-10
 
             # Create categories
             ncats = len(cuts)-1
@@ -847,15 +855,29 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap='viridis', \
             raise ValueError('Expected ncats or cuts to be not-None')
 
     # Get colors for each category
-    colors = cmap2colors(ncats, cmap)
+    if not cmap is None:
+        colors = cmap2colors(ncats, cmap)
+
+    # Get size for each category
+    markersizes = np.linspace(markersizemin, markersizemax, ncats)
 
     # Plot all categories
     plotted = []
 
     for icat in range(ncats):
-        # Plot category
+        # plot config
         idx = cats == icat
         label = labels[icat]
+        markersize = markersizes[icat]
+
+        if not cmap is None:
+            col = colors[icat]
+        else:
+            if icat == 0:
+                col = None
+            else:
+                # Reuse same color than previous
+                col = last_col
 
         if np.sum(idx) > 0:
             u, v = x[idx], y[idx]
@@ -864,15 +886,18 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap='viridis', \
             warnings.warn('No points falling in category '+\
                         '{0} ({1})'.format(icat, label))
 
-        ax.plot(u, v, 'o', color=colors[icat], label=label, \
+        # Plot category
+        ax.plot(u, v, 'o', color=col, label=label, \
+                                markersize=markersize, \
                                 *args, **kwargs)
 
         line = ax.get_lines()[-1]
+        last_col = line.get_color()
 
         # Store plotted data
         dd = {'idx': idx, \
             'label': label, \
-            'color': colors[icat], \
+            'color': last_col, \
             'line': line, \
             'x': x[idx], 'y': y[idx]}
 

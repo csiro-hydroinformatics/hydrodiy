@@ -492,9 +492,22 @@ class UtilsTestCase(unittest.TestCase):
         x, y, z = np.random.uniform(0, 1, size=(100, 3)).T
         fig, ax = plt.subplots()
         plotted, cats = putils.scattercat(ax, x, y, z, 5, \
-                                markersize=12, alpha=0.6)
+                                markersizemin=5, markersizemax=12, \
+                                alpha=0.6)
         ax.legend(loc=2, title='categories')
         fp = os.path.join(self.fimg, 'scattercat.png')
+        fig.savefig(fp)
+
+
+    def test_scattercat_nocmap(self):
+        ''' Test categorical scatter plot with no cmap'''
+        x, y, z = np.random.uniform(0, 1, size=(100, 3)).T
+        fig, ax = plt.subplots()
+        plotted, cats = putils.scattercat(ax, x, y, z, 5, \
+                                markersizemin=5, markersizemax=12, \
+                                cmap=None)
+        ax.legend(loc=2, title='categories')
+        fp = os.path.join(self.fimg, 'scattercat_nocmap.png')
         fig.savefig(fp)
 
 
@@ -507,14 +520,16 @@ class UtilsTestCase(unittest.TestCase):
         fig, axs = plt.subplots(ncols=2)
         ax = axs[0]
         plotted, cats = putils.scattercat(ax, x, y, z, 5, \
-                                markersize=12, alpha=0.6)
+                                markersizemin=5, markersizemax=12, \
+                                alpha=0.6)
         ax.legend(loc=2, title='categories')
 
         # Plot categorical data extracted from a dataframe
         ax = axs[1]
         df = pd.DataFrame({'z': z, 'a': np.nan})
         plotted, cats = putils.scattercat(ax, x, y, df.loc[:, 'z'], 5, \
-                                markersize=12, alpha=0.6)
+                                markersizemin=5, markersizemax=12, \
+                                alpha=0.6)
         ax.legend(loc=2, title='categories')
 
         fp = os.path.join(self.fimg, 'scattercat_cat.png')
