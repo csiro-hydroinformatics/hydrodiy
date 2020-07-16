@@ -4,6 +4,10 @@ import re, os, json, tarfile
 import pkg_resources
 
 import numpy as np
+import pandas as pd
+
+import matplotlib as mpl
+mpl.use('Agg')
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
@@ -19,10 +23,19 @@ try:
 except (ImportError, FileNotFoundError) as err:
     pass
 
+HAS_PYSHP = False
+try:
+    import shapefile
+    HAS_PYSHP = True
+except (ImportError, FileNotFoundError) as err:
+    pass
+
+
 # Decompress australia shoreline shapefile
 FDATA = pkg_resources.resource_filename(__name__, 'data')
 FCOAST10 = os.path.join(FDATA, 'ne_10m_admin_0_countries_australia.shp')
 FCOAST50 = os.path.join(FDATA, 'ne_50m_admin_0_countries_australia.shp')
+FSTATES50 = os.path.join(FDATA, 'ne_50m_admin_1_states_australia.shp')
 FDRAINAGE = os.path.join(FDATA, 'drainage_divisions_lines_simplified.shp')
 
 # Lat long coordinate boxes for regions in Australia
@@ -257,3 +270,116 @@ class Oz:
 
         self.set_lim(xlim, ylim)
 
+
+
+def ozlayer(ax, name, filter_field=None, filter_regex=None, proj=None, \
+                *args, **kwargs):
+    ''' plot Australian geographic layer in axes using data
+    from Natural Earth.
+    (see https://www.naturalearthdata.com/)
+
+    Parameters
+    -----------
+    ax : matplotlib.axes
+        Axe to draw data on
+    name : str
+        Name of the layer. Data available are:
+        - ozcoast10m, ozcoast50m: Natural Earth coast line at
+            10m and 50m resolution respectively.
+        - states50m : Natural Earth state boundaries at 50m
+            resolution.
+        - drain: Drainage boundaries from Geofabric.
+    filter_field : str
+        Shapefile field to filter on.
+    fiter_regex : str
+        Regular expression to filter from filtered field.
+    proj : pyproj.Proj
+        Map projection. Example:
+            GDA94 : pyproj.Proj('+init=3112)
+            WGS84 : pyproj.Proj('+init=4326)
+    args, kwargs
+        Arguments passed to matplotlib.axes.plot function.
+    '''
+    if not HAS_PYSHP:
+        raise HYGisOzError('pyshp package could not be imported')
+
+    # Select shapefile to draw
+    if name == 'ozcoast10m':
+        fshp = FCOAST10
+    elif name == 'ozcoast50m':
+        fshp = FCOAST50
+    elif name == 'drainage':
+        fshp = FDRAINAGE
+    elif name == 'states50m':
+        fshp = FSTATES50
+    else:
+        if os.path.exists(name):
+            fshp = name
+        else:
+            raise HYGisOzError('Expected name in '+\
+                '[ozcoast50m|ozcoast110m|states50m|drainage],'+\
+                ' got {}'.format(name))
+
+    # Select axis
+    if ax is None:
+        ax = plt.gca()
+
+    # Plotting function
+    def plotit(x, y, recs):
+        # Project
+        if not proj is None:
+            x, y = np.array([proj(xx, yy) for xx, yy in zip(x, y)]).T
+
+        # Plot
+        lines = ax.plot(x, y, '-', *args, **kwargs)
+
+        # Return line object
+        return (recs, lines[-1])
+
+
+    # Plot shapefile
+    with shapefile.Reader(fshp) as shp_object:
+        # Get shapefile fields
+        fields = np.array([f[0] for f in shp_object.fields])[1:]
+
+        if not filter_field is None:
+            # Filter field
+            if not filter_field in fields:
+                raise HYGisOzError('Expected filter_field in '+\
+                    '/'.join(list(fields)) + ', got '+filter_field)
+
+            ifilter = np.where(fields == filter_field)[0][0]
+        else:
+            ifilter = None
+
+        # Draw polygons
+        lines = []
+        for shp, rec in zip(shp_object.shapes(), shp_object.records()):
+            # Apply filter if needed
+            if not ifilter is None:
+                if not re.search(filter_regex, rec[ifilter]):
+                    continue
+
+            # Records to series
+            recs = pd.Series(rec, index=fields)
+
+            # Get polygon coordinates
+            x, y = np.array(shp.points).T
+
+            if hasattr(shp, 'parts'):
+                if len(shp.parts) > 1:
+                    starts = np.array(shp.parts)
+                    ends = np.append(np.array(shp.parts)[1:], len(x))
+
+                    # Plot each part separately
+                    for ipart in range(len(shp.parts)):
+                        i1, i2 = starts[ipart], ends[ipart]
+                        lines.append(plotit(x[i1:i2], y[i1:i2], recs))
+                else:
+                    # plot
+                    lines.append(plotit(x, y, recs))
+            else:
+                # plot
+                lines.append(plotit(x, y, recs))
+
+    return lines
