@@ -82,6 +82,7 @@ setup(
             "gis/data/*.shx", \
             "gis/data/*.prj", \
             "data/data/*.csv", \
+            "data/data/*.zip", \
             "stat/data/*.zip",\
             "stat/data/*.csv"],
     },
