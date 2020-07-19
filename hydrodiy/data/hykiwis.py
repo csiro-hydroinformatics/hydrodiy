@@ -114,7 +114,8 @@ def get_sites(download=False):
     fsites = os.path.join(DATA_FOLDER, 'kiwis_sites.csv')
 
     # Download site list
-    if download or not os.path.exists(re.sub('csv$', 'zip', fsites)):
+    fsites_zip = re.sub('csv$', 'zip', fsites)
+    if download or not os.path.exists(fsites_zip):
         params = dict(BASE_PARAMS)
         params.update({ \
                     'request': 'getStationList', \
