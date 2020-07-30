@@ -211,7 +211,7 @@ def normcensfit1d(x, censor, cst=0.375, sort=True, icens=None):
         # Standard quantiles
         qq = norm.ppf(ff[idx_nocens])
         M = np.column_stack([np.ones(nocens), qq])
-        theta, _, _, _ = np.linalg.lstsq(M, xs[idx_nocens])
+        theta, _, _, _ = np.linalg.lstsq(M, xs[idx_nocens], rcond=None)
 
     elif nocens <= 1:
         # Probability of censored data

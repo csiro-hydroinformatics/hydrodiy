@@ -390,9 +390,22 @@ class MetricsTestCase(unittest.TestCase):
             sim = trans.backward(tsim)
             bias = metrics.bias(obs, sim, trans)
 
-            expected = -2./np.mean(tobs)
+            mo = np.mean(tobs)
+            expected = -2./mo
             ck = np.isclose(bias, expected)
             self.assertTrue(ck)
+
+            bias = metrics.bias(obs, sim, trans, type='normalised')
+            ms = np.mean(tsim)
+            expected = (ms-mo)/(ms+mo)
+            ck = np.isclose(bias, expected)
+            self.assertTrue(ck)
+
+            if mo > 0 and ms > 0:
+                bias = metrics.bias(obs, sim, trans, type='log')
+                expected = math.log(ms)-math.log(mo)
+                ck = np.isclose(bias, expected)
+                self.assertTrue(ck)
 
 
     def test_bias_error(self):
@@ -403,6 +416,14 @@ class MetricsTestCase(unittest.TestCase):
             bias = metrics.bias(obs, sim)
         except ValueError as err:
             self.assertTrue(str(err).startswith('Expected sim'))
+        else:
+            raise ValueError('Problem with error handling')
+
+        sim = np.arange(0, 200)
+        try:
+            bias = metrics.bias(obs, sim, type='bidule')
+        except ValueError as err:
+            self.assertTrue(str(err).startswith('Expected type'))
         else:
             raise ValueError('Problem with error handling')
 

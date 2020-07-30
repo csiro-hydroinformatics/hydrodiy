@@ -389,7 +389,8 @@ def iqr(ens, ref, coverage=50.):
     return skill, score, clim, ratio
 
 
-def bias(obs, sim, trans=transform.Identity(), excludenull=False):
+def bias(obs, sim, trans=transform.Identity(), excludenull=False, \
+                type='standard'):
     ''' Compute simulation bias
 
     Parameters
@@ -402,6 +403,11 @@ def bias(obs, sim, trans=transform.Identity(), excludenull=False):
         Data transforma object
     excludenull : bool
         Exclude pair of data where obs or sim are nan or inf
+    type : str
+        Type of bias computed.
+        standard = 1-s/o
+        normalised = (s-o)/(s+o)
+        log = log(s)-log(o)
 
     Returns
     -----------
@@ -424,7 +430,7 @@ def bias(obs, sim, trans=transform.Identity(), excludenull=False):
     if excludenull:
         tobs, tsim =  __nonulldata(tobs, tsim)
 
-    # Compute
+    # Compute mean(obs) and mean(sim)
     meano = np.mean(tobs)
     if abs(meano) < EPS:
         warnings.warn(('Mean value of obs is close to '+\
@@ -433,7 +439,22 @@ def bias(obs, sim, trans=transform.Identity(), excludenull=False):
         return np.nan
 
     means = np.mean(tsim)
-    bias_value = (means-meano)/meano
+
+    # Compute bias depending on type
+    if type == 'standard':
+        bias_value = (means-meano)/meano
+    elif type == 'normalised':
+        bias_value = (means-meano)/(means+meano)
+    elif type == 'log':
+        if means > EPS and meano > EPS:
+            bias_value = math.log(means)-math.log(meano)
+        else:
+            warnings.warn('Cannot compute bias-log with '+\
+                'mo={:0.2f} and ms={:0.2f}'.format(meano, means))
+            return np.nan
+    else:
+        raise ValueError('Expected type in [standard/normalised/log], '+\
+                'got {}'.format(type))
 
     return bias_value
 
