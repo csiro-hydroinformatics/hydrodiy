@@ -12,6 +12,11 @@ from dateutil.relativedelta import relativedelta as delta
 
 from hydrodiy.io import csv, iutils
 
+# Code to facilitate import of a "utils" package
+#import utils
+#import importlib
+#importlib.reload(utils)
+
 #----------------------------------------------------------------------
 # Config
 #----------------------------------------------------------------------
