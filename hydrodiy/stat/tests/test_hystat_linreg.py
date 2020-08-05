@@ -5,6 +5,7 @@ import logging
 
 import numpy as np
 import pandas as pd
+from scipy import linalg
 
 from hydrodiy.io import csv
 from hydrodiy.stat import linreg
@@ -230,7 +231,7 @@ class LinregTestCase(unittest.TestCase):
         lev, cook, std_res = lm.leverages()
 
         xx = np.insert(np.array(x), 0, 1., axis=1)
-        tXXinv = np.linalg.inv(np.dot(xx.T, xx))
+        tXXinv = linalg.inv(np.dot(xx.T, xx))
         lev_expected = np.diag(np.dot(xx, np.dot(tXXinv, xx.T)))
 
         ck = np.allclose(lev, lev_expected)

@@ -2,6 +2,7 @@ import os, math
 
 import unittest
 import numpy as np
+from scipy import linalg
 
 from hydrodiy.stat import bayesutils
 
@@ -30,7 +31,7 @@ class MCMCStatTestCase(unittest.TestCase):
         # Build semi-positive definite matrix
         A = np.random.uniform(-1, 1, (nvar, nvar))
         A = A+A.T
-        eig, vects = np.linalg.eig(A)
+        eig, vects = linalg.eig(A)
         eig = np.abs(eig)
         A = np.dot(vects, np.dot(np.diag(eig), vects.T))
         isok = bayesutils.is_semidefinitepos(A)
@@ -52,7 +53,7 @@ class MCMCStatTestCase(unittest.TestCase):
         # Build semi-definite positive matrix
         A = np.random.uniform(-1, 1, (nvar, nvar))
         A = A+A.T
-        eig, vects = np.linalg.eig(A)
+        eig, vects = linalg.eig(A)
         eig = np.abs(eig)
         A = np.dot(vects, np.dot(np.diag(eig), vects.T))
 
@@ -75,7 +76,7 @@ class MCMCStatTestCase(unittest.TestCase):
         # Build semi-definite positive matrix
         A = np.random.uniform(-1, 1, (nvar, nvar))
         A = A+A.T
-        eig, vects = np.linalg.eig(A)
+        eig, vects = linalg.eig(A)
         eig = np.abs(eig)
         cov = np.dot(vects, np.dot(np.diag(eig), vects.T))
 

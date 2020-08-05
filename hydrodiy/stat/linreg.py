@@ -5,6 +5,7 @@ import pandas as pd
 
 from scipy.stats import t as student
 from scipy.stats import shapiro
+from scipy import linalg
 
 from scipy.optimize import fmin_powell as fmin
 
@@ -241,7 +242,8 @@ class Linreg:
                     xdim[1]))
 
         # Inference matrix
-        self.tXXinv = np.linalg.inv(np.dot(self.xmat.T,self.xmat))
+        self.tXXinv = linalg.inv(np.dot(self.xmat.T,self.xmat))
+        self.tXXinv = np.ascontiguousarray(self.tXXinv)
 
 
     def __str__(self):

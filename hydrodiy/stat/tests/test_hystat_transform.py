@@ -3,6 +3,7 @@ import itertools
 import unittest
 import math
 import numpy as np
+from scipy import linalg
 
 import matplotlib as mpl
 mpl.use('Agg')
@@ -334,7 +335,7 @@ class TransformTestCase(unittest.TestCase):
                         xd = x[i, :][None, :] + np.eye(x.shape[1])*delta
                         yd = trans.forward(xd)
                         M = (yd-y[i, :][None, :])/delta
-                        jacn[i] = np.linalg.det(M)
+                        jacn[i] = linalg.det(M)
                 else:
                     yp = trans.forward(x+delta)
                     jacn = np.abs(yp-y)/delta
@@ -490,7 +491,7 @@ class TransformTestCase(unittest.TestCase):
             ff = (np.arange(nval)+0.7)/(nval+0.4)
             idx = ~np.isnan(y)
             M = np.column_stack([np.ones(np.sum(idx)), norm.ppf(ff[idx])])
-            theta, _, _, _ = np.linalg.lstsq(M, y[idx])
+            theta, _, _, _ = linalg.lstsq(M, y[idx])
             y[~idx] = theta[0] + theta[1]*norm.ppf(ff[~idx])
             # ... back transform
             x0 = trans.backward_censored(y)

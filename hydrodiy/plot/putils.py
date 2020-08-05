@@ -3,6 +3,7 @@ import warnings
 from datetime import datetime
 
 from scipy.stats import gaussian_kde, chi2, norm
+from scipy import linalg
 
 HAS_CYCLER = False
 try:
@@ -645,7 +646,7 @@ def cov_ellipse(mu, cov, pvalue=0.95, *args, **kwargs):
     fact = chi2.ppf(pvalue, 2)
 
     # Ellipse parameters
-    eig, vect = np.linalg.eig(cov)
+    eig, vect = linalg.eig(cov)
     v1 = 2*math.sqrt(fact*eig[0])
     v2 = 2*math.sqrt(fact*eig[1])
     alpha = np.sign(cov[0, 1])*np.rad2deg(math.acos(vect[0, 0]))

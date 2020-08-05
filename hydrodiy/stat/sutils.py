@@ -1,6 +1,7 @@
 import re
 import math
 import numpy as np
+from scipy import linalg
 import pandas as pd
 
 from scipy.stats import norm
@@ -179,8 +180,8 @@ def lhs_norm(nsamples, mean, cov):
     nvars = len(mean)
     q = lhs(nsamples, [0]*nvars, [1]*nvars)
     nsmp = norm.ppf(q)
-    S = np.linalg.cholesky(cov)
-    smp = mean[:, None] + np.dot(S, nsmp.T)
+    S = linalg.cholesky(cov)
+    smp = mean[:, None] + np.dot(S.T, nsmp.T)
     return smp.T
 
 

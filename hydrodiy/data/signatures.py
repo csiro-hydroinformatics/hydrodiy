@@ -4,6 +4,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta as delta
 
 import numpy as np
+from scipy import linalg
 import pandas as pd
 
 from hydrodiy.data.qualitycontrol import ismisscens
@@ -137,7 +138,7 @@ def fdcslope(x, q1=90, q2=100, cst=0.375, trans=Identity()):
 
     # Compute slope
     M = np.column_stack([np.ones(nqq), ff])
-    theta, _ , _, _ = np.linalg.lstsq(M, txr)
+    theta, _ , _, _ = linalg.lstsq(M, txr)
 
     return theta[1], qq
 

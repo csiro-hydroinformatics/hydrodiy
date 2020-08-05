@@ -33,7 +33,7 @@ class CensoredTestCase(unittest.TestCase):
         data = [[0, 0], [1, 0], [0, 1], [1, 1]]
         censor = 0
 
-        nsamples = 10000000
+        nsamples = 100000
         smp = np.random.multivariate_normal(size=nsamples, \
                             mean=mu, cov=Sig)
 
@@ -66,7 +66,7 @@ class CensoredTestCase(unittest.TestCase):
                 idx = np.max(np.abs(smp-Y), 1) < 5*dx/2
                 Pe = float(np.sum(idx))/nsamples/(5*dx)**2
 
-            self.assertTrue(np.isclose(P, Pe, rtol=0., atol=5e-3))
+            self.assertTrue(np.isclose(P, Pe, rtol=0., atol=5e-2))
 
 
     def test_normcensfit1d(self):

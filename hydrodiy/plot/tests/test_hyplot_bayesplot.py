@@ -2,6 +2,7 @@ import os, math
 
 import unittest
 import numpy as np
+from scipy import linalg
 
 import matplotlib as mpl
 mpl.use('Agg')
@@ -31,7 +32,7 @@ class BayesPlotTestCase(unittest.TestCase):
         # Generate covariance matrix
         rnd = np.random.uniform(-1, 1, (self.nparams, self.nparams))
         rnd = rnd+rnd.T
-        eig, vects = np.linalg.eig(rnd)
+        eig, vects = linalg.eig(rnd)
         self.cov = np.dot(vects, np.dot(np.diag(np.abs(eig)), vects.T))
 
         # Generate samples
@@ -47,7 +48,7 @@ class BayesPlotTestCase(unittest.TestCase):
             cov, _, _ = bayesutils.vect2cov(theta[self.nparams:])
             loglike = mvt.logpdf(self.samples[0, :, :].T, mean=mu, cov=cov)
             # Jeffreys' prior
-            logprior = -(mu.shape[0]+1)/2*math.log(np.linalg.det(cov))
+            logprior = -(mu.shape[0]+1)/2*math.log(linalg.det(cov))
             return np.sum(loglike)+logprior
 
         self.logpost = logpost

@@ -2,6 +2,7 @@ import math
 
 import numpy as np
 import pandas as pd
+from scipy import linalg
 from scipy.stats import norm, mvn
 from scipy.stats import multivariate_normal as mvt
 from scipy.optimize import fminbound
@@ -211,7 +212,7 @@ def normcensfit1d(x, censor, cst=0.375, sort=True, icens=None):
         # Standard quantiles
         qq = norm.ppf(ff[idx_nocens])
         M = np.column_stack([np.ones(nocens), qq])
-        theta, _, _, _ = np.linalg.lstsq(M, xs[idx_nocens], rcond=None)
+        theta, _, _, _ = linalg.lstsq(M, xs[idx_nocens])
 
     elif nocens <= 1:
         # Probability of censored data
@@ -224,9 +225,9 @@ def normcensfit1d(x, censor, cst=0.375, sort=True, icens=None):
         # Regression
         M = np.array([[1, Q0], [1, Q1]])
         if nocens == 1:
-            theta = np.dot(np.linalg.inv(M), [censor, xs[-1]])
+            theta = np.dot(linalg.inv(M), [censor, xs[-1]])
         else:
-            theta = np.dot(np.linalg.inv(M), [censor-1., censor])
+            theta = np.dot(linalg.inv(M), [censor-1., censor])
 
         # Case where sig < 0
         if theta[-1] < 0:

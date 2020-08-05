@@ -1,4 +1,5 @@
 import numpy as np
+from scipy import linalg
 import pandas as pd
 
 from datetime import datetime
@@ -301,7 +302,7 @@ def tsplot(obs, fcst, ax=None, \
 
         # Create regression line
         idx = ~np.isnan(obs) & ~np.isnan(qline)
-        theta, _, _, _ = np.linalg.lstsq(np.column_stack([qline[idx]*0+1, \
+        theta, _, _, _ = linalg.lstsq(np.column_stack([qline[idx]*0+1, \
                                                     qline[idx]]), obs[idx])
         putils.line(axi2, 1, theta[1], 0, theta[0], '--', \
                             color=txtcolor, lw=1)
