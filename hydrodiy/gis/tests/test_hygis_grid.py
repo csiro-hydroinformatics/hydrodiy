@@ -1061,8 +1061,6 @@ class RefGridsTestCase(unittest.TestCase):
                 self.assertEqual(gr.ncols, 128)
                 self.assertTrue(np.isclose(gr.xllcorner, 143.2))
                 self.assertTrue(np.isclose(gr.yllcorner, -36.55))
-                v = np.unique(gr.data.flatten())
-                self.assertTrue(np.allclose(v, [0, 1]))
 
             elif name == 'AWRAL_DRAINAGE_MURRAY_DARLING':
                 self.assertEqual(gr.nrows, 261)
@@ -1071,6 +1069,15 @@ class RefGridsTestCase(unittest.TestCase):
                 self.assertTrue(np.isclose(gr.yllcorner, -37.65))
                 v = np.unique(gr.data.flatten())
                 self.assertTrue(np.allclose(v, [0, 1]))
+
+            elif name == 'AWRAL_STATE_NSW':
+                self.assertEqual(gr.nrows, 187)
+                self.assertEqual(gr.ncols, 252)
+                self.assertTrue(np.isclose(gr.xllcorner, 141.0))
+                self.assertTrue(np.isclose(gr.yllcorner, -37.5))
+
+            v = np.unique(gr.data.flatten())
+            self.assertTrue(np.allclose(v, [0, 1]))
 
 
 if __name__ == "__main__":
