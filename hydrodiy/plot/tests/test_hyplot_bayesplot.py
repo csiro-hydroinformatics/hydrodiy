@@ -21,6 +21,9 @@ class BayesPlotTestCase(unittest.TestCase):
         print('\t=> BayesPlotTestCase (hyplot)')
         source_file = os.path.abspath(__file__)
         self.ftest = os.path.dirname(source_file)
+        self.fimg = os.path.join(self.ftest, 'images')
+        if not os.path.exists(self.fimg):
+            os.mkdir(self.fimg)
 
         self.nchains = 3
         self.nparams = 4
@@ -62,7 +65,7 @@ class BayesPlotTestCase(unittest.TestCase):
         params = np.concatenate([self.mu, vect])
         zz, yy, zz = bayesplot.slice2d(ax, self.logpost, params, \
                                     0, 1, 0.5, 0.5)
-        fp = os.path.join(self.ftest, 'slice_2d.png')
+        fp = os.path.join(self.fimg, 'bayesplot_slice_2d.png')
         fig.savefig(fp)
 
 
@@ -119,7 +122,7 @@ class BayesPlotTestCase(unittest.TestCase):
                                     0, 1, 0.5, 0.5, \
                                     scale1='log', scale2='log', \
                                     dlogpostmin=10, dlogpostmax=1e-2, nlevels=5)
-        fp = os.path.join(self.ftest, 'slice_2d_log.png')
+        fp = os.path.join(self.fimg, 'bayesplot_slice_2d_log.png')
         fig.savefig(fp)
 
 
@@ -129,7 +132,7 @@ class BayesPlotTestCase(unittest.TestCase):
         fig = plt.figure()
         accept = np.ones(self.samples.shape[0])
         bayesplot.plotchains(fig, self.samples, accept)
-        fp = os.path.join(self.ftest, 'plotchains.png')
+        fp = os.path.join(self.fimg, 'bayesplot_plotchains.png')
         fig.set_size_inches((18, 10))
         fig.tight_layout()
         fig.savefig(fp)
