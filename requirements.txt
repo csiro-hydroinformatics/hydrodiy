@@ -54,7 +54,7 @@ pylint==1.6.4
 pyOpenSSL==17.0.0
 pyparsing==2.2.0
 pyproj==1.9.5.1
-pyshp==1.2.11
+pyshp==2.1.0
 PySocks==1.6.6
 python-dateutil==2.6.1
 pytz==2017.2
