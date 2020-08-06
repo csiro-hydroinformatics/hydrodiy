@@ -23,12 +23,13 @@ from matplotlib.gridspec import GridSpec
 from hydrodiy.data import hywap
 from hydrodiy.io import iutils
 
-from hydrodiy.gis.grid import get_mask
+from hydrodiy.gis.grid import get_grid
 
-from hydrodiy.gis.oz import Oz, HAS_BASEMAP
+from hydrodiy.gis.oz import ozlayer
 
 from hydrodiy.plot.gridplot import gplot, gsmooth, GridplotConfig
 from hydrodiy.plot.gridplot import gbar
+
 
 
 #----------------------------------------------------------------------
@@ -39,12 +40,11 @@ from hydrodiy.plot.gridplot import gbar
 varnames = ['rainfall', 'temperature']
 
 # Start / end of the period to download
-# 5 days ending on day before yesterday
+# 3 days ending on day before yesterday
 now = datetime.now()
 dt = now-delta(days=2)
 end = datetime(dt.year, dt.month, dt.day)
-
-start = end-delta(days=5)
+start = end-delta(days=3)
 
 timestep = 'day'
 
@@ -65,11 +65,6 @@ os.makedirs(fimg, exist_ok=True)
 # Create logger to follow script execution
 basename = re.sub('\\.py.*', '', os.path.basename(source_file))
 LOGGER = iutils.get_logger(basename)
-
-
-if not HAS_BASEMAP:
-    LOGGER.error('No basemap package, skip example')
-    sys.exit()
 
 #----------------------------------------------------------------------
 # Process
@@ -116,26 +111,25 @@ for varn in varnames:
                 height_ratios=[1, 4, 1], \
                 width_ratios=[6, 1, 1])
 
-            # .. get map of australia
+            # .. Axes to plot on the left hand side of the figure
             ax = plt.subplot(gs[:,0])
-            om = Oz(ax=ax)
-            bm = om.map
 
             # .. smooth data
-            mask = get_mask('AWAP')
+            mask = get_grid('AWAP')
             grd_smooth = gsmooth(grd, mask)
 
             # .. get plot config
             cfg = GridplotConfig(varn)
 
             # .. draw grid data
-            contf = gplot(grd_smooth, om.map, cfg)
+            contf = gplot(grd_smooth, cfg, ax)
+
+            # .. draw coast and state boundaries
+            ozlayer(ax, 'ozcoast50m', color='k', lw=0.8)
+            ozlayer(ax, 'states50m', color='grey', linestyle=':', lw=0.8)
 
             # .. axis title
             ax.set_title('{0} - {1} - {2}'.format(varn, vart, day.date()))
-
-            # .. state boundaries
-            om.drawstates()
 
             # .. draw color bar
             cbar_ax = plt.subplot(gs[1, 2])
@@ -145,6 +139,7 @@ for varn in varnames:
             fig.savefig(os.path.join(fimg, re.sub('\.bil', \
                                 '_advanced.png', basename)))
 
+            sys.exit()
 
 LOGGER.info('Process completed')
 

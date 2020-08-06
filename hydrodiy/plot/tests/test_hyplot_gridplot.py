@@ -12,13 +12,20 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
 # Skip if package cannot be imported (circleci build)
-from hydrodiy.gis.oz import Oz, HAS_BASEMAP
+from hydrodiy.gis.oz import Oz, HAS_BASEMAP, HAS_PYSHP, ozlayer
 from hydrodiy.plot.gridplot import GridplotConfig, gplot, gsmooth
 from hydrodiy.plot.gridplot import VARNAMES, gbar
 
 from hydrodiy.data.hywap import get_data
 from hydrodiy.plot import putils
 from hydrodiy.gis.grid import get_grid, Grid
+
+HAS_PYPROJ = False
+try:
+    import pyproj
+    HAS_PYPROJ = True
+except ImportError:
+    pass
 
 
 class GridplotTestCase(unittest.TestCase):
@@ -218,6 +225,49 @@ class GridplotTestCase(unittest.TestCase):
         fig.set_size_inches((20, 8))
         fig.tight_layout()
         fp = os.path.join(self.fimg, 'gbar_rect.png')
+        fig.savefig(fp)
+
+
+    def test_gplot_proj(self):
+        ''' Test gplot generation using projection '''
+        if not HAS_PYPROJ:
+            self.skipTest('Missing pyproj package')
+
+        plt.close('all')
+        fig = plt.figure()
+        gs = GridSpec(nrows=2, ncols=2, \
+            height_ratios=[2, 1], \
+            width_ratios=[7, 1])
+
+        ax = plt.subplot(gs[:,0])
+
+        # Get config
+        cfg = GridplotConfig('rainfall')
+
+        # Set linewidth to see contours
+        cfg.contour_linewidth = 0.8
+
+        # generate data
+        grd = self.grd.clone()
+        y0, y1 = cfg.clevs[0], cfg.clevs[-1]
+        grd.data = y0 + (y1-y0)*grd.data
+
+        # Choose projection
+        proj = pyproj.Proj('+init=EPSG:3112')
+
+        # Plot
+        cont_gr, cont_lines, _, _ = gplot(grd, cfg, ax, proj=proj)
+        ozlayer(ax, 'ozcoast50m', proj=proj, color='k', lw=3)
+
+        # color bar
+        cbar_ax = plt.subplot(gs[0, 1])
+        gbar(cbar_ax, cfg, cont_gr, draw_ticks=True)
+
+        ax.axis('off')
+
+        fig.set_size_inches((8, 6))
+        fig.tight_layout()
+        fp = os.path.join(self.fimg, 'gridplot_rainfall_proj.png')
         fig.savefig(fp)
 
 

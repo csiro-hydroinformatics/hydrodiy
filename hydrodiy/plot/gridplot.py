@@ -373,7 +373,7 @@ def gsmooth(grid, mask=None, coastwin=50, sigma=5., \
 
 
 
-def gplot(grid, config, plotting_object):
+def gplot(grid, config, plotting_object, proj=None):
     ''' Plot gridded data on a basemap object
 
     Plot data on Australia map
@@ -388,6 +388,9 @@ def gplot(grid, config, plotting_object):
                         matplotlib.axes.Axes
         Plotting object to be used. If an axes is used, data
         is plotted without projection.
+    proj : pyproj.projProj
+        Map projection. Example with transform to GDA94:
+        proj = pyproj.Proj('+init=EPSG:3112')
 
     Returns
     -----------
@@ -418,7 +421,12 @@ def gplot(grid, config, plotting_object):
         # If not basemap object provided, then use raw coordinates
         plotobj = plotting_object
         ax = plotobj
-        xcoord, ycoord = llongs, llats
+        if not proj is None:
+            # Convert coordinates to projection
+            coords = [proj(xx, yy) for xx, yy in zip(llongs, llats)]
+            xcoord, ycoord = np.array(coords).T
+        else:
+            xcoord, ycoord = llongs, llats
 
     zval = grid.data.copy()
     xcoord = xcoord.reshape(zval.shape)

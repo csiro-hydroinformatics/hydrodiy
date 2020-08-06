@@ -293,10 +293,9 @@ def ozlayer(ax, name, filter_field=None, filter_regex=None, proj=None, \
         Shapefile field to filter on.
     fiter_regex : str
         Regular expression to filter from filtered field.
-    proj : pyproj.Proj
-        Map projection. Example:
-            GDA94 : pyproj.Proj('+init=3112)
-            WGS84 : pyproj.Proj('+init=4326)
+    proj : pyproj.projProj
+        Map projection. Example with transform to GDA94:
+        proj = pyproj.Proj('+init=EPSG:3112')
     args, kwargs
         Arguments passed to matplotlib.axes.plot function.
     '''

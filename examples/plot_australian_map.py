@@ -11,7 +11,6 @@ import sys, os, re, json, math
 import numpy as np
 import pandas as pd
 from datetime import datetime
-from scipy.spatial import cKDTree as KDTree
 
 import matplotlib as mpl
 mpl.use('Agg')
@@ -23,6 +22,8 @@ from hydrodiy.plot import putils
 from hydrodiy.gis.grid import get_grid
 from hydrodiy.gis.oz import ozlayer
 
+import pyproj
+
 #----------------------------------------------------------------------
 # Config
 #----------------------------------------------------------------------
@@ -32,6 +33,9 @@ regions = ['AWRAL_STATE_NSW', 'AWRAL_DRAINAGE_MURRAY_DARLING', \
                 'AWRAL_RIVER_MURRUMBIDGEE', 'AWRAL_RIVER_CONDAMINE_CULGOA']
 
 putils.set_mpl(font_size=10)
+
+# Map projection
+proj = pyproj.Proj('+init=EPSG:3112')
 
 #----------------------------------------------------------------------
 # Folders
@@ -68,14 +72,15 @@ for region in regions:
 
     fig, ax = plt.subplots()
 
-    im = d.plot(ax=ax)
+    im = d.plot(ax=ax, proj=proj)
     plt.colorbar(im)
 
     # Add Australian coastline
-    ozlayer(ax, 'ozcoast50m', color='k', lw=2)
+    ozlayer(ax, 'ozcoast50m', color='k', lw=2, proj=proj)
 
     # Add Australian state boundariese
-    ozlayer(ax, 'states50m', color='grey', linestyle='-.', lw=0.8)
+    ozlayer(ax, 'states50m', color='grey', linestyle='-.', lw=0.8, \
+                        proj=proj)
 
     # Set axis range
     ax.set_xlim(d.xlim)
