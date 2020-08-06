@@ -22,7 +22,7 @@ except ImportError:
 
 from hydrodiy.gis.grid import Grid, Catchment, HAS_C_GIS_MODULE
 from hydrodiy.gis.grid import accumulate, voronoi, delineate_river, slope
-from hydrodiy.gis.grid import get_mask, AWRAL_SUBGRIDS
+from hydrodiy.gis.grid import get_grid, AWRAL_SUBGRIDS
 from hydrodiy.io import csv
 
 source_file = os.path.abspath(__file__)
@@ -1008,13 +1008,13 @@ class RefGridsTestCase(unittest.TestCase):
     def test_name_error(self):
         ''' Test mask error '''
         try:
-            gr = get_mask('AWRAL_RIVER_BIDULE')
+            gr = get_grid('AWRAL_RIVER_BIDULE')
         except ValueError as err:
             self.assertTrue(str(err).startswith('Expected name in'))
 
     def test_awral(self):
         ''' Test awral mask '''
-        gr = get_mask('AWRAL')
+        gr = get_grid('AWRAL')
         self.assertEqual(gr.nrows, 681)
         self.assertEqual(gr.ncols, 841)
         self.assertEqual(gr.xllcorner, 112.)
@@ -1024,7 +1024,7 @@ class RefGridsTestCase(unittest.TestCase):
 
     def test_awap(self):
         ''' Test awap mask '''
-        gr = get_mask('AWAP')
+        gr = get_grid('AWAP')
         self.assertEqual(gr.nrows, 691)
         self.assertEqual(gr.ncols, 886)
         self.assertEqual(gr.xllcorner, 112.)
@@ -1033,7 +1033,7 @@ class RefGridsTestCase(unittest.TestCase):
 
     def test_waterdyn(self):
         ''' Test waterdyn mask '''
-        gr = get_mask('WATERDYN')
+        gr = get_grid('WATERDYN')
         self.assertEqual(gr.nrows, 670)
         self.assertEqual(gr.ncols, 813)
         self.assertTrue(np.isclose(gr.xllcorner, 112.925))
@@ -1044,7 +1044,7 @@ class RefGridsTestCase(unittest.TestCase):
         ''' Test DLCD mask '''
         self.skipTest('Skipping this test - too high memory consumption')
 
-        gr = get_mask('DLCD')
+        gr = get_grid('DLCD')
         self.assertEqual(gr.nrows, 14902)
         self.assertEqual(gr.ncols, 19161)
         self.assertTrue(np.isclose(gr.xllcorner, 110.))
@@ -1054,7 +1054,7 @@ class RefGridsTestCase(unittest.TestCase):
     def test_awral_subgrids(self):
         ''' Test awral subgrids mask '''
         for name in AWRAL_SUBGRIDS.gridid:
-            gr = get_mask(name)
+            gr = get_grid(name)
 
             if name == 'AWRAL_RIVER_MURRUMBIDGEE':
                 self.assertEqual(gr.nrows, 47)

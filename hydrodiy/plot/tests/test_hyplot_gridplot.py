@@ -18,7 +18,7 @@ from hydrodiy.plot.gridplot import VARNAMES, gbar
 
 from hydrodiy.data.hywap import get_data
 from hydrodiy.plot import putils
-from hydrodiy.gis.grid import get_mask, Grid
+from hydrodiy.gis.grid import get_grid, Grid
 
 
 class GridplotTestCase(unittest.TestCase):
@@ -37,7 +37,7 @@ class GridplotTestCase(unittest.TestCase):
         timestep = 'month'
         dt = datetime(2015, 1, 1)
 
-        self.mask = get_mask('AWAP')
+        self.mask = get_grid('AWAP')
 
         # Generate random rainfall data
         grd = self.mask.clone(np.float64)

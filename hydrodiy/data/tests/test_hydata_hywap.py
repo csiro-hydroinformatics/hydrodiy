@@ -12,10 +12,10 @@ import matplotlib.pyplot as plt
 
 from hydrodiy.io import iutils
 from hydrodiy.data import hywap
-from hydrodiy.gis.grid import get_mask
+from hydrodiy.gis.grid import get_grid
 
 
-AWAP_GRID = get_mask('AWAP')
+AWAP_GRID = get_grid('AWAP')
 
 
 class HyWapTestCase(unittest.TestCase):
