@@ -18,7 +18,7 @@ mpl.use('Agg')
 import matplotlib.pyplot as plt
 
 from hydrodiy.io import iutils
-from hydrodiy.plot import putils
+from hydrodiy.plot import putils, gridplot
 from hydrodiy.gis.grid import get_grid
 from hydrodiy.gis.oz import ozlayer
 
@@ -55,43 +55,52 @@ LOGGER = iutils.get_logger(basename)
 #----------------------------------------------------------------------
 # Process
 #----------------------------------------------------------------------
+# Get gridplot config
+cfg = gridplot.GridplotConfig('rainfall')
 
 for region in regions:
     # Get region grid
     gr = get_grid(region)
 
     # Sample random data
-    d = gr.clone(dtype=np.float64)
-    d.data = np.random.uniform(size=(d.nrows, d.ncols))
+    toplot = gr.clone(dtype=np.float64)
+    toplot.data = np.random.uniform(cfg.clevs[0], cfg.clevs[-1], \
+                                        size=(toplot.nrows, toplot.ncols))
 
     # Remove data outside region
-    d.data[gr.data == 0] = np.nan
+    toplot.data[gr.data == 0] = np.nan
 
     # Create matplotlib objects
     plt.close('all')
 
     fig, ax = plt.subplots()
 
-    im = d.plot(ax=ax, proj=proj)
-    plt.colorbar(im)
-
-    # Add Australian coastline
-    ozlayer(ax, 'ozcoast50m', color='k', lw=2, proj=proj)
+    # Plot
+    cont_gr, cont_lines, _, _ = gridplot.gplot(toplot, cfg, ax, proj=proj)
 
     # Add Australian state boundariese
-    ozlayer(ax, 'states50m', color='grey', linestyle='-.', lw=0.8, \
-                        proj=proj)
+    ozlayer(ax, 'states50m', color='grey', lw=1, proj=proj)
+
+    # Add Australian coastline
+    ozlayer(ax, 'ozcoast50m', color='k', lw=3, proj=proj)
 
     # Set axis range
-    ax.set_xlim(d.xlim)
-    ax.set_ylim(d.ylim)
+    lims = [proj(xx, yy) for xx, yy in zip(toplot.xlim, toplot.ylim)]
+    lims = np.array(lims)
+    a = np.mean(lims, axis=0)
+    lims = (lims-a)*1.3+a
+
+    ax.set_xlim(lims[:, 0])
+    ax.set_ylim(lims[:, 1])
+    ax.axis('off')
 
     # Figure title
     title = re.sub('_', ' ', re.sub('^[^_]+_', '', region)).title()
     ax.set_title(title)
 
     # Save figure
-    fig.tight_layout()
+    fact = (lims[1, 1]-lims[0, 1])/(lims[1, 0]-lims[0, 0])
+    fig.set_size_inches((10, 9*fact))
     fp = os.path.join(fimg, 'ozmap_{}.png'.format(region))
     fig.savefig(fp)
 
