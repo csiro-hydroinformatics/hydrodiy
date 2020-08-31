@@ -295,6 +295,20 @@ class BoxplotTestCase(unittest.TestCase):
 
 
 
+    def test_set_ylim(self):
+        fig, axs = plt.subplots(ncols=2)
+        ax = axs[0]
+        bx = Boxplot(data=self.data)
+        bx.draw(ax=ax)
+        _, y1 = ax.get_ylim()
+        bx.set_ylim((1, y1))
+
+        ax = axs[1]
+        bx.draw(ax=ax)
+        bx.set_ylim((1, y1), False)
+
+        fig.savefig(os.path.join(self.fimg, 'bx20_set_ylim.png'))
+
 
 if __name__ == "__main__":
     unittest.main()

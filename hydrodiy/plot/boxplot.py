@@ -482,6 +482,9 @@ class Boxplot(object):
             capswidths = np.ones(ncols)*self.caps.width
             whiskerswidths = np.ones(ncols)*self.whiskers.width
 
+        # Axis y limits used to draw text or not
+        ax_ylim = ax.get_ylim()
+
         # Loop through stats
         self.elements = {}
         for i, colname in enumerate(stats.columns):
@@ -523,9 +526,11 @@ class Boxplot(object):
                             xshift = bw/2
 
                         valuetext = formatter % value
+
                         element[statname+'-text'] = \
                             ax.text(i+xshift+xoffset, \
-                                value, valuetext, \
+                                value, \
+                                valuetext, \
                                 fontsize=item.fontsize, \
                                 color=item.fontcolor, \
                                 va=item.va, ha=item.ha, \
@@ -613,6 +618,7 @@ class Boxplot(object):
             # Box (quartile) values
             item = self.box
             if item.show_text:
+                # Define formatter
                 formatter = item.textformat
                 if item.ha == 'left':
                     formatter = ' '+formatter
@@ -633,8 +639,9 @@ class Boxplot(object):
                         va = 'top' if ivalue == 0 else 'bottom'
 
                     # Draw text
-                    element['box-text'] = ax.text(i+xshift+xoffset, \
-                        value, valuetext, \
+                    element[f'box-text{ivalue}'] = ax.text(i+xshift+xoffset, \
+                        value, \
+                        valuetext, \
                         fontsize=item.fontsize, \
                         color=item.fontcolor, \
                         va=va, ha=ha, \
@@ -730,3 +737,33 @@ class Boxplot(object):
         else:
             raise BoxplotError('show_text property for count set to False')
 
+
+    def set_ylim(self, ylim, hide_offlimit_text=True):
+        ''' Reset limits of y axis
+
+        Parameters
+        -----------
+        ylim : tuple
+            Y axis limits.
+        hide_offlimit_text: bool
+            Remove text outside of axis limits.
+        '''
+        if not ylim is None:
+            # Make sure ylim is sorted
+            ylim = np.sort(ylim)
+
+            # Move text to put it within axis limits
+            for elem_name, elem in self.elements.items():
+                for item_name, item in elem.items():
+                    if re.search('text', item_name):
+                        raw = item._y
+                        value = max(ylim[0], min(ylim[1], raw))
+                        item.set_y(value)
+
+                        # Hide the value if off limits
+                        if hide_offlimit_text \
+                                and (raw < ylim[0] or raw > ylim[1]):
+                            item.set_visible(False)
+
+            # Set axis limits
+            self.ax.set_ylim(ylim)
