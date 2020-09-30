@@ -20,7 +20,7 @@ DATA_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), \
 #
 
 KIWIS_URL_EXT = 'http://www.bom.gov.au/waterdata/KiWIS/KiWIS'
-KIWIS_URL_INT = 'http://wiski-04:8080/KiWIS/KiWIS'
+KIWIS_URL_INT = 'http://wiski-prod-kiwis01:8080/KiWIS/KiWIS'
 
 # Base parameters for Kiwis server request
 BASE_PARAMS = {\
@@ -306,7 +306,11 @@ def get_data(tsattrs, start=None, end=None, external=True, \
         # Discard time zone
         if not timezone is None:
             # to_datetime seems to be converting to UTC
-            time = pd.to_datetime(d['time']).dt.tz_localize('UTC')
+            time = pd.to_datetime(d['time'])
+            try:
+                time = time.dt.tz_localize('UTC')
+            except TypeError:
+                pass
 
             # Localise time zone
             time = time.dt.tz_convert(timezone)
