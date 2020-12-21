@@ -842,7 +842,7 @@ class Grid(object):
         return ax.imshow(self.data, extent=extent, *args, **kwargs)
 
 
-    def plot_values(self, ax, fmt='0.2f', *args, **kwargs):
+    def plot_values(self, ax, fmt='0.2f', mini=-np.inf, maxi=np.inf, *args, **kwargs):
         ''' Plot grid values. This is a basic plotting
         function. For more advanced plots, use
         hydrodiy.plot.gridplot
@@ -853,18 +853,29 @@ class Grid(object):
             Axe to draw the grid on
         fmt : str
             Number formatting
+        mini : float
+            Minimum value to plot.
+        maxi : float
+            Maximum value to plot
 
         args, kwargs: arguments passed to ax.text
+
+        Returns
+        -----------
+        txt : list
+            List of matplotlib text objects.
         '''
         txt =[]
         idxcells = np.arange(self.nrows*self.ncols)
         coords = self.cell2coord(idxcells)
         data = self.data.flat
         for i in  idxcells:
-            lab = '{:{fmt}}'.format(data[i], fmt=fmt)
-            t = ax.text(coords[i, 0], coords[i, 1], lab, va='center', \
-                            ha='center', *args, **kwargs)
-            txt.append(t)
+            value  = data[i]
+            if value >= mini and value <= maxi:
+                lab = '{:{fmt}}'.format(value, fmt=fmt)
+                t = ax.text(coords[i, 0], coords[i, 1], lab, va='center', \
+                                ha='center', *args, **kwargs)
+                txt.append(t)
 
         return txt
 
