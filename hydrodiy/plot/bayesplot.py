@@ -198,10 +198,10 @@ def plotchains(fig, samples, accept):
         kernel = gaussian_kde(smp.ravel())
         y = np.linspace(ranges[i, 0], ranges[i, 1], 100)
         x = kernel(y)
-        ax.plot(x, y, '-')
+        ax.plot(x, y, '-', label='samples pdf')
 
         ax.set_ylabel('P{0}'.format(i))
-        axs[i][i] = ax
+        axs[i][i+1] = ax
 
         # Plot correlations
         for j in range(i+1, nparams):
@@ -221,7 +221,8 @@ def plotchains(fig, samples, accept):
             ax.contourf(xx, yy, zz, cmap='Reds')
 
             # plot points
-            ax.plot(x, y, 'o', color='grey', alpha=0.2, markersize=0.5)
+            ax.plot(x, y, 'o', color='grey', alpha=0.2, markersize=0.5, \
+                            label='samples')
 
             # Decorate
             ax.set_xlim(ranges[j, :])
@@ -230,7 +231,7 @@ def plotchains(fig, samples, accept):
             corr = np.corrcoef(xy.T)[0, 1]
             title = r'$\rho$(P{0},P{1})={2:0.2f}'.format(i, j, corr)
             ax.set_title(title)
-            axs[i][j] = ax
+            axs[i][j+1] = ax
 
     return fig, np.array(axs)
 
