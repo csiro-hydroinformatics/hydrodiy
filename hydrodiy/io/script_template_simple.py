@@ -12,9 +12,10 @@ from dateutil.relativedelta import relativedelta as delta
 
 from hydrodiy.io import csv, iutils
 
-import importlib.util
-spec = importlib.util.spec_from_file_location("module.name", "/path/to/file.py")
-foo = importlib.util.module_from_spec(spec)
+#import importlib.util
+#spec = importlib.util.spec_from_file_location("foo", "/path/to/foo.py")
+#foo = importlib.util.module_from_spec(spec)
+#spec.loader.exec_module(foo)
 
 #----------------------------------------------------------------------
 # Config
