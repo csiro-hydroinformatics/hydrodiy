@@ -45,7 +45,8 @@ else:
                 'hydrodiy/stat/c_armodels.c',
                 'hydrodiy/stat/ADinf.c',
                 'hydrodiy/stat/AnDarl.c',
-                'hydrodiy/stat/c_andersondarling.c'
+                'hydrodiy/stat/c_andersondarling.c',
+                'hydrodiy/stat/c_paretofront.c'
             ],
             include_dirs=[numpy.get_include()]),
         Extension(

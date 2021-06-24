@@ -2,6 +2,7 @@ import os, math
 
 import unittest
 import numpy as np
+from itertools import product as prod
 
 from scipy.special import kolmogorov
 from scipy.linalg import toeplitz
@@ -221,6 +222,27 @@ class UtilsTestCase(unittest.TestCase):
         self.assertTrue(np.isclose(rho_p, 0.311, atol=1e-2))
         self.assertTrue(np.isclose(rho_m, 0.311, atol=5e-2))
 
+
+    def test_pareto_front(self):
+        ''' Test pareto front '''
+        for nval, ncol in prod([20, 200], [2, 5]):
+            samples = np.random.normal(size=(nval, ncol))
+
+            isdominated = sutils.pareto_front(samples)
+
+            dominated = np.ones((nval, nval))
+            for i, j in prod(range(nval), range(nval)):
+                diff = samples[j]-samples[i]
+                dominated[i, j] = 1 if np.all(diff>0) else 0
+
+            expected = (dominated.sum(axis=1)>0).astype(int)
+            self.assertTrue(np.allclose(isdominated, expected))
+
+        #import matplotlib.pyplot as plt
+        #plt.plot(*samples.T, 'o', ms=4, alpha=0.8)
+        #plt.plot(*samples[expected==0].T, 'ro')
+        #plt.show()
+        #import pdb; pdb.set_trace()
 
 if __name__ == "__main__":
     unittest.main()

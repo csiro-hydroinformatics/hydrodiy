@@ -37,6 +37,13 @@ cdef extern from 'c_andersondarling.h':
     int c_ad_test(int nval, double *unifdata, double *outputs)
 
 
+cdef extern from 'c_paretofront.h':
+    int c_paretofront(int nval,int ncol,
+        int orientation,
+        double* data,
+        int* isdominated)
+
+
 def __cinit__(self):
     pass
 
@@ -156,3 +163,17 @@ def ad_test(np.ndarray[double, ndim=1, mode='c'] unifdata not None,
             <double*> np.PyArray_DATA(outputs))
 
 
+def pareto_front(int orientation,
+        np.ndarray[double, ndim=2, mode='c'] data not None,
+        np.ndarray[int, ndim=1, mode='c'] isdominated not None):
+
+    cdef int ierr
+
+    # check dimensions
+    assert data.shape[0]==isdominated.shape[0]
+
+    ierr = c_paretofront(data.shape[0], data.shape[1],
+            orientation,
+            <double*> np.PyArray_DATA(data),
+            <int*> np.PyArray_DATA(isdominated))
+    return ierr

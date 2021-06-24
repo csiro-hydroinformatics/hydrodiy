@@ -6,6 +6,14 @@ import pandas as pd
 
 from scipy.stats import norm
 
+# Try to import C code
+HAS_C_STAT_MODULE = True
+try:
+    import c_hydrodiy_stat
+except ImportError:
+    HAS_C_STAT_MODULE = False
+
+
 def ppos(nval, cst=0.3):
     ''' Compute plotting position for sample of size nval
 
@@ -267,4 +275,58 @@ def semicorr(unorm):
     rho_m = np.corrcoef(unorm[idx].T)[0, 1]
 
     return rho, eta, rho_p, rho_m
+
+
+def pareto_front(data, orientation=1):
+    ''' Identify the non-dominated points in a multi-dimensional data set.
+
+    Parameters
+    -----------
+    data : np.ndarray
+        2D array containing the data set [nval x ncol].
+    orientation : int
+        Orientation of the metric:
+        +1 : positively oriented (i.e. higher is better)
+        -1 : negatively oriented (i.e. lower is better)
+
+    Returns
+    -----------
+    is_dominated : numpy.ndarray
+        Integer array indicating if the point is dominated (=1)
+        or not (=0).
+
+    Example
+    -----------
+    >>> nval, ncol = 100, 3
+    >>> data = np.random.normal(size=(nval, 3))
+    >>> sutils.pareto_front(data)
+    '''
+    if not HAS_C_STAT_MODULE:
+        raise ValueError('C module c_hydrodiy_stat is not available, '+\
+                'please run python setup.py build')
+
+    orientation = np.int32(orientation)
+    data = data.astype(np.float64)
+
+    if data.ndim != 2:
+        error_msg = 'Expected data to be a 2 dimensional array, '+\
+                        'got data.ndim={data.ndim}.'
+        raise ValueError(error_msg)
+
+
+    # set the array contiguous to work with C
+    if not data.flags['C_CONTIGUOUS']:
+        data = np.ascontiguousarray(innov)
+
+    # initialise outputs
+    isdominated = np.zeros(data.shape[0]).astype(np.int32)
+
+    # Run model
+    ierr = c_hydrodiy_stat.pareto_front(orientation, data, \
+                                            isdominated)
+    if ierr!=0:
+        raise ValueError(f'c_hydrodiy_stat.pareto_front {ierr}')
+
+    return isdominated
+
 
