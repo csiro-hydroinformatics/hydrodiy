@@ -316,7 +316,7 @@ def pareto_front(data, orientation=1):
 
     # set the array contiguous to work with C
     if not data.flags['C_CONTIGUOUS']:
-        data = np.ascontiguousarray(innov)
+        data = np.ascontiguousarray(data)
 
     # initialise outputs
     isdominated = np.zeros(data.shape[0]).astype(np.int32)
