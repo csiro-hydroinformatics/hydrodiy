@@ -100,6 +100,7 @@ class UtilsTestCase(unittest.TestCase):
         # Run defaut script file template
         fs = os.path.join(self.fscripts, 'script_test.py')
         iutils.script_template(fs, 'test')
+
         stderr, hasError = run_script(fs)
         self.assertFalse(hasError)
 
@@ -116,7 +117,7 @@ class UtilsTestCase(unittest.TestCase):
 
         # Run plot script file template
         fs = os.path.join(self.fscripts, 'script_test.py')
-        iutils.script_template(fs, 'test', stype='plot')
+        iutils.script_template(fs, 'test', type='plot')
         stderr, hasError = run_script(fs)
         self.assertFalse(hasError)
 

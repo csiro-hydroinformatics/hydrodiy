@@ -1,4 +1,5 @@
 import sys, os, re
+from pathlib import Path
 
 import shlex
 import subprocess
@@ -156,8 +157,9 @@ def str2dict(source, num2str=True):
 
 
 def script_template(filename, comment,
-        stype='simple',
-        author=None):
+        type='simple',
+        author=None, \
+        fout=None, fdata=None, fimg=None):
     ''' Write a script template
 
     Parameters
@@ -166,56 +168,85 @@ def script_template(filename, comment,
         Filename to write the script to
     comment : str
         Comment on purpose of the script
-    stype : str
+    type : str
         Type of script:
         * simple: script with minimal functionalities
         * plot: plotting script
     author : str
         Script author
-
+    fout : str
+        Output folder
+    fdata : str
+        Data folder
+    fimg : str
+        Images folder
     Example
     -----------
     >>> iutils.script_template('a_cool_script.py', 'Testing', 'plot', 'Bob Marley')
 
     '''
-    if not stype in ['simple', 'plot']:
-        raise ValueError('Script type {0} not recognised'.format(stype))
+
+    if not type in ['simple', 'plot']:
+        raise ValueError('Expected script type in [simple/plot], got {type}.')
 
     # Open script template
-    FMOD = os.path.dirname(os.path.abspath(__file__))
-    f = os.path.join(FMOD, 'script_template_{0}.py'.format(stype))
-    with open(f, 'r') as ft:
-        txt = ft.readlines()
+    ftemplate = Path(__file__).resolve().parent / f'script_template_{type}.py'
+    with ftemplate.open('r') as ft:
+        txt = ft.read()
 
+    # Add comment header
     if author is None:
         try:
             author = os.getlogin()
         except:
             author = 'unknown'
 
-    meta = ['## -- Script Meta Data --\n']
-    meta += ['## Author  : {0}\n'.format(author)]
-    meta += ['## Created : {0}\n'.format(datetime.now())]
-    meta += ['## Comment : {0}\n'.format(comment)]
-    meta += ['##\n', '## ------------------------------\n']
+    meta = '## -- Script Meta Data --\n'
+    meta += f'## Author  : {author}\n'
+    meta += f'## Created : {datetime.now()}\n'
+    meta += f'## Comment : {comment}\n'
+    meta += '##\n## ------------------------------\n'
+    txt = re.sub("\[COMMENT\]", meta, txt)
 
-    txt = txt[:3] + meta + txt[3:]
+    # -- Add paths --
+    filename = Path(filename)
 
-    if PYVERSION == 2:
-        txt = [re.sub('os\.makedirs\(fimg, exist_ok\=True\)', \
-            'if not os.path.exists(fimg): os.makedirs(fimg)', line) \
-                    for line in txt]
+    # By default, the root folder is the script folder
+    froot = 'source_file.parent'
 
-        txt = [re.sub('os\.makedirs\(fout, exist_ok=True\)', \
-            'if not os.path.exists(fout): os.makedirs(fout)', line) \
-                    for line in txt]
+    # If there is a scripts folder in the path, we use the parent of this
+    # path as root.
+    parts = filename.parts
+    if 'scripts' in parts:
+        nlevelup = parts[::-1].index('scripts')
+        froot += "".join([".parent"]*nlevelup)
 
-    with open(filename, 'w') as fs:
-        fs.writelines(txt)
+    txt = re.sub("\[FROOT\]", froot, txt)
+
+
+    if fout is None:
+        fout = 'froot / "outputs"\nfout.mkdir(exist_ok=True)\n'
+    txt = re.sub("\[FOUT\]", fout, txt)
+
+    if fdata is None:
+        fdata = 'froot / "data"\nfdata.mkdir(exist_ok=True)\n'
+    txt = re.sub("\[FDATA\]", fdata, txt)
+
+    if type == 'plot':
+        if fimg is None:
+            fimg = 'froot / "images"\nfdata.mkdir(exist_ok=True)\n'
+        txt = re.sub("\[FIMG\]", fimg, txt)
+    else:
+        txt = re.sub("fimg = \[FIMG\]", "", txt)
+
+    # Write
+    with filename.open('w') as fs:
+        fs.write(txt)
 
     # Make it executable for the user
     st = os.stat(filename)
     os.chmod(filename, st.st_mode | stat.S_IEXEC)
+
 
 
 class HydrodiyContextualLogger(logging.Logger):

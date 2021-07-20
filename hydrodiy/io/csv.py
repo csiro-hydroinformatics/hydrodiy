@@ -300,6 +300,8 @@ def read_csv(filename, has_colnames=True, archive=None, \
     >>> df2 = csv.read_csv('data.csv')
 
     '''
+    filename = str(filename)
+
     if archive is None:
         try:
             # Add gz or zip if file does not exists
