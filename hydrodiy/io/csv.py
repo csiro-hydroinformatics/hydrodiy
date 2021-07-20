@@ -81,11 +81,11 @@ def _csvhead(nrow, ncol, comment, source_file, author=None):
     # Generate file header
     head = []
     head.append('# --------------------------------------------------')
-    head.append('# nrow : {0}'.format(nrow))
-    head.append('# ncol : {0}'.format(ncol))
+    head.append(f'# nrow : {nrow}')
+    head.append(f'# ncol : {ncol}')
 
     for key in sorted(comments):
-        head.append('# {0} : {1}'.format(key, comments[key]))
+        head.append(f'# {key} : {comments[key]}')
 
     now = datetime.now()
     head.append('# time_generated : ' + \
@@ -101,14 +101,15 @@ def _csvhead(nrow, ncol, comment, source_file, author=None):
     head.append('# author : ' + author)
 
     # seek source file
-    head.append('# source_file : ' + source_file)
+    head.append(f'# source_file : {source_file}')
 
     # Python config
-    head.append('# work_dir : ' + os.getcwd())
-    head.append('# python_environment : ' + os.name)
-    head.append('# python_version : ' + sys.version.replace('\n', ' '))
-    head.append('# pandas_version : ' + pd.__version__)
-    head.append('# numpy_version : ' + np.__version__)
+    head.append(f'# work_dir : {os.getcwd()}')
+    head.append(f'# python_environment {os.name}')
+    version = sys.version.replace("\n", " ")
+    head.append(f'# python_version : {version}')
+    head.append(f'# pandas_version : {pd.__version__}')
+    head.append(f'# numpy_version : {np.__version__}')
 
     if HAS_DISTUTILS:
         head.append('# python_inc : ' + get_python_inc())
@@ -212,6 +213,8 @@ def write_csv(data, filename, comment,\
     '''
     # Check inputs
     data = pd.DataFrame(data)
+    filename = str(filename)
+    source_file = str(source_file)
 
     # Generate head
     head = _csvhead(data.shape[0], data.shape[1],\
