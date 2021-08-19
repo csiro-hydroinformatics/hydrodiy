@@ -10,7 +10,7 @@ from scipy.spatial.distance import pdist, squareform
 import zipfile
 
 import matplotlib
-matplotlib.use('Agg')
+matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 
@@ -33,18 +33,18 @@ RUN_ADVANCED = True
 class GridTestCase(unittest.TestCase):
 
     def setUp(self):
-        print('\t=> GridTestCase')
+        print("\t=> GridTestCase")
 
-        self.config = {'name':'test', \
-                'nrows':7, 'ncols':5, 'cellsize':2., \
-                'dtype':np.float64, \
-                'xllcorner':130., \
-                'yllcorner':-39., \
-                'comment': 'this is a test grid'}
+        self.config = {"name":"test", \
+                "nrows":7, "ncols":5, "cellsize":2., \
+                "dtype":np.float64, \
+                "xllcorner":130., \
+                "yllcorner":-39., \
+                "comment": "this is a test grid"}
 
         source_file = os.path.abspath(__file__)
         self.ftest = os.path.dirname(source_file)
-        self.fimg = os.path.join(self.ftest, 'images')
+        self.fimg = os.path.join(self.ftest, "images")
         if not os.path.exists(self.fimg):
             os.mkdir(self.fimg)
 
@@ -55,8 +55,8 @@ class GridTestCase(unittest.TestCase):
 
     def test_name_comment(self):
         gr = Grid(**self.config)
-        self.assertTrue(gr.comment == self.config['comment'])
-        self.assertTrue(gr.name == self.config['name'])
+        self.assertTrue(gr.comment == self.config["comment"])
+        self.assertTrue(gr.name == self.config["name"])
 
 
     def test_shape(self):
@@ -74,7 +74,10 @@ class GridTestCase(unittest.TestCase):
 
 
     def test_xvalues_yvalues(self):
-        ''' test x and y coords of grid '''
+        """ test x and y coords of grid """
+        if not HAS_C_GIS_MODULE:
+            self.skipTest("Missing C module c_hydrodiy_gis")
+
         gr = Grid(**self.config)
 
         xv, yv = gr.xvalues, gr.yvalues
@@ -109,7 +112,7 @@ class GridTestCase(unittest.TestCase):
         grc = gr.clone(np.int32)
         self.assertTrue(gr.same_geometry(grc))
 
-        grc = Grid('test', ncols=10)
+        grc = Grid("test", ncols=10)
         self.assertTrue(~gr.same_geometry(grc))
 
 
@@ -144,9 +147,9 @@ class GridTestCase(unittest.TestCase):
         try:
             gr.data = dt
         except ValueError as err:
-            self.assertTrue(str(err).startswith('Wrong number'))
+            self.assertTrue(str(err).startswith("Wrong number"))
         else:
-            raise Exception('Problem with handling data error')
+            raise Exception("Problem with handling data error")
 
     def test_fill(self):
         gr = Grid(**self.config)
@@ -162,7 +165,7 @@ class GridTestCase(unittest.TestCase):
                         (gr.nrows, gr.ncols))
 
         # Write data
-        fg = os.path.join(self.ftest, 'grid_test_save.bil')
+        fg = os.path.join(self.ftest, "grid_test_save.bil")
         gr.save(fg)
 
         # Load it back
@@ -171,13 +174,13 @@ class GridTestCase(unittest.TestCase):
         ck = np.allclose(gr.data, gr2.data)
         self.assertTrue(ck)
 
-        self.assertTrue(self.config['comment'] == gr2.comment)
+        self.assertTrue(self.config["comment"] == gr2.comment)
 
 
     def test_dict(self):
         gr = Grid(**self.config)
         js = gr.to_dict()
-        self.assertEqual(js['dtype'], '<f8')
+        self.assertEqual(js["dtype"], "<f8")
 
         gr2 = Grid.from_dict(js)
         for att in gr.__dict__:
@@ -188,7 +191,7 @@ class GridTestCase(unittest.TestCase):
 
     def test_neighbours(self):
         if not HAS_C_GIS_MODULE:
-            self.skipTest('Missing C module c_hydrodiy_gis')
+            self.skipTest("Missing C module c_hydrodiy_gis")
 
         gr = Grid(**self.config)
 
@@ -223,15 +226,15 @@ class GridTestCase(unittest.TestCase):
         try:
             nb = gr.neighbours(nr*nc)
         except ValueError as err:
-            self.assertTrue(str(err).startswith('c_hydrodiy_gis.neighbours'))
+            self.assertTrue(str(err).startswith("c_hydrodiy_gis.neighbours"))
         else:
-            raise Exception('Problem with handling of error')
+            raise Exception("Problem with handling of error")
 
 
     def test_coord2cell(self):
-        ''' Test coord2cell and cell2coord '''
+        """ Test coord2cell and cell2coord """
         if not HAS_C_GIS_MODULE:
-            self.skipTest('Missing C module c_hydrodiy_gis')
+            self.skipTest("Missing C module c_hydrodiy_gis")
 
         gr = Grid(**self.config)
 
@@ -265,10 +268,10 @@ class GridTestCase(unittest.TestCase):
 
     def test_slice(self):
         if not HAS_C_GIS_MODULE:
-            self.skipTest('Missing C module c_hydrodiy_gis')
+            self.skipTest("Missing C module c_hydrodiy_gis")
 
         ndim = 11
-        gr = Grid('test', ndim)
+        gr = Grid("test", ndim)
         vect = np.arange(0, int(ndim/2)+1)+1.
         vect = np.concatenate([vect[::-1], vect[1:]])
         gr.data = np.array([vect+i for i in range(ndim)])
@@ -284,10 +287,10 @@ class GridTestCase(unittest.TestCase):
 
 
     def test_from_stream(self):
-        ''' Test loading grid from stream '''
+        """ Test loading grid from stream """
         # Header only
-        fileheader = os.path.join(self.ftest, 'fdtest.hdr')
-        with open(fileheader, 'r') as fh:
+        fileheader = os.path.join(self.ftest, "fdtest.hdr")
+        with open(fileheader, "r") as fh:
             gr = Grid.from_stream(fh)
 
         def test_grid(gr):
@@ -297,25 +300,25 @@ class GridTestCase(unittest.TestCase):
             ck &= np.isclose(gr.yllcorner, -18.291250)
             ck &= np.isclose(gr.cellsize,  0.0025)
             ck &= (gr.nodata == 32767)
-            ck &= (gr.name == 'fdtest')
-            ck &= (gr.comment == 'No comment')
+            ck &= (gr.name == "fdtest")
+            ck &= (gr.comment == "No comment")
             return ck
 
         self.assertTrue(test_grid(gr))
 
         # Header and data
-        filedata = os.path.join(self.ftest, 'fdtest.bil')
+        filedata = os.path.join(self.ftest, "fdtest.bil")
 
-        with open(fileheader, 'r') as fh, open(filedata, 'rb') as fd:
+        with open(fileheader, "r") as fh, open(filedata, "rb") as fd:
             gr = Grid.from_stream(fh, fd)
 
         self.assertTrue(test_grid(gr))
 
 
     def test_from_zip(self):
-        ''' Test loading grid from stream piped from zipfile '''
-        filezip = os.path.join(self.ftest, 'flowdir_223202.zip')
-        fileheader = 'subdir/flowdir_223202.hdr'
+        """ Test loading grid from stream piped from zipfile """
+        filezip = os.path.join(self.ftest, "flowdir_223202.zip")
+        fileheader = "subdir/flowdir_223202.hdr"
         gr = Grid.from_zip(filezip, fileheader)
 
         ck = gr.nrows == 241
@@ -324,18 +327,18 @@ class GridTestCase(unittest.TestCase):
         ck &= np.isclose(gr.yllcorner, -37.45125)
         ck &= np.isclose(gr.cellsize,  0.0025)
         ck &= (gr.nodata == 0)
-        ck &= (gr.name == 'no_name')
-        ck &= (gr.comment == 'No comment')
+        ck &= (gr.name == "no_name")
+        ck &= (gr.comment == "No comment")
         ck &= np.isclose(gr.data.mean(), 30.12049154165337)
         self.assertTrue(ck)
 
 
     def test_from_header(self):
-        filename = os.path.join(self.ftest, 'header.hdr')
+        filename = os.path.join(self.ftest, "header.hdr")
         try:
             gr = Grid.from_header(filename)
         except MemoryError:
-            warnings.warn('test_from_header not run due to memory error')
+            warnings.warn("test_from_header not run due to memory error")
             return
 
         ck = gr.nrows == 13857
@@ -344,14 +347,14 @@ class GridTestCase(unittest.TestCase):
         ck &= (gr.yllcorner == -43.74375)
         ck &= (gr.cellsize == 0.0025)
         ck &= (gr.nodata == 32767)
-        ck &= (gr.name == 'mygrid')
-        ck &= (gr.comment == 'testing header')
+        ck &= (gr.name == "mygrid")
+        ck &= (gr.comment == "testing header")
 
         self.assertTrue(ck)
 
 
     def test_plot(self):
-        filename = os.path.join(self.ftest, 'demtest.hdr')
+        filename = os.path.join(self.ftest, "demtest.hdr")
         gr = Grid.from_header(filename)
         gr.dtype = np.float64
         def fun(x):
@@ -360,18 +363,21 @@ class GridTestCase(unittest.TestCase):
             return np.log(x+1)
         gr = gr.apply(fun)
 
-        plt.close('all')
+        plt.close("all")
         fig, ax = plt.subplots()
-        gr.plot(ax, interpolation='nearest')
+        gr.plot(ax, interpolation="nearest")
         fp = os.path.join(self.fimg, \
-                        re.sub('hdr', 'png', os.path.basename(filename)))
+                        re.sub("hdr", "png", os.path.basename(filename)))
         fig.savefig(fp)
 
 
     def test_plot_values(self):
-        ''' Test showing grid values '''
+        """ Test showing grid values """
+        if not HAS_C_GIS_MODULE:
+            self.skipTest("Missing C module c_hydrodiy_gis")
+
         ngrid = 20
-        gr = Grid('test', xllcorner=0, yllcorner=0, cellsize=1, \
+        gr = Grid("test", xllcorner=0, yllcorner=0, cellsize=1, \
                             nrows=ngrid, ncols=ngrid)
 
         # Generate smooth random data
@@ -385,15 +391,15 @@ class GridTestCase(unittest.TestCase):
         d = np.random.multivariate_normal(mean=m, cov=Sigma)
         gr.data = d.reshape((ngrid, ngrid))
 
-        plt.close('all')
+        plt.close("all")
         fig, ax = plt.subplots()
-        gr.plot(ax, interpolation='nearest')
-        gr.plot_values(ax, fmt='0.1f', fontsize=7, fontweight='bold', \
-                                            color='w')
+        gr.plot(ax, interpolation="nearest")
+        gr.plot_values(ax, fmt="0.1f", fontsize=7, fontweight="bold", \
+                                            color="w")
 
         fig.set_size_inches((10, 10))
         fig.tight_layout()
-        fp = os.path.join(self.fimg, 'test_plot_values.png')
+        fp = os.path.join(self.fimg, "test_plot_values.png")
         fig.savefig(fp)
 
 
@@ -409,7 +415,7 @@ class GridTestCase(unittest.TestCase):
 
     def test_clip(self):
         if not HAS_C_GIS_MODULE:
-            self.skipTest('Missing C module c_hydrodiy_gis')
+            self.skipTest("Missing C module c_hydrodiy_gis")
 
         gr = Grid(**self.config)
         gr.data = np.arange(gr.nrows*gr.ncols).reshape((gr.nrows, gr.ncols))
@@ -425,7 +431,7 @@ class GridTestCase(unittest.TestCase):
 
     def test_minmaxdata(self):
         cfg = self.config.copy()
-        cfg['dtype'] = np.int32
+        cfg["dtype"] = np.int32
         gr = Grid(**cfg)
         gr.data = np.arange(gr.nrows*gr.ncols).reshape((gr.nrows, gr.ncols))
 
@@ -441,26 +447,26 @@ class GridTestCase(unittest.TestCase):
         try:
             gr.mindata = 35
         except ValueError as err:
-            self.assertTrue(str(err).startswith('Expected mindata<maxdata'))
+            self.assertTrue(str(err).startswith("Expected mindata<maxdata"))
         else:
-            raise ValueError('Problem with error handling')
+            raise ValueError("Problem with error handling")
 
 
     def test_interpolate_small(self):
-        ''' Small grid interpolation '''
+        """ Small grid interpolation """
         if not HAS_C_GIS_MODULE:
-            self.skipTest('Missing C module c_hydrodiy_gis')
+            self.skipTest("Missing C module c_hydrodiy_gis")
 
         gr = Grid(**self.config)
         gr.data = np.arange(gr.nrows*gr.ncols).reshape((gr.nrows, gr.ncols))
 
         cfg = {
-            'name': 'interpolate', \
-            'nrows': 14, \
-            'ncols': 10, \
-            'cellsize': 1.
+            "name": "interpolate", \
+            "nrows": 14, \
+            "ncols": 10, \
+            "cellsize": 1.
         }
-        for key in ['dtype', 'xllcorner', 'yllcorner']:
+        for key in ["dtype", "xllcorner", "yllcorner"]:
             cfg[key] = self.config[key]
 
         gr_geom = Grid(**cfg)
@@ -473,25 +479,25 @@ class GridTestCase(unittest.TestCase):
 
 
     def test_interpolate_large(self):
-        ''' Large grid interpolation '''
+        """ Large grid interpolation """
         if not HAS_C_GIS_MODULE:
-            self.skipTest('Missing C module c_hydrodiy_gis')
+            self.skipTest("Missing C module c_hydrodiy_gis")
 
         cfg = {
-            'name': 'interpolate', \
-            'nrows': 300, \
-            'ncols': 500, \
-            'cellsize': 1., \
-            'dtype': np.float64, \
-            'xllcorner': 0.,\
-            'yllcorner': 0.
+            "name": "interpolate", \
+            "nrows": 300, \
+            "ncols": 500, \
+            "cellsize": 1., \
+            "dtype": np.float64, \
+            "xllcorner": 0.,\
+            "yllcorner": 0.
         }
         gr = Grid(**cfg)
         gr.data = np.arange(gr.nrows*gr.ncols).reshape((gr.nrows, gr.ncols))
 
-        cfg['nrows'] = 600
-        cfg['ncols'] = 1000
-        cfg['cellsize'] = 0.5
+        cfg["nrows"] = 600
+        cfg["ncols"] = 1000
+        cfg["cellsize"] = 0.5
         gr_geom = Grid(**cfg)
         gri = gr.interpolate(gr_geom)
 
@@ -507,7 +513,7 @@ class GridTestCase(unittest.TestCase):
 
 
     def test_nodata(self):
-        ''' Test setting nodata '''
+        """ Test setting nodata """
         nrows = 6
         gr = Grid(nrows, nrows, dtype=np.int32)
 
@@ -517,37 +523,41 @@ class GridTestCase(unittest.TestCase):
         try:
             gr.nodata = np.nan
         except Exception as err:
-            self.assertTrue(str(err).startswith('cannot convert'))
+            self.assertTrue(str(err).startswith("cannot convert"))
         else:
-            raise ValueError('Problem with error generation')
+            raise ValueError("Problem with error generation")
 
 
     def test_cells_inside_polygon(self):
-        ''' Test cells inside polygon algorithm '''
+        """ Test cells inside polygon algorithm """
+        if not HAS_C_GIS_MODULE:
+            self.skipTest("Missing C module c_hydrodiy_gis")
+
         nrows = 10
         gr = Grid(nrows, nrows, dtype=np.int32)
 
         polygon = np.array([[0.5, 2.3], [7.2, 9.5], [6.2, 2.2]])
         inside = gr.cells_inside_polygon(polygon)
 
-        fe = os.path.join(self.ftest, 'grid_cells_inside_polygon.csv')
+        fe = os.path.join(self.ftest, "grid_cells_inside_polygon.csv")
         expected = pd.read_csv(fe)
         for cn in inside.columns:
-            self.assertTrue(np.allclose(inside.loc[:, cn], expected.loc[:, cn]))
+            self.assertTrue(np.allclose(inside.loc[:, cn], \
+                        expected.loc[:, cn]))
 
 
 
 class CatchmentTestCase(unittest.TestCase):
 
     def setUp(self):
-        print('\t=> CatchmentTestCase')
+        print("\t=> CatchmentTestCase")
 
         if not HAS_C_GIS_MODULE:
-            self.skipTest('Missing C module c_hydrodiy_gis')
+            self.skipTest("Missing C module c_hydrodiy_gis")
 
         source_file = os.path.abspath(__file__)
         self.ftest = os.path.dirname(source_file)
-        self.fimg = os.path.join(self.ftest, 'images')
+        self.fimg = os.path.join(self.ftest, "images")
         if not os.path.exists(self.fimg):
             os.mkdir(self.fimg)
 
@@ -567,7 +577,7 @@ class CatchmentTestCase(unittest.TestCase):
     def test_downstream(self):
         nr = self.gr.nrows
         nc = self.gr.ncols
-        ca = Catchment('test', self.gr)
+        ca = Catchment("test", self.gr)
 
         idxup = range(0, nr*nc)
         idxdown = ca.downstream(idxup)
@@ -591,7 +601,7 @@ class CatchmentTestCase(unittest.TestCase):
     def test_upstream(self):
         nr = self.gr.nrows
         nc = self.gr.ncols
-        ca = Catchment('test', self.gr)
+        ca = Catchment("test", self.gr)
 
         idxdown = range(0, nr*nc)
         idxup = ca.upstream(idxdown)
@@ -610,7 +620,7 @@ class CatchmentTestCase(unittest.TestCase):
     def test_extent(self):
         nr = self.gr.nrows
         nc = self.gr.ncols
-        ca = Catchment('test', self.gr)
+        ca = Catchment("test", self.gr)
         ca.delineate_area(27)
         ext = ca.extent()
         self.assertEqual(ext, (1., 4., 1., 6.))
@@ -619,7 +629,7 @@ class CatchmentTestCase(unittest.TestCase):
     def test_delineate_area(self):
         nr = self.gr.nrows
         nc = self.gr.ncols
-        ca = Catchment('test', self.gr)
+        ca = Catchment("test", self.gr)
 
         ca.delineate_area(27)
         idxc = ca.idxcells_area
@@ -658,7 +668,7 @@ class CatchmentTestCase(unittest.TestCase):
 
         dat = delineate_river(self.gr, 1)
 
-        idxc = dat['idxcell']
+        idxc = dat["idxcell"]
         dat = dat.values
 
         expected = [1, 7, 13, 20, 27, 33]
@@ -690,7 +700,7 @@ class CatchmentTestCase(unittest.TestCase):
     def test_delineate_boundary(self):
         nr = self.gr.nrows
         nc = self.gr.ncols
-        ca = Catchment('test', self.gr)
+        ca = Catchment("test", self.gr)
 
         ca.delineate_area(27)
         ca.delineate_boundary()
@@ -703,10 +713,10 @@ class CatchmentTestCase(unittest.TestCase):
 
 
     def test_flowpathlengths(self):
-        ''' Test flow path delineation '''
+        """ Test flow path delineation """
         nr = self.gr.nrows
         nc = self.gr.ncols
-        ca = Catchment('test', self.gr)
+        ca = Catchment("test", self.gr)
 
         ca.delineate_area(27)
         ca.compute_flowpathlengths()
@@ -725,8 +735,8 @@ class CatchmentTestCase(unittest.TestCase):
 
 
     def test_dict(self):
-        ''' test conversion to dict '''
-        ca = Catchment('test', self.gr)
+        """ test conversion to dict """
+        ca = Catchment("test", self.gr)
 
         ca.delineate_area(27)
         ca.delineate_boundary()
@@ -742,7 +752,7 @@ class CatchmentTestCase(unittest.TestCase):
 
 
     def test_isin(self):
-        ca = Catchment('test', self.gr)
+        ca = Catchment("test", self.gr)
         ca.delineate_area(27)
 
         ck = ca.isin(0)
@@ -753,7 +763,7 @@ class CatchmentTestCase(unittest.TestCase):
 
 
     def test_intersect(self):
-        ca = Catchment('test', self.gr)
+        ca = Catchment("test", self.gr)
         ca.delineate_area(27)
 
         xll = ca.flowdir.xllcorner+1
@@ -776,10 +786,10 @@ class CatchmentTestCase(unittest.TestCase):
 
 
     def test_add(self):
-        ca1 = Catchment('test', self.gr)
+        ca1 = Catchment("test", self.gr)
         ca1.delineate_area(13)
 
-        ca2 = Catchment('test', self.gr)
+        ca2 = Catchment("test", self.gr)
         ca2.delineate_area(14)
 
         ca = ca1+ca2
@@ -788,20 +798,20 @@ class CatchmentTestCase(unittest.TestCase):
 
 
     def test_compute_area(self):
-        ''' Test computation of catchment area '''
+        """ Test computation of catchment area """
         if not HAS_PYPROJ:
-            warnings.warn('Compute area not tested. Please install pyproj')
+            warnings.warn("Compute area not tested. Please install pyproj")
             return
 
         gr = self.gr.clone()
         gr.xllcorner = 130.
         gr.yllcorner = -20.
 
-        ca = Catchment('test', gr)
+        ca = Catchment("test", gr)
         ca.delineate_area(27)
         ca.delineate_boundary()
 
-        gda94 = pyproj.Proj('+init=EPSG:3112')
+        gda94 = pyproj.Proj("+init=EPSG:3112")
         area = ca.compute_area(gda94)
 
         ck = np.allclose(area, 60120.97484329)
@@ -809,10 +819,10 @@ class CatchmentTestCase(unittest.TestCase):
 
 
     def test_sub(self):
-        ca1 = Catchment('test', self.gr)
+        ca1 = Catchment("test", self.gr)
         ca1.delineate_area(33)
 
-        ca2 = Catchment('test', self.gr)
+        ca2 = Catchment("test", self.gr)
         ca2.delineate_area(20)
 
         ca = ca1-ca2
@@ -821,7 +831,7 @@ class CatchmentTestCase(unittest.TestCase):
 
 
     def test_slope(self):
-        ''' Test computation of slope '''
+        """ Test computation of slope """
         alt = self.gr.clone()
         alt.dtype = np.float64
         alt.nodata = np.nan
@@ -843,7 +853,7 @@ class CatchmentTestCase(unittest.TestCase):
 
 
     def test_accumulate(self):
-        ''' Test accumulate '''
+        """ Test accumulate """
         # Standard accumulation
         acc = accumulate(self.gr, nprint=10)
         expected = [ [-1, 1, 1, 1, -1, -1],
@@ -877,7 +887,7 @@ class CatchmentTestCase(unittest.TestCase):
 
 
     def test_voronoi(self):
-        ca = Catchment('test', self.gr)
+        ca = Catchment("test", self.gr)
         ca.delineate_area(27)
 
         # Points in the for corner of grid
@@ -889,48 +899,48 @@ class CatchmentTestCase(unittest.TestCase):
 
     def test_accumulate_advanced(self):
         if not RUN_ADVANCED:
-            self.skipTest('Skipping advanced grid tests')
+            self.skipTest("Skipping advanced grid tests")
 
-        filename = os.path.join(self.ftest, 'fdtest.hdr')
+        filename = os.path.join(self.ftest, "fdtest.hdr")
         flowdir = Grid.from_header(filename)
 
         acc = accumulate(flowdir, nprint=30000)
 
-        fileacc = re.sub('\\.hdr', '_acc.bil', filename)
+        fileacc = re.sub("\\.hdr", "_acc.bil", filename)
         acc.save(fileacc)
 
         logacc = acc.clone()
         dt = np.log(logacc.data)
         logacc.data = dt
 
-        plt.close('all')
+        plt.close("all")
         fig, ax = plt.subplots()
 
-        logacc.plot(ax, interpolation='nearest', cmap='Blues')
+        logacc.plot(ax, interpolation="nearest", cmap="Blues")
 
         fileplot = os.path.join(self.fimg, \
-                        re.sub('\\.bil', '.png', os.path.basename(fileacc)))
+                        re.sub("\\.bil", ".png", os.path.basename(fileacc)))
         fig.savefig(fileplot)
 
 
     def test_delineate_advanced(self):
         if not RUN_ADVANCED:
-            self.skipTest('Skipping advanced grid tests')
+            self.skipTest("Skipping advanced grid tests")
 
         configs = [
-            {'outletxy':[147.7225, -37.2575], 'upstreamxy':[147.9, -37.0],
-                'filename':'flowdir_223202.hdr'},
-            {'outletxy':[145.934, -17.9935], 'upstreamxy': [145.7, -17.8],
-                'filename':'fdtest.hdr'}
+            {"outletxy":[147.7225, -37.2575], "upstreamxy":[147.9, -37.0],
+                "filename":"flowdir_223202.hdr"},
+            {"outletxy":[145.934, -17.9935], "upstreamxy": [145.7, -17.8],
+                "filename":"fdtest.hdr"}
         ]
 
         for cfg in configs:
-            outletxy = cfg['outletxy']
-            upstreamxy = cfg['upstreamxy']
-            filename = os.path.join(self.ftest, cfg['filename'])
+            outletxy = cfg["outletxy"]
+            upstreamxy = cfg["upstreamxy"]
+            filename = os.path.join(self.ftest, cfg["filename"])
             flowdir = Grid.from_header(filename)
 
-            ca = Catchment('test', flowdir)
+            ca = Catchment("test", flowdir)
 
             # Delineate catchment
             idxcell = flowdir.coord2cell(outletxy)
@@ -947,7 +957,7 @@ class CatchmentTestCase(unittest.TestCase):
             yllcorner = np.floor(flowdir.yllcorner*100)/100
             nrows = np.ceil(flowdir.nrows*flowdir.cellsize/cellsize)
             ncols = np.ceil(flowdir.ncols*flowdir.cellsize/cellsize)
-            coarse_grid = Grid('coarse', ncols=ncols, \
+            coarse_grid = Grid("coarse", ncols=ncols, \
                     nrows=nrows, xllcorner=xllcorner, yllcorner=yllcorner, \
                     cellsize=cellsize)
 
@@ -955,13 +965,13 @@ class CatchmentTestCase(unittest.TestCase):
             coordi = coarse_grid.cell2coord(idxi)
 
             fi = os.path.join(self.fimg, \
-                        re.sub('\\.hdr', '_intersect.bil', \
+                        re.sub("\\.hdr", "_intersect.bil", \
                             os.path.basename(filename)))
             gri.dtype = np.float32
             gri.save(fi)
 
             # Plots
-            plt.close('all')
+            plt.close("all")
             fig, ax = plt.subplots()
 
             # plot flow dir
@@ -970,27 +980,27 @@ class CatchmentTestCase(unittest.TestCase):
             data[data>128] = np.nan
             data = np.log(data)/math.log(2)
             flowdir.data = data
-            flowdir.plot(ax, interpolation='nearest', cmap='Blues')
+            flowdir.plot(ax, interpolation="nearest", cmap="Blues")
 
             # Plot intersect
             gri.data = np.power(gri.data, 0.2)
-            gri.plot(ax, alpha=0.5, cmap='Reds')
-            ax.plot(coordi[:, 0], coordi[:, 1], '+', markersize=20, \
-                                    color='r')
+            gri.plot(ax, alpha=0.5, cmap="Reds")
+            ax.plot(coordi[:, 0], coordi[:, 1], "+", markersize=20, \
+                                    color="r")
 
             # plot catchment
-            ca.plot_area(ax, '+', markersize=2)
+            ca.plot_area(ax, "+", markersize=2)
 
             # plot boundary
-            ca.plot_boundary(ax, color='green', lw=4)
+            ca.plot_boundary(ax, color="green", lw=4)
 
             # plot river
-            ax.plot(datariver['x'], datariver['y'], 'r', lw=3)
+            ax.plot(datariver["x"], datariver["y"], "r", lw=3)
 
             fig.set_size_inches((15, 15))
             fig.tight_layout()
             fp = os.path.join(self.fimg, \
-                        re.sub('\\.hdr', '_plot.png', \
+                        re.sub("\\.hdr", "_plot.png", \
                             os.path.basename(filename)))
             fig.savefig(fp)
 
@@ -999,22 +1009,22 @@ class CatchmentTestCase(unittest.TestCase):
 class RefGridsTestCase(unittest.TestCase):
 
     def setUp(self):
-        print('\t=> RefGridsTestCase')
+        print("\t=> RefGridsTestCase")
 
         source_file = os.path.abspath(__file__)
         self.ftest = os.path.dirname(source_file)
 
 
     def test_name_error(self):
-        ''' Test mask error '''
+        """ Test mask error """
         try:
-            gr = get_grid('AWRAL_RIVER_BIDULE')
+            gr = get_grid("AWRAL_RIVER_BIDULE")
         except ValueError as err:
-            self.assertTrue(str(err).startswith('Expected name in'))
+            self.assertTrue(str(err).startswith("Expected name in"))
 
     def test_awral(self):
-        ''' Test awral mask '''
-        gr = get_grid('AWRAL')
+        """ Test awral mask """
+        gr = get_grid("AWRAL")
         self.assertEqual(gr.nrows, 681)
         self.assertEqual(gr.ncols, 841)
         self.assertEqual(gr.xllcorner, 112.)
@@ -1023,8 +1033,8 @@ class RefGridsTestCase(unittest.TestCase):
 
 
     def test_awap(self):
-        ''' Test awap mask '''
-        gr = get_grid('AWAP')
+        """ Test awap mask """
+        gr = get_grid("AWAP")
         self.assertEqual(gr.nrows, 691)
         self.assertEqual(gr.ncols, 886)
         self.assertEqual(gr.xllcorner, 112.)
@@ -1032,8 +1042,8 @@ class RefGridsTestCase(unittest.TestCase):
         self.assertEqual(np.sum(gr.data), 284547)
 
     def test_waterdyn(self):
-        ''' Test waterdyn mask '''
-        gr = get_grid('WATERDYN')
+        """ Test waterdyn mask """
+        gr = get_grid("WATERDYN")
         self.assertEqual(gr.nrows, 670)
         self.assertEqual(gr.ncols, 813)
         self.assertTrue(np.isclose(gr.xllcorner, 112.925))
@@ -1041,10 +1051,10 @@ class RefGridsTestCase(unittest.TestCase):
         self.assertEqual(np.sum(gr.data), 274845)
 
     def test_dlcd(self):
-        ''' Test DLCD mask '''
-        self.skipTest('Skipping this test - too high memory consumption')
+        """ Test DLCD mask """
+        self.skipTest("Skipping this test - too high memory consumption")
 
-        gr = get_grid('DLCD')
+        gr = get_grid("DLCD")
         self.assertEqual(gr.nrows, 14902)
         self.assertEqual(gr.ncols, 19161)
         self.assertTrue(np.isclose(gr.xllcorner, 110.))
@@ -1052,17 +1062,17 @@ class RefGridsTestCase(unittest.TestCase):
 
 
     def test_awral_subgrids(self):
-        ''' Test awral subgrids mask '''
+        """ Test awral subgrids mask """
         for name in AWRAL_SUBGRIDS.gridid:
             gr = get_grid(name)
 
-            if name == 'AWRAL_RIVER_MURRUMBIDGEE':
+            if name == "AWRAL_RIVER_MURRUMBIDGEE":
                 self.assertEqual(gr.nrows, 47)
                 self.assertEqual(gr.ncols, 128)
                 self.assertTrue(np.isclose(gr.xllcorner, 143.2))
                 self.assertTrue(np.isclose(gr.yllcorner, -36.55))
 
-            elif name == 'AWRAL_DRAINAGE_MURRAY_DARLING':
+            elif name == "AWRAL_DRAINAGE_MURRAY_DARLING":
                 self.assertEqual(gr.nrows, 261)
                 self.assertEqual(gr.ncols, 278)
                 self.assertTrue(np.isclose(gr.xllcorner, 138.55))
@@ -1070,7 +1080,7 @@ class RefGridsTestCase(unittest.TestCase):
                 v = np.unique(gr.data.flatten())
                 self.assertTrue(np.allclose(v, [0, 1]))
 
-            elif name == 'AWRAL_STATE_NSW':
+            elif name == "AWRAL_STATE_NSW":
                 self.assertEqual(gr.nrows, 187)
                 self.assertEqual(gr.ncols, 252)
                 self.assertTrue(np.isclose(gr.xllcorner, 141.0))
