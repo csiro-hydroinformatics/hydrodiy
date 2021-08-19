@@ -5,6 +5,9 @@ import sys, os, re, json, math
 import argparse
 from pathlib import Path
 
+#import warnings
+#warnings.filterwarnings("ignore")
+
 from datetime import datetime
 
 from dateutil.relativedelta import relativedelta as delta
