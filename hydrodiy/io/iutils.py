@@ -11,66 +11,15 @@ import stat
 
 from hydrodiy import PYVERSION
 
-if PYVERSION == 2:
-    from StringIO import StringIO
-elif PYVERSION == 3:
-    from io import StringIO
-
-from io import BytesIO
+from io import StringIO,BytesIO
 
 import requests
 
 import numpy as np
 import pandas as pd
 
-def find_files(folder, pattern, recursive=True, flags=0):
-    ''' Find files recursively based on regexp pattern search
-
-    Parameters
-    -----------
-    folder : str
-        Folder to be searched
-    pattern : str
-        Regexp pattern to be used. See re.search function
-    recursive : bool
-        Search folder recursively or not
-    flags : int
-        Flags used in re.search (e.g. re.IGNORECASE)
-
-    Returns
-    -----------
-    found : list
-        List of filenames
-
-    Example
-    -----------
-    Look for all python scripts in current folder
-    >>> lf = iutils.find_files('.', '.*\\.py', False)
-    '''
-
-    if not os.path.exists(folder):
-        raise ValueError('Folder {0} does not exists'.format(folder))
-
-    found = []
-
-    if recursive:
-        for root, dirs, files in os.walk(folder):
-            for filename in files:
-                fn = os.path.join(root, filename)
-                if not re.search(pattern, fn, flags) is None:
-                    found.append(fn)
-    else:
-        files = next(os.walk(folder))[2]
-        for filename in files:
-            fn = os.path.join(folder, filename)
-            if not re.search(pattern, fn, flags) is None:
-                found.append(fn)
-
-    return found
-
-
 def dict2str(data, prefix=None):
-    ''' Convert a dict to a string with the format v1[value1]_v2[value2]
+    """ Convert a dict to a string with the format v1[value1]_v2[value2]
 
     Parameters
     -----------
@@ -86,27 +35,27 @@ def dict2str(data, prefix=None):
 
     Example
     -----------
-    >>> iutils.dict2string({'name':'bob', 'phone':2010})
+    >>> iutils.dict2string({"name":"bob", "phone":2010})
 
-    '''
+    """
     out = []
 
     # Add items
     for key in sorted(data):
-        out.append('{0}[{1}]'.format(key, data[key]))
+        out.append("{0}[{1}]".format(key, data[key]))
 
-    out = '_'.join(out)
+    out = "_".join(out)
 
     # Add prefix if needed
     if not prefix is None:
-        if prefix!='':
-            out = prefix + '_' + out
+        if prefix!="":
+            out = prefix + "_" + out
 
     return out
 
 
 def str2dict(source, num2str=True):
-    ''' Find match in the form v1[value1]_v2[value2] in the
+    """ Find match in the form v1[value1]_v2[value2] in the
     source string and returns a dict with the value found
 
     Parameters
@@ -118,28 +67,28 @@ def str2dict(source, num2str=True):
 
     Example
     -----------
-    >>> source = 'name[bob]_phone[2010]'
+    >>> source = "name[bob]_phone[2010]"
     >>> iutils.str2dict(source)
 
-    '''
+    """
 
     # Excludes path and file extension
-    source = re.sub('\\.[^\\.]+$', '', os.path.basename(source))
+    source = re.sub("\\.[^\\.]+$", "", os.path.basename(source))
     prefix = source
 
     # Search for pattern match
     out = {}
-    search = re.findall('[^_]+\\[[^\\[]+\\]', source)
+    search = re.findall("[^_]+\\[[^\\[]+\\]", source)
 
     for match in search:
         # Get name
-        name = re.sub('\[.*', '', match)
+        name = re.sub("\[.*", "", match)
 
         # Get value
-        value = re.sub('.*\[|\]', '', match)
+        value = re.sub(".*\[|\]", "", match)
 
         # Remove item from prefix
-        prefix = re.sub('_*'+name+'\\[' + value + '\\]', '', prefix)
+        prefix = re.sub("_*"+name+"\\[" + value + "\\]", "", prefix)
 
         # Attempt conversion if required
         if not num2str:
@@ -157,14 +106,14 @@ def str2dict(source, num2str=True):
 
 
 def script_template(filename, comment,
-        type='simple',
+        type="simple",
         author=None, \
         fout=None, fdata=None, fimg=None):
-    ''' Write a script template
+    """ Write a script template
 
     Parameters
     -----------
-    filename : str
+    filename : pathlib.Path
         Filename to write the script to
     comment : str
         Comment on purpose of the script
@@ -182,16 +131,18 @@ def script_template(filename, comment,
         Images folder
     Example
     -----------
-    >>> iutils.script_template('a_cool_script.py', 'Testing', 'plot', 'Bob Marley')
+    >>> iutils.script_template("a_cool_script.py", "Testing", "plot", "Bob Marley")
 
-    '''
+    """
 
-    if not type in ['simple', 'plot']:
-        raise ValueError('Expected script type in [simple/plot], got {type}.')
+    if not type in ["simple", "plot"]:
+        raise ValueError("Expected script type in [simple/plot], "+\
+                            f"got {type}.")
 
     # Open script template
-    ftemplate = Path(__file__).resolve().parent / f'script_template_{type}.py'
-    with ftemplate.open('r') as ft:
+    ftemplate = Path(__file__).resolve().parent / \
+                                    f"script_template_{type}.py"
+    with ftemplate.open("r") as ft:
         txt = ft.read()
 
     # Add comment header
@@ -199,48 +150,47 @@ def script_template(filename, comment,
         try:
             author = os.getlogin()
         except:
-            author = 'unknown'
+            author = "unknown"
 
-    meta = '## -- Script Meta Data --\n'
-    meta += f'## Author  : {author}\n'
-    meta += f'## Created : {datetime.now()}\n'
-    meta += f'## Comment : {comment}\n'
-    meta += '##\n## ------------------------------\n'
+    meta = "## -- Script Meta Data --\n"
+    meta += f"## Author  : {author}\n"
+    meta += f"## Created : {datetime.now()}\n"
+    meta += f"## Comment : {comment}\n"
+    meta += "##\n## ------------------------------\n"
     txt = re.sub("\[COMMENT\]", meta, txt)
 
     # -- Add paths --
     filename = Path(filename)
 
     # By default, the root folder is the script folder
-    froot = 'source_file.parent'
+    froot = "source_file.parent"
 
-    # If there is a scripts folder in the path, we use the parent of this
-    # path as root.
+    # If there is a scripts folder in the path, we use the
+    # parent of this path as root.
     parts = filename.parts
-    if 'scripts' in parts:
-        nlevelup = parts[::-1].index('scripts')
+    if "scripts" in parts:
+        nlevelup = parts[::-1].index("scripts")
         froot += "".join([".parent"]*nlevelup)
 
     txt = re.sub("\[FROOT\]", froot, txt)
 
-
     if fout is None:
-        fout = 'froot / "outputs"\nfout.mkdir(exist_ok=True)\n'
+        fout = "froot / \"outputs\"\nfout.mkdir(exist_ok=True)\n"
     txt = re.sub("\[FOUT\]", fout, txt)
 
     if fdata is None:
-        fdata = 'froot / "data"\nfdata.mkdir(exist_ok=True)\n'
+        fdata = "froot / \"data\"\nfdata.mkdir(exist_ok=True)\n"
     txt = re.sub("\[FDATA\]", fdata, txt)
 
-    if type == 'plot':
+    if type == "plot":
         if fimg is None:
-            fimg = 'froot / "images"\nfdata.mkdir(exist_ok=True)\n'
+            fimg = "froot / \"images\"\nfimg.mkdir(exist_ok=True)\n"
         txt = re.sub("\[FIMG\]", fimg, txt)
     else:
         txt = re.sub("fimg = \[FIMG\]", "", txt)
 
     # Write
-    with filename.open('w') as fs:
+    with filename.open("w") as fs:
         fs.write(txt)
 
     # Make it executable for the user
@@ -250,28 +200,28 @@ def script_template(filename, comment,
 
 
 class HydrodiyContextualLogger(logging.Logger):
-    ''' Add context to logging messages via the context attribute '''
+    """ Add context to logging messages via the context attribute """
 
     def __init__(self, *args, **kwargs):
-        self.context = ''
+        self.context = ""
         super(HydrodiyContextualLogger, self).__init__(*args, **kwargs)
 
     def _log(self, level, msg, args, exc_info=None, extra=None):
-        if self.context != '':
-            msg = '{{ {0} }} {1}'.format(self.context, msg)
+        if self.context != "":
+            msg = "{{ {0} }} {1}".format(self.context, msg)
 
         super(HydrodiyContextualLogger, self)._log(\
                         level, msg, args, exc_info, extra)
 
 
-def get_logger(name, level='INFO', \
+def get_logger(name, level="INFO", \
         console=True, flog=None, \
-        fmt='%(asctime)s | %(name)s | %(levelname)s | %(message)s', \
+        fmt="%(asctime)s | %(name)s | %(levelname)s | %(message)s", \
         overwrite=True,
         excepthook=True,
         no_duplicate_handler=True,\
         contextual=False):
-    ''' Get a logger object that can handle contextual info
+    """ Get a logger object that can handle contextual info
 
     Parameters
     -----------
@@ -301,13 +251,13 @@ def get_logger(name, level='INFO', \
     -----------
     logger : logging.Logger
         Logger instance
-    '''
+    """
 
     logger = logging.getLogger(name)
 
     # Set logging level
-    if not level in ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']:
-        raise ValueError('{0} not a valid level'.format(level))
+    if not level in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
+        raise ValueError("{0} not a valid level".format(level))
 
     logger.setLevel(getattr(logging, level))
 
@@ -338,7 +288,7 @@ def get_logger(name, level='INFO', \
             try:
                 if os.path.exists(flog): os.remove(flog)
             except PermissionError as err:
-                warnings.warn('log file not deleted: '+str(err))
+                warnings.warn("log file not deleted: "+str(err))
 
         fh = logging.FileHandler(flog)
         fh.setFormatter(ft)
@@ -346,7 +296,7 @@ def get_logger(name, level='INFO', \
 
     if excepthook:
         def catcherr(exc_type, exc_value, exc_traceback):
-            logger.error('Unexpected error', exc_info=(exc_type, \
+            logger.error("Unexpected error", exc_info=(exc_type, \
                         exc_value, exc_traceback))
             sys.__excepthook__(exc_type, exc_value, exc_traceback)
 
@@ -359,14 +309,14 @@ def get_logger(name, level='INFO', \
     if contextual:
         # A bit dangerous, but will do for now
         logger.__class__ = HydrodiyContextualLogger
-        logger.context = ''
+        logger.context = ""
 
     return logger
 
 
 def read_logfile(flog, \
-        fmt='%(asctime)s | %(name)s | %(levelname)s | %(message)s'):
-    ''' Reads a log file and process data
+        fmt="%(asctime)s | %(name)s | %(levelname)s | %(message)s"):
+    """ Reads a log file and process data
 
     Parameters
     -----------
@@ -379,17 +329,17 @@ def read_logfile(flog, \
     -----------
     logs : pandas.core.DataFrame
         Logging items
-    '''
+    """
     # Check inputs
     if not os.path.exists(flog):
-        raise ValueError('File {0} does not exist'.format(flog))
+        raise ValueError("File {0} does not exist".format(flog))
 
     # Build regex
-    regex = re.sub('\)s', '>.*)', re.sub('\%\(', '(?P<', fmt))
-    regex = re.sub('\|', '\|', regex)
+    regex = re.sub("\)s", ">.*)", re.sub("\%\(", "(?P<", fmt))
+    regex = re.sub("\|", "\|", regex)
 
     # Open log file
-    with open(flog, 'r') as fobj:
+    with open(flog, "r") as fobj:
         loglines = fobj.readlines()
 
     # Extract log info line by line
@@ -402,16 +352,16 @@ def read_logfile(flog, \
     logs = pd.DataFrame(logs)
 
     # Process contextual info
-    if 'message' in logs:
-        context = logs.message.str.findall('(?<=\{)[^\}]+(?=\})')
-        context = context.apply(lambda x: ''.join(x).strip())
-        logs['context'] = context
+    if "message" in logs:
+        context = logs.message.str.findall("(?<=\{)[^\}]+(?=\})")
+        context = context.apply(lambda x: "".join(x).strip())
+        logs["context"] = context
 
     return logs
 
 
 def get_ibatch(nsites, nbatch, ibatch):
-    ''' Returns the indices of sites within a batch
+    """ Returns the indices of sites within a batch
 
     Parameters
     -----------
@@ -434,102 +384,18 @@ def get_ibatch(nsites, nbatch, ibatch):
     >>>  idx = iutils.get_ibatch(20, 5, 2)
     [8, 9, 10, 11]
 
-    '''
+    """
     if nsites < 1:
-        raise ValueError('Number of sites lower than 1')
+        raise ValueError(f"Expected nsites>=1, got {nsites}.")
 
     if nsites < nbatch:
-        raise ValueError('Number of sites lower than number of batches')
+        raise ValueError(f"Expected nsites ({nsites}) "+\
+                            f">= nbatch ({nbatch})")
 
     if ibatch < 0 or ibatch >= nbatch:
-        raise ValueError('Expected ibatch in [0, {0}], got {1}'.format(\
-            nbatch-1, ibatch))
+        raise ValueError(f"Expected ibatch ({ibatch}) in "+\
+                        f"[0, {nbatch-1}].")
 
-    nsites_per_batch = nsites//nbatch+1
-    if nsites_per_batch == 0:
-        raise ValueError('Number of sites per batch is 0'+\
-            ' (nsites={0}, nbatch={1})'.format(
-                nsites, nbatch))
-
-    if nsites_per_batch > nsites:
-        raise ValueError(('Number of sites per batch({0})'+\
-            ' is greater than nsites({1}))').format(
-                nsites_per_batch, nsites))
-
-    start = nsites_per_batch * ibatch
-    if start > nsites-1:
-        raise ValueError(('Batch index({0}) is too large for '+\
-            ' the number of sites({1}) and number of sites '+\
-            'per batch ({2})').format(
-                ibatch, nsites, nsites_per_batch))
-
-    return np.arange(start, min(nsites, start+nsites_per_batch))
-
-
-def download(url, filename=None, logger=None, nprint=5, \
-        user=None, pwd=None, timeout=None):
-    ''' Download file by chunk. Appropriate for large files
-
-    Parameters
-    -----------
-    url : str
-        File URL
-    filename : str
-        Output file path. If None returns a pipe.
-    logger : logging.Logger
-        Logger instance
-    nprint : int
-        Frequency of logger printing in Mb
-    user : str
-        User name
-    pwd : str
-        Password
-
-    Returns
-    -----------
-    stream : io.BytesIO
-        Binary stream to download data
-    '''
-
-    auth = None
-    if not user is None:
-        auth = requests.auth.HTTPBasicAuth(user, pwd)
-
-    # Run request
-    if timeout is None:
-        req = requests.get(url, auth=auth)
-    else:
-        req = requests.get(url, auth=auth, timeout=timeout)
-
-    # Raise error if HTTP problem
-    req.raise_for_status()
-
-    # Function to download data
-    def get_data(fobj):
-        count = 0
-        for chunk in req.iter_content(chunk_size=1024):
-            count += 1
-            if count % nprint*1000 == 0 and not logger is None:
-                logger.info('{0} - chunk {1}'.format(\
-                    os.path.basename(filename), count))
-
-            if chunk: # filter out keep-alive new chunks
-                fobj.write(chunk)
-
-    # Store data in pipe
-    if filename is None:
-        stream = BytesIO()
-        get_data(stream)
-
-        # Rewind at the start of the file
-        stream.seek(0)
-        return stream
-
-    else:
-        # Store data in file
-        with open(filename, 'wb') as fobj:
-            get_data(fobj)
-
-        return None
+    return np.array_split(np.arange(nsites), nbatch)[ibatch]
 
 
