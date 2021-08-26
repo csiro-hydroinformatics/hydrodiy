@@ -647,8 +647,9 @@ def cov_ellipse(mu, cov, pvalue=0.95, *args, **kwargs):
 
     # Ellipse parameters
     eig, vect = linalg.eig(cov)
-    v1 = 2*math.sqrt(fact*eig[0])
-    v2 = 2*math.sqrt(fact*eig[1])
+    eig = eig.real
+    v1 = 2*math.sqrt(max(1e-6, fact*eig[0]))
+    v2 = 2*math.sqrt(max(1e-6, fact*eig[1]))
     alpha = np.sign(cov[0, 1])*np.rad2deg(math.acos(vect[0, 0]))
 
     # Draw ellipse
@@ -691,7 +692,7 @@ def qqplot(ax, data, addline=False, censor=None, *args, **kwargs):
 
         # Fit OLS regression
         X = np.column_stack([np.ones(len(x)), x])
-        theta, _, _, _ = np.linalg.lstsq(X, y)
+        theta, _, _, _ = np.linalg.lstsq(X, y, rcond=None)
         a, b = theta
 
         # Compute r2 for regression
@@ -743,7 +744,8 @@ def ecdfplot(ax, df, label_stat=None, label_stat_format="4.2f", \
         label = name
         if not label_stat is None:
             stat = getattr(se, label_stat)()
-            label = "{} ({:{format}})".format(name, stat, format=label_stat_format)
+            label = "{} ({:{format}})".format(name, stat, \
+                                format=label_stat_format)
 
         ax.plot(values, pp, label=label, *args, **kwargs)
         lines[name] = ax.get_lines()[-1]

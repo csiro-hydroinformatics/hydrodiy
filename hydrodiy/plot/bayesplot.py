@@ -128,10 +128,10 @@ def slice2d(ax, logpost, params, ip1, ip2, dval1, dval2, \
 
     # log axis
     if scale1 == "log":
-        ax.set_xscale("log", nonposx="clip")
+        ax.set_xscale("log", nonpositive="clip")
 
     if scale2 == "log":
-        ax.set_yscale("log", nonposy="clip")
+        ax.set_yscale("log", nonpositive="clip")
 
     # plot parameter point
     ax.plot(params[ip1], params[ip2], "ow")

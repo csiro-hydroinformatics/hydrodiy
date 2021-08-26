@@ -50,7 +50,7 @@ class UtilsTestCase(unittest.TestCase):
     def test_acf_all(self):
         """ Test acf """
         if not HAS_C_STAT_MODULE:
-            self.skipTest('Missing C module c_hydrodiy_stat')
+            self.skipTest("Missing C module c_hydrodiy_stat")
 
         nval = 100000
         rho = 0.8
@@ -95,7 +95,7 @@ class UtilsTestCase(unittest.TestCase):
     def test_acf_idx(self):
         """ Test acf with index selection """
         if not HAS_C_STAT_MODULE:
-            self.skipTest('Missing C module c_hydrodiy_stat')
+            self.skipTest("Missing C module c_hydrodiy_stat")
 
         nval = 5000
         sig = 2
@@ -235,7 +235,7 @@ class UtilsTestCase(unittest.TestCase):
     def test_pareto_front(self):
         """ Test pareto front """
         if not HAS_C_STAT_MODULE:
-            self.skipTest('Missing C module c_hydrodiy_stat')
+            self.skipTest("Missing C module c_hydrodiy_stat")
 
         for nval, ncol in prod([20, 200], [2, 5]):
             samples = np.random.normal(size=(nval, ncol))

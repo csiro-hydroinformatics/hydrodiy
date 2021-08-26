@@ -5,12 +5,14 @@ import pandas as pd
 import numpy as np
 
 import matplotlib as mpl
-mpl.use('Agg')
+mpl.use("Agg")
 
 import matplotlib.pyplot as plt
 
 from hydrodiy.plot.ensplot import MonthlyEnsplot
 from hydrodiy.plot.ensplot import ensmetrics, pitplot, tsplot
+
+from hydrodiy import HAS_C_STAT_MODULE
 
 # Reset matplotlib to default
 mpl.rcdefaults()
@@ -18,14 +20,14 @@ mpl.rcdefaults()
 class EnsplotTestCase(unittest.TestCase):
 
     def setUp(self):
-        print('\t=> EnsplotTestCase (hyplot)')
+        print("\t=> EnsplotTestCase (hyplot)")
         source_file = os.path.abspath(__file__)
         self.ftest = os.path.dirname(source_file)
-        self.fimg = os.path.join(self.ftest, 'images')
+        self.fimg = os.path.join(self.ftest, "images")
         if not os.path.exists(self.fimg):
             os.mkdir(self.fimg)
 
-        dt = pd.date_range('1980-01-01', '2012-12-01', freq='MS')
+        dt = pd.date_range("1980-01-01", "2012-12-01", freq="MS")
         self.fcdates = dt
         nval = len(dt)
         nens = 200
@@ -41,9 +43,13 @@ class EnsplotTestCase(unittest.TestCase):
 
 
     def test_ensmetrics(self):
-        ''' Test ensmetrics '''
+        """ Test ensmetrics """
+        if not HAS_C_STAT_MODULE:
+            self.skipTest("Missing C module c_hydrodiy_stat")
+
         alpha, cr, pits, is_sudo, R2, bias = ensmetrics(self.obs, \
                                             self.fcst)
+
         self.assertTrue(alpha>1)
         self.assertTrue(R2<1 and R2>-1)
         self.assertTrue(cr < 100)
@@ -51,7 +57,10 @@ class EnsplotTestCase(unittest.TestCase):
 
 
     def test_ensmetrics_sudo(self):
-        ''' Test ensmetrics with sudo pits '''
+        """ Test ensmetrics with sudo pits """
+        if not HAS_C_STAT_MODULE:
+            self.skipTest("Missing C module c_hydrodiy_stat")
+
         alpha, cr, pits, is_sudo, R2, bias = ensmetrics(self.obs_sudo, \
                                                     self.fcst_sudo)
         self.assertTrue(len(pits) == len(self.obs_sudo))
@@ -59,73 +68,73 @@ class EnsplotTestCase(unittest.TestCase):
 
 
     def test_tsplot(self):
-        ''' Test tsplot '''
-        plt.close('all')
+        """ Test tsplot """
+        plt.close("all")
         fig, axs = plt.subplots(nrows=2)
 
         idx = self.fcdates.month == 1
         x = tsplot(self.obs[idx], self.fcst[idx], axs[0], \
-                    line='mean')
+                    line="mean")
 
         try:
             x = tsplot(self.obs, self.fcst, axs[1], \
                     loc_pit=1, loc_scatter=1, \
-                    line='mean')
+                    line="mean")
         except ValueError as err:
-            self.assertTrue(str(err).startswith('Cannot show'))
+            self.assertTrue(str(err).startswith("Cannot show"))
         else:
-            raise ValueError('Problem with error handling')
+            raise ValueError("Problem with error handling")
 
         try:
             x = tsplot(self.obs, self.fcst, axs[1], \
                     loc_pit=1, loc_scatter=20, \
-                    line='mean')
+                    line="mean")
         except ValueError as err:
-            self.assertTrue(str(err).startswith('Expected location'))
+            self.assertTrue(str(err).startswith("Expected location"))
         else:
-            raise ValueError('Problem with error handling')
+            raise ValueError("Problem with error handling")
 
 
         x = tsplot(self.obs[idx], self.fcst[idx], axs[1], \
                     loc_pit=2, loc_scatter=1, \
                     loc_legend=10, \
-                    line='mean')
+                    line="mean")
 
         fig.set_size_inches((8, 14))
         fig.tight_layout()
-        fp = os.path.join(self.fimg, 'tsplot.png')
+        fp = os.path.join(self.fimg, "tsplot.png")
         fig.savefig(fp)
 
 
     def test_pitplot(self):
-        ''' Test pitplot '''
+        """ Test pitplot """
         alpha, cr, pits, sudo, R2, bias = ensmetrics(self.obs, self.fcst)
 
-        plt.close('all')
+        plt.close("all")
         fig, ax = plt.subplots()
         pitplot(pits, sudo, alpha, cr, bias, ax)
 
-        fp = os.path.join(self.fimg, 'pitplot.png')
+        fp = os.path.join(self.fimg, "pitplot.png")
         fig.savefig(fp)
 
 
     def test_pitplot_sudo(self):
-        ''' Test pitplot with sudo pits'''
+        """ Test pitplot with sudo pits"""
         alpha, cr, pits, sudo, R2, bias = ensmetrics(self.obs_sudo, \
                                                 self.fcst_sudo)
 
-        plt.close('all')
+        plt.close("all")
         fig, ax = plt.subplots()
         pitplot(pits, sudo, alpha, cr, bias, ax)
 
-        fp = os.path.join(self.fimg, 'pitplot_sudo.png')
+        fp = os.path.join(self.fimg, "pitplot_sudo.png")
         fig.savefig(fp)
 
 
     def test_monthplot(self):
-        ''' Test one month plot '''
+        """ Test one month plot """
 
-        plt.close('all')
+        plt.close("all")
         fig, axs = plt.subplots(nrows=2)
 
         mep = MonthlyEnsplot(self.obs, self.fcst, self.fcdates, fig)
@@ -137,32 +146,32 @@ class EnsplotTestCase(unittest.TestCase):
             mep.monthplot(month=1, ax=axs[1], \
                         loc_legend=1, loc_scatter=1)
         except ValueError as err:
-            self.assertTrue(str(err).startswith('Cannot show'))
+            self.assertTrue(str(err).startswith("Cannot show"))
         else:
-            raise ValueError('Problem with error handling')
+            raise ValueError("Problem with error handling")
 
-        fp = os.path.join(self.fimg, 'monthplot.png')
+        fp = os.path.join(self.fimg, "monthplot.png")
         fig.savefig(fp)
 
 
     def test_monthplot_sudo(self):
-        ''' Test one month plot with sudo pits '''
+        """ Test one month plot with sudo pits """
 
-        plt.close('all')
+        plt.close("all")
         fig, ax = plt.subplots()
 
         mep = MonthlyEnsplot(self.obs_sudo, self.fcst_sudo, self.fcdates, fig)
         mep.monthplot(month=1, ax=ax)
 
-        fp = os.path.join(self.fimg, 'monthplot_sudo.png')
+        fp = os.path.join(self.fimg, "monthplot_sudo.png")
         fig.savefig(fp)
 
 
 
     def test_overviewplot(self):
-        ''' Test all year plot '''
+        """ Test all year plot """
 
-        plt.close('all')
+        plt.close("all")
         fig = plt.figure()
 
         mep = MonthlyEnsplot(self.obs, self.fcst, self.fcdates, fig)
@@ -170,25 +179,25 @@ class EnsplotTestCase(unittest.TestCase):
 
         self.assertEqual(perf.shape, (13, 4))
         self.assertCountEqual(list(perf.columns), \
-                    ['alpha', 'bias', 'crps_ss', 'R2'])
+                    ["alpha", "bias", "crps_ss", "R2"])
 
-        fp = os.path.join(self.fimg, 'overviewplot.png')
-        mep.set_overview_fig('Title')
+        fp = os.path.join(self.fimg, "overviewplot.png")
+        mep.set_overview_fig("Title")
         fig.savefig(fp)
 
 
 
     def test_overviewplot_sudo(self):
-        ''' Test all year plot with sudo '''
+        """ Test all year plot with sudo """
 
-        plt.close('all')
+        plt.close("all")
         fig = plt.figure()
 
         mep = MonthlyEnsplot(self.obs_sudo, self.fcst_sudo, self.fcdates, fig)
         mep.overviewplot()
 
-        fp = os.path.join(self.fimg, 'overviewplot_sudo.png')
-        mep.set_overview_fig('Title')
+        fp = os.path.join(self.fimg, "overviewplot_sudo.png")
+        mep.set_overview_fig("Title")
         fig.savefig(fp)
 
 

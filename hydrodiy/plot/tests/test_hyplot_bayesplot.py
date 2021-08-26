@@ -5,7 +5,7 @@ import numpy as np
 from scipy import linalg
 
 import matplotlib as mpl
-mpl.use('Agg')
+mpl.use("Agg")
 
 import matplotlib.pyplot as plt
 from scipy.stats import multivariate_normal as mvt
@@ -18,10 +18,10 @@ np.random.seed(0)
 class BayesPlotTestCase(unittest.TestCase):
 
     def setUp(self):
-        print('\t=> BayesPlotTestCase (hyplot)')
+        print("\t=> BayesPlotTestCase (hyplot)")
         source_file = os.path.abspath(__file__)
         self.ftest = os.path.dirname(source_file)
-        self.fimg = os.path.join(self.ftest, 'images')
+        self.fimg = os.path.join(self.ftest, "images")
         if not os.path.exists(self.fimg):
             os.mkdir(self.fimg)
 
@@ -46,11 +46,11 @@ class BayesPlotTestCase(unittest.TestCase):
 
         # MVT log posterior for the first chain
         def logpost(theta):
-            ''' Mvt logpost '''
+            """ Mvt logpost """
             mu = theta[:self.nparams]
             cov, _, _ = bayesutils.vect2cov(theta[self.nparams:])
             loglike = mvt.logpdf(self.samples[0, :, :].T, mean=mu, cov=cov)
-            # Jeffreys' prior
+            # Jeffreys" prior
             logprior = -(mu.shape[0]+1)/2*math.log(linalg.det(cov))
             return np.sum(loglike)+logprior
 
@@ -58,19 +58,19 @@ class BayesPlotTestCase(unittest.TestCase):
 
 
     def test_slice2d(self):
-        ''' Plot log post slice 2d '''
+        """ Plot log post slice 2d """
 
         fig, ax = plt.subplots()
         vect, _, _ = bayesutils.cov2vect(self.cov)
         params = np.concatenate([self.mu, vect])
         zz, yy, zz = bayesplot.slice2d(ax, self.logpost, params, \
                                     0, 1, 0.5, 0.5)
-        fp = os.path.join(self.fimg, 'bayesplot_slice_2d.png')
+        fp = os.path.join(self.fimg, "bayesplot_slice_2d.png")
         fig.savefig(fp)
 
 
     def test_slice2d_errors(self):
-        ''' Plot log post slice 2d with log spacing '''
+        """ Plot log post slice 2d with log spacing """
 
         fig, ax = plt.subplots()
         vect, _, _ = bayesutils.cov2vect(self.cov)
@@ -80,59 +80,59 @@ class BayesPlotTestCase(unittest.TestCase):
             bayesplot.slice2d(ax, self.logpost, params, \
                                     len(params), 1, 0.5, 0.5)
         except ValueError as err:
-            self.assertTrue(str(err).startswith('Expected parameter indexes'))
+            self.assertTrue(str(err).startswith("Expected parameter indexes"))
         else:
-            raise ValueError('Problem with error handling')
+            raise ValueError("Problem with error handling")
 
 
         try:
             bayesplot.slice2d(ax, self.logpost, params, \
                                     0, 1, -0.5, 0.5)
         except ValueError as err:
-            self.assertTrue(str(err).startswith('Expected dval1'))
+            self.assertTrue(str(err).startswith("Expected dval1"))
         else:
-            raise ValueError('Problem with error handling')
+            raise ValueError("Problem with error handling")
 
 
         try:
             bayesplot.slice2d(ax, self.logpost, params, \
-                                    0, 1, 0.5, 0.5, scale1='ll')
+                                    0, 1, 0.5, 0.5, scale1="ll")
         except ValueError as err:
-            self.assertTrue(str(err).startswith('Expected scale'))
+            self.assertTrue(str(err).startswith("Expected scale"))
         else:
-            raise ValueError('Problem with error handling')
+            raise ValueError("Problem with error handling")
 
 
         try:
             bayesplot.slice2d(ax, self.logpost, params, \
                                     0, 1, 0.5, 0.5, dlogpostmin=-1)
         except ValueError as err:
-            self.assertTrue(str(err).startswith('Expected dlogpostmin'))
+            self.assertTrue(str(err).startswith("Expected dlogpostmin"))
         else:
-            raise ValueError('Problem with error handling')
+            raise ValueError("Problem with error handling")
 
 
     def test_slice2d_log(self):
-        ''' Plot log post slice 2d with log spacing '''
+        """ Plot log post slice 2d with log spacing """
 
         fig, ax = plt.subplots()
         vect, _, _ = bayesutils.cov2vect(self.cov)
         params = np.concatenate([self.mu+0.01, vect])
         bayesplot.slice2d(ax, self.logpost, params, \
                                     0, 1, 0.5, 0.5, \
-                                    scale1='log', scale2='log', \
+                                    scale1="log", scale2="log", \
                                     dlogpostmin=10, dlogpostmax=1e-2, nlevels=5)
-        fp = os.path.join(self.fimg, 'bayesplot_slice_2d_log.png')
+        fp = os.path.join(self.fimg, "bayesplot_slice_2d_log.png")
         fig.savefig(fp)
 
 
     def test_plotchains(self):
-        ''' Plot chain diagnostic '''
+        """ Plot chain diagnostic """
 
         fig = plt.figure()
         accept = np.ones(self.samples.shape[0])
         bayesplot.plotchains(fig, self.samples, accept)
-        fp = os.path.join(self.fimg, 'bayesplot_plotchains.png')
+        fp = os.path.join(self.fimg, "bayesplot_plotchains.png")
         fig.set_size_inches((18, 10))
         fig.tight_layout()
         fig.savefig(fp)

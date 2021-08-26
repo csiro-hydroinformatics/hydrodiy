@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
+from hydrodiy import HAS_C_STAT_MODULE
 from hydrodiy.plot import putils, boxplot
 from  hydrodiy.stat import metrics, sutils
 
@@ -57,6 +58,11 @@ def ensmetrics(obs, fcst, random_pit=True, stat="median"):
             "same number of rows, got {0} (obs) and {1} (fcst)".format(\
             obs.shape[0], fcst.shape[0]))
 
+    if not HAS_C_STAT_MODULE:
+        vnan = np.nan*np.zeros(len(obs))
+        vbool = np.zeros(len(obs)).astype(bool)
+        return np.nan, np.nan, vnan, vbool, np.nan, np.nan
+
     # Compute skill scores
     _, alpha, _ = metrics.alpha(obs, fcst)
     alpha = alpha*100
@@ -80,8 +86,8 @@ def ensmetrics(obs, fcst, random_pit=True, stat="median"):
     return alpha, crps_ss, pits, is_sudo, R2, bias
 
 
-def pitplot(pits, is_sudo, alpha, crps_ss, bias, ax=None, labelaxis=True, \
-                transp=0.4, sudo_threshold=10):
+def pitplot(pits, is_sudo, alpha, crps_ss, bias, ax=None, \
+                labelaxis=True, transp=0.4, sudo_threshold=10):
     """ Draw a pit plot
 
     Parameters
@@ -132,7 +138,7 @@ def pitplot(pits, is_sudo, alpha, crps_ss, bias, ax=None, labelaxis=True, \
             markersize=5,  alpha=0.9, \
             markeredgecolor=color, markerfacecolor="w")
 
-        ax.text(0.05, 0.95, "SP {0:0.0f}%".format(prc_sudo), \
+        ax.text(0.05, 0.95, "SP {prc_sudo:0.0f}%", \
                 va="top", ha="left", fontsize=12, color=color)
 
     # Decorate
@@ -140,8 +146,8 @@ def pitplot(pits, is_sudo, alpha, crps_ss, bias, ax=None, labelaxis=True, \
     ax.set_ylim([0, 1])
     putils.line(ax, 1, 1, 0, 0 , "k:", lw=0.5)
 
-    ax.text(0.95, 0.05, "A {0:0.0f}%\n C {1:0.1f}%\n B {2:0.1f}".format(\
-            alpha, crps_ss, bias), \
+    ax.text(0.95, 0.05, f"A {alpha:0.0f}%\n C"+\
+            f" {crps_ss:0.1f}%\n B {bias:0.1f}", \
             va="bottom", ha="right", fontsize=10, color=color)
 
     if labelaxis:

@@ -19,6 +19,7 @@ from matplotlib import colors
 from hydrodiy.data import dutils
 from hydrodiy.stat import sutils
 from hydrodiy.plot import putils
+from hydrodiy import HAS_C_DATA_MODULE
 
 # Select color scheme
 COLOR_SCHEME = putils.COLORS_TAB
@@ -197,7 +198,8 @@ class Simplot(object):
             Axes showing flow duration curve in log-flow space (low flow)
 
         axfdl : matplotlib.axes.Axes
-            Axes showing flow duration curve in log-frequency space (high flow)
+            Axes showing flow duration curve in
+            log-frequency space (high flow)
 
         axs : matplotlib.axes.Axes
             Axes showing mean monthly averages (seasonal patterns)
@@ -251,6 +253,8 @@ class Simplot(object):
 
     def draw_monthlymeans(self, ax, ax_letter="d"):
         """ Draw the plot of monthly residuals """
+        if not HAS_C_DATA_MODULE:
+            return
 
         # Quick aggregate
         data = self.data
@@ -377,17 +381,18 @@ class Simplot(object):
             ax.legend(leglines, labels, loc=2, frameon=False)
 
         date_max = self.flood_idx[iflood]["date_max"]
-        title = r"({0}) Flood #{1} - {2:%b %Y}".format(ax_letter, \
-            iflood+1, date_max)
+        title = f"({ax_letter}) Flood #{iflood+1} - {date_max:%b %Y}"
         ax.set_title(title)
         ax.xaxis.grid()
-        ax.set_ylabel("{} [{}]".format(self.variable_name, self.data_unit))
+        ax.set_ylabel(f"{self.variable_name} [{self.data_unit}]")
 
         return lines
 
 
     def draw_monthly(self, ax, ax_letter="b"):
         """ Draw plot for annual time series """
+        if not HAS_C_DATA_MODULE:
+            return
 
         # Compute monthly time series
         data = self.data
@@ -410,9 +415,9 @@ class Simplot(object):
         leglines, labels = ax.get_legend_handles_labels()
         ax.legend(leglines, labels, loc=2, frameon=False)
 
-        title = "({0}) Monthly time series".format(ax_letter)
+        title = f"({ax_letter}) Monthly time series"
         ax.set_title(title)
-        ax.set_ylabel("Monthly {} [{}]".format(self.variable_name, self.data_unit))
+        ax.set_ylabel(f"Monthly {self.variable_name} [{self.data_unit}]")
         ax.xaxis.grid()
 
         return lines

@@ -11,19 +11,13 @@ import warnings
 from hydrodiy.stat import transform
 from hydrodiy.stat import sutils
 from hydrodiy.io import csv
-
-# Try to import C code
-HAS_C_STAT_MODULE = True
-try:
-    import c_hydrodiy_stat
-except ImportError:
-    HAS_C_STAT_MODULE = False
+from hydrodiy import HAS_C_STAT_MODULE
 
 EPS = 1e-10
 
 # Reads Cramer-Von Mises table
 CVPATH = pkg_resources.resource_filename(__name__, \
-                    os.path.join("data", "cramer_von_mises_test_pvalues.zip"))
+           os.path.join("data", "cramer_von_mises_test_pvalues.zip"))
 CVM_TABLE, _ = csv.read_csv(CVPATH, index_col=0)
 CVM_NSAMPLE  = CVM_TABLE.columns.values.astype(int)
 CVM_QQ = CVM_TABLE.index.values
@@ -293,8 +287,8 @@ def alpha(obs, ens, cst=0.3, type="CV", sudo_perc_threshold=5):
 
     # Warning if too much sudo pits
     if np.sum(is_sudo) > nforc*float(sudo_perc_threshold)/100:
-        warnings.warn(("More than {0}% sudo pits in pits"+\
-                        " series").format(sudo_perc_threshold))
+        warnings.warn(f"More than {sudo_perc_threshold}% sudo"+\
+                        " pits in pits series.")
 
     if type == "KS":
         # KS test
@@ -452,8 +446,8 @@ def bias(obs, sim, trans=transform.Identity(), excludenull=False, \
                 "mo={:0.2f} and ms={:0.2f}".format(meano, means))
             return np.nan
     else:
-        raise ValueError("Expected type in [standard/normalised/log], "+\
-                "got {}".format(type))
+        raise ValueError("Expected type in "+\
+                f"[standard/normalised/log], got {type}.")
 
     return bias_value
 
@@ -484,8 +478,7 @@ def nse(obs, sim, trans=transform.Identity(), excludenull=False):
 
     if obs.shape[0] != sim.shape[0]:
         raise ValueError("Expected sim with dim equal "+\
-            "to {0}, got {1}".format( \
-            obs.shape[0], sim.shape[0]))
+            f"to {obs.shape[0]}, got {sim.shape[0]}.")
 
     # Transform
     tobs = trans.forward(obs)
