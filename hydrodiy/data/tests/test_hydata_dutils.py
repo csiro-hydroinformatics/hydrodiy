@@ -223,67 +223,6 @@ class UtilsTestCase(unittest.TestCase):
         self.assertTrue(np.allclose(doy, expected))
 
 
-    def test_aggmonths(self):
-        ''' Test month aggregation '''
-        # Generate daily data with gaps
-        index = pd.date_range('1950-01-01', '1950-12-31', freq='D')
-        nval = len(index)
-        val = np.random.uniform(size=nval)
-        u = pd.Series(val, index=index)
-
-        # -> 3 consecutive gaps
-        idx = index >= datetime(1950, 2, 5)
-        idx = idx & (index <= datetime(1950, 2, 7))
-        u.loc[idx] = np.nan
-
-        # -> 4 consecutive gaps
-        idx = index >= datetime(1950, 3, 5)
-        idx = idx & (index <= datetime(1950, 3, 8))
-        u.loc[idx] = np.nan
-
-        for d in [2, 5, 6, 8, 11, 20]:
-            # -> 6 gaps
-            dd = datetime(1950, 4, d)
-            u.loc[dd] = np.nan
-
-            # -> 6 gaps
-            dd = datetime(1950, 5, d)
-            u.loc[dd] = np.nan
-
-        # -> one more gap
-        dd = datetime(1950, 5, 22)
-        u.loc[dd] = np.nan
-
-        # Compute monthly and seasonal data
-        out1 = dutils.aggmonths(u, nmonths=1)
-        out2 = dutils.aggmonths(u, nmonths=3)
-
-        # Test
-        expected1 = agg_d2m(u, 'sum')
-        expected2 = out1 + out1.shift(-1) + out1.shift(-2)
-
-        idxo = pd.notnull(expected1)
-        self.assertTrue(np.allclose(out1[idxo], expected1[idxo]))
-
-        idxo = pd.notnull(expected2)
-        self.assertTrue(np.allclose(out2[idxo], expected2[idxo]))
-
-
-    def test_atmpressure(self):
-        ''' Test computation of atmospheric pressure '''
-        alt = 0
-        p = dutils.atmpressure(alt)
-        self.assertTrue(np.allclose(p, 101325.))
-
-        alt = 100
-        p = dutils.atmpressure(alt)
-        self.assertTrue(np.allclose(p, 100130.800974))
-
-        alt = 200
-        p = dutils.atmpressure(alt)
-        self.assertTrue(np.allclose(p, 98950.6765392))
-
-
     def test_aggregate(self):
         ''' Test aggregation '''
         if not HAS_C_DATA_MODULE:

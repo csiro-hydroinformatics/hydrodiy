@@ -76,7 +76,6 @@ def cast(x, y):
         the same type than the input (e.g. to avoid mixing float with
         numpy.array 0d).
 
-
     Parameters
     -----------
     x : object
@@ -140,119 +139,6 @@ def dayofyear(days):
     doy[idx] = doy[idx]-1
 
     return doy
-
-
-def aggmonths(tseries, nmonths=3, ngapmax=6, ngapcontmax=3):
-    ''' Convert time series to aggregated monthly time steps
-
-    Parameters
-    -----------
-    tseries : pandas.core.series.Series
-        Input time series
-    nmonths : int
-        Number of months used for aggregation
-    ngapmax : int
-        Maximum number of missing values within a month
-    ngapcontmax : int
-        Maximum number of continuous missing values within a month
-
-    Returns
-    -----------
-    out : pandas.core.series.Series
-        Aggregated time series
-
-    Example
-    -----------
-    >>> import pandas as pd
-    >>> from hydata import dutils
-    >>> idx = pd.date_range('1980-01-01', '1980-12-01', freq='MS')
-    >>> ts = pd.Series(range(12), index=idx)
-    >>> dutils.to_seasonal(ts)
-    1980-01-01     3
-    1980-01-02     6
-    1980-01-03     9
-    1980-01-04    12
-    1980-01-05    15
-    1980-01-06    18
-    1980-01-07    21
-    1980-01-08    24
-    1980-01-09    27
-    1980-01-10    30
-    1980-01-11   NaN
-    1980-01-12   NaN
-    Freq: MS, dtype: float64
-    '''
-
-    # Aggregation function
-    def sumfun(x):
-        # Count gaps
-        ngap = np.sum(pd.isnull(x))
-
-        # Count continuous gaps
-        ngapcont = 0
-        if ngap > 0:
-            y = []
-            for i in range(ngapcontmax+1):
-                y.append(x.shift(i))
-            y = pd.DataFrame(y).isnull()
-
-            ys = y.sum(axis=0)
-            ngapcont = ys[ngapcontmax:].max()
-
-        # Return sum
-        if (ngap > ngapmax) | (ngapcont > ngapcontmax):
-            return np.nan
-
-        elif ngap == 0:
-            return x.sum()
-
-        else:
-            fill = np.mean(x[pd.notnull(x)])
-            xx = x.fillna(fill)
-            return xx.sum()
-
-    # Use Pandas 1 syntax, but can handle Pandas 0 too
-    tsmr = tseries.resample('MS')
-    if len(tsmr) == len(tseries):
-        tsm = tsmr.apply(sumfun)
-    else:
-        tsm = tseries.resample('MS', how=sumfun)
-
-    # Shift series
-    tss = []
-    for s in range(0, nmonths):
-        tss.append(tsm.shift(-s))
-
-    tss = pd.DataFrame(tss)
-    out = tss.sum(axis=0, skipna=False)
-
-    return out
-
-
-def atmpressure(altitude):
-    ''' Compute mean atmospheric pressure
-        See http://en.wikipedia.org/wiki/Atmospheric_pressure
-
-    Parameters
-    -----------
-    altitude : float
-        Altitude from mean sea level (m)
-
-    Returns
-    -----------
-    P : float
-        Atmospheric pressure
-    '''
-
-    g = 9.80665 # m/s^2 - Gravity acceleration
-    M = 0.0289644 # kg/mol - Molar mass of dry air
-    R = 8.31447 # j/mol/K - Universal gas constant
-    T0 = 288.15 # K - Sea level standard temp
-    P0 = 101325 # Pa - Sea level standard atmospheric pressure
-
-    P = P0 * np.exp(-g*M/R/T0 * altitude)
-
-    return P
 
 
 def aggregate(aggindex, inputs, oper=0, maxnan=0):
