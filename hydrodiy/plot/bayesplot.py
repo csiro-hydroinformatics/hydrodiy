@@ -15,11 +15,11 @@ from hydrodiy.plot import putils
 
 
 def slice2d(ax, logpost, params, ip1, ip2, dval1, dval2, \
-    scale1='abs', scale2='abs', nval=30, \
-    cmap='Reds', linecolor='grey', \
+    scale1="abs", scale2="abs", nval=30, \
+    cmap="Reds", linecolor="grey", \
     dlogpostmin=10, dlogpostmax=1e-1, \
     nlevels=5):
-    ''' Plot a 2d slice of a logposterior
+    """ Plot a 2d slice of a logposterior
 
     Parameters
     -----------
@@ -53,38 +53,38 @@ def slice2d(ax, logpost, params, ip1, ip2, dval1, dval2, \
         Difference between highest contour level and max logpost value
     nlevels : int
         Number of contour lines
-    '''
+    """
 
     # Make sure parameter indexes makes sense
     ips = np.array([ip1, ip2])
     if np.any((ips<0) | (ips >= len(params))):
-        raise ValueError(('Expected parameter indexes in [0, {0}[, '+\
-                'got ip1={1}, ip2={2}').format(len(params), ip1, ip2))
+        raise ValueError(("Expected parameter indexes in [0, {0}[, "+\
+                "got ip1={1}, ip2={2}").format(len(params), ip1, ip2))
 
     # Make sure dval are positive
     for idval, dval in enumerate([dval1, dval2]):
         if dval < 1e-8:
-            raise ValueError(('Expected dval{0} greater than 0, '+\
-                    'got {1}').format(idval+1, dval))
+            raise ValueError(("Expected dval{0} greater than 0, "+\
+                    "got {1}").format(idval+1, dval))
 
     # Make sure dlogpost are positive
     for ilogp, dlogpost in enumerate([dlogpostmin, dlogpostmax]):
         if dlogpost < 1e-8:
-            dlogpostname = 'min' if ilogp == 0 else 'max'
-            raise ValueError(('Expected dlogpost{0} greater than 0, '+\
-                    'got {1}').format(dlogpostname, dlogpost))
+            dlogpostname = "min" if ilogp == 0 else "max"
+            raise ValueError(("Expected dlogpost{0} greater than 0, "+\
+                    "got {1}").format(dlogpostname, dlogpost))
 
     # Defines grid points
     def get_grid(pvalue, dval, scale, nval):
-        if scale == 'abs':
+        if scale == "abs":
             x = pvalue + np.linspace(-dval, dval, nval)
-        elif scale == 'log':
+        elif scale == "log":
             if pvalue<1e-10:
-                raise ValueError('Expected parameter to be strictly '+\
-                                'positive, got {0:3.3e}'.format(pvalue))
+                raise ValueError("Expected parameter to be strictly "+\
+                                "positive, got {0:3.3e}".format(pvalue))
             x = pvalue * np.logspace(-dval, dval, nval)
         else:
-            raise ValueError('Expected scale in [abs/log], got '+scale)
+            raise ValueError("Expected scale in [abs/log], got "+scale)
 
         return x
 
@@ -116,44 +116,44 @@ def slice2d(ax, logpost, params, ip1, ip2, dval1, dval2, \
 
     # plot contour lines
     if nlevels > 0:
-        original = mpl.rcParams['contour.negative_linestyle']
-        mpl.rcParams['contour.negative_linestyle'] = 'solid'
+        original = mpl.rcParams["contour.negative_linestyle"]
+        mpl.rcParams["contour.negative_linestyle"] = "solid"
         cs = ax.contour(xx, yy, zz, levels=levels, colors=linecolor)
 
         # Reformat levels
-        cs.levels = ['{0:2.2e}'.format(float(lev)) for lev in cs.levels]
+        cs.levels = ["{0:2.2e}".format(float(lev)) for lev in cs.levels]
         plt.clabel(cs, inline=1, fontsize=10)
 
-        mpl.rcParams['contour.negative_linestyle'] = original
+        mpl.rcParams["contour.negative_linestyle"] = original
 
     # log axis
-    if scale1 == 'log':
-        ax.set_xscale('log', nonposx='clip')
+    if scale1 == "log":
+        ax.set_xscale("log", nonposx="clip")
 
-    if scale2 == 'log':
-        ax.set_yscale('log', nonposy='clip')
+    if scale2 == "log":
+        ax.set_yscale("log", nonposy="clip")
 
     # plot parameter point
-    ax.plot(params[ip1], params[ip2], 'ow')
-    putils.line(ax, 1, 0, 0, params[ip2], 'w--', lw=0.5)
-    putils.line(ax, 0, 1, params[ip1], 0, 'w--', lw=0.5)
+    ax.plot(params[ip1], params[ip2], "ow")
+    putils.line(ax, 1, 0, 0, params[ip2], "w--", lw=0.5)
+    putils.line(ax, 0, 1, params[ip1], 0, "w--", lw=0.5)
 
     # Decoration
-    ax.set_xlabel('Param {0}'.format(ip1))
-    ax.set_ylabel('Param {0}'.format(ip2))
+    ax.set_xlabel("Param {0}".format(ip1))
+    ax.set_ylabel("Param {0}".format(ip2))
 
     return xx, yy, zz
 
 
 def plotchains(fig, samples, accept):
-    ''' Plot MCMC chains '''
+    """ Plot MCMC chains """
 
     # Get dimensions
     nchains, nparams, nens = samples.shape
 
     if accept.shape != (nchains, ):
-        raise ValueError('Expected dimensions of accept to '+
-            'be ({0}, ), got {1}'.format(nchains, accept.shape))
+        raise ValueError("Expected dimensions of accept to "+
+            "be ({0}, ), got {1}".format(nchains, accept.shape))
 
     # Initialise figure
     gs = GridSpec(nparams, 2*nparams)
@@ -181,13 +181,13 @@ def plotchains(fig, samples, accept):
             ar1 = acf[ic, i, 0]
             ax.plot(smpc, \
                 lw=0.9, \
-                label=r'Ch{0} $\rho_1$={1:0.2f} A={2:0.1f}%'.format(\
+                label=r"Ch{0} $\rho_1$={1:0.2f} A={2:0.1f}%".format(\
                     ic, ar1, accept[ic]*100))
 
         # Decorate
-        title = 'Chains for param {0} - Rc = {1:0.5f}'.format(i, Rc[i])
+        title = "Chains for param {0} - Rc = {1:0.5f}".format(i, Rc[i])
         ax.set_title(title)
-        ax.set_ylabel('P{0}'.format(i))
+        ax.set_ylabel("P{0}".format(i))
         ax.set_ylim(ranges[i, :])
         leg = ax.legend(loc=2)
         leg.get_frame().set_alpha(0.2)
@@ -198,9 +198,9 @@ def plotchains(fig, samples, accept):
         kernel = gaussian_kde(smp.ravel())
         y = np.linspace(ranges[i, 0], ranges[i, 1], 100)
         x = kernel(y)
-        ax.plot(x, y, '-', label='samples pdf')
+        ax.plot(x, y, "-", label="samples pdf")
 
-        ax.set_ylabel('P{0}'.format(i))
+        ax.set_ylabel("P{0}".format(i))
         axs[i][i+1] = ax
 
         # Plot correlations
@@ -218,18 +218,18 @@ def plotchains(fig, samples, accept):
             xx, yy = np.meshgrid(xg, yg)
             zz = kd(np.vstack([xx.ravel(), yy.ravel()]))
             zz = zz.reshape(xx.shape)
-            ax.contourf(xx, yy, zz, cmap='Reds')
+            ax.contourf(xx, yy, zz, cmap="Reds")
 
             # plot points
-            ax.plot(x, y, 'o', color='grey', alpha=0.2, markersize=0.5, \
-                            label='samples')
+            ax.plot(x, y, "o", color="grey", alpha=0.2, markersize=0.5, \
+                            label="samples")
 
             # Decorate
             ax.set_xlim(ranges[j, :])
             ax.set_ylim(ranges[i, :])
 
             corr = np.corrcoef(xy.T)[0, 1]
-            title = r'$\rho$(P{0},P{1})={2:0.2f}'.format(i, j, corr)
+            title = r"$\rho$(P{0},P{1})={2:0.2f}".format(i, j, corr)
             ax.set_title(title)
             axs[i][j+1] = ax
 

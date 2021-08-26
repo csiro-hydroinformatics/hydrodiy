@@ -33,9 +33,9 @@ from scipy.stats import norm
 from hydrodiy.stat import sutils, linreg
 
 # Some useful colors
-COLORS_SLIDE_BACKGROUND = '#002745'
-COLORS_BADGOOD = ['#4D935F', '#915592']
-COLORS_TERCILES = ['#FF9933', '#64A0C8', '#005BBB']
+COLORS_SLIDE_BACKGROUND = "#002745"
+COLORS_BADGOOD = ["#4D935F", "#915592"]
+COLORS_TERCILES = ["#FF9933", "#64A0C8", "#005BBB"]
 COLORS_TAB = [mcolors.rgb2hex([float(coo)/255 for coo in co]) for co in [ \
             (31, 119, 180), (255, 127, 14), (44, 160, 44), \
             (214, 39, 40), (148, 103, 189), (140, 86, 75), \
@@ -45,18 +45,18 @@ COLORS_TAB = [mcolors.rgb2hex([float(coo)/255 for coo in co]) for co in [ \
 
 # Palette for color blind readers
 # see https://www.somersault1824.com/tips-for-designing-scientific-figures-for-color-blind-readers/
-COLORS_CBLIND = ['#000000', '#074751', '#009292', '#FE6CB5', '#FEB5DA', \
-    '#490092', '#006DDB', '#B66CFE', '#6DB6FE', '#B6DBFF', \
-    '#920000', '#924900', '#DB6D00', '#23FE22', '#FFFF6D']
+COLORS_CBLIND = ["#000000", "#074751", "#009292", "#FE6CB5", "#FEB5DA", \
+    "#490092", "#006DDB", "#B66CFE", "#6DB6FE", "#B6DBFF", \
+    "#920000", "#924900", "#DB6D00", "#23FE22", "#FFFF6D"]
 
 
 # Palette safe for a range of uses (cf PuOr palette)
 # see http://colorbrewer2.org/
-COLORS_SAFE = ['#E66101', '#FDB863', '#B2ABD2', '#5E3C99']
+COLORS_SAFE = ["#E66101", "#FDB863", "#B2ABD2", "#5E3C99"]
 
 
-def cmap2colors(ncols=10, cmap='Paired'):
-    ''' Generates a set of colors from a colormap
+def cmap2colors(ncols=10, cmap="Paired"):
+    """ Generates a set of colors from a colormap
 
     Parameters
     -----------
@@ -69,11 +69,11 @@ def cmap2colors(ncols=10, cmap='Paired'):
     -----------
     colors : list
         List of colors
-    '''
+    """
 
     if isinstance(cmap, str):
-        if cmap == 'safe':
-            cmapn = colors2cmap({0.:COLORS_SAFE[0], 0.5: '#A0A0A0', 1.:COLORS_SAFE[-1]})
+        if cmap == "safe":
+            cmapn = colors2cmap({0.:COLORS_SAFE[0], 0.5: "#A0A0A0", 1.:COLORS_SAFE[-1]})
         else:
             cmapn = cm.get_cmap(cmap, ncols)
 
@@ -85,14 +85,14 @@ def cmap2colors(ncols=10, cmap='Paired'):
 
 
 def colors2cmap(colors, ncols=256):
-    ''' Define a linear color map from a set of colors
+    """ Define a linear color map from a set of colors
 
     Parameters
     -----------
     colors : dict
         A set of colors indexed by a float in [0, 1]. The index
         provides the location in the color map. Example:
-        colors = {0.:'#3399FF', 0.1:'#33FFFF', 1.0:'#33FF99'}
+        colors = {0.:"#3399FF", 0.1:"#33FFFF", 1.0:"#33FF99"}
 
     Returns
     -----------
@@ -103,7 +103,7 @@ def colors2cmap(colors, ncols=256):
     -----------
     >>> import matplotlib.pyplot as plt
     >>> import numpy as np
-    >>> colors = {0.:'#3399FF', 0.1:'#33FFFF', 1.0:'#33FF99'}
+    >>> colors = {0.:"#3399FF", 0.1:"#33FFFF", 1.0:"#33FF99"}
     >>> cmap = putils.colors2cmap(colors)
     >>> nval = 500
     >>> x = np.random.normal(size=nval)
@@ -111,33 +111,33 @@ def colors2cmap(colors, ncols=256):
     >>> z = np.random.uniform(0, 1, size=nval)
     >>> plt.scatter(x, y, c=z, cmap=cmap)
 
-    '''
+    """
     cdict = {
-            'red': [],
-            'green': [],
-            'blue': []
+            "red": [],
+            "green": [],
+            "blue": []
         }
 
     for key in sorted(colors):
         key = float(key)
         if key < 0.:
-            raise ValueError('key({0}) is lower than 0'.format(key))
+            raise ValueError("key({0}) is lower than 0".format(key))
         if key > 1.:
-            raise ValueError('key({0}) is greater than 1'.format(key))
+            raise ValueError("key({0}) is greater than 1".format(key))
 
         col = hex2color(colors[key])
 
-        cdict['red'].append((key, col[0], col[0]))
-        cdict['green'].append((key, col[1], col[1]))
-        cdict['blue'].append((key, col[2], col[2]))
+        cdict["red"].append((key, col[0], col[0]))
+        cdict["green"].append((key, col[1], col[1]))
+        cdict["blue"].append((key, col[2], col[2]))
 
-    cmap = LinearSegmentedColormap('mycmap', cdict, ncols)
+    cmap = LinearSegmentedColormap("mycmap", cdict, ncols)
 
     return cmap
 
 
 def cmap2grayscale(cmap):
-    ''' Return a grayscale version of the given colormap
+    """ Return a grayscale version of the given colormap
 
     This code was pasted from
     https://jakevdp.github.io/PythonDataScienceHandbook/04.07-customizing-colorbars.html
@@ -152,7 +152,7 @@ def cmap2grayscale(cmap):
     grayscale : matplotlib.colormap
         Colormap object containing gray scale
 
-    '''
+    """
     cmap = plt.cm.get_cmap(cmap)
     colors = cmap(np.arange(cmap.N))
 
@@ -168,7 +168,7 @@ def cmap2grayscale(cmap):
 
 
 def cmap_accentuate(cmap, param=-1, ninterp=100):
-    ''' Accentuate a cmap contrast
+    """ Accentuate a cmap contrast
 
     Parameters
     -----------
@@ -187,9 +187,9 @@ def cmap_accentuate(cmap, param=-1, ninterp=100):
     -----------
     mcmap : matplotlib.colors.Cmap
         Accentuated color palette
-    '''
+    """
     if param < -1 or param > 4:
-        raise ValueError('Expected param in [-1, 4], got {0}'.format(param))
+        raise ValueError("Expected param in [-1, 4], got {0}".format(param))
 
     # Accentuating function (mapping from [0, 1] to [0, 1])
     def fun(x):
@@ -212,8 +212,8 @@ def cmap_accentuate(cmap, param=-1, ninterp=100):
 
 
 def cmap_neutral(cmap, band_width=0.05, \
-            neutral_color='#C0C0C0', ninterp=100):
-    ''' Replace the central part of a color map with a
+            neutral_color="#C0C0C0", ninterp=100):
+    """ Replace the central part of a color map with a
         neutral color
 
     Parameters
@@ -231,7 +231,7 @@ def cmap_neutral(cmap, band_width=0.05, \
     -----------
     mcmap : matplotlib.colors.Cmap
         Accentuated color palette
-    '''
+    """
     # Get original cmap colors
     colors = cmap2colors(256, cmap)
 
@@ -250,8 +250,8 @@ def cmap_neutral(cmap, band_width=0.05, \
     return mcmap
 
 
-def interpolate_color(color, amount=0., between=['k', 'w']):
-    ''' Interpolate color linearly between two extremes.
+def interpolate_color(color, amount=0., between=["k", "w"]):
+    """ Interpolate color linearly between two extremes.
 
     Parameters
     -----------
@@ -272,18 +272,18 @@ def interpolate_color(color, amount=0., between=['k', 'w']):
 
     Examples:
     -----------
-    >> interpolate_color('g', 0.3)
-    >> interpolate_color('#F034A3', 0.6)
+    >> interpolate_color("g", 0.3)
+    >> interpolate_color("#F034A3", 0.6)
     >> interpolate_color((.3,.55,.1), 0.5)
-    '''
+    """
     # Check inputs
     amount = float(amount)
     if amount < 0. or amount > 1.:
-        raise  ValueError('Expected amount in [0, 1], got {0}'.format(\
+        raise  ValueError("Expected amount in [0, 1], got {0}".format(\
                         amount))
 
     if len(between) != 2:
-        raise  ValueError('Expected len(between)=2, got {0}'.format(\
+        raise  ValueError("Expected len(between)=2, got {0}".format(\
                         len(between)))
 
     # Build interpolated color map
@@ -295,7 +295,7 @@ def interpolate_color(color, amount=0., between=['k', 'w']):
 
 
 def _float(u):
-    ''' Function to convert object to float '''
+    """ Function to convert object to float """
     try:
         v = float(u)
     except TypeError:
@@ -303,8 +303,8 @@ def _float(u):
     return v
 
 
-def xdate(ax, interval='M', by=None, format='%b\n%Y'):
-    ''' Format the x axis to display dates
+def xdate(ax, interval="M", by=None, format="%b\n%Y"):
+    """ Format the x axis to display dates
 
     Parameters
     -----------
@@ -316,22 +316,22 @@ def xdate(ax, interval='M', by=None, format='%b\n%Y'):
         and n is the number of periods. For example 6D is 6 days.
     by : list
         Number of the month or day of the month where the ticks should be
-        place. For example by=[1, 7] with internal='M' will place a tick for
+        place. For example by=[1, 7] with internal="M" will place a tick for
         Jan and July.
     format : str
         Date format
-    '''
+    """
 
     # Check ax x data seems reasonable
     xticks = ax.get_xticks()
     if np.any(xticks > 1e7):
-        raise ValueError('xaxis does not seem to contain python datetime '+
-            'values. If plotting pandas data, use the to_pydatetime() '+
-            'function')
+        raise ValueError("xaxis does not seem to contain python datetime "+
+            "values. If plotting pandas data, use the to_pydatetime() "+
+            "function")
 
     # Compute locator parameter
-    if interval.endswith('M'):
-        if interval == 'M':
+    if interval.endswith("M"):
+        if interval == "M":
             interv = 1
         else:
             interv = int(interval[:-1])
@@ -341,8 +341,8 @@ def xdate(ax, interval='M', by=None, format='%b\n%Y'):
 
         loc = mdates.MonthLocator(interval=interv, bymonth=by)
 
-    elif interval.endswith('D'):
-        if interval == 'D':
+    elif interval.endswith("D"):
+        if interval == "D":
             interv = 1
         else:
             interv = int(interval[:-1])
@@ -352,8 +352,8 @@ def xdate(ax, interval='M', by=None, format='%b\n%Y'):
 
         loc = mdates.DayLocator(interval=interv, bymonthday=by)
 
-    elif interval.endswith('Y'):
-        if interval == 'Y':
+    elif interval.endswith("Y"):
+        if interval == "Y":
             interv = 1
         else:
             interv = int(interval[:-1])
@@ -362,14 +362,14 @@ def xdate(ax, interval='M', by=None, format='%b\n%Y'):
             by = [1]
 
         if len(by)>1:
-            raise ValueError(('Expected by of length one for'+\
-                ' internal=Y, got {0}').format(len(by)))
+            raise ValueError(("Expected by of length one for"+\
+                " internal=Y, got {0}").format(len(by)))
 
         loc = mdates.YearLocator(base=interv, month=by[0])
 
     else:
-        raise ValueError('Expected interval to end with D, M or Y, '+\
-            'got {0}'.format(interval))
+        raise ValueError("Expected interval to end with D, M or Y, "+\
+            "got {0}".format(interval))
 
     ax.xaxis.set_major_locator(loc)
     fmt = mdates.DateFormatter(format)
@@ -377,7 +377,7 @@ def xdate(ax, interval='M', by=None, format='%b\n%Y'):
 
 
 def line(ax, vx=0., vy=1., x0=0., y0=0., *args, **kwargs):
-    ''' Plot a line following a vector (vx, vy) and
+    """ Plot a line following a vector (vx, vy) and
     going through the point (x0, y0). Example
     * Vertical line through (0, 0): vx=0, vy=1, x0=0, y0=0
     * Horizontal line through (0, 0): vx=1, vy=0, x0=0, y0=0
@@ -406,12 +406,12 @@ def line(ax, vx=0., vy=1., x0=0., y0=0., *args, **kwargs):
     >>> import matplotlib.pyplot as plt
     >>> from hyplot import putils
     >>> fig, ax = plt.subplots()
-    >>> ax.plot([0, 10], [0, 10], 'o')
-    >>> putils.line(0, 1, ax, '--')
-    >>> putils.line(1, 0, ax, '-', color='red')
-    >>> putils.line(1, 0.5, y0=2., ax, '-', color='red')
+    >>> ax.plot([0, 10], [0, 10], "o")
+    >>> putils.line(0, 1, ax, "--")
+    >>> putils.line(1, 0, ax, "-", color="red")
+    >>> putils.line(1, 0.5, y0=2., ax, "-", color="red")
 
-    '''
+    """
 
     xlim = ax.get_xlim()
     ylim = ax.get_ylim()
@@ -419,8 +419,8 @@ def line(ax, vx=0., vy=1., x0=0., y0=0., *args, **kwargs):
     vx = float(vx)
     vy = float(vy)
     if abs(vx)+abs(vy) < 1e-8:
-        raise ValueError(('Both vx({0}) and vy({1}) are ' + \
-            ' close to zero').format(vx, vy))
+        raise ValueError(("Both vx({0}) and vy({1}) are " + \
+            " close to zero").format(vx, vy))
 
     x0 = _float(x0)
     y0 = _float(y0)
@@ -447,12 +447,12 @@ def line(ax, vx=0., vy=1., x0=0., y0=0., *args, **kwargs):
 
 
 def equation(tex, filename, \
-    textcolor='white', \
+    textcolor="white", \
     transparent=True, \
     dpi = 200, \
     width = 1000, \
     height = 300):
-    ''' Print latex equation into file
+    """ Print latex equation into file
 
     Parameters
     -----------
@@ -472,25 +472,25 @@ def equation(tex, filename, \
         Figure height in pixels
     fontsize : int
         Font size in points
-    '''
-    usetex = mpl.rcParams['text.usetex']
-    preamble = mpl.rcParams['text.latex.preamble']
+    """
+    usetex = mpl.rcParams["text.usetex"]
+    preamble = mpl.rcParams["text.latex.preamble"]
 
     # Set tex options
-    mpl.rc('text', usetex=True)
-    mpl.rc('text.latex', preamble=[r'\usepackage{amsmath}', \
-                                    r'\usepackage{amssymb}'])
+    mpl.rc("text", usetex=True)
+    mpl.rc("text.latex", preamble=[r"\usepackage{amsmath}", \
+                                    r"\usepackage{amssymb}"])
 
     # Plot
-    plt.close('all')
+    plt.close("all")
 
     fig, ax = plt.subplots()
 
     ax.text(0, 0.5, tex, color=textcolor, \
-        fontsize=32, va='center')
+        fontsize=32, va="center")
     ax.set_ylim([0, 1.5])
 
-    ax.axis('off')
+    ax.axis("off")
 
     fig.set_size_inches(float(width)/dpi, \
                     float(height)/dpi)
@@ -501,13 +501,13 @@ def equation(tex, filename, \
         transparent=transparent)
 
     # Restore tex options
-    mpl.rc('text', usetex=usetex)
-    mpl.rc('text.latex', preamble=preamble)
+    mpl.rc("text", usetex=usetex)
+    mpl.rc("text.latex", preamble=preamble)
 
 
-def set_mpl(color_theme='black', font_size=18, usetex=False, \
+def set_mpl(color_theme="black", font_size=18, usetex=False, \
                     color_cycle=COLORS_TAB):
-    ''' Set convenient default matplotlib parameters
+    """ Set convenient default matplotlib parameters
 
     Parameters
     -----------
@@ -519,62 +519,62 @@ def set_mpl(color_theme='black', font_size=18, usetex=False, \
         Use tex mode or not
     color_cycle : list
         List of colors to cycle through.
-    '''
+    """
 
     # Latex mode
-    mpl.rc('text', usetex=usetex)
+    mpl.rc("text", usetex=usetex)
     if usetex:
-        preamble = [r'\usepackage{amsmath}', \
-                        r'\usepackage{amssymb}']
-        mpl.rc('text.latex', preamble=preamble)
+        preamble = [r"\usepackage{amsmath}", \
+                        r"\usepackage{amssymb}"]
+        mpl.rc("text.latex", preamble=preamble)
 
     # Font size
-    mpl.rc('font', size=font_size)
+    mpl.rc("font", size=font_size)
 
     # Set color cycle - depends on matplotlib version
-    if 'axes.color_cycle' in mpl.rcParams:
-        mpl.rc('axes', color_cycle=color_cycle)
+    if "axes.color_cycle" in mpl.rcParams:
+        mpl.rc("axes", color_cycle=color_cycle)
     else:
         if HAS_CYCLER:
-            mpl.rc('axes', prop_cycle=cycler('color', color_cycle))
+            mpl.rc("axes", prop_cycle=cycler("color", color_cycle))
         else:
-            warnings.warn('Cannot set color cycle '+ \
-                'because cycler package is missing')
+            warnings.warn("Cannot set color cycle "+ \
+                "because cycler package is missing")
 
     # Default colormap
-    mpl.rc('image', cmap='PiYG')
+    mpl.rc("image", cmap="PiYG")
 
     # Ticker line width than default
-    mpl.rc('lines', linewidth=2)
+    mpl.rc("lines", linewidth=2)
 
     # Set contour line style
-    mpl.rc('contour', negative_linestyle='solid')
+    mpl.rc("contour", negative_linestyle="solid")
 
     # Set legend properties
-    mpl.rc('legend', fancybox=True)
-    mpl.rc('legend', fontsize='small')
-    mpl.rc('legend', labelspacing=0.8)
-    mpl.rc('legend', numpoints=1)
-    mpl.rc('legend', markerscale=0.8)
+    mpl.rc("legend", fancybox=True)
+    mpl.rc("legend", fontsize="small")
+    mpl.rc("legend", labelspacing=0.8)
+    mpl.rc("legend", numpoints=1)
+    mpl.rc("legend", markerscale=0.8)
 
-    if not color_theme in ['k', 'black']:
-        if 'legend.framealpha' in mpl.rcParams:
-            mpl.rc('legend', framealpha=0.1)
+    if not color_theme in ["k", "black"]:
+        if "legend.framealpha" in mpl.rcParams:
+            mpl.rc("legend", framealpha=0.1)
 
     # Set colors
-    mpl.rc('axes', labelcolor=color_theme)
-    mpl.rc('axes', edgecolor=color_theme)
-    mpl.rc('xtick', color=color_theme)
-    mpl.rc('ytick', color=color_theme)
-    mpl.rc('text', color=color_theme)
+    mpl.rc("axes", labelcolor=color_theme)
+    mpl.rc("axes", edgecolor=color_theme)
+    mpl.rc("xtick", color=color_theme)
+    mpl.rc("ytick", color=color_theme)
+    mpl.rc("text", color=color_theme)
 
-    if color_theme == 'white':
-        if 'savefig.transparent' in mpl.rcParams:
-            mpl.rc('savefig', transparent=True)
+    if color_theme == "white":
+        if "savefig.transparent" in mpl.rcParams:
+            mpl.rc("savefig", transparent=True)
 
 
 def kde(xy, ngrid=50, eps=1e-10):
-    ''' Interpolate a 2d pdf from a set of x/y data points using
+    """ Interpolate a 2d pdf from a set of x/y data points using
     a Gaussian KDE. The outputs can be used to plot the pdf
     with something like matplotlib.Axes.contourf
 
@@ -596,7 +596,7 @@ def kde(xy, ngrid=50, eps=1e-10):
         A grid ngridxngrid containing the Y coordinates
     zz : numpy.ndarray
         A grid ngridxngrid containing the PDF estimates
-    '''
+    """
     if xy.shape[1] !=2:
         xy = xy.T
 
@@ -615,7 +615,7 @@ def kde(xy, ngrid=50, eps=1e-10):
 
 
 def cov_ellipse(mu, cov, pvalue=0.95, *args, **kwargs):
-    ''' Draw ellipse contour of 2d bi-variate normal distribution
+    """ Draw ellipse contour of 2d bi-variate normal distribution
 
     Parameters
     -----------
@@ -627,17 +627,17 @@ def cov_ellipse(mu, cov, pvalue=0.95, *args, **kwargs):
         Pvalue used to draw contour
     args, kwargs
         Argument sent to matplotlib.Patches.Ellipse
-    '''
+    """
     # Check parameters
     mu = np.atleast_1d(mu)
     cov = np.atleast_2d(cov)
 
     if mu.shape != (2,):
-        raise ValueError('Expected a [2] array for mu, got {0}'.format(\
+        raise ValueError("Expected a [2] array for mu, got {0}".format(\
             mu.shape))
 
     if cov.shape != (2,2):
-        raise ValueError('Expected a [2, 2] array for cov, got {0}'.format(\
+        raise ValueError("Expected a [2, 2] array for cov, got {0}".format(\
             cov.shape))
 
     # Compute chi square corresponding to the sum of
@@ -659,7 +659,7 @@ def cov_ellipse(mu, cov, pvalue=0.95, *args, **kwargs):
 
 
 def qqplot(ax, data, addline=False, censor=None, *args, **kwargs):
-    ''' Draw a normal qq plot of data
+    """ Draw a normal qq plot of data
 
     Parameters
     -----------
@@ -671,7 +671,7 @@ def qqplot(ax, data, addline=False, censor=None, *args, **kwargs):
         Add the line of OLS fit
     censor : float
         Compute the OLS line above censor threshold
-    '''
+    """
     datan = data[~np.isnan(data)]
     nval = len(datan)
     freqs = sutils.ppos(nval)
@@ -679,8 +679,8 @@ def qqplot(ax, data, addline=False, censor=None, *args, **kwargs):
     datas = np.sort(datan)
 
     ax.plot(xnorm, datas, *args, **kwargs)
-    ax.set_xlabel('Standard normal variable')
-    ax.set_ylabel('Sorted data')
+    ax.set_xlabel("Standard normal variable")
+    ax.set_ylabel("Sorted data")
 
     if addline:
         idx = np.ones(nval).astype(bool)
@@ -689,10 +689,10 @@ def qqplot(ax, data, addline=False, censor=None, *args, **kwargs):
 
         lm = linreg.Linreg(xnorm[idx], datas[idx])
         lm.fit()
-        a, b = lm.params['estimate']
-        r2 = lm.diagnostic['R2']
-        lab = 'Y = {0:0.2f} + {1:0.2f} X (r2={2:0.2f})'.format(a, b, r2)
-        line(ax, 1, b, 0, a, 'k--', label=lab)
+        a, b = lm.params["estimate"]
+        r2 = lm.diagnostic["R2"]
+        lab = "Y = {0:0.2f} + {1:0.2f} X (r2={2:0.2f})".format(a, b, r2)
+        line(ax, 1, b, 0, a, "k--", label=lab)
 
     else:
         a, b, r2 = [np.nan] * 3
@@ -700,9 +700,9 @@ def qqplot(ax, data, addline=False, censor=None, *args, **kwargs):
     return a, b, r2
 
 
-def ecdfplot(ax, df, label_stat=None, label_stat_format='4.2f', \
+def ecdfplot(ax, df, label_stat=None, label_stat_format="4.2f", \
             cst=0., *args, **kwargs):
-    ''' Plot empirical cumulative density functions
+    """ Plot empirical cumulative density functions
 
     Parameters
     -----------
@@ -726,7 +726,7 @@ def ecdfplot(ax, df, label_stat=None, label_stat_format='4.2f', \
     -----------
     lines : dict
         Dictionnary containing the line object for each column in df.
-    '''
+    """
     lines = {}
     for name, se in df.iteritems():
         values = se.sort_values()
@@ -737,28 +737,28 @@ def ecdfplot(ax, df, label_stat=None, label_stat_format='4.2f', \
         label = name
         if not label_stat is None:
             stat = getattr(se, label_stat)()
-            label = '{} ({:{format}})'.format(name, stat, format=label_stat_format)
+            label = "{} ({:{format}})".format(name, stat, format=label_stat_format)
 
         ax.plot(values, pp, label=label, *args, **kwargs)
         lines[name] = ax.get_lines()[-1]
 
     # Decorate
-    ax.set_ylabel('Empirical CDF [-]')
+    ax.set_ylabel("Empirical CDF [-]")
     ax.set_yticks([0., 0.5, 1.])
-    ax.set_yticklabels(['0', chr(189)+' ', '1'])
+    ax.set_yticklabels(["0", chr(189)+" ", "1"])
     ylabs = ax.get_yticklabels()
-    ylabs[0].set_va('bottom')
-    ylabs[2].set_va('top')
+    ylabs[0].set_va("bottom")
+    ylabs[2].set_va("top")
     ax.set_ylim((0, 1))
 
     return lines
 
 
-def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap='viridis', \
+def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="viridis", \
                         markersizemin=8, markersizemax=8, \
-                        fmt='0.2f', nval=False, \
+                        fmt="0.2f", nval=False, \
                         *args, **kwargs):
-    ''' Draw a scatter plot using different colors or markersize depending
+    """ Draw a scatter plot using different colors or markersize depending
     on categories defined by z. Be careful when z has a lot of zeros,
     quantile computation may lead to non-unique category boundaries.
 
@@ -804,15 +804,15 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap='viridis', \
 
     cats : pandas.Series
         Series containing the category number for each item
-    '''
+    """
     # Check inputs
     if not len(x) == len(y):
-        raise ValueError('Expected x and y of same length, got '+\
-                'len(x)={}, len(y)={}'.format(len(x), len(y)))
+        raise ValueError("Expected x and y of same length, got "+\
+                "len(x)={}, len(y)={}".format(len(x), len(y)))
 
     if not len(x) == len(z):
-        raise ValueError('Expected x and z of same length, got '+\
-                'len(x)={}, len(z)={}'.format(len(x), len(z)))
+        raise ValueError("Expected x and z of same length, got "+\
+                "len(x)={}, len(z)={}".format(len(x), len(z)))
 
     # Format categorical data
     z = pd.Series(z)
@@ -820,7 +820,7 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap='viridis', \
     # Check z is categorical
     # See  https://pandas.pydata.org/pandas-docs/version/0.17.0/categorical.html
     # Cell [176]
-    if hasattr(z, 'cat'):
+    if hasattr(z, "cat"):
         # Use categorical data properties
         z = pd.Categorical(z)
         labels = z.categories.values
@@ -845,15 +845,15 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap='viridis', \
 
             if len(set(cuts)) != len(cuts):
                 raise ValueError(\
-                        'Non-unique category boundaries :{0}'.format(\
-                            '/ '.join([str(u) for u in list(cuts)])))
+                        "Non-unique category boundaries :{0}".format(\
+                            "/ ".join([str(u) for u in list(cuts)])))
 
             # Create labels
-            labels = ['[{0:{fmt}}, {1:{fmt}}]'.format(cuts[icat], \
+            labels = ["[{0:{fmt}}, {1:{fmt}}]".format(cuts[icat], \
                                            cuts[icat+1], fmt=fmt) \
                                                for icat in range(ncats)]
         else:
-            raise ValueError('Expected ncats or cuts to be not-None')
+            raise ValueError("Expected ncats or cuts to be not-None")
 
     # Get colors for each category
     if not cmap is None:
@@ -884,16 +884,16 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap='viridis', \
             u, v = x[idx], y[idx]
         else:
             u, v = [], []
-            warnings.warn('No points falling in category '+\
-                        '{0} ({1})'.format(icat, label))
+            warnings.warn("No points falling in category "+\
+                        "{0} ({1})".format(icat, label))
 
         # Plot category
-        if 'color' in kwargs:
-            ax.plot(u, v, 'o', label=label, \
+        if "color" in kwargs:
+            ax.plot(u, v, "o", label=label, \
                                 markersize=markersize, \
                                 *args, **kwargs)
         else:
-            ax.plot(u, v, 'o', color=col, label=label, \
+            ax.plot(u, v, "o", color=col, label=label, \
                                 markersize=markersize, \
                                 *args, **kwargs)
 
@@ -901,20 +901,20 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap='viridis', \
         last_col = line.get_color()
 
         # Store plotted data
-        dd = {'idx': idx, \
-            'label': label, \
-            'color': last_col, \
-            'line': line, \
-            'x': x[idx], 'y': y[idx]}
+        dd = {"idx": idx, \
+            "label": label, \
+            "color": last_col, \
+            "line": line, \
+            "x": x[idx], "y": y[idx]}
 
         plotted.append(dd)
 
     return plotted, cats
 
 
-def bivarnplot(ax, xy, add_semicorr=True, namex='var 1', \
-                namey='var 2', marker='o', *args, **kwargs):
-    ''' Bivariate normal scores Plot
+def bivarnplot(ax, xy, add_semicorr=True, namex="var 1", \
+                namey="var 2", marker="o", *args, **kwargs):
+    """ Bivariate normal scores Plot
 
     Useful to check symetry of correlation.
     Semi-correlation are added in the top left corner.
@@ -935,12 +935,12 @@ def bivarnplot(ax, xy, add_semicorr=True, namex='var 1', \
         Marker to use for the points displayed
     args, kwargs
         Argument sent to matplotlib.pyplot.plot command for each
-    '''
+    """
     # Select data
     idx = np.sum(np.isnan(xy), axis=1) == 0
     if np.sum(idx) < 2:
-        raise ValueError('Expected at least 2 data pairs with valid'+\
-                ' values for both, got {}'.format(np.sum(idx)))
+        raise ValueError("Expected at least 2 data pairs with valid"+\
+                " values for both, got {}".format(np.sum(idx)))
     xy = xy[idx]
 
     # Compute normal standard variables and semi correlations
@@ -952,20 +952,20 @@ def bivarnplot(ax, xy, add_semicorr=True, namex='var 1', \
     # Plot
     ax.plot(unorm[:, 0], unorm[:, 1], marker, *args, **kwargs)
 
-    line(ax, 1, 0, 0, 0, 'k--', lw=0.6)
-    line(ax, 0, 1, 0, 0, 'k--', lw=0.6)
+    line(ax, 1, 0, 0, 0, "k--", lw=0.6)
+    line(ax, 0, 1, 0, 0, "k--", lw=0.6)
 
     # Add semi correlations
     if add_semicorr:
-        text = r'$\rho$   {:5.2f}'.format(rho)
-        text += '\n'+r'$\eta$   {:5.2f}'.format(eta)
-        text += '\n'+r'$\rho^+$ {:5.2f}'.format(rho_p)
-        text += '\n'+r'$\rho^-$ {:5.2f}'.format(rho_m)
+        text = r"$\rho$   {:5.2f}".format(rho)
+        text += "\n"+r"$\eta$   {:5.2f}".format(eta)
+        text += "\n"+r"$\rho^+$ {:5.2f}".format(rho_p)
+        text += "\n"+r"$\rho^-$ {:5.2f}".format(rho_m)
         ax.text(0.02, 0.98, text, transform=ax.transAxes, \
-                va='top', ha='left')
+                va="top", ha="left")
     # Decorate
-    ax.set_xlabel('Standard normal score for {} [-]'.format(namex))
-    ax.set_ylabel('Standard normal score for {} [-]'.format(namey))
+    ax.set_xlabel("Standard normal score for {} [-]".format(namex))
+    ax.set_ylabel("Standard normal score for {} [-]".format(namey))
 
 
 

@@ -28,10 +28,10 @@ def get_colors(skip=0):
 
 
 class Simplot(object):
-    ''' Object to plot a summary of daily hydrological simulations '''
+    """ Object to plot a summary of daily hydrological simulations """
 
     def __init__(self, obs, sim, variable_name, \
-        data_unit='-', \
+        data_unit="-", \
         sim_name = None,
         fig = None, \
         nfloods = 3, \
@@ -43,7 +43,7 @@ class Simplot(object):
         samefloodyscale=False, \
         maxnan_annual=50, \
         maxnan_monthly=10):
-        ''' Object to generate a diagnostic plot for flow simulations
+        """ Object to generate a diagnostic plot for flow simulations
 
         Parameters
         -----------
@@ -78,7 +78,7 @@ class Simplot(object):
             Maximum number of nan per year
         maxnan_monthly : int
             Maximum number of nan per month
-        '''
+        """
 
         # Properties
         self.variable_name = variable_name
@@ -90,7 +90,7 @@ class Simplot(object):
 
         # data
         self.idx_obs = pd.notnull(obs) & (obs >= 0)
-        obs.name = 'obs'
+        obs.name = "obs"
         self.minobs = obs[self.idx_obs].min()
         self.maxobs = obs[self.idx_obs].max()
         self.data = pd.DataFrame(obs)
@@ -122,18 +122,18 @@ class Simplot(object):
 
 
     def _compute_idx_all(self):
-        ''' Compute indexes where all data are available'''
+        """ Compute indexes where all data are available"""
         self.idx_all = pd.isnull(self.data).sum(axis=1) == 0
 
         if np.sum(self.idx_all) == 0:
-            raise ValueError('No common data points between '+\
-                    'time series')
+            raise ValueError("No common data points between "+\
+                    "time series")
 
 
     def _get_flood_indexes(self):
-        ''' Identify flood events '''
+        """ Identify flood events """
         dates = self.data.index
-        obs_tmp = self.data['obs'].copy()
+        obs_tmp = self.data["obs"].copy()
         nval = len(obs_tmp)
         self.flood_idx = []
         iflood = 0
@@ -150,21 +150,21 @@ class Simplot(object):
                                 + delta(days=self.ndays_afterpeak))
 
             if np.any(self.idx_all[idx]):
-                self.flood_idx.append({'index':idx, 'date_max':date_max})
+                self.flood_idx.append({"index":idx, "date_max":date_max})
 
             obs_tmp.loc[idx] = np.nan
 
         if len(self.flood_idx) == 0:
-            raise ValueError('Could not identify valid flood data')
+            raise ValueError("Could not identify valid flood data")
 
 
     def _getname(self, cn):
-        ''' Return a proper name for variable '''
-        return re.sub('_', '\n', cn)
+        """ Return a proper name for variable """
+        return re.sub("_", "\n", cn)
 
 
     def add_sim(self, sim, name=None):
-        ''' Add a new simulations '''
+        """ Add a new simulations """
 
         self.nsim += 1
 
@@ -172,8 +172,8 @@ class Simplot(object):
         if name is None:
             name = sim.name
 
-        if name is None or name == '':
-            name = 'sim_{0:02}'.format(self.nsim)
+        if name is None or name == "":
+            name = "sim_{0:02}".format(self.nsim)
         self.sim_names.append(name)
 
         # Store data
@@ -183,7 +183,7 @@ class Simplot(object):
 
 
     def draw(self):
-        ''' Draw all simulations plots
+        """ Draw all simulations plots
 
         Returns
         -----------
@@ -205,7 +205,7 @@ class Simplot(object):
         axf : list
             List containing the axes showing flood simulations
 
-        '''
+        """
         # Draw water balance
         axb = plt.subplot(self.gs[0, 0])
         #self.draw_balance(axb)
@@ -220,14 +220,14 @@ class Simplot(object):
         self.draw_fdc(axfd)
 
         axfdl = plt.subplot(self.gs[1, 1])
-        self.draw_fdc(axfdl, 'd', \
+        self.draw_fdc(axfdl, "d", \
                     xlim = self.fdc_zoom_xlim, \
                     ylog = self.fdc_zoom_ylog, \
-                    title_postfix='- high flow zoom')
+                    title_postfix="- high flow zoom")
 
         # Draw seasonal residuals
         axs = plt.subplot(self.gs[1, 2])
-        self.draw_monthlymeans(axs, 'e')
+        self.draw_monthlymeans(axs, "e")
 
         # Same flood y scale if needed
         ylim = (max(0, self.minobs*0.5), self.maxobs*1.2)
@@ -249,13 +249,13 @@ class Simplot(object):
         return axb, axa, axfd, axfdl, axs, axf
 
 
-    def draw_monthlymeans(self, ax, ax_letter='d'):
-        ''' Draw the plot of monthly residuals '''
+    def draw_monthlymeans(self, ax, ax_letter="d"):
+        """ Draw the plot of monthly residuals """
 
         # Quick aggregate
         data = self.data
         months = data.index.year * 100 + data.index.month
-        monthsu = pd.to_datetime(pd.np.unique(months), format='%Y%m')
+        monthsu = pd.to_datetime(pd.np.unique(months), format="%Y%m")
         lam = lambda x: pd.Series(dutils.aggregate(months, x.values, \
                                     maxnan=self.maxnan_monthly),\
                                         index=monthsu)
@@ -269,7 +269,7 @@ class Simplot(object):
         lines = {}
         colors = get_colors()
         for (cn, se), color in zip(mdatam.items(), colors):
-            se.plot(ax=ax, color=color, marker='o', lw=3)
+            se.plot(ax=ax, color=color, marker="o", lw=3)
 
         # decoration
         lines, labels = ax.get_legend_handles_labels()
@@ -278,17 +278,17 @@ class Simplot(object):
         ax.set_xlim((0, 13))
         ax.set_xticks(range(1, 13))
         ax.grid()
-        ax.set_xlabel('Month')
-        ax.set_ylabel('Monthly mean {} [{}]'.format(self.variable_name, self.data_unit))
-        title = '({0}) Monthly means'.format(ax_letter)
+        ax.set_xlabel("Month")
+        ax.set_ylabel("Monthly mean {} [{}]".format(self.variable_name, self.data_unit))
+        title = "({0}) Monthly means".format(ax_letter)
         ax.set_title(title)
 
         return lines
 
 
-    def draw_fdc(self, ax, ax_letter='c', xlog=False, \
-                        ylog=True, xlim=[0, 1], title_postfix=''):
-        ''' Draw the flow duration curve '''
+    def draw_fdc(self, ax, ax_letter="c", xlog=False, \
+                        ylog=True, xlim=[0, 1], title_postfix=""):
+        """ Draw the flow duration curve """
 
         # Freqency
         data = self.data
@@ -303,7 +303,7 @@ class Simplot(object):
         for cn, color in zip(data.columns, colors):
             value = np.sort(data.loc[idx, cn].values)[::-1]
             name = self._getname(cn)
-            ax.plot(ff, value, '-', label=name,
+            ax.plot(ff, value, "-", label=name,
                 markersize=6,
                 color=color, lw=2)
             lines[cn] = ax.get_lines()[-1]
@@ -314,10 +314,10 @@ class Simplot(object):
                 ymin = ymincn
 
         # Decorate
-        ax.set_xlabel('Frequency')
-        ax.set_ylabel('{} [{}]'.format(self.variable_name, self.data_unit))
+        ax.set_xlabel("Frequency")
+        ax.set_ylabel("{} [{}]".format(self.variable_name, self.data_unit))
 
-        title = '({0}) Duration curve {1}'.format(\
+        title = "({0}) Duration curve {1}".format(\
                             ax_letter, title_postfix)
         ax.set_title(title)
 
@@ -339,22 +339,22 @@ class Simplot(object):
 
         # Scales
         if xlog:
-            ax.set_xscale('log')
+            ax.set_xscale("log")
         if ylog:
-            ax.set_yscale('log')
+            ax.set_yscale("log")
 
         return lines
 
 
     def draw_floods(self, ax, iflood, ax_letter, yminfactor=0.5, \
                     ymaxfactor=1.2, show_legend=False, \
-                    xaxis_freq='D', xaxis_by=[1, 15], \
-                    xaxis_fmt='%d %b'):
+                    xaxis_freq="D", xaxis_by=[1, 15], \
+                    xaxis_fmt="%d %b"):
 
-        ''' Draw a plot for a single flood event '''
+        """ Draw a plot for a single flood event """
         # Select event
         data = self.data
-        idx = self.flood_idx[iflood]['index']
+        idx = self.flood_idx[iflood]["index"]
 
         dataf = data.loc[idx, :]
         dataf.columns = [self._getname(cn) for cn in  data.columns]
@@ -363,8 +363,8 @@ class Simplot(object):
         lines = {}
         colors = get_colors()
         for (cn, se), color in zip(dataf.items(), colors):
-            label = cn if iflood == 0 else ''
-            ax.plot(se.index, se.values, 'o-', color=color, lw=2, \
+            label = cn if iflood == 0 else ""
+            ax.plot(se.index, se.values, "o-", color=color, lw=2, \
                             label=label)
             lines[cn] = ax.get_lines()[-1]
 
@@ -376,18 +376,18 @@ class Simplot(object):
             leglines, labels = ax.get_legend_handles_labels()
             ax.legend(leglines, labels, loc=2, frameon=False)
 
-        date_max = self.flood_idx[iflood]['date_max']
-        title = r'({0}) Flood #{1} - {2:%b %Y}'.format(ax_letter, \
+        date_max = self.flood_idx[iflood]["date_max"]
+        title = r"({0}) Flood #{1} - {2:%b %Y}".format(ax_letter, \
             iflood+1, date_max)
         ax.set_title(title)
         ax.xaxis.grid()
-        ax.set_ylabel('{} [{}]'.format(self.variable_name, self.data_unit))
+        ax.set_ylabel("{} [{}]".format(self.variable_name, self.data_unit))
 
         return lines
 
 
-    def draw_monthly(self, ax, ax_letter='b'):
-        ''' Draw plot for annual time series '''
+    def draw_monthly(self, ax, ax_letter="b"):
+        """ Draw plot for annual time series """
 
         # Compute monthly time series
         data = self.data
@@ -410,27 +410,27 @@ class Simplot(object):
         leglines, labels = ax.get_legend_handles_labels()
         ax.legend(leglines, labels, loc=2, frameon=False)
 
-        title = '({0}) Monthly time series'.format(ax_letter)
+        title = "({0}) Monthly time series".format(ax_letter)
         ax.set_title(title)
-        ax.set_ylabel('Monthly {} [{}]'.format(self.variable_name, self.data_unit))
+        ax.set_ylabel("Monthly {} [{}]".format(self.variable_name, self.data_unit))
         ax.xaxis.grid()
 
         return lines
 
 
-    def draw_balance(self, ax, ax_letter='a'):
-        ''' Draw bar chart with mean annual data '''
+    def draw_balance(self, ax, ax_letter="a"):
+        """ Draw bar chart with mean annual data """
         data = self.data
         cc = [self._getname(cn) for cn in  data.columns]
         datab = pd.Series(data.loc[self.idx_all, :].mean().values,
                     index=cc)
 
         freq = data.index.freqstr
-        freqfact = {'H':24*365.25, 'D':365.25, 'MS':12, 'ME':12}
+        freqfact = {"H":24*365.25, "D":365.25, "MS":12, "ME":12}
         if freq not in freqfact:
-            warnings.warn(('Frequency [{0}] not recognised, '+\
-                            'assuming daily').format(freq))
-            fact = freqfact['D']
+            warnings.warn(("Frequency [{0}] not recognised, "+\
+                            "assuming daily").format(freq))
+            fact = freqfact["D"]
         else:
             fact = freqfact[freq]
 
@@ -440,18 +440,18 @@ class Simplot(object):
         lines = {}
         colors = get_colors()
         for (cn, se), color in zip(datab.items(), colors):
-            se.plot(ax=ax, kind='bar', color=color, edgecolor='none')
+            se.plot(ax=ax, kind="bar", color=color, edgecolor="none")
             lines[cn] = ax.get_lines()[-1]
 
-        ax.set_ylabel('Mean annual')
-        ax.set_title('({0}) Water Balance'.format(ax_letter))
+        ax.set_ylabel("Mean annual")
+        ax.set_title("({0}) Water Balance".format(ax_letter))
         ax.grid()
 
         return lines
 
 
-    def draw_loglog(self, ax, ax_letter='a'):
-        ''' Draw a log-log plot of sorted sim vs obs '''
+    def draw_loglog(self, ax, ax_letter="a"):
+        """ Draw a log-log plot of sorted sim vs obs """
         data = self.data
         obs = np.sort(data.loc[self.idx_all, data.columns[0]])
         lines = {}
@@ -462,18 +462,18 @@ class Simplot(object):
             ax.loglog(sim, obs, label=label, color=color)
             lines[cn] = ax.get_lines()[-1]
 
-        putils.line(ax, 1, 1, 1, 1, 'k--')
-        ax.set_xlabel('Simulation')
-        ax.set_ylabel('Observation')
-        ax.legend(loc=4, fontsize='x-small')
-        ax.set_title('({0}) Sim vs obs'.format(ax_letter))
+        putils.line(ax, 1, 1, 1, 1, "k--")
+        ax.set_xlabel("Simulation")
+        ax.set_ylabel("Observation")
+        ax.legend(loc=4, fontsize="x-small")
+        ax.set_title("({0}) Sim vs obs".format(ax_letter))
         ax.grid()
 
         return lines
 
 
     def set_size_inches(self, size=None):
-        ''' Set figure size '''
+        """ Set figure size """
         if size is None:
             size = (20, 10+5*((self.nfloods-1)/3+1))
 
@@ -484,7 +484,7 @@ class Simplot(object):
 
 
     def savefig(self, filename, size=None):
-        ''' Save figure to file '''
+        """ Save figure to file """
         size = self.set_size_inches(size)
         self.fig.savefig(filename)
 
