@@ -13,8 +13,8 @@ from hydrodiy.data.dutils import lag, flathomogen
 from hydrodiy.stat.sutils import ppos
 from hydrodiy.stat.metrics import corr, nse
 from hydrodiy.stat.transform import Identity, Log
+from hydrodiy import has_c_module
 
-from hydrodiy import HAS_C_DATA_MODULE
 EPS = 1e-10
 
 def eckhardt(flow, thresh=0.95, tau=20, BFI_max=0.8, timestep_type=1):

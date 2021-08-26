@@ -20,8 +20,10 @@ try:
 except ImportError:
     HAS_PYPROJ = False
 
-from hydrodiy.gis.grid import Grid, Catchment, HAS_C_GIS_MODULE
-from hydrodiy.gis.grid import accumulate, voronoi, delineate_river, slope
+from hydrodiy import has_c_module
+from hydrodiy.gis.grid import Grid, Catchment
+from hydrodiy.gis.grid import accumulate, voronoi, \
+                                    delineate_river, slope
 from hydrodiy.gis.grid import get_grid, AWRAL_SUBGRIDS
 from hydrodiy.io import csv
 
@@ -75,7 +77,7 @@ class GridTestCase(unittest.TestCase):
 
     def test_xvalues_yvalues(self):
         """ test x and y coords of grid """
-        if not HAS_C_GIS_MODULE:
+        if not has_c_module("gis", False):
             self.skipTest("Missing C module c_hydrodiy_gis")
 
         gr = Grid(**self.config)
@@ -190,7 +192,7 @@ class GridTestCase(unittest.TestCase):
 
 
     def test_neighbours(self):
-        if not HAS_C_GIS_MODULE:
+        if not has_c_module("gis", False):
             self.skipTest("Missing C module c_hydrodiy_gis")
 
         gr = Grid(**self.config)
@@ -233,7 +235,7 @@ class GridTestCase(unittest.TestCase):
 
     def test_coord2cell(self):
         """ Test coord2cell and cell2coord """
-        if not HAS_C_GIS_MODULE:
+        if not has_c_module("gis", False):
             self.skipTest("Missing C module c_hydrodiy_gis")
 
         gr = Grid(**self.config)
@@ -267,7 +269,7 @@ class GridTestCase(unittest.TestCase):
 
 
     def test_slice(self):
-        if not HAS_C_GIS_MODULE:
+        if not has_c_module("gis", False):
             self.skipTest("Missing C module c_hydrodiy_gis")
 
         ndim = 11
@@ -373,7 +375,7 @@ class GridTestCase(unittest.TestCase):
 
     def test_plot_values(self):
         """ Test showing grid values """
-        if not HAS_C_GIS_MODULE:
+        if not has_c_module("gis", False):
             self.skipTest("Missing C module c_hydrodiy_gis")
 
         ngrid = 20
@@ -414,7 +416,7 @@ class GridTestCase(unittest.TestCase):
 
 
     def test_clip(self):
-        if not HAS_C_GIS_MODULE:
+        if not has_c_module("gis", False):
             self.skipTest("Missing C module c_hydrodiy_gis")
 
         gr = Grid(**self.config)
@@ -454,7 +456,7 @@ class GridTestCase(unittest.TestCase):
 
     def test_interpolate_small(self):
         """ Small grid interpolation """
-        if not HAS_C_GIS_MODULE:
+        if not has_c_module("gis", False):
             self.skipTest("Missing C module c_hydrodiy_gis")
 
         gr = Grid(**self.config)
@@ -480,7 +482,7 @@ class GridTestCase(unittest.TestCase):
 
     def test_interpolate_large(self):
         """ Large grid interpolation """
-        if not HAS_C_GIS_MODULE:
+        if not has_c_module("gis", False):
             self.skipTest("Missing C module c_hydrodiy_gis")
 
         cfg = {
@@ -530,7 +532,7 @@ class GridTestCase(unittest.TestCase):
 
     def test_cells_inside_polygon(self):
         """ Test cells inside polygon algorithm """
-        if not HAS_C_GIS_MODULE:
+        if not has_c_module("gis", False):
             self.skipTest("Missing C module c_hydrodiy_gis")
 
         nrows = 10
@@ -552,7 +554,7 @@ class CatchmentTestCase(unittest.TestCase):
     def setUp(self):
         print("\t=> CatchmentTestCase")
 
-        if not HAS_C_GIS_MODULE:
+        if not has_c_module("gis", False):
             self.skipTest("Missing C module c_hydrodiy_gis")
 
         source_file = os.path.abspath(__file__)

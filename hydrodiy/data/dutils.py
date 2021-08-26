@@ -9,7 +9,7 @@ import pandas as pd
 from pandas.tseries.offsets import DateOffset
 from numpy.polynomial import polynomial as poly
 
-from hydrodiy import PYVERSION, HAS_C_DATA_MODULE
+from hydrodiy import PYVERSION, has_c_module
 
 # Try to import C code
 
@@ -161,16 +161,13 @@ def aggregate(aggindex, inputs, oper=0, maxnan=0):
         Aggregated data
 
     """
-    # Check C modules are available
-    if not HAS_C_DATA_MODULE:
-        raise ValueError("C module c_hydrodiy_data is not available, "+\
-                "please run python setup.py build")
+    has_c_module("data")
 
     # Check inputs
     if len(aggindex) != len(inputs):
-        raise ValueError("Expected same length for aggindex and inputs. "+ \
-                    "got len(aggindex)={0} and len(inputs)={1}".format(\
-                    len(aggindex), len(inputs)))
+        raise ValueError("Expected same length for aggindex and"+\
+                    f" inputs,got len(aggindex)={len(aggindex)} "+
+                    f"and len(inputs)={len(inputs)}.")
 
     # Allocate arrays
     oper = np.int32(oper)
@@ -217,15 +214,12 @@ def flathomogen(aggindex, inputs, maxnan=0):
         Flat disaggregated data
 
     """
-    # Check C modules are available
-    if not HAS_C_DATA_MODULE:
-        raise ValueError("C module c_hydrodiy_data is not available, "+\
-                "please run python setup.py build")
+    has_c_module("data")
 
     # Check inputs
     if len(aggindex) != len(inputs):
-        raise ValueError("Expected inputs of length {0}, got {1}".format(\
-                len(aggindex), len(inputs)))
+        raise ValueError("Expected inputs of length "+\
+                f"{len(aggindex)}, got {len(inputs)}.")
 
     # Allocate arrays
     maxnan = np.int32(maxnan)
@@ -403,20 +397,17 @@ def var2h(se, maxgapsec=5*86400, display=False):
     seh : pandas.Series
         Hourly series
     """
-    # Check C modules are available
-    if not HAS_C_DATA_MODULE:
-        raise ValueError("C module c_hydrodiy_data is not available, "+\
-                "please run python setup.py build")
+    has_c_module("data")
 
     # Allocate arrays
     maxgapsec = np.int32(maxgapsec)
     display = np.int32(display)
     varvalues = se.values.astype(np.float64)
-    varsec = (se.index.values.astype(np.int64)/1000000000).astype(np.int32)
+    varsec = (se.index.values.astype(np.int64)/1000000000).astype(\
+                        np.int32)
 
     if maxgapsec < 3600:
-        raise ValueError("Expected maxgapsec>=3600, got {0}".format(\
-                maxgapsec))
+        raise ValueError(f"Expected maxgapsec>=3600, got {maxgapsec}.")
 
     # Determines start and end of hourly series
     start = se.index[0]
@@ -436,7 +427,7 @@ def var2h(se, maxgapsec=5*86400, display=False):
                 varsec, varvalues, hvalues)
 
     if ierr > 0:
-        raise ValueError("c_hydrodiy_data.var2h returns {0}".format(ierr))
+        raise ValueError(f"c_hydrodiy_data.var2h returns {ierr}")
 
     # Convert to hourly series
     dt = pd.date_range(hstart, freq="H", periods=nvalh)

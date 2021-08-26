@@ -19,7 +19,7 @@ from matplotlib import colors
 from hydrodiy.data import dutils
 from hydrodiy.stat import sutils
 from hydrodiy.plot import putils
-from hydrodiy import HAS_C_DATA_MODULE
+from hydrodiy import has_c_module
 
 # Select color scheme
 COLOR_SCHEME = putils.COLORS_TAB
@@ -253,7 +253,7 @@ class Simplot(object):
 
     def draw_monthlymeans(self, ax, ax_letter="d"):
         """ Draw the plot of monthly residuals """
-        if not HAS_C_DATA_MODULE:
+        if not has_c_module("data", False):
             return
 
         # Quick aggregate
@@ -391,7 +391,7 @@ class Simplot(object):
 
     def draw_monthly(self, ax, ax_letter="b"):
         """ Draw plot for annual time series """
-        if not HAS_C_DATA_MODULE:
+        if not has_c_module("data", False):
             return
 
         # Compute monthly time series

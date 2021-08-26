@@ -1,13 +1,7 @@
 import numpy as np
 from scipy.linalg import toeplitz
 
-# Try to import C code
-HAS_C_STAT_MODULE = True
-try:
-    import c_hydrodiy_stat
-except ImportError:
-    HAS_C_STAT_MODULE = False
-
+from hydrodiy import has_c_module
 
 def armodel_sim(params, innov, sim_mean=0., sim_ini=None):
     """ Simulate outputs from an AR model.
@@ -45,9 +39,7 @@ def armodel_sim(params, innov, sim_mean=0., sim_ini=None):
     True
 
     """
-    if not HAS_C_STAT_MODULE:
-        raise ValueError("C module c_hydrodiy_stat is not available, "+\
-                "please run python setup.py build")
+    has_c_module("stat")
 
     sim_mean = np.float64(sim_mean)
     if sim_ini is None:
@@ -112,9 +104,7 @@ def armodel_residual(params, inputs, sim_mean=None, sim_ini=None):
     True
 
     """
-    if not HAS_C_STAT_MODULE:
-        raise ValueError("C module c_hydrodiy_stat is not available, "+\
-                "please run python setup.py build")
+    has_c_module("stat")
 
     if sim_mean is None:
         sim_mean = np.nanmean(inputs).astype(np.float64)

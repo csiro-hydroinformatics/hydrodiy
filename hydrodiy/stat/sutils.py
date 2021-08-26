@@ -6,13 +6,7 @@ import pandas as pd
 
 from scipy.stats import norm
 
-# Try to import C code
-HAS_C_STAT_MODULE = True
-try:
-    import c_hydrodiy_stat
-except ImportError:
-    HAS_C_STAT_MODULE = False
-
+from hydrodiy import has_c_module
 
 def ppos(nval, cst=0.3):
     """ Compute plotting position for sample of size nval
@@ -301,9 +295,7 @@ def pareto_front(data, orientation=1):
     >>> data = np.random.normal(size=(nval, 3))
     >>> sutils.pareto_front(data)
     """
-    if not HAS_C_STAT_MODULE:
-        raise ValueError("C module c_hydrodiy_stat is not available, "+\
-                "please run python setup.py build")
+    has_c_module("stat")
 
     orientation = np.int32(orientation)
     data = data.astype(np.float64)

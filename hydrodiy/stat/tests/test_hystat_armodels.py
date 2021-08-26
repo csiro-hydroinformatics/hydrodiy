@@ -9,10 +9,10 @@ from scipy.stats import norm, anderson
 
 import matplotlib.pyplot as plt
 
+from hydrodiy import has_c_module
 from hydrodiy.io import csv
 from hydrodiy.stat import sutils
-from hydrodiy.stat.armodels import HAS_C_STAT_MODULE, \
-                                armodel_sim, armodel_residual, \
+from hydrodiy.stat.armodels import armodel_sim, armodel_residual, \
                                 yule_walker
 
 np.random.seed(0)
@@ -20,7 +20,7 @@ np.random.seed(0)
 class ARModelsTestCase(unittest.TestCase):
 
     def setUp(self):
-        if not HAS_C_STAT_MODULE:
+        if not has_c_module("stat", False):
             self.skipTest("Missing C module c_hydrodiy_stat")
 
         print("\t=> UtilsTestCase (hystat)")

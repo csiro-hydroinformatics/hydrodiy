@@ -16,18 +16,12 @@ from scipy.stats import norm, lognorm, spearmanr
 import numpy as np
 import pandas as pd
 
+from hydrodiy import has_c_module
 from hydrodiy.stat import metrics
 from hydrodiy.io import csv
 from hydrodiy.stat import transform, sutils
 
 from hydrodiy.plot import putils
-
-# Try to import C code
-HAS_C_STAT_MODULE = True
-try:
-    import c_hydrodiy_stat
-except ImportError:
-    HAS_C_STAT_MODULE = False
 
 from vrf_scores import crps_ecdf as crps_csiro
 
@@ -102,7 +96,7 @@ class MetricsTestCase(unittest.TestCase):
 
     def test_crps_csiro(self):
         """ Compare CRPS calculation with reference code """
-        if not HAS_C_STAT_MODULE:
+        if not has_c_module("stat", False):
             self.skipTest("Missing C module c_hydrodiy_stat")
 
         nval = 100
@@ -125,7 +119,7 @@ class MetricsTestCase(unittest.TestCase):
 
 
     def test_crps_reliability_table1(self):
-        if not HAS_C_STAT_MODULE:
+        if not has_c_module("stat", False):
             self.skipTest("Missing C module c_hydrodiy_stat")
 
         cr, rt = metrics.crps(self.obs1, self.sim1)
@@ -135,7 +129,7 @@ class MetricsTestCase(unittest.TestCase):
 
 
     def test_crps_reliability_table2(self):
-        if not HAS_C_STAT_MODULE:
+        if not has_c_module("stat", False):
             self.skipTest("Missing C module c_hydrodiy_stat")
 
         cr, rt = metrics.crps(self.obs2, self.sim2)
@@ -145,7 +139,7 @@ class MetricsTestCase(unittest.TestCase):
 
 
     def test_crps_value1(self):
-        if not HAS_C_STAT_MODULE:
+        if not has_c_module("stat", False):
             self.skipTest("Missing C module c_hydrodiy_stat")
 
         cr, rt = metrics.crps(self.obs1, self.sim1)
@@ -155,7 +149,7 @@ class MetricsTestCase(unittest.TestCase):
 
 
     def test_crps_value2(self):
-        if not HAS_C_STAT_MODULE:
+        if not has_c_module("stat", False):
             self.skipTest("Missing C module c_hydrodiy_stat")
 
         cr, rt = metrics.crps(self.obs2, self.sim2)
@@ -297,7 +291,7 @@ class MetricsTestCase(unittest.TestCase):
 
     def test_anderson_darling(self):
         """ test Anderson Darling test """
-        if not HAS_C_STAT_MODULE:
+        if not has_c_module("stat", False):
             self.skipTest("Missing C module c_hydrodiy_stat")
 
         fd = os.path.join(self.ftest, "data",\
@@ -317,7 +311,7 @@ class MetricsTestCase(unittest.TestCase):
 
     def test_anderson_darling_error(self):
         """ test Anderson Darling test errors """
-        if not HAS_C_STAT_MODULE:
+        if not has_c_module("stat", False):
             self.skipTest("Missing C module c_hydrodiy_stat")
 
         nval = 20
@@ -461,7 +455,7 @@ class MetricsTestCase(unittest.TestCase):
     def test_ensrank_weigel_data(self):
         """ Testing ensrank C function  against data from
         Weigel and Mason (2011) """
-        if not HAS_C_STAT_MODULE:
+        if not has_c_module("stat", False):
             self.skipTest("Missing C module c_hydrodiy_stat")
 
         sim = np.array([[22, 23, 26, 27, 32], \
@@ -486,7 +480,7 @@ class MetricsTestCase(unittest.TestCase):
 
     def test_ensrank_deterministic(self):
         """ Testing ensrank C function for deterministic simulations """
-        if not HAS_C_STAT_MODULE:
+        if not has_c_module("stat", False):
             self.skipTest("Missing C module c_hydrodiy_stat")
 
         nval = 5
@@ -518,7 +512,7 @@ class MetricsTestCase(unittest.TestCase):
 
     def test_ensrank_python(self):
         """ Test ensrank against python code """
-        if not HAS_C_STAT_MODULE:
+        if not has_c_module("stat", False):
             self.skipTest("Missing C module c_hydrodiy_stat")
 
         nval = 4
@@ -573,7 +567,7 @@ class MetricsTestCase(unittest.TestCase):
 
     def test_dscore_perfect(self):
         """ Test dscore for perfect correlation """
-        if not HAS_C_STAT_MODULE:
+        if not has_c_module("stat", False):
             self.skipTest("Missing C module c_hydrodiy_stat")
 
         nval = 10
@@ -592,7 +586,7 @@ class MetricsTestCase(unittest.TestCase):
 
     def test_ensrank_large_ensemble(self):
         """ Test ensrank for large ensemble numbers """
-        if not HAS_C_STAT_MODULE:
+        if not has_c_module("stat", False):
             self.skipTest("Missing C module c_hydrodiy_stat")
 
         nval = 50
@@ -612,7 +606,7 @@ class MetricsTestCase(unittest.TestCase):
 
     def test_ensrank_long_timeseries(self):
         """ Test ensrank for long time series """
-        if not HAS_C_STAT_MODULE:
+        if not has_c_module("stat", False):
             self.skipTest("Missing C module c_hydrodiy_stat")
 
         nval = 1000

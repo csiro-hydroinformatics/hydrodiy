@@ -4,7 +4,6 @@ import numpy as np
 
 from itertools import product as prod
 
-
 def is_semidefinitepos(matrix):
     """ Check if matrix is semi-definite positive
 

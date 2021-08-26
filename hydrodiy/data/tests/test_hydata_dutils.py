@@ -10,10 +10,10 @@ from scipy.special import comb
 
 from hydrodiy.io import csv
 from hydrodiy.data import dutils
-from hydrodiy.data.dutils import HAS_C_DATA_MODULE
+from hydrodiy import has_c_module
 
 # Try to import C code
-if HAS_C_DATA_MODULE:
+if has_c_module("data", False):
     import c_hydrodiy_data as chd
 
 # Utility function to aggregate data
@@ -225,7 +225,7 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_aggregate(self):
         ''' Test aggregation '''
-        if not HAS_C_DATA_MODULE:
+        if not has_c_module("data", False):
             self.skipTest('Missing C module c_hydrodiy_data')
 
         dt = pd.date_range('1990-01-01', '2000-12-31')
@@ -259,7 +259,7 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_aggregate_error(self):
         ''' Test aggregation error '''
-        if not HAS_C_DATA_MODULE:
+        if not has_c_module("data", False):
             self.skipTest('Missing C module c_hydrodiy_data')
 
         dt = pd.date_range('1990-01-01', '2000-12-31')
@@ -328,7 +328,7 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_combi(self):
         ''' Test number of combinations '''
-        if not HAS_C_DATA_MODULE:
+        if not has_c_module("data", False):
             self.skipTest('Missing C module c_hydrodiy_data')
 
         for n in range(1, 65):
@@ -342,7 +342,7 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_var2h_hourly(self):
         ''' Test conversion to hourly for hourly data '''
-        if not HAS_C_DATA_MODULE:
+        if not has_c_module("data", False):
             self.skipTest('Missing C module c_hydrodiy_data')
 
         nval = 24*365*20
@@ -359,7 +359,7 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_var2h_5min(self):
         ''' Test conversion to hourly for 10min data '''
-        if not HAS_C_DATA_MODULE:
+        if not has_c_module("data", False):
             self.skipTest('Missing C module c_hydrodiy_data')
 
         nval = 24 #*365*3
@@ -385,7 +385,7 @@ class UtilsTestCase(unittest.TestCase):
     def test_var2h_variable(self):
         ''' Test variable to hourly conversion by comparing with python
         algorithm '''
-        if not HAS_C_DATA_MODULE:
+        if not has_c_module("data", False):
             self.skipTest('Missing C module c_hydrodiy_data')
 
         nvalh =50
@@ -437,7 +437,7 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_var2h_longgap(self):
         ''' Test variable to hourly conversion and apply to dataset '''
-        if not HAS_C_DATA_MODULE:
+        if not has_c_module("data", False):
             self.skipTest('Missing C module c_hydrodiy_data')
 
         nval = 6*20
@@ -456,7 +456,7 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_flathomogen(self):
         ''' Test flat disaggregation '''
-        if not HAS_C_DATA_MODULE:
+        if not has_c_module("data", False):
             self.skipTest('Missing C module c_hydrodiy_data')
 
         dt = pd.date_range('2000-01-10', '2000-04-05')

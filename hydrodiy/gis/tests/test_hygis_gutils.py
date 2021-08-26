@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 from hydrodiy.gis import gutils
-from hydrodiy import HAS_C_GIS_MODULE
+from hydrodiy import has_c_module
 
 class GutilsTestCase(unittest.TestCase):
 
@@ -44,7 +44,7 @@ class GutilsTestCase(unittest.TestCase):
 
     def test_point_inside_triangle(self):
         ''' Test points are inside a triangle '''
-        if not HAS_C_GIS_MODULE:
+        if not has_c_module("gis", False):
             self.skipTest('Missing C module c_hydrodiy_gis')
 
         points = np.array([[0.2, 0.2], [1.0, 1.0], [-0.2, -0.2]])
@@ -61,7 +61,7 @@ class GutilsTestCase(unittest.TestCase):
 
     def test_point_inside_polygon(self):
         ''' Test points are inside a polygon '''
-        if not HAS_C_GIS_MODULE:
+        if not has_c_module("gis", False):
             self.skipTest('Missing C module c_hydrodiy_gis')
 
         # Additional data to test points in polygon algorithm
@@ -88,7 +88,7 @@ class GutilsTestCase(unittest.TestCase):
         ''' Test points are inside a polygon without creating
             the inside vector
         '''
-        if not HAS_C_GIS_MODULE:
+        if not has_c_module("gis", False):
             self.skipTest('Missing C module c_hydrodiy_gis')
 
         points = np.array([[0.2, 0.2], [1.0, 1.0], [-0.2, -0.2]])
@@ -103,7 +103,7 @@ class GutilsTestCase(unittest.TestCase):
         ''' Test points are inside a polygon without creating
             the inside vector - test for errors.
         '''
-        if not HAS_C_GIS_MODULE:
+        if not has_c_module("gis", False):
             self.skipTest('Missing C module c_hydrodiy_gis')
 
         points = np.array([[0.2, 0.2], [1.0, 1.0], [-0.2, -0.2]])

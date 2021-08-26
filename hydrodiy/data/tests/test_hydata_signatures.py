@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 from hydrodiy.data import signatures
-from hydrodiy import HAS_C_DATA_MODULE
+from hydrodiy import has_c_module
 
 from hydrodiy.stat import transform
 from hydrodiy.io import csv
@@ -21,7 +21,7 @@ class SignaturesTestCase(unittest.TestCase):
 
     def test_eckhardt(self):
         ''' Test Eckhardt baseflow '''
-        if not HAS_C_DATA_MODULE:
+        if not has_c_module("data", False):
             self.skipTest('Missing C module c_hydrodiy_data')
 
         fd = os.path.join(self.ftest, 'baseflow_RDF_EC.csv')
@@ -69,7 +69,7 @@ class SignaturesTestCase(unittest.TestCase):
 
     def test_goue(self):
         ''' Test goue computation '''
-        if not HAS_C_DATA_MODULE:
+        if not has_c_module("data", False):
             self.skipTest('Missing C module c_hydrodiy_data')
 
         dt = pd.date_range('2000-01-10', '2000-06-30')

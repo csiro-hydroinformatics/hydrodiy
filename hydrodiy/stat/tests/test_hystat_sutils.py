@@ -10,9 +10,9 @@ from scipy.stats import norm, anderson
 
 import matplotlib.pyplot as plt
 
+from hydrodiy import has_c_module
 from hydrodiy.io import csv
 from hydrodiy.stat import sutils, armodels
-from hydrodiy.stat.sutils import HAS_C_STAT_MODULE
 
 np.random.seed(42)
 
@@ -49,7 +49,7 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_acf_all(self):
         """ Test acf """
-        if not HAS_C_STAT_MODULE:
+        if not has_c_module("stat", False):
             self.skipTest("Missing C module c_hydrodiy_stat")
 
         nval = 100000
@@ -94,7 +94,7 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_acf_idx(self):
         """ Test acf with index selection """
-        if not HAS_C_STAT_MODULE:
+        if not has_c_module("stat", False):
             self.skipTest("Missing C module c_hydrodiy_stat")
 
         nval = 5000
@@ -234,7 +234,7 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_pareto_front(self):
         """ Test pareto front """
-        if not HAS_C_STAT_MODULE:
+        if not has_c_module("stat", False):
             self.skipTest("Missing C module c_hydrodiy_stat")
 
         for nval, ncol in prod([20, 200], [2, 5]):

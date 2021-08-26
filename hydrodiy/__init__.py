@@ -1,30 +1,22 @@
 import sys
+import imp
 
 # Detect python version
 PYVERSION = 2
 if sys.version_info > (3, 0):
     PYVERSION = 3
 
-# C cython modules
-HAS_C_DATA_MODULE = True
-try:
-    import c_hydrodiy_data
-except ImportError:
-    HAS_C_DATA_MODULE = False
-
-HAS_C_STAT_MODULE = True
-try:
-    import c_hydrodiy_stat
-except ImportError:
-    HAS_C_STAT_MODULE = False
-
-
-HAS_C_GIS_MODULE = True
-try:
-    import c_hydrodiy_gis
-except ImportError:
-    HAS_C_GIS_MODULE = False
-
+def has_c_module(name, raise_error=True):
+    try:
+        name = f"c_hydrodiy_{name}"
+        fp, pathname, description = imp.find_module(name)
+        return True
+    except ImportError:
+        if raise_error:
+            raise ImportError(f"C module c_hydrodiy_{name} is "+\
+                "not available, please run python setup.py build")
+        else:
+            return False
 
 from ._version import get_versions
 __version__ = get_versions()['version']

@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from hydrodiy.data import dutils
-from hydrodiy import HAS_C_DATA_MODULE
+from hydrodiy import has_c_module
 
 def ismisscens(x, censor=0., eps=1e-10):
     """ Check if 1d variable is missing or censored
@@ -94,10 +94,7 @@ def islinear(data, npoints=3, tol=1e-6, thresh=0.):
     array([False, True, False, False, True, False], dtype=int32)
 
     """
-    # Check C module is available
-    if not HAS_C_DATA_MODULE:
-        raise ValueError("Compiled C c_hydrodiy_data is not available, "+\
-                "please run python setup.py build")
+    has_c_module("data")
 
     # Check data
     if data.ndim > 1:

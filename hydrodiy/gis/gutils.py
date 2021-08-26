@@ -6,7 +6,7 @@ import time
 
 from hydrodiy.stat import sutils
 
-from hydrodiy import HAS_C_GIS_MODULE
+from hydrodiy import has_c_module
 
 def points_inside_polygon(points, polygon, inside=None, atol=1e-8, \
                     nprint=0):
@@ -38,9 +38,7 @@ def points_inside_polygon(points, polygon, inside=None, atol=1e-8, \
         Vector containing 0 if the point is not in the polygon or 1 for
         the opposite case.
     """
-    if not HAS_C_GIS_MODULE:
-        raise ValueError("C module c_hydrodiy_gis is not available, "+\
-            "please run python setup.py build")
+    has_c_module("gis")
 
     # Prepare inputs
     nprint = np.int32(nprint)

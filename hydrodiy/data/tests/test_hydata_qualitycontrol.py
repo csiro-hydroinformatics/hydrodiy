@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 import pandas as pd
 from hydrodiy.data import qualitycontrol as qc
-from hydrodiy import HAS_C_DATA_MODULE
+from hydrodiy import has_c_module
 
 np.random.seed(0)
 
@@ -39,7 +39,7 @@ class QualityControlTestCase(unittest.TestCase):
 
     def test_islinear_error(self):
         ''' Test is linear errors '''
-        if not HAS_C_DATA_MODULE:
+        if not has_c_module("data", False):
             self.skipTest('Missing C module c_hydrodiy_data')
 
         nval = 20
@@ -62,7 +62,7 @@ class QualityControlTestCase(unittest.TestCase):
 
     def test_islinear_1d_linspace(self):
         ''' Test is linear 1d against the numpy linspace function '''
-        if not HAS_C_DATA_MODULE:
+        if not has_c_module("data", False):
             self.skipTest('Missing C module c_hydrodiy_data')
 
         nval = 20
@@ -79,7 +79,7 @@ class QualityControlTestCase(unittest.TestCase):
 
     def test_islinear_1d_constant(self):
         ''' Test is linear 1d against constant data '''
-        if not HAS_C_DATA_MODULE:
+        if not has_c_module("data", False):
             self.skipTest('Missing C module c_hydrodiy_data')
 
         nval = 20
@@ -96,7 +96,7 @@ class QualityControlTestCase(unittest.TestCase):
 
     def test_islinear_1d_nan(self):
         ''' Test is linear 1d against nan data '''
-        if not HAS_C_DATA_MODULE:
+        if not has_c_module("data", False):
             self.skipTest('Missing C module c_hydrodiy_data')
 
         nval = 20
@@ -114,7 +114,7 @@ class QualityControlTestCase(unittest.TestCase):
 
     def test_islinear_1d_linspace_npoints(self):
         ''' Test is linear 1d against the numpy linspace function '''
-        if not HAS_C_DATA_MODULE:
+        if not has_c_module("data", False):
             self.skipTest('Missing C module c_hydrodiy_data')
 
         nval = 30
@@ -137,7 +137,7 @@ class QualityControlTestCase(unittest.TestCase):
 
     def test_islinear_1d_zeros(self):
         ''' Test if islinear 1d is sensitive to zeros '''
-        if not HAS_C_DATA_MODULE:
+        if not has_c_module("data", False):
             self.skipTest('Missing C module c_hydrodiy_data')
 
         nval = 20
@@ -157,7 +157,7 @@ class QualityControlTestCase(unittest.TestCase):
 
     def test_islinear_1d_int(self):
         ''' Test is islinear 1d against integer '''
-        if not HAS_C_DATA_MODULE:
+        if not has_c_module("data", False):
             self.skipTest('Missing C module c_hydrodiy_data')
 
         data = np.array([0.]*20+[0., 1., 2., 3., 4., 5., 3.]+[0.]*20)
@@ -174,7 +174,7 @@ class QualityControlTestCase(unittest.TestCase):
 
     def test_islinear_sequence(self):
         ''' Test is_linear for two consecutive sequences of linear data '''
-        if not HAS_C_DATA_MODULE:
+        if not has_c_module("data", False):
             self.skipTest('Missing C module c_hydrodiy_data')
 
         nval = 50

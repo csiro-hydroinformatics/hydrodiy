@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from hydrodiy.plot.ensplot import MonthlyEnsplot
 from hydrodiy.plot.ensplot import ensmetrics, pitplot, tsplot
 
-from hydrodiy import HAS_C_STAT_MODULE
+from hydrodiy import has_c_module
 
 # Reset matplotlib to default
 mpl.rcdefaults()
@@ -44,7 +44,7 @@ class EnsplotTestCase(unittest.TestCase):
 
     def test_ensmetrics(self):
         """ Test ensmetrics """
-        if not HAS_C_STAT_MODULE:
+        if not has_c_module("stat", False):
             self.skipTest("Missing C module c_hydrodiy_stat")
 
         alpha, cr, pits, is_sudo, R2, bias = ensmetrics(self.obs, \
@@ -58,7 +58,7 @@ class EnsplotTestCase(unittest.TestCase):
 
     def test_ensmetrics_sudo(self):
         """ Test ensmetrics with sudo pits """
-        if not HAS_C_STAT_MODULE:
+        if not has_c_module("stat", False):
             self.skipTest("Missing C module c_hydrodiy_stat")
 
         alpha, cr, pits, is_sudo, R2, bias = ensmetrics(self.obs_sudo, \

@@ -11,7 +11,7 @@ import warnings
 from hydrodiy.stat import transform
 from hydrodiy.stat import sutils
 from hydrodiy.io import csv
-from hydrodiy import HAS_C_STAT_MODULE
+from hydrodiy import has_c_module
 
 EPS = 1e-10
 
@@ -144,9 +144,7 @@ def crps(obs, ens):
         - Equation 30 for g
         - Equation 36 for reliability
     """
-    if not HAS_C_STAT_MODULE:
-        raise ValueError("C module c_hydrodiy_stat is not available, "+\
-                "please run python setup.py build")
+    has_c_module("stat")
 
     # Check data
     obs, ens, nforc, nens = __check_ensemble_data(obs, ens)
@@ -196,9 +194,7 @@ def anderson_darling_test(unifdata):
     adstat : float
         AD test statistic
     """
-    if not HAS_C_STAT_MODULE:
-        raise ValueError("C module c_hydrodiy_stat is not available, "+\
-                "please run python setup.py build")
+    has_c_module("stat")
 
     # Check data
     unifdata = np.atleast_1d(unifdata).astype(np.float64)
@@ -525,9 +521,7 @@ def dscore(obs, sim, eps=1e-6):
         * D=1.0 means that the model is perfectly discriminating
 
     """
-    if not HAS_C_STAT_MODULE:
-        raise ValueError("C module c_hydrodiy_stat is not available, "+\
-                "please run python setup.py build")
+    has_c_module("stat")
 
     # Check data
     obs = np.atleast_1d(obs).astype(np.float64)

@@ -5,7 +5,7 @@ import datetime
 from dateutil.relativedelta import relativedelta as delta
 import pandas as pd
 
-from hydrodiy import HAS_C_DATA_MODULE
+from hydrodiy import has_c_module
 
 # Fix seed
 np.random.seed(42)
@@ -18,7 +18,7 @@ class DateutilsTestCase(unittest.TestCase):
         self.months = pd.date_range('1800-01-01', '2200-12-1', freq='MS')
         self.days = pd.date_range('1800-01-01', '2200-12-1', freq='5D')
 
-        if not HAS_C_DATA_MODULE:
+        if not has_c_module("data", False):
             self.skipTest('Missing C modules')
 
     def test_isleapyear(self):

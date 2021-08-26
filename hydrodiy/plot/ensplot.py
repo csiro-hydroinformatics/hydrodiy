@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
-from hydrodiy import HAS_C_STAT_MODULE
+from hydrodiy import has_c_module
 from hydrodiy.plot import putils, boxplot
 from  hydrodiy.stat import metrics, sutils
 
@@ -58,7 +58,7 @@ def ensmetrics(obs, fcst, random_pit=True, stat="median"):
             "same number of rows, got {0} (obs) and {1} (fcst)".format(\
             obs.shape[0], fcst.shape[0]))
 
-    if not HAS_C_STAT_MODULE:
+    if not has_c_module("stat", False):
         vnan = np.nan*np.zeros(len(obs))
         vbool = np.zeros(len(obs)).astype(bool)
         return np.nan, np.nan, vnan, vbool, np.nan, np.nan

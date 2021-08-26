@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 
 from hydrodiy.plot import simplot
 from hydrodiy.plot import putils
-from hydrodiy import HAS_C_DATA_MODULE
 
 # Reset matplotlib to default
 mpl.rcdefaults()
