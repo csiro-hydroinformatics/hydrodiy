@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 from hydrodiy.gis import gutils
-from hydrodiy.gis.gutils import HAS_C_GIS_MODULE
+from hydrodiy import HAS_C_GIS_MODULE
 
 class GutilsTestCase(unittest.TestCase):
 
@@ -103,13 +103,17 @@ class GutilsTestCase(unittest.TestCase):
         ''' Test points are inside a polygon without creating
             the inside vector - test for errors.
         '''
+        if not HAS_C_GIS_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_gis')
+
         points = np.array([[0.2, 0.2], [1.0, 1.0], [-0.2, -0.2]])
         inside = np.zeros(2, dtype=np.int32)
         try:
             gutils.points_inside_polygon(points, self.triangle, \
                                 inside=inside)
         except ValueError as err:
-            self.assertTrue(str(err).startswith('Expected inside of length'))
+            self.assertTrue(str(err).startswith(\
+                            'Expected inside of length'))
         else:
             raise ValueError('Problem in error handling')
 
