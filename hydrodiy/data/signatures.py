@@ -1,4 +1,4 @@
-''' Compute signature from times series '''
+""" Compute signature from times series """
 
 from datetime import datetime
 from dateutil.relativedelta import relativedelta as delta
@@ -24,7 +24,7 @@ except ImportError:
 EPS = 1e-10
 
 def eckhardt(flow, thresh=0.95, tau=20, BFI_max=0.8, timestep_type=1):
-    ''' Compute the baseflow component based on Eckhardt algorithm
+    """ Compute the baseflow component based on Eckhardt algorithm
     Eckhardt K. (2005) How to construct recursive digital filters for
     baseflow separation. Hydrological processes 19:507-515.
 
@@ -56,11 +56,11 @@ def eckhardt(flow, thresh=0.95, tau=20, BFI_max=0.8, timestep_type=1):
     >>> q = np.random.uniform(0, 100, size=1000)
     >>> signatures.baseflow(q)
 
-    '''
+    """
     # Check C modules are available
     if not HAS_C_DATA_MODULE:
-        raise ValueError('Compiled C module c_hydrodiy_data is not available, '+\
-                'please run python setup.py build')
+        raise ValueError("Compiled C module c_hydrodiy_data is not available, "+\
+                "please run python setup.py build")
 
     # run C code via cython
     thresh = np.float64(thresh)
@@ -75,13 +75,13 @@ def eckhardt(flow, thresh=0.95, tau=20, BFI_max=0.8, timestep_type=1):
                 thresh, tau, BFI_max, flow, bflow)
 
     if ierr!=0:
-        raise ValueError('c_hydata.eckhardt returns %d'%ierr)
+        raise ValueError("c_hydata.eckhardt returns %d"%ierr)
 
     return bflow
 
 
 def fdcslope(x, q1=90, q2=100, cst=0.375, trans=Identity()):
-    ''' Slope of flow duration curve as per
+    """ Slope of flow duration curve as per
     Yilmaz, Koray K., Hoshin V. Gupta, and Thorsten Wagener.
     A process-based diagnostic approach to model
     evaluation: Application to the NWS distributed
@@ -107,16 +107,16 @@ def fdcslope(x, q1=90, q2=100, cst=0.375, trans=Identity()):
         Slope of flow duration curve (same unit than x)
     qq : numpy.ndarray
         The two quantiles corresponding to q1 and q2
-    '''
+    """
     # Check data
     icens = ismisscens(x)
     iok = icens > 0
     nok = np.sum(iok)
     if nok == 0:
-        raise ValueError('No valid data')
+        raise ValueError("No valid data")
 
     if q2 < q1 + 1./nok:
-        raise ValueError('Expected q2 > q1, got q1={0} and q2={1}'.format(\
+        raise ValueError("Expected q2 > q1, got q1={0} and q2={1}".format(\
                     q1, q2))
 
     if np.nanstd(x) < EPS:
@@ -128,7 +128,7 @@ def fdcslope(x, q1=90, q2=100, cst=0.375, trans=Identity()):
     idxqq = (xok>=qq[0]) & (xok<=qq[1])
     nqq = np.sum(idxqq)
     if nqq == 0:
-        raise ValueError('No data in range Q{0}-Q{1}'.format(q1, q2))
+        raise ValueError("No data in range Q{0}-Q{1}".format(q1, q2))
 
     # Transform
     txr = trans.forward(np.sort(xok[idxqq]))
@@ -144,7 +144,7 @@ def fdcslope(x, q1=90, q2=100, cst=0.375, trans=Identity()):
 
 
 def goue(aggindex, values, trans=Identity()):
-    ''' GOUE index (Nash sutcliffe of flat disaggregated daily vs daily)
+    """ GOUE index (Nash sutcliffe of flat disaggregated daily vs daily)
     as per
     Ficchi, Andrew, Charles Perrin, and Vazken Andreassian
      Impact of temporal resolution of inputs on hydrological
@@ -166,7 +166,7 @@ def goue(aggindex, values, trans=Identity()):
     -----------
     goue_value : float
         GOUE index value
-    '''
+    """
     # Get flat homogeneised series
     values_flat = flathomogen(aggindex, values)
 
@@ -176,8 +176,8 @@ def goue(aggindex, values, trans=Identity()):
     return goue_value
 
 
-def lag1corr(x, type='Pearson', censor=0.):
-    ''' Compute the lag 1 autocorrelation with missing and censored data
+def lag1corr(x, type="Pearson", censor=0.):
+    """ Compute the lag 1 autocorrelation with missing and censored data
 
     Parameters
     -----------
@@ -193,7 +193,7 @@ def lag1corr(x, type='Pearson', censor=0.):
     -----------
     corr : float
         Lag 1 correlation
-    '''
+    """
     # Check data
     icens = ismisscens(x)
 

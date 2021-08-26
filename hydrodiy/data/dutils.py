@@ -1,4 +1,4 @@
-''' Utility functions to process data '''
+""" Utility functions to process data """
 import re
 from datetime import datetime
 from dateutil.relativedelta import relativedelta as delta
@@ -20,8 +20,8 @@ except ImportError:
 
 
 def sub(text, to_replace):
-    ''' Replace in 'text' all occurences of any key in the
-    dictionary 'to_replace' by its corresponding value.
+    """ Replace in "text" all occurences of any key in the
+    dictionary "to_replace" by its corresponding value.
 
     Parameters
     -----------
@@ -36,7 +36,7 @@ def sub(text, to_replace):
     -----------
     replaced : str
         Processed string.
-    '''
+    """
     replaced = text
     for pattern, rep in to_replace.items():
         replaced = re.sub(pattern, rep, replaced)
@@ -45,7 +45,7 @@ def sub(text, to_replace):
 
 
 def sequence_true(values):
-    ''' Identify start and end of consecutive "true" values.
+    """ Identify start and end of consecutive "true" values.
     Can be used for gap analysis.
 
     Parameters
@@ -57,7 +57,7 @@ def sequence_true(values):
     -----------
     startend : numpy.ndarray
         Indexes of sequence starts (column 1) and ends (column 2)
-    '''
+    """
     values = values.astype(int)
     values_filled = np.append(0, np.append(values, 0))
     diff = np.diff(values_filled)
@@ -70,7 +70,7 @@ def sequence_true(values):
 
 
 def cast(x, y):
-    ''' Cast y to the type of x.
+    """ Cast y to the type of x.
 
         Useful to make sure that a function returns an output that has
         the same type than the input (e.g. to avoid mixing float with
@@ -82,11 +82,11 @@ def cast(x, y):
         First object
     y : object
         Second object
-    '''
+    """
     # Check if x is an nxd numpy array (n>0)
     # then collect is type
     xdtype = None
-    if hasattr(x, 'dtype'):
+    if hasattr(x, "dtype"):
         # prevent the use of dtype for 0d array
         if x.ndim > 0:
             xdtype = x.dtype
@@ -99,19 +99,19 @@ def cast(x, y):
 
         # Except unsafe cast
         if isinstance(x, int) and isinstance(y, float):
-            raise TypeError('Cannot cast value from float to int')
+            raise TypeError("Cannot cast value from float to int")
 
         ycast = type(x)(y)
 
     else:
         # x is a numpy array
-        ycast = np.array(y).astype(xdtype, casting='safe')
+        ycast = np.array(y).astype(xdtype, casting="safe")
 
     return ycast
 
 
 def dayofyear(days):
-    ''' Compute day of year using days.dayofyear, but reduce the value by
+    """ Compute day of year using days.dayofyear, but reduce the value by
     one for leap-years. This ensures that all years have 365 days.
 
      Parameters
@@ -123,7 +123,7 @@ def dayofyear(days):
     -----------
     doy : numpy.ndarray
         Day of year
-    '''
+    """
     try:
         doy = days.dayofyear.values
         yy = days.year.values
@@ -142,7 +142,7 @@ def dayofyear(days):
 
 
 def aggregate(aggindex, inputs, oper=0, maxnan=0):
-    ''' Fast aggregation of inputs based on aggregation indices
+    """ Fast aggregation of inputs based on aggregation indices
         This is an equivalent of pandas.Series.resample method,
         but much faster.
 
@@ -166,16 +166,16 @@ def aggregate(aggindex, inputs, oper=0, maxnan=0):
     outputs : numpy.ndarray
         Aggregated data
 
-    '''
+    """
     # Check C modules are available
     if not HAS_C_DATA_MODULE:
-        raise ValueError('C module c_hydrodiy_data is not available, '+\
-                'please run python setup.py build')
+        raise ValueError("C module c_hydrodiy_data is not available, "+\
+                "please run python setup.py build")
 
     # Check inputs
     if len(aggindex) != len(inputs):
-        raise ValueError('Expected same length for aggindex and inputs. '+ \
-                    'got len(aggindex)={0} and len(inputs)={1}'.format(\
+        raise ValueError("Expected same length for aggindex and inputs. "+ \
+                    "got len(aggindex)={0} and len(inputs)={1}".format(\
                     len(aggindex), len(inputs)))
 
     # Allocate arrays
@@ -191,8 +191,8 @@ def aggregate(aggindex, inputs, oper=0, maxnan=0):
                 inputs, outputs, iend)
 
     if ierr > 0:
-        raise ValueError('c_hydrodiy_data.aggregate'+\
-                            ' returns {0}'.format(ierr))
+        raise ValueError("c_hydrodiy_data.aggregate"+\
+                            " returns {0}".format(ierr))
 
     # Truncate the outputs to keep only the valid part of the vector
     outputs = outputs[:iend[0]]
@@ -201,7 +201,7 @@ def aggregate(aggindex, inputs, oper=0, maxnan=0):
 
 
 def flathomogen(aggindex, inputs, maxnan=0):
-    ''' Compute a series of the same length than inputs with all values
+    """ Compute a series of the same length than inputs with all values
     replaced by mean computed for each value of the aggregation index.
 
     This function is used in hydrodiy.data.signatures.goue
@@ -222,15 +222,15 @@ def flathomogen(aggindex, inputs, maxnan=0):
     outputs : numpy.ndarray
         Flat disaggregated data
 
-    '''
+    """
     # Check C modules are available
     if not HAS_C_DATA_MODULE:
-        raise ValueError('C module c_hydrodiy_data is not available, '+\
-                'please run python setup.py build')
+        raise ValueError("C module c_hydrodiy_data is not available, "+\
+                "please run python setup.py build")
 
     # Check inputs
     if len(aggindex) != len(inputs):
-        raise ValueError('Expected inputs of length {0}, got {1}'.format(\
+        raise ValueError("Expected inputs of length {0}, got {1}".format(\
                 len(aggindex), len(inputs)))
 
     # Allocate arrays
@@ -244,14 +244,14 @@ def flathomogen(aggindex, inputs, maxnan=0):
                 inputs, outputs)
 
     if ierr > 0:
-        raise ValueError('c_hydrodiy_data.flatdisagg'+\
-                            ' returns {0}'.format(ierr))
+        raise ValueError("c_hydrodiy_data.flatdisagg"+\
+                            " returns {0}".format(ierr))
 
     return outputs
 
 
 def lag(data, lag):
-    ''' Lag a numpy array and adds NaN at the beginning or end of the
+    """ Lag a numpy array and adds NaN at the beginning or end of the
         lagged data depending on the lag value. The lag is introduced
         using numpy.roll
 
@@ -270,7 +270,7 @@ def lag(data, lag):
     lagged : numpy.ndarray
         Lagged vector
 
-    '''
+    """
     # Check data
     data = np.atleast_1d(data)
     lag = int(lag)
@@ -287,8 +287,8 @@ def lag(data, lag):
     return lagged
 
 
-def monthly2daily(se, interpolation='flat', minthreshold=0.):
-    ''' Convert monthly series to daily using interpolation.
+def monthly2daily(se, interpolation="flat", minthreshold=0.):
+    """ Convert monthly series to daily using interpolation.
     Takes care of the boundary effects.
 
     Parameters
@@ -307,26 +307,26 @@ def monthly2daily(se, interpolation='flat', minthreshold=0.):
     -----------
     se : pandas.Series
         Daily series
-    '''
+    """
     # Set
     sec = se.copy()
     sec[pd.isnull(sec)] = minthreshold-1
 
-    if interpolation == 'flat':
+    if interpolation == "flat":
         # Add a fictive data after the last month
         # to allow for resample to work
         nexti = sec.index[-1] + delta(months=1)
         sec[nexti] = np.nan
 
         # Convert to daily
-        sed = sec.resample('D').fillna(method='pad')
+        sed = sec.resample("D").fillna(method="pad")
         sed /= sed.index.days_in_month
         sed[sed < minthreshold] = np.nan
 
         # Drop last values
         sed = sed.iloc[:-1]
 
-    elif interpolation == 'cubic':
+    elif interpolation == "cubic":
         # Prepare data
         start = sec.index[0]
         months = sec.index+DateOffset(months=1, days=-1)
@@ -347,8 +347,8 @@ def monthly2daily(se, interpolation='flat', minthreshold=0.):
         # Constraints for the computation of polynomial coefficients
         # 1. f(0) = 0
         # 2. f(1) = y[i]
-        # 3. f'(0) = d0
-        # 4. f'(1) = d1
+        # 3. f"(0) = d0
+        # 4. f"(1) = d1
         Mi = np.array([\
             [0., 1., 0.], \
             [3., -2., -1.], \
@@ -385,14 +385,14 @@ def monthly2daily(se, interpolation='flat', minthreshold=0.):
 
 
     else:
-        raise ValueError('Expected interpolation in [flat/cubic], got '+\
+        raise ValueError("Expected interpolation in [flat/cubic], got "+\
                     interpolation)
 
     return sed
 
 
 def var2h(se, maxgapsec=5*86400, display=False):
-    ''' Convert a variable time step time series to hourly using
+    """ Convert a variable time step time series to hourly using
         linear interpolation and aggregation
 
     Parameters
@@ -408,11 +408,11 @@ def var2h(se, maxgapsec=5*86400, display=False):
     -----------
     seh : pandas.Series
         Hourly series
-    '''
+    """
     # Check C modules are available
     if not HAS_C_DATA_MODULE:
-        raise ValueError('C module c_hydrodiy_data is not available, '+\
-                'please run python setup.py build')
+        raise ValueError("C module c_hydrodiy_data is not available, "+\
+                "please run python setup.py build")
 
     # Allocate arrays
     maxgapsec = np.int32(maxgapsec)
@@ -421,7 +421,7 @@ def var2h(se, maxgapsec=5*86400, display=False):
     varsec = (se.index.values.astype(np.int64)/1000000000).astype(np.int32)
 
     if maxgapsec < 3600:
-        raise ValueError('Expected maxgapsec>=3600, got {0}'.format(\
+        raise ValueError("Expected maxgapsec>=3600, got {0}".format(\
                 maxgapsec))
 
     # Determines start and end of hourly series
@@ -442,17 +442,17 @@ def var2h(se, maxgapsec=5*86400, display=False):
                 varsec, varvalues, hvalues)
 
     if ierr > 0:
-        raise ValueError('c_hydrodiy_data.var2h returns {0}'.format(ierr))
+        raise ValueError("c_hydrodiy_data.var2h returns {0}".format(ierr))
 
     # Convert to hourly series
-    dt = pd.date_range(hstart, freq='H', periods=nvalh)
+    dt = pd.date_range(hstart, freq="H", periods=nvalh)
     hvalues = pd.Series(hvalues, index=dt)
 
     return hvalues
 
 
 def oz_timezone(lon, lat):
-    ''' Returns the time zone in Australia for a particular location.
+    """ Returns the time zone in Australia for a particular location.
     Does not take into account the Eastern border NSW/QLD along
     Border Rivers.
 
@@ -467,21 +467,21 @@ def oz_timezone(lon, lat):
     -----------
     tz : string
         Time zone compatible with pytz package naming convention.
-    '''
+    """
     if lon < 129.:
-        return 'Australia/Perth'
+        return "Australia/Perth"
     elif lon < 141.:
         if lat < -26.:
-            return 'Australia/Adelaide'
+            return "Australia/Adelaide"
         else:
             if lon > 138.:
-                return 'Australia/Brisbane'
+                return "Australia/Brisbane"
             else:
-                return 'Australia/Darwin'
+                return "Australia/Darwin"
     else:
         if lat < -29:
-            return 'Australia/Sydney'
+            return "Australia/Sydney"
         else:
-            return 'Australia/Brisbane'
+            return "Australia/Brisbane"
 
 
