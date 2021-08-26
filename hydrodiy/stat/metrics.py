@@ -10,7 +10,6 @@ import warnings
 
 from hydrodiy.stat import transform
 from hydrodiy.stat import sutils
-from hydrodiy.stat.censored import normcensfit2d
 from hydrodiy.io import csv
 
 # Try to import C code
@@ -24,7 +23,7 @@ EPS = 1e-10
 
 # Reads Cramer-Von Mises table
 CVPATH = pkg_resources.resource_filename(__name__, \
-                    os.path.join('data', 'cramer_von_mises_test_pvalues.zip'))
+                    os.path.join("data", "cramer_von_mises_test_pvalues.zip"))
 CVM_TABLE, _ = csv.read_csv(CVPATH, index_col=0)
 CVM_NSAMPLE  = CVM_TABLE.columns.values.astype(int)
 CVM_QQ = CVM_TABLE.index.values
@@ -32,28 +31,28 @@ CVM_TABLE = CVM_TABLE.values
 
 
 def __check_ensemble_data(obs, ens):
-    ''' Check dimensions of obs and ens data '''
+    """ Check dimensions of obs and ens data """
 
     # Convert data to proper dimensions
     obs = np.atleast_1d(obs).astype(np.float64)
     if obs.ndim > 1:
         obs = obs.squeeze()
     if obs.ndim > 1:
-        raise ValueError('obs is not 1D')
+        raise ValueError("obs is not 1D")
 
     ens = np.atleast_2d(ens).astype(np.float64)
 
     # Check dimensions
     if ens.shape[0]!=obs.shape[0]:
-        raise ValueError('Expected ens with first dim equal to'+\
-            ' {0}, got {1}'.format( \
+        raise ValueError("Expected ens with first dim equal to"+\
+            " {0}, got {1}".format( \
             obs.shape[0], ens.shape[0]))
 
     # Skip nan
     idx = pd.notnull(obs)
     idx = idx & pd.notnull(ens).any(axis=1)
     if np.sum(idx) == 0:
-        raise ValueError('No valid data')
+        raise ValueError("No valid data")
     obs = obs[idx]
     ens = ens[idx, :]
 
@@ -65,22 +64,22 @@ def __check_ensemble_data(obs, ens):
 
 
 def __nonulldata(tobs, tsim):
-    ''' Exclude nan data from obs and sim '''
+    """ Exclude nan data from obs and sim """
 
     idx = pd.notnull(tobs) & pd.notnull(tsim)
     if np.sum(idx) == 0:
-        raise ValueError('No valid data in transformed space')
+        raise ValueError("No valid data in transformed space")
 
     nok = np.sum(idx)
     nval = len(tobs)
     if nok != nval:
-        warnings.warn(('There are {0} null values in'+\
-                ' transformed data').format(nval-nok))
+        warnings.warn(("There are {0} null values in"+\
+                " transformed data").format(nval-nok))
 
     return tobs[idx], tsim[idx]
 
 
-def pit(obs, ens, random=False, cst=0.3, kind='rank', censor=0.):
+def pit(obs, ens, random=False, cst=0.3, kind="rank", censor=0.):
     """
     Compute probability integral transformed (PIT) values
     for ensemble forecasts.
@@ -132,7 +131,7 @@ def pit(obs, ens, random=False, cst=0.3, kind='rank', censor=0.):
 
 
 def crps(obs, ens):
-    ''' Compute the CRPS decomposition from Hersbach (2000)
+    """ Compute the CRPS decomposition from Hersbach (2000)
 
     Parameters
     -----------
@@ -150,10 +149,10 @@ def crps(obs, ens):
         - Equation 29 for a and b (alpha and beta)
         - Equation 30 for g
         - Equation 36 for reliability
-    '''
+    """
     if not HAS_C_STAT_MODULE:
-        raise ValueError('C module c_hydrodiy_stat is not available, '+\
-                'please run python setup.py build')
+        raise ValueError("C module c_hydrodiy_stat is not available, "+\
+                "please run python setup.py build")
 
     # Check data
     obs, ens, nforc, nens = __check_ensemble_data(obs, ens)
@@ -170,21 +169,21 @@ def crps(obs, ens):
                     weights, table, decompos)
 
     if ierr!=0:
-        raise ValueError('c_crps returns %d'%ierr)
+        raise ValueError("c_crps returns %d"%ierr)
 
     table = pd.DataFrame(table)
-    table.columns = ['freq', 'a', 'b', 'g', 'rank',
-                'reliability', 'crps_potential']
+    table.columns = ["freq", "a", "b", "g", "rank",
+                "reliability", "crps_potential"]
 
     decompos= pd.Series(decompos, \
-        index = ['crps', 'reliability', 'resolution', \
-            'uncertainty', 'potential'])
+        index = ["crps", "reliability", "resolution", \
+            "uncertainty", "potential"])
 
     return decompos, table
 
 
 def anderson_darling_test(unifdata):
-    ''' Compute the Anderson Darling (AD) test statistic for a
+    """ Compute the Anderson Darling (AD) test statistic for a
     uniformly distributed variable and its pvalue using the code
     provided by Marsaglia and Marsaglia (2004):
     Marsaglia, G., & Marsaglia, J. (2004).
@@ -202,10 +201,10 @@ def anderson_darling_test(unifdata):
         AD test pvalue
     adstat : float
         AD test statistic
-    '''
+    """
     if not HAS_C_STAT_MODULE:
-        raise ValueError('C module c_hydrodiy_stat is not available, '+\
-                'please run python setup.py build')
+        raise ValueError("C module c_hydrodiy_stat is not available, "+\
+                "please run python setup.py build")
 
     # Check data
     unifdata = np.atleast_1d(unifdata).astype(np.float64)
@@ -217,7 +216,7 @@ def anderson_darling_test(unifdata):
     ierr = c_hydrodiy_stat.ad_test(unifdata, outputs)
 
     if ierr!=0:
-        raise ValueError('ad_test returns %d'%ierr)
+        raise ValueError("ad_test returns %d"%ierr)
 
     adstat = outputs[0]
     pvalue = outputs[1]
@@ -226,7 +225,7 @@ def anderson_darling_test(unifdata):
 
 
 def cramer_von_mises_test(data):
-    ''' Perform the Cramer-Von Mises test using a uniform
+    """ Perform the Cramer-Von Mises test using a uniform
     distribution as a null hypothesis. The pvalue are computed
     from table prepared with the R package goftest (function pCvM)
 
@@ -241,7 +240,7 @@ def cramer_von_mises_test(data):
         CV test pvalue
     cvstat : float
         CV test statistic
-    '''
+    """
 
     # Compute Cramer-Von Mises statistic
     nsample = data.shape[0]
@@ -258,8 +257,8 @@ def cramer_von_mises_test(data):
     return cvstat, pvalue
 
 
-def alpha(obs, ens, cst=0.3, type='CV', sudo_perc_threshold=5):
-    ''' Score computing the Pvalue of the Cramer Von-Mises test (CV) or
+def alpha(obs, ens, cst=0.3, type="CV", sudo_perc_threshold=5):
+    """ Score computing the Pvalue of the Cramer Von-Mises test (CV) or
     Kolmogorov-Smirnov test (KS)
 
     Parameters
@@ -285,7 +284,7 @@ def alpha(obs, ens, cst=0.3, type='CV', sudo_perc_threshold=5):
     is_sudo : numpy.ndarray
          Tells if the pit is a sudo value.
          See hydrodiy.stat.metrics.pit
-    '''
+    """
     # Check data
     obs, ens, nforc, nens = __check_ensemble_data(obs, ens)
 
@@ -294,27 +293,27 @@ def alpha(obs, ens, cst=0.3, type='CV', sudo_perc_threshold=5):
 
     # Warning if too much sudo pits
     if np.sum(is_sudo) > nforc*float(sudo_perc_threshold)/100:
-        warnings.warn(('More than {0}% sudo pits in pits'+\
-                        ' series').format(sudo_perc_threshold))
+        warnings.warn(("More than {0}% sudo pits in pits"+\
+                        " series").format(sudo_perc_threshold))
 
-    if type == 'KS':
+    if type == "KS":
         # KS test
-        stat, pvalue = kstest(pits, 'uniform')
-    elif type == 'CV':
+        stat, pvalue = kstest(pits, "uniform")
+    elif type == "CV":
         # Cramer Von-Mises test
         stat, pvalue = cramer_von_mises_test(pits)
-    elif type == 'AD':
+    elif type == "AD":
         # Anderson Darlin test
         stat, pvalue = anderson_darling_test(pits)
     else:
-        raise ValueError('Expected test type in [CV/KS/AD],'+\
-                ' got {0}'.format(type))
+        raise ValueError("Expected test type in [CV/KS/AD],"+\
+                " got {0}".format(type))
 
     return stat, pvalue, is_sudo
 
 
 def iqr(ens, ref, coverage=50.):
-    ''' Compute the interquantile range skill score (iqr)
+    """ Compute the interquantile range skill score (iqr)
 
     Parameters
     -----------
@@ -355,7 +354,7 @@ def iqr(ens, ref, coverage=50.):
         - a value close to 1 indicates same IQR than climatology
         - a value close to +infinity indicates that climatology is close
           to a deterministic ensemble
-    '''
+    """
 
     # Check data
     ens = np.atleast_2d(ens)
@@ -363,8 +362,8 @@ def iqr(ens, ref, coverage=50.):
     nforc, _ = ens.shape
 
     if ref.shape[0] != nforc:
-        raise ValueError(('Expected clim to have {0} forecasts, '+\
-                        'got {1}').format(ref.shape[0], ens.shape[0]))
+        raise ValueError(("Expected clim to have {0} forecasts, "+\
+                        "got {1}").format(ref.shape[0], ens.shape[0]))
 
     # Initialise
     iqr = np.zeros((nforc, 3))
@@ -390,8 +389,8 @@ def iqr(ens, ref, coverage=50.):
 
 
 def bias(obs, sim, trans=transform.Identity(), excludenull=False, \
-                type='standard'):
-    ''' Compute simulation bias
+                type="standard"):
+    """ Compute simulation bias
 
     Parameters
     -----------
@@ -413,14 +412,14 @@ def bias(obs, sim, trans=transform.Identity(), excludenull=False, \
     -----------
     bias_value : float
         Simulation bias
-    '''
+    """
     # Check data
     obs = np.atleast_1d(obs)
     sim = np.atleast_1d(sim)
 
     if obs.shape != sim.shape:
-        raise ValueError('Expected sim with dim equal '+\
-            'to {0}, got{1}'.format( \
+        raise ValueError("Expected sim with dim equal "+\
+            "to {0}, got{1}".format( \
             obs.shape, sim.shape))
 
     # Transform
@@ -433,34 +432,34 @@ def bias(obs, sim, trans=transform.Identity(), excludenull=False, \
     # Compute mean(obs) and mean(sim)
     meano = np.mean(tobs)
     if abs(meano) < EPS:
-        warnings.warn(('Mean value of obs is close to '+\
-                'zero ({0:3.3e}), returning nan').format(\
+        warnings.warn(("Mean value of obs is close to "+\
+                "zero ({0:3.3e}), returning nan").format(\
                     meano))
         return np.nan
 
     means = np.mean(tsim)
 
     # Compute bias depending on type
-    if type == 'standard':
+    if type == "standard":
         bias_value = (means-meano)/meano
-    elif type == 'normalised':
+    elif type == "normalised":
         bias_value = (means-meano)/(means+meano)
-    elif type == 'log':
+    elif type == "log":
         if means > EPS and meano > EPS:
             bias_value = math.log(means)-math.log(meano)
         else:
-            warnings.warn('Cannot compute bias-log with '+\
-                'mo={:0.2f} and ms={:0.2f}'.format(meano, means))
+            warnings.warn("Cannot compute bias-log with "+\
+                "mo={:0.2f} and ms={:0.2f}".format(meano, means))
             return np.nan
     else:
-        raise ValueError('Expected type in [standard/normalised/log], '+\
-                'got {}'.format(type))
+        raise ValueError("Expected type in [standard/normalised/log], "+\
+                "got {}".format(type))
 
     return bias_value
 
 
 def nse(obs, sim, trans=transform.Identity(), excludenull=False):
-    ''' Compute Nash-Sucliffe efficiency.
+    """ Compute Nash-Sucliffe efficiency.
 
     Parameters
     -----------
@@ -478,14 +477,14 @@ def nse(obs, sim, trans=transform.Identity(), excludenull=False):
     nse_value : float
         Nash-Sutcliffe efficiency (N)
 
-    '''
+    """
     # Check data
     obs = np.atleast_1d(obs)
     sim = np.atleast_1d(sim)
 
     if obs.shape[0] != sim.shape[0]:
-        raise ValueError('Expected sim with dim equal '+\
-            'to {0}, got {1}'.format( \
+        raise ValueError("Expected sim with dim equal "+\
+            "to {0}, got {1}".format( \
             obs.shape[0], sim.shape[0]))
 
     # Transform
@@ -507,7 +506,7 @@ def nse(obs, sim, trans=transform.Identity(), excludenull=False):
 
 
 def dscore(obs, sim, eps=1e-6):
-    ''' Compute the discrimination score (D score) for continuous
+    """ Compute the discrimination score (D score) for continuous
     forecasts as per
 
     Weigel, Andreas P., and Simon J. Mason.
@@ -532,10 +531,10 @@ def dscore(obs, sim, eps=1e-6):
         * D=0.5 means that the model is not discriminating
         * D=1.0 means that the model is perfectly discriminating
 
-    '''
+    """
     if not HAS_C_STAT_MODULE:
-        raise ValueError('C module c_hydrodiy_stat is not available, '+\
-                'please run python setup.py build')
+        raise ValueError("C module c_hydrodiy_stat is not available, "+\
+                "please run python setup.py build")
 
     # Check data
     obs = np.atleast_1d(obs).astype(np.float64)
@@ -543,8 +542,8 @@ def dscore(obs, sim, eps=1e-6):
     eps = np.float64(eps)
 
     if sim.ndim != 2:
-        raise ValueError('Expected sim of dimension 2, '+\
-            'got {0}'.format(sim.shape))
+        raise ValueError("Expected sim of dimension 2, "+\
+            "got {0}".format(sim.shape))
 
     nval, nens = sim.shape
 
@@ -569,7 +568,7 @@ def dscore(obs, sim, eps=1e-6):
 
 
 def kge(obs, sim, trans=transform.Identity(), excludenull=False):
-    ''' Compute Kling-Gupta efficiency index.
+    """ Compute Kling-Gupta efficiency index.
 
     Parameters
     -----------
@@ -587,14 +586,14 @@ def kge(obs, sim, trans=transform.Identity(), excludenull=False):
     kge_value : float
         KGE index
 
-    '''
+    """
     # Check data
     obs = np.atleast_1d(obs)
     sim = np.atleast_1d(sim)
 
     if obs.shape[0] != sim.shape[0]:
-        raise ValueError('KGE - Expected sim with dim equal '+\
-            'to {0}, got {1}'.format( \
+        raise ValueError("KGE - Expected sim with dim equal "+\
+            "to {0}, got {1}".format( \
             obs.shape[0], sim.shape[0]))
 
     # Transform
@@ -606,8 +605,8 @@ def kge(obs, sim, trans=transform.Identity(), excludenull=False):
     # Means
     meano = np.mean(tobs)
     if abs(meano) < EPS:
-        warnings.warn(('KGE - Mean value of obs is close to '+\
-                'zero ({0:3.3e}), returning nan').format(\
+        warnings.warn(("KGE - Mean value of obs is close to "+\
+                "zero ({0:3.3e}), returning nan").format(\
                     meano))
         return np.nan
 
@@ -618,8 +617,8 @@ def kge(obs, sim, trans=transform.Identity(), excludenull=False):
     stds = np.std(tsim)
 
     if abs(stdo) < EPS:
-        warnings.warn(('KGE - Standard dev of obs is close to '+\
-                'zero ({0:3.3e}), returning nan').format(\
+        warnings.warn(("KGE - Standard dev of obs is close to "+\
+                "zero ({0:3.3e}), returning nan").format(\
                     stdo))
         return np.nan
 
@@ -627,9 +626,9 @@ def kge(obs, sim, trans=transform.Identity(), excludenull=False):
     if abs(stds) > EPS:
         corr = np.corrcoef(tobs, tsim)[0, 1]
     else:
-        warnings.warn(('KGE - Standard dev of sim is close to '+\
-                'zero ({0:3.3e}), cannot compute correlation, '+\
-                'returning nan').format(stds))
+        warnings.warn(("KGE - Standard dev of sim is close to "+\
+                "zero ({0:3.3e}), cannot compute correlation, "+\
+                "returning nan").format(stds))
         return np.nan
 
     # KGE
@@ -640,8 +639,8 @@ def kge(obs, sim, trans=transform.Identity(), excludenull=False):
 
 def corr(obs, ens, trans=transform.Identity(), \
                     excludenull=False, \
-                    stat='median', type='Pearson', censor=1e-10):
-    ''' Compute correlation coefficient
+                    stat="median", type="Pearson", censor=1e-10):
+    """ Compute correlation coefficient
 
     Parameters
     -----------
@@ -664,7 +663,7 @@ def corr(obs, ens, trans=transform.Identity(), \
     -----------
     corr_value : float
         Correlation coefficient
-    '''
+    """
     # Convert ens to 2d
     ens = np.atleast_2d(ens)
     if ens.shape[0] == 1:
@@ -673,19 +672,19 @@ def corr(obs, ens, trans=transform.Identity(), \
     # Check data
     obs, ens, nforc, nens = __check_ensemble_data(obs, ens)
 
-    if not stat in ['median', 'mean']:
-        raise ValueError('Expected stat in [mean/median], got '+stat)
+    if not stat in ["median", "mean"]:
+        raise ValueError("Expected stat in [mean/median], got "+stat)
 
-    if not type in ['Pearson', 'Spearman', 'censored']:
-        raise ValueError('Expected type in [Pearson/Spearman/censored], '+\
-                                'got '+type)
+    if not type in ["Pearson", "Spearman", "censored"]:
+        raise ValueError("Expected type in [Pearson/Spearman/censored], "+\
+                                "got "+type)
 
     # Transform
     tobs = trans.forward(obs)
     tens = trans.forward(ens)
 
     # Compute statistic
-    if stat == 'mean':
+    if stat == "mean":
         tsim = np.nanmean(tens, axis=1)
     else:
         tsim = np.nanmedian(tens, axis=1)
@@ -696,25 +695,22 @@ def corr(obs, ens, trans=transform.Identity(), \
     # Check std
     stdo = np.std(tobs)
     if abs(stdo) < EPS:
-        warnings.warn(('CORR - Standard dev of obs is close to '+\
-                'zero ({0:3.3e}), returning nan').format(stdo))
+        warnings.warn(("CORR - Standard dev of obs is close to "+\
+                "zero ({0:3.3e}), returning nan").format(stdo))
         return np.nan
 
     # Compute
-    if type == 'Pearson':
+    if type == "Pearson":
         corr_value = np.corrcoef(tobs, tsim)[0, 1]
-    elif type == 'Spearman':
-        corr_value = spearmanr(tobs, tsim).correlation
     else:
-        X = np.column_stack([tobs, tsim])
-        _, _, corr_value = normcensfit2d(X, censor=censor)
+        corr_value = spearmanr(tobs, tsim).correlation
 
     return corr_value
 
 
 def absolute_peak_error(obs, sim, winerase=300, winpeakbefore=5, \
                     winpeakafter=10, neventmax=500):
-    ''' Mean absolute peak time error
+    """ Mean absolute peak time error
 
     Parameters
     -----------
@@ -723,7 +719,7 @@ def absolute_peak_error(obs, sim, winerase=300, winpeakbefore=5, \
     sim : numpy.ndarray
         simulated data, [n] or [n,1] array
     winerase : int
-        Number of time steps before and after the peak that deleted
+        Number of time steps before and after the peak that is deleted
         after processing a peak event.
     winpeakbefore : int
         Number of time step before peak to define event window.
@@ -736,7 +732,7 @@ def absolute_peak_error(obs, sim, winerase=300, winpeakbefore=5, \
         Average peak timing error
     events : pandas.DataFrame
         Characteristics of each events.
-    '''
+    """
 
     # Check data
     obsc = np.array(obs).squeeze().copy()
@@ -764,8 +760,8 @@ def absolute_peak_error(obs, sim, winerase=300, winpeakbefore=5, \
         imaxs = np.nanargmax(simc[idx])
         delta = abs(imaxs-imaxo)
         aperr += delta
-        events.append({'start': idx[0], 'end':idx[-1], 'delta':delta, \
-                'imax_obs': imaxo, 'imax_sim': imaxs})
+        events.append({"start": idx[0], "end":idx[-1], "delta":delta, \
+                "imax_obs": imaxo, "imax_sim": imaxs})
 
         # loop
         idx = np.clip(np.arange(imax-winerase, imax+winerase+1), 0, \
@@ -781,7 +777,7 @@ def absolute_peak_error(obs, sim, winerase=300, winpeakbefore=5, \
 
 def relative_percentile_error(obs, sim, percentile_range, \
                             eps=0., modified=False, neval=50):
-    ''' Mean relative percentile error
+    """ Mean relative percentile error
 
     Parameters
     -----------
@@ -809,18 +805,18 @@ def relative_percentile_error(obs, sim, percentile_range, \
         Average peak timing error
     events : pandas.DataFrame
         Characteristics of each events.
-    '''
+    """
     # Check values
     rg = percentile_range
     if len(rg) != 2:
-        raise ValueError('Expected len(rg) = 2, got {0}'.format(len(rg)))
+        raise ValueError("Expected len(rg) = 2, got {0}".format(len(rg)))
     if rg[1] < rg[0]+1:
-        raise ValueError('Expected rg[1] > rg[0]+1, '+\
-                        'got rg={0}'.format(*rg))
+        raise ValueError("Expected rg[1] > rg[0]+1, "+\
+                        "got rg={0}".format(*rg))
 
     for ir, r in enumerate(rg):
         if r < 0 or r > 100:
-            raise ValueError('Expected r[{0}] in [0, 100], got {1}'.format(\
+            raise ValueError("Expected r[{0}] in [0, 100], got {1}".format(\
                         ir, r))
 
     # Process
@@ -836,8 +832,8 @@ def relative_percentile_error(obs, sim, percentile_range, \
             rp = (qs-qo)/(qo+eps)
 
         rperr += abs(rp)
-        perc.append({'quantile':qt, 'qobs':qo, 'qsim':qs, \
-                            'rel_perc_err':rp})
+        perc.append({"quantile":qt, "qobs":qo, "qsim":qs, \
+                            "rel_perc_err":rp})
 
     rperr /= neval
     perc = pd.DataFrame(perc)
@@ -846,7 +842,7 @@ def relative_percentile_error(obs, sim, percentile_range, \
 
 
 def confusion_matrix(obs, sim, ncat=None):
-    ''' Compute confusion matrix from binary forecats
+    """ Compute confusion matrix from binary forecats
 
     Parameters
     -----------
@@ -865,7 +861,7 @@ def confusion_matrix(obs, sim, ncat=None):
         as follows:
             | True Negatives,  False Positives |
             | False Negatives, True Positives  |
-    '''
+    """
     # Check inputs
     obs = np.array(obs).astype(np.int32)
     sim = np.array(sim).astype(np.int32)
@@ -894,7 +890,7 @@ def confusion_matrix(obs, sim, ncat=None):
 
 
 def binary(conf_mat):
-    ''' Metrics computed from binary forecasts
+    """ Metrics computed from binary forecasts
     See https://en.wikipedia.org/wiki/Confusion_matrix and
     Stephenson (2000) and Stephenson et al. (2008) for the
     definition of scores.
@@ -946,12 +942,12 @@ def binary(conf_mat):
         Scores computed when forecast and obs are considered independent.
         The following scores are computed: accuracy, hitrate, falsealarm,
         precision, MCC, oddsratio, F1.
-    '''
+    """
     # Process confusion matrix
     conf_mat = np.array(conf_mat, dtype=np.int64)
     if conf_mat.shape != (2, 2):
-        raise ValueError('Expected confusion matrix of shape '+\
-            '(2, 2), got {}'.format(conf_mat.shape))
+        raise ValueError("Expected confusion matrix of shape "+\
+            "(2, 2), got {}".format(conf_mat.shape))
     # TP: true positive (hit)
     # FP: false positive (false alarm)
     # FN: false negative (miss)
@@ -999,28 +995,28 @@ def binary(conf_mat):
 
     # Generate scores
     scores = {
-        'truepos': TP, 'falsepos': FP, \
-        'trueneg': TN, 'falseneg': FN, \
-        'bias': Psim/Pobs, \
-        'hitrate': H, \
-        'precision': TP/Psim, \
-        'falsealarm': F, \
-        'accuracy': (TP+TN)/nval, \
-        'F1':  2*TP/(2*TP+FP+FN), \
-        'MCC': MCC, \
-        'LOR': LOR, \
-        'ORSS': ORSS, \
-        'EDS': EDS
+        "truepos": TP, "falsepos": FP, \
+        "trueneg": TN, "falseneg": FN, \
+        "bias": Psim/Pobs, \
+        "hitrate": H, \
+        "precision": TP/Psim, \
+        "falsealarm": F, \
+        "accuracy": (TP+TN)/nval, \
+        "F1":  2*TP/(2*TP+FP+FN), \
+        "MCC": MCC, \
+        "LOR": LOR, \
+        "ORSS": ORSS, \
+        "EDS": EDS
     }
 
     scores_rand = {
-        'accuracy': (TP_rand+TN_rand)/nval, \
-        'hitrate': TP_rand/(TP_rand+FN_rand), \
-        'falsealarm': FP_rand/(FP_rand+TN_rand), \
-        'precision': TP_rand/(TP_rand+FP_rand), \
-        'MCC': MCC_rand, \
-        'LOR': math.log(theta_rand), \
-        'F1':  2*TP_rand/(2*TP_rand+FP_rand+FN_rand)
+        "accuracy": (TP_rand+TN_rand)/nval, \
+        "hitrate": TP_rand/(TP_rand+FN_rand), \
+        "falsealarm": FP_rand/(FP_rand+TN_rand), \
+        "precision": TP_rand/(TP_rand+FP_rand), \
+        "MCC": MCC_rand, \
+        "LOR": math.log(theta_rand), \
+        "F1":  2*TP_rand/(2*TP_rand+FP_rand+FN_rand)
     }
 
     return scores, scores_rand

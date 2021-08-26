@@ -2,14 +2,7 @@ import numpy as np
 import pandas as pd
 
 from hydrodiy.data import dutils
-
-# Try to import C code
-HAS_C_DATA_MODULE = True
-try:
-    import c_hydrodiy_data
-except ImportError:
-    HAS_C_DATA_MODULE = False
-
+from hydrodiy import HAS_C_DATA_MODULE
 
 def ismisscens(x, censor=0., eps=1e-10):
     """ Check if 1d variable is missing or censored

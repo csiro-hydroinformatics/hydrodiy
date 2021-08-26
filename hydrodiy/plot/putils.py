@@ -30,7 +30,7 @@ import numpy as np
 import pandas as pd
 
 from scipy.stats import norm
-from hydrodiy.stat import sutils, linreg
+from hydrodiy.stat import sutils
 
 # Some useful colors
 COLORS_SLIDE_BACKGROUND = "#002745"
@@ -687,13 +687,19 @@ def qqplot(ax, data, addline=False, censor=None, *args, **kwargs):
         if not censor is None:
             idx = datas > censor + 1e-10
 
-        lm = linreg.Linreg(xnorm[idx], datas[idx])
-        lm.fit()
-        a, b = lm.params["estimate"]
-        r2 = lm.diagnostic["R2"]
-        lab = "Y = {0:0.2f} + {1:0.2f} X (r2={2:0.2f})".format(a, b, r2)
-        line(ax, 1, b, 0, a, "k--", label=lab)
+        x, y = xnorm[idx], datas[idx]
 
+        # Fit OLS regression
+        X = np.column_stack([np.ones(len(x)), x])
+        theta, _, _, _ = np.linalg.lstsq(X, y)
+        a, b = theta
+
+        # Compute r2 for regression
+        yy = np.column_stack([y, X.dot(theta)])
+        r2 = np.corrcoef(yy.T)[0, 1]
+
+        lab = f"Y = {a:0.2f} + {b:0.2f} X (r2={r2:0.2f})"
+        line(ax, 1, b, 0, a, "k--", label=lab)
     else:
         a, b, r2 = [np.nan] * 3
 

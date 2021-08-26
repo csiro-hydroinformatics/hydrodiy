@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 from hydrodiy.data import signatures
-from hydrodiy.data.dutils import HAS_C_DATA_MODULE
+from hydrodiy import HAS_C_DATA_MODULE
 
 from hydrodiy.stat import transform
 from hydrodiy.io import csv

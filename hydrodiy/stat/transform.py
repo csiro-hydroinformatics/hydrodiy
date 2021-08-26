@@ -1,4 +1,4 @@
-''' Module providing various data transforms '''
+""" Module providing various data transforms """
 
 import math
 import sys
@@ -12,16 +12,16 @@ from hydrodiy.data.containers import Vector
 from hydrodiy.data import dutils
 from hydrodiy.stat import sutils
 
-__all__ = ['Identity', 'Logit', 'Log', 'BoxCox2', \
-                'BoxCox1lam','BoxCox1nu', \
-                'YeoJohnson', 'Reciprocal', 'Softmax', 'Sinh', \
-                'LogSinh', 'Manly']
+__all__ = ["Identity", "Logit", "Log", "BoxCox2", \
+                "BoxCox1lam","BoxCox1nu", \
+                "YeoJohnson", "Reciprocal", "Softmax", "Sinh", \
+                "LogSinh", "Manly"]
 
 # Constant to detect zeros
 EPS = 1e-10
 
 def _class_constructor_argnames(classobj):
-    ''' Get class constructor arguments '''
+    """ Get class constructor arguments """
     if PYVERSION == 3:
         sign = inspect.signature(classobj)
         argnames = sign.parameters
@@ -32,17 +32,17 @@ def _class_constructor_argnames(classobj):
 
 
 def get_transform(name, **kwargs):
-    ''' Return instance of transform.
+    """ Return instance of transform.
         The function can set mininu (mininum of the threshold parameter)
         and parameter values by via kwargs.
 
         Example:
         >>> BC = get_transform("BoxCox2", lam=0.2)
-    '''
+    """
 
     if not name in __all__:
-        raise ValueError(('Expected transform name in {0}, '+\
-            'got {1}').format(__all__, name))
+        raise ValueError(("Expected transform name in {0}, "+\
+            "got {1}").format(__all__, name))
 
     # Get instance of transform, setting the constructor arguments
     trans_class = getattr(sys.modules[__name__], name)
@@ -79,7 +79,7 @@ def get_transform(name, **kwargs):
 
 
 class Transform(object):
-    ''' Transform base class '''
+    """ Transform base class """
 
     def __init__(self, name,\
                     params=Vector([]), \
@@ -104,7 +104,7 @@ class Transform(object):
 
     def __getattribute__(self, name):
         # Except name, _params and _constants to avoid infinite recursion
-        if name in ['name', '_params', '_constants']:
+        if name in ["name", "_params", "_constants"]:
             return super(Transform, self).__getattribute__(name)
 
         if name in self._params.names:
@@ -118,7 +118,7 @@ class Transform(object):
 
     def __setattr__(self, name, value):
         # Except name, _params and _constants to avoid infinite recursion
-        if name in ['name', '_params', '_constants']:
+        if name in ["name", "_params", "_constants"]:
             super(Transform, self).__setattr__(name, value)
             return
 
@@ -151,69 +151,69 @@ class Transform(object):
                 return self._constants[key]
 
     def __str__(self):
-        str = '{0} transform:\n'.format(self.name)
-        str += '\tparams    : {0}\n'.format(self.params.names)
-        str += '\tconstants : {0}\n'.format(self.constants.names)
+        str = "{0} transform:\n".format(self.name)
+        str += "\tparams    : {0}\n".format(self.params.names)
+        str += "\tconstants : {0}\n".format(self.constants.names)
 
         return str
 
 
     @property
     def params(self):
-        ''' Get parameters '''
+        """ Get parameters """
         return self._params
 
 
     @property
     def constants(self):
-        ''' Get constants '''
+        """ Get constants """
         return self._constants
 
 
     def reset(self):
-        ''' Reset parameter values '''
+        """ Reset parameter values """
         self._params.reset()
 
 
     def _forward(self, x):
-        ''' internal forward method (no cast)'''
-        raise NotImplementedError('Method _forward not implemented')
+        """ internal forward method (no cast)"""
+        raise NotImplementedError("Method _forward not implemented")
 
 
     def _backward(self, y):
-        ''' internal backward method (no cast)'''
-        raise NotImplementedError('Method _backward not implemented')
+        """ internal backward method (no cast)"""
+        raise NotImplementedError("Method _backward not implemented")
 
 
     def _jacobian(self, x):
-        ''' internal jacobian method (no cast)'''
-        raise NotImplementedError('Method _jacobian not implemented')
+        """ internal jacobian method (no cast)"""
+        raise NotImplementedError("Method _jacobian not implemented")
 
 
     def forward(self, x):
-        ''' Returns the forward transform of x '''
+        """ Returns the forward transform of x """
         return dutils.cast(x, self._forward(x))
 
 
     def backward(self, y):
-        ''' Returns the backward transform of y after cast '''
+        """ Returns the backward transform of y after cast """
         return dutils.cast(y, self._backward(y))
 
 
     def jacobian(self, x):
-        ''' Returns the transformation jacobianobian d[forward(x)]/dx
+        """ Returns the transformation jacobianobian d[forward(x)]/dx
             after cast
-        '''
+        """
         return dutils.cast(x, self._jacobian(x))
 
 
     def backward_censored(self, y, censor=0.):
-        ''' Returns the backward transform of x censored below
+        """ Returns the backward transform of x censored below
             a censor value in the original space.
 
             This function is useful when dealing with censoring
             in transform space.
-        '''
+        """
         # Select y to get values above censor only
         # This avoids nan in backward operation
         tcensor = self.forward(censor)
@@ -231,11 +231,11 @@ class Transform(object):
         return xc
 
     def params_sample(self, nsamples=500, minval=-10., maxval=10.):
-        ''' Sample parameters with latin hypercube
+        """ Sample parameters with latin hypercube
             minval and maxval are used to cap the sampling for parameters
             with infinite bounds
 
-        '''
+        """
         pmins = self.params.mins
         pmins[np.isinf(pmins)] = minval
 
@@ -246,7 +246,7 @@ class Transform(object):
 
 
     def params_logprior(self):
-        ''' Flat log prior for transform parameters '''
+        """ Flat log prior for transform parameters """
         val = self.params.values
         mins = self.params.mins
         maxs = self.params.maxs
@@ -257,10 +257,10 @@ class Transform(object):
 
 
 class Identity(Transform):
-    ''' Identity transform '''
+    """ Identity transform """
 
     def __init__(self):
-        super(Identity, self).__init__('Identity')
+        super(Identity, self).__init__("Identity")
 
     def _forward(self, x):
         return x
@@ -273,13 +273,13 @@ class Identity(Transform):
 
 
 class Logit(Transform):
-    ''' Logit transform y = log(x/(1-x))'''
+    """ Logit transform y = log(x/(1-x))"""
 
     def __init__(self):
-        params = Vector(['lower', 'logdelta'], \
+        params = Vector(["lower", "logdelta"], \
                     [0., 0.], [-np.inf, -10], [np.inf, 10])
 
-        super(Logit, self).__init__('Logit', params)
+        super(Logit, self).__init__("Logit", params)
 
     def _forward(self, x):
         lower, logdelta = self.params.values
@@ -301,7 +301,7 @@ class Logit(Transform):
                     1./(upper-lower)/value/(1-value), np.nan)
 
     def params_sample(self, nsamples=500, minval=-10., maxval=10.):
-        ''' Sample parameters with latin hypercube '''
+        """ Sample parameters with latin hypercube """
 
         pmins = [-10, self.params.mins[1]]
         pmaxs = [10, self.params.maxs[1]]
@@ -312,11 +312,11 @@ class Logit(Transform):
 
 
 class Log(Transform):
-    ''' Log transform y = log(x+nu) '''
+    """ Log transform y = log(x+nu) """
 
     def __init__(self, mininu=EPS, base=None):
-        params = Vector(['nu'], defaults=[mininu], mins=[mininu])
-        super(Log, self).__init__('Log', params)
+        params = Vector(["nu"], defaults=[mininu], mins=[mininu])
+        super(Log, self).__init__("Log", params)
         self.mininu = mininu
 
         if base is None:
@@ -348,10 +348,10 @@ class Log(Transform):
 
 
 class BoxCox2(Transform):
-    ''' BoxCox transform with 2 parameters y = ((nu+x)^lambda-1)/lambda '''
+    """ BoxCox transform with 2 parameters y = ((nu+x)^lambda-1)/lambda """
 
     def __init__(self, mininu=EPS, minilam=0.):
-        ''' Instanciate the BoxCox transform with two parameters
+        """ Instanciate the BoxCox transform with two parameters
 
         Parameters
         -----------
@@ -359,14 +359,14 @@ class BoxCox2(Transform):
             Minimum of the shift parameter (nu)
         minilamprior : float
             Mininum of the value allowed for lambda in prior probability
-        '''
+        """
         if minilam < -3:
-            raise ValueError('Expected minilam > -3, got {0}'.format(minilam))
+            raise ValueError("Expected minilam > -3, got {0}".format(minilam))
 
-        params = Vector(['nu', 'lam'], [mininu, 1.], \
+        params = Vector(["nu", "lam"], [mininu, 1.], \
                     [mininu, minilam], [np.inf, 3.])
 
-        super(BoxCox2, self).__init__('BoxCox2', params)
+        super(BoxCox2, self).__init__("BoxCox2", params)
         self.mininu = mininu
 
     def _forward(self, x):
@@ -406,24 +406,24 @@ class BoxCox2(Transform):
 
 
 class BoxCox1lam(Transform):
-    ''' boxcox transform y = ((nu+x)^lambda-1)/lambda
+    """ boxcox transform y = ((nu+x)^lambda-1)/lambda
         with shift parameter nu fixed
-    '''
+    """
     def __init__(self, mininu=EPS, minilam=0.):
-        params = Vector(['lam'], [1.], [minilam], [3.])
+        params = Vector(["lam"], [1.], [minilam], [3.])
 
         # define the nu constant and set it to inf by default
         # to force proper setup
-        constants = Vector(['nu'], [np.nan], [mininu], [np.inf], \
+        constants = Vector(["nu"], [np.nan], [mininu], [np.inf], \
                                         accept_nan=True)
 
-        super(BoxCox1lam, self).__init__('BoxCox1lam', params, constants)
+        super(BoxCox1lam, self).__init__("BoxCox1lam", params, constants)
         self.BC = BoxCox2(mininu=mininu, minilam=minilam)
 
     def get_nu(self):
         nu = self.constants.values[0]
         if np.isnan(nu):
-            raise ValueError('nu is nan. It must be set to a proper value')
+            raise ValueError("nu is nan. It must be set to a proper value")
         return nu
 
     def _forward(self, x):
@@ -444,24 +444,24 @@ class BoxCox1lam(Transform):
 
 
 class BoxCox1nu(Transform):
-    ''' BoxCox transform y = ((nu+x)^lambda-1)/lambda
+    """ BoxCox transform y = ((nu+x)^lambda-1)/lambda
         with lambda exponent fixed
-    '''
+    """
 
     def __init__(self, mininu=EPS, minilam=0.):
-        params = Vector(['nu'], [mininu], [mininu], [np.inf])
+        params = Vector(["nu"], [mininu], [mininu], [np.inf])
 
         # Define the nu constant and set it to inf by default
         # to force proper setup
-        constants = Vector(['lam'], [np.nan], [minilam], [3], accept_nan=True)
+        constants = Vector(["lam"], [np.nan], [minilam], [3], accept_nan=True)
 
-        super(BoxCox1nu, self).__init__('BoxCox1nu', params, constants)
+        super(BoxCox1nu, self).__init__("BoxCox1nu", params, constants)
         self.BC = BoxCox2(mininu=mininu, minilam=minilam)
 
     def get_lam(self):
         lam = self.constants.values[0]
         if np.isnan(lam):
-            raise ValueError('lam is nan. It must be set to a proper value')
+            raise ValueError("lam is nan. It must be set to a proper value")
         return lam
 
     def _forward(self, x):
@@ -482,14 +482,14 @@ class BoxCox1nu(Transform):
 
 
 class YeoJohnson(Transform):
-    ''' YeoJohnson transform '''
+    """ YeoJohnson transform """
 
     def __init__(self):
-        params = Vector(['nu', 'scale', 'lam'],\
+        params = Vector(["nu", "scale", "lam"],\
             [0., 1., 1.], [-np.inf, 1e-5, -1.],\
             [np.inf, np.inf, 3.])
 
-        super(YeoJohnson, self).__init__('YeoJohnson', params)
+        super(YeoJohnson, self).__init__("YeoJohnson", params)
 
     def _forward(self, x):
         nu, scale, lam = self.params.values
@@ -554,27 +554,27 @@ class YeoJohnson(Transform):
 
 
 class LogSinh(Transform):
-    ''' LogSinh transform with normalisation constant
+    """ LogSinh transform with normalisation constant
         x0 = max(x)/5
         y=1/b*log(sinh(a+b*x/x0))
 
         Transform is reparameterized as (loga, logb)
-    '''
+    """
 
     def __init__(self):
-        params = Vector(['loga', 'logb'], [-1., 0.], [-20, -5.], [0., 5.])
+        params = Vector(["loga", "logb"], [-1., 0.], [-20, -5.], [0., 5.])
 
         # Define the xmax constant and set it to nan by default
         # to force proper setup
-        constants = Vector(['xmax'], [np.nan], [EPS], [np.inf], accept_nan=True)
+        constants = Vector(["xmax"], [np.nan], [EPS], [np.inf], accept_nan=True)
 
-        super(LogSinh, self).__init__('LogSinh', \
+        super(LogSinh, self).__init__("LogSinh", \
             params, constants)
 
     def get_xmax(self):
         xmax = self.constants.values[0]
         if np.isnan(xmax):
-            raise ValueError('xmax is nan. It must be set to a proper value')
+            raise ValueError("xmax is nan. It must be set to a proper value")
         return xmax
 
     def _forward(self, x):
@@ -608,7 +608,7 @@ class LogSinh(Transform):
         return 1./xmax*np.where(xn > -a/b+EPS, 1./np.tanh(w), np.nan)
 
     def params_sample(self, nsamples=500, loga_scale=3., logb_sig=0.3):
-        ''' Sample from informative prior '''
+        """ Sample from informative prior """
 
         # Generate parameters samples from informative prior
         loga = -np.random.exponential(scale=loga_scale, size=nsamples)
@@ -621,7 +621,7 @@ class LogSinh(Transform):
 
 
     def params_logprior(self):
-        ''' <0 prior for loga and N(0., 0.3) prior for logb '''
+        """ <0 prior for loga and N(0., 0.3) prior for logb """
         loga, logb = self.params.values
         if loga > 0:
             return -np.inf
@@ -630,11 +630,11 @@ class LogSinh(Transform):
 
 
 class Reciprocal(Transform):
-    ''' Reciprocal transform y=-1/(nu+x) '''
+    """ Reciprocal transform y=-1/(nu+x) """
 
     def __init__(self, mininu=EPS):
-        params = Vector(['nu'], [mininu], [mininu])
-        super(Reciprocal, self).__init__('Reciprocal', params)
+        params = Vector(["nu"], [mininu], [mininu])
+        super(Reciprocal, self).__init__("Reciprocal", params)
         self.mininu = mininu
 
     def _forward(self, x):
@@ -659,25 +659,25 @@ class Reciprocal(Transform):
 
 
 class Softmax(Transform):
-    ''' Softmax transform '''
+    """ Softmax transform """
 
     def __init__(self):
-        super(Softmax, self).__init__('Softmax')
+        super(Softmax, self).__init__("Softmax")
 
 
     def _forward(self, x):
         # Check inputs
         x = np.atleast_2d(x)
         if x.ndim > 2:
-            raise ValueError('Expected ndim 2, got {0}'.format(x.ndim))
+            raise ValueError("Expected ndim 2, got {0}".format(x.ndim))
 
         if np.any(x < 0):
-            raise ValueError('x < 0')
+            raise ValueError("x < 0")
 
         # Sum along columns
         sx = np.sum(x, axis=1)
         if np.any(sx > 1-EPS):
-            raise ValueError('sum(x) >= 1')
+            raise ValueError("sum(x) >= 1")
 
         return np.log(x/(1-sx[:, None]))
 
@@ -685,27 +685,27 @@ class Softmax(Transform):
         # Check inputs
         y = np.atleast_2d(y)
         if y.ndim > 2:
-            raise ValueError('Expected ndim 2, got {0}'.format(y.ndim))
+            raise ValueError("Expected ndim 2, got {0}".format(y.ndim))
 
         # Back transform
         x = np.exp(y)
         return x/(1+np.sum(x, axis=1)[:, None])
 
     def _jacobian(self, x):
-        ''' See
+        """ See
         https://en.wikipedia.org/wiki/Determinant#Sylvester.27s_determinant_theorem
-        '''
+        """
         # Check inputs
         x = np.atleast_2d(x)
         if x.ndim > 2:
-            raise ValueError('Expected ndim 2, got {0}'.format(x.ndim))
+            raise ValueError("Expected ndim 2, got {0}".format(x.ndim))
 
         if np.any(x < 0):
-            raise ValueError('x < 0')
+            raise ValueError("x < 0")
 
         sx = np.sum(x, axis=1)
         if np.any(sx > 1-EPS):
-            raise ValueError('sum(x) >= 1')
+            raise ValueError("sum(x) >= 1")
 
         px = np.prod(x, axis=1)
         return (1+sx/(1-sx))/px
@@ -713,12 +713,12 @@ class Softmax(Transform):
 
 
 class Sinh(Transform):
-    ''' Sinh transform y=arcsinh((x-sign(x) * log(cst+abs(x))-log(cst) '''
+    """ Sinh transform y=arcsinh((x-sign(x) * log(cst+abs(x))-log(cst) """
 
     def __init__(self):
-        params = Vector(['nu', 'scale'], [0., 1.], [-np.inf, 1e-10], \
+        params = Vector(["nu", "scale"], [0., 1.], [-np.inf, 1e-10], \
                                                 [np.inf, np.inf])
-        super(Sinh, self).__init__('Sinh', params)
+        super(Sinh, self).__init__("Sinh", params)
 
     def _forward(self, x):
         nu, scale = self.params.values
@@ -744,26 +744,26 @@ class Sinh(Transform):
 
 
 class Manly(Transform):
-    ''' Manly (1976) transform y=exp(lam x)-1)/lam
+    """ Manly (1976) transform y=exp(lam x)-1)/lam
 
         Manly, B. F. J. "Exponential data transformations."
         The Statistician (1976): 37-42.
-    '''
+    """
 
     def __init__(self):
-        params = Vector(['lam'], [0.1], [-5], [5])
+        params = Vector(["lam"], [0.1], [-5], [5])
 
         # Define the xmax constant and set it to nan by default
         # to force proper setup
-        constants = Vector(['xmax'], [np.nan], [EPS], [np.inf], accept_nan=True)
+        constants = Vector(["xmax"], [np.nan], [EPS], [np.inf], accept_nan=True)
 
-        super(Manly, self).__init__('Manly', params, constants)
+        super(Manly, self).__init__("Manly", params, constants)
 
 
     def get_xmax(self):
         xmax = self.constants.values[0]
         if np.isnan(xmax):
-            raise ValueError('xmax is nan. It must be set to a proper value')
+            raise ValueError("xmax is nan. It must be set to a proper value")
         return xmax
 
 

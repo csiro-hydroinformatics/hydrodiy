@@ -6,7 +6,7 @@ from itertools import product as prod
 
 
 def is_semidefinitepos(matrix):
-    ''' Check if matrix is semi-definite positive
+    """ Check if matrix is semi-definite positive
 
     Parameters
     -----------
@@ -18,7 +18,7 @@ def is_semidefinitepos(matrix):
     isok : bool
         True if the matrix is semi-definite positive
         False if not.
-    '''
+    """
     try:
         chol = np.linalg.cholesky(matrix)
         return True
@@ -27,7 +27,7 @@ def is_semidefinitepos(matrix):
 
 
 def ldl_decomp(matrix):
-    ''' Performs the LDL Cholesky decomposition
+    """ Performs the LDL Cholesky decomposition
 
     Parameters
     -----------
@@ -40,13 +40,13 @@ def ldl_decomp(matrix):
         L matrix (lower triangular with one on diagonal)
     Dmat : numpy.ndarray
         D vector (positive numbers)
-    '''
+    """
 
     # Apply Cholesky decomposition
     try:
         Tmat = np.linalg.cholesky(matrix)
     except np.linalg.LinAlgError as err:
-        raise ValueError('Expected matrix to be semi-definite positive')
+        raise ValueError("Expected matrix to be semi-definite positive")
 
     # extract the D matrix
     diag = np.diag(Tmat)
@@ -59,7 +59,7 @@ def ldl_decomp(matrix):
 
 
 def cov2sigscorr(cov):
-    ''' Extract correlation and standard deviation from  covariance
+    """ Extract correlation and standard deviation from  covariance
     matrix
 
      Parameters
@@ -73,7 +73,7 @@ def cov2sigscorr(cov):
         Standard deviations
     corr : numpy.ndarray
         Correlation matrix
-    '''
+    """
     diag = np.diag(cov)
     sigs = np.sqrt(np.diag(cov))
     fact = np.diag(1./sigs)
@@ -83,7 +83,7 @@ def cov2sigscorr(cov):
 
 
 def cov2vect(cov):
-    ''' Convert a covariance matrix to a parameter vector.
+    """ Convert a covariance matrix to a parameter vector.
 
     Covariance matrix is inverted to get the
     precision matrix, which is further decomposed
@@ -103,7 +103,7 @@ def cov2vect(cov):
         Squared standard deviation of random errors
     coefs : numpy.ndarray
         Regression coefficients
-    '''
+    """
 
     # Check covariance matrix size
     nvars, _ = cov.shape
@@ -125,7 +125,7 @@ def cov2vect(cov):
 
 
 def vect2cov(vect):
-    ''' Convert a parameter vector to a covariance matrix.
+    """ Convert a parameter vector to a covariance matrix.
 
     The parameter vector stores the elements
     of the LDL Cholesky decomposition of the covariance matrix.
@@ -144,15 +144,15 @@ def vect2cov(vect):
         Squared standard deviation of random errors
     coefs : numpy.ndarray
         Regression coefficients
-    '''
+    """
     nval = len(vect)
 
     # Compute the number of variables
     nvars = (math.sqrt(1+8*nval)-1)/2
 
     if abs(nvars-round(nvars))>1e-8:
-        raise ValueError('Expected integer solution for '+\
-                'the number of parameters, got {0}'.format(nvars))
+        raise ValueError("Expected integer solution for "+\
+                "the number of parameters, got {0}".format(nvars))
     else:
         nvars = int(round(nvars))
 
@@ -173,7 +173,7 @@ def vect2cov(vect):
 
 
 def gelman_convergence(samples):
-    ''' Compute the convergence statistic advocated by Gelman
+    """ Compute the convergence statistic advocated by Gelman
 
     Parameters
     -----------
@@ -189,7 +189,7 @@ def gelman_convergence(samples):
     Rc : numpy.ndarray
         Rc statistic for each parameter.
         A value between 1.000 and 1.002 is expected.
-    '''
+    """
 
     # Get sample dimensions
     nchains, nparams, nsamples = samples.shape
@@ -219,7 +219,7 @@ def gelman_convergence(samples):
 
 
 def laggedcorr(samples, maxlag=10):
-    ''' Lagged correlation of MCMC samples
+    """ Lagged correlation of MCMC samples
 
     Parameters
     -----------
@@ -236,7 +236,7 @@ def laggedcorr(samples, maxlag=10):
     -----------
     lagc : numpy.ndarray
         Rc statistic for each parameter
-    '''
+    """
 
     # Get sample dimensions
     nchains, nparams, nsamples = samples.shape

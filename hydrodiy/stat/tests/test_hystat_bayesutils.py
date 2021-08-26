@@ -12,7 +12,7 @@ class MCMCStatTestCase(unittest.TestCase):
 
 
     def setUp(self):
-        print('\t=> MCMCStatTestCase (hystat)')
+        print("\t=> MCMCStatTestCase (hystat)")
         source_file = os.path.abspath(__file__)
         self.ftest = os.path.dirname(source_file)
 
@@ -24,7 +24,7 @@ class MCMCStatTestCase(unittest.TestCase):
 
 
     def test_is_semidefinitepos(self):
-        ''' Test semi-definite positive '''
+        """ Test semi-definite positive """
 
         nvar = 5
 
@@ -46,7 +46,7 @@ class MCMCStatTestCase(unittest.TestCase):
 
 
     def test_ldl_decomp(self):
-        ''' Test LDL decomposition '''
+        """ Test LDL decomposition """
 
         nvar = 5
 
@@ -69,7 +69,7 @@ class MCMCStatTestCase(unittest.TestCase):
 
 
     def test_cov2sigscorr(self):
-        ''' Test the computation of sigs and corr from  cov '''
+        """ Test the computation of sigs and corr from  cov """
 
         nvar = 10
 
@@ -90,7 +90,7 @@ class MCMCStatTestCase(unittest.TestCase):
 
 
     def test_mucov2vect(self):
-        ''' Test transformation from  parameter vector to mu/cov '''
+        """ Test transformation from  parameter vector to mu/cov """
         nvars = 5
         nval = nvars+nvars*(nvars-1)//2
         vect = np.random.uniform(-2, 2, nval)
@@ -108,14 +108,14 @@ class MCMCStatTestCase(unittest.TestCase):
 
 
     def test_gelman_convergence(self):
-        ''' Test Gelman convergence stat '''
+        """ Test Gelman convergence stat """
         Rc = bayesutils.gelman_convergence(self.samples)
         self.assertTrue(Rc.shape == (self.nparams, ))
         self.assertTrue(np.all((Rc>1) & (Rc<1.001)))
 
 
     def test_laggedcorr(self):
-        ''' Test autocorrelation stat '''
+        """ Test autocorrelation stat """
         lagc = bayesutils.laggedcorr(self.samples)
         self.assertTrue(lagc.shape == (self.nchains, self.nparams, 10))
         self.assertTrue(np.all((lagc>-0.1) & (lagc<0.1)))

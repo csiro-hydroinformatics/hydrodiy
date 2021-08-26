@@ -12,13 +12,14 @@ import matplotlib.pyplot as plt
 
 from hydrodiy.io import csv
 from hydrodiy.stat import sutils, armodels
+from hydrodiy.stat.sutils import HAS_C_STAT_MODULE
 
-np.random.seed(0)
+np.random.seed(42)
 
 class UtilsTestCase(unittest.TestCase):
 
     def setUp(self):
-        print('\t=> UtilsTestCase (hystat)')
+        print("\t=> UtilsTestCase (hystat)")
         source_file = os.path.abspath(__file__)
         self.ftest = os.path.dirname(source_file)
 
@@ -36,23 +37,26 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_acf_error(self):
-        ''' Test acf error '''
+        """ Test acf error """
         data = np.random.uniform(size=20)
         try:
             acf, cov = sutils.acf(data, idx=(data>0.5)[2:])
         except ValueError as err:
-            self.assertTrue(str(err).startswith('Expected idx'))
+            self.assertTrue(str(err).startswith("Expected idx"))
         else:
-            raise Exception('Problem with error handling')
+            raise Exception("Problem with error handling")
 
 
     def test_acf_all(self):
-        ''' Test acf '''
+        """ Test acf """
+        if not HAS_C_STAT_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_stat')
 
         nval = 100000
         rho = 0.8
         sig = 2
-        innov = np.random.normal(size=nval, scale=sig*math.sqrt(1-rho**2))
+        innov = np.random.normal(size=nval, \
+                        scale=sig*math.sqrt(1-rho**2))
         x = armodels.armodel_sim(rho, innov)
 
         maxlag = 10
@@ -64,17 +68,17 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_acf_r(self):
-        ''' Compare acf with R '''
+        """ Compare acf with R """
         for i in range(1, 5):
-            fd = os.path.join(self.ftest, 'data', \
-                                'acf{0}_data.csv'.format(i))
+            fd = os.path.join(self.ftest, "data", \
+                                "acf{0}_data.csv".format(i))
             data, _ = csv.read_csv(fd)
             data = np.squeeze(data.values)
 
-            fr = os.path.join(self.ftest, 'data', \
-                                'acf{0}_result.csv'.format(i))
+            fr = os.path.join(self.ftest, "data", \
+                                "acf{0}_result.csv".format(i))
             expected, _ = csv.read_csv(fr)
-            expected = expected['acf'].values[1:]
+            expected = expected["acf"].values[1:]
 
             acf, cov = sutils.acf(data, expected.shape[0])
 
@@ -89,15 +93,20 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_acf_idx(self):
-        ''' Test acf with index selection '''
+        """ Test acf with index selection """
+        if not HAS_C_STAT_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_stat')
+
         nval = 5000
         sig = 2
         rho1 = 0.7
-        innov = np.random.normal(size=nval//2, scale=sig*math.sqrt(1-rho1**2))
+        innov = np.random.normal(size=nval//2, \
+                            scale=sig*math.sqrt(1-rho1**2))
         x1 = 10*sig + armodels.armodel_sim(rho1, innov)
 
         rho2 = 0.1
-        innov = np.random.normal(size=nval//2, scale=sig*math.sqrt(1-rho2**2))
+        innov = np.random.normal(size=nval//2, \
+                            scale=sig*math.sqrt(1-rho2**2))
         x2 = -10*sig + armodels.armodel_sim(rho2, innov)
 
         data = np.concatenate([x1, x2])
@@ -109,7 +118,7 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_lhs_error(self):
-        ''' Test latin-hypercube sampling errors '''
+        """ Test latin-hypercube sampling errors """
         nparams = 10
         nsamples = 50
         pmin = np.ones(nparams)
@@ -118,13 +127,13 @@ class UtilsTestCase(unittest.TestCase):
         try:
             samples = sutils.lhs(nsamples, pmin, pmax[:2])
         except ValueError as err:
-            self.assertTrue(str(err).startswith('Expected pmax'))
+            self.assertTrue(str(err).startswith("Expected pmax"))
         else:
-            raise Exception('Problem with error handling')
+            raise Exception("Problem with error handling")
 
 
     def test_lhs(self):
-        ''' Test latin-hypercube sampling '''
+        """ Test latin-hypercube sampling """
         nparams = 10
         nsamples = 50
         pmin = np.ones(nparams)
@@ -144,7 +153,7 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_lhs_norm(self):
-        ''' Test lhs for mvt data '''
+        """ Test lhs for mvt data """
         nsamples = 50000
         nvars = 5
         mean = np.linspace(1, 2, nvars)
@@ -163,7 +172,7 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_standard_normal(self):
-        ''' Test standard normal computation '''
+        """ Test standard normal computation """
         nsamples = 10
         samples = np.random.uniform(size=nsamples)
         unorm, _ = sutils.standard_normal(samples)
@@ -180,7 +189,7 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_standard_normal_ties(self):
-        ''' Test standard normal computation with ties '''
+        """ Test standard normal computation with ties """
         nsamples = 50
         samples = np.random.uniform(size=nsamples)
         idx = samples > 0.6
@@ -197,15 +206,15 @@ class UtilsTestCase(unittest.TestCase):
         self.assertTrue(np.allclose(unorm, expected))
 
         # Different method for rank calculation
-        unorm, rk = sutils.standard_normal(samples, rank_method='min')
+        unorm, rk = sutils.standard_normal(samples, rank_method="min")
         self.assertTrue(np.allclose(rk[idx], nsamples-n))
 
-        unorm, rk = sutils.standard_normal(samples, rank_method='max')
+        unorm, rk = sutils.standard_normal(samples, rank_method="max")
         self.assertTrue(np.allclose(rk[idx], nsamples-1))
 
 
     def test_semicorr(self):
-        ''' Test semicorr '''
+        """ Test semicorr """
         nsamples = 50000
         nvars = 2
         rho_true = 0.55
@@ -224,7 +233,10 @@ class UtilsTestCase(unittest.TestCase):
 
 
     def test_pareto_front(self):
-        ''' Test pareto front '''
+        """ Test pareto front """
+        if not HAS_C_STAT_MODULE:
+            self.skipTest('Missing C module c_hydrodiy_stat')
+
         for nval, ncol in prod([20, 200], [2, 5]):
             samples = np.random.normal(size=(nval, ncol))
 
@@ -239,8 +251,8 @@ class UtilsTestCase(unittest.TestCase):
             self.assertTrue(np.allclose(isdominated, expected))
 
         #import matplotlib.pyplot as plt
-        #plt.plot(*samples.T, 'o', ms=4, alpha=0.8)
-        #plt.plot(*samples[expected==0].T, 'ro')
+        #plt.plot(*samples.T, "o", ms=4, alpha=0.8)
+        #plt.plot(*samples[expected==0].T, "ro")
         #plt.show()
         #import pdb; pdb.set_trace()
 

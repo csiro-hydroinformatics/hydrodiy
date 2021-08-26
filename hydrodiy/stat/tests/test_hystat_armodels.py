@@ -21,15 +21,15 @@ class ARModelsTestCase(unittest.TestCase):
 
     def setUp(self):
         if not HAS_C_STAT_MODULE:
-            self.skipTest('Missing C module c_hydrodiy_stat')
+            self.skipTest("Missing C module c_hydrodiy_stat")
 
-        print('\t=> UtilsTestCase (hystat)')
+        print("\t=> UtilsTestCase (hystat)")
         source_file = os.path.abspath(__file__)
         self.ftest = os.path.dirname(source_file)
 
 
     def test_armodel_sim(self):
-        ''' Test armodel_sim '''
+        """ Test armodel_sim """
         nval = 100
         params = np.linspace(0.9, 0.2, 10)
         sim_mean = 5
@@ -61,7 +61,7 @@ class ARModelsTestCase(unittest.TestCase):
 
 
     def test_armodel_forward_backward(self):
-        ''' Test back and forth with armodels '''
+        """ Test back and forth with armodels """
         nval = 100
         params = np.linspace(0.9, 0.2, 10)
         ymean = 20
@@ -80,7 +80,7 @@ class ARModelsTestCase(unittest.TestCase):
 
 
     def test_armodel_sim_nan(self):
-        ''' Test armodel simulation with nan '''
+        """ Test armodel simulation with nan """
         nval = 20
         innov = np.random.normal(size=nval)
         innov[5:10] = np.nan
@@ -96,7 +96,7 @@ class ARModelsTestCase(unittest.TestCase):
 
 
     def test_armodel_residual_nan(self):
-        ''' Test armodel simulation with nan '''
+        """ Test armodel simulation with nan """
         nval = 20
         innov = np.random.normal(size=nval)
         params = np.array([0.5, 0.1])
@@ -130,7 +130,7 @@ class ARModelsTestCase(unittest.TestCase):
 
 
     def test_yule_walker(self):
-        ''' Test yule-walker '''
+        """ Test yule-walker """
         nval = 100000
         innov = np.random.normal(size=nval)
         params = np.array([0.8, -0.1])

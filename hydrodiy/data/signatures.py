@@ -14,13 +14,7 @@ from hydrodiy.stat.sutils import ppos
 from hydrodiy.stat.metrics import corr, nse
 from hydrodiy.stat.transform import Identity, Log
 
-# Try to import C code
-HAS_C_DATA_MODULE = True
-try:
-    import c_hydrodiy_data
-except ImportError:
-    HAS_C_DATA_MODULE = False
-
+from hydrodiy import HAS_C_DATA_MODULE
 EPS = 1e-10
 
 def eckhardt(flow, thresh=0.95, tau=20, BFI_max=0.8, timestep_type=1):

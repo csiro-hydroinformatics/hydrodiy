@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 import pandas as pd
 from hydrodiy.data import qualitycontrol as qc
-from hydrodiy.data.dutils import HAS_C_DATA_MODULE
+from hydrodiy import HAS_C_DATA_MODULE
 
 np.random.seed(0)
 

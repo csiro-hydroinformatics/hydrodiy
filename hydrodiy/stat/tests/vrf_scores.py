@@ -14,15 +14,15 @@ from scipy import stats
 
 
 
-n_ens = {'sys4_raw':15, 'sys4_csiro_dm':15, 'clim_ref':200, 'ind_cal':200, 'qm':15, 'mp_cal':200}
-model_colours = {'obs':'black', 'sys4_raw':'red', 'clim_ref':'orange', 'ind_cal':'purple'}
-model_key = {'obs':'O', 'sys4_raw':'A', 'clim_ref':'B', 'ind_cal':'C'}
+n_ens = {"sys4_raw":15, "sys4_csiro_dm":15, "clim_ref":200, "ind_cal":200, "qm":15, "mp_cal":200}
+model_colours = {"obs":"black", "sys4_raw":"red", "clim_ref":"orange", "ind_cal":"purple"}
+model_key = {"obs":"O", "sys4_raw":"A", "clim_ref":"B", "ind_cal":"C"}
 
 
 def pit(forecast, obs, censor=False):
 
     n = len(forecast)
-    pp = plotting_positions(n, 'hazen')
+    pp = plotting_positions(n, "hazen")
 
     pit = np.interp(obs, np.sort(forecast), pp, left=0, right=1)
     if obs == 0.0 and censor:
@@ -36,7 +36,7 @@ def pit_alpha(forecasts, obs, censor=False):
     num_samples = forecasts.shape[1]
     num_events = forecasts.shape[0]
 
-    pp = plotting_positions(num_samples, 'hazen')
+    pp = plotting_positions(num_samples, "hazen")
 
     pits = []
 
@@ -49,7 +49,7 @@ def pit_alpha(forecasts, obs, censor=False):
             pits.append(pit)
 
     sorted_pits = np.sort(pits)
-    pp = plotting_positions(num_events, 'weibull')
+    pp = plotting_positions(num_events, "weibull")
 
     sumdif = 0
     for i in range(num_events):
@@ -57,15 +57,15 @@ def pit_alpha(forecasts, obs, censor=False):
 
     alpha = 1.0 - (2.0 / float(num_events) * sumdif)
 
-    # Use sorted_pits since the below line requires a numpy array to work (and it's guaranteed to be a numpy array).
+    # Use sorted_pits since the below line requires a numpy array to work (and it"s guaranteed to be a numpy array).
     ksee = 1.0 - (np.sum(sorted_pits == 0) + np.sum(sorted_pits==1))/float(num_events)
 
     pit_res = {}
 
-    pit_res['pits'] = pits
-    pit_res['sorted_pits'] = sorted_pits
-    pit_res['rel1_alpha'] = alpha
-    pit_res['rel2_ksee'] = ksee
+    pit_res["pits"] = pits
+    pit_res["sorted_pits"] = sorted_pits
+    pit_res["rel1_alpha"] = alpha
+    pit_res["rel2_ksee"] = ksee
 
     return pit_res
 
@@ -90,11 +90,11 @@ def crps_ss_old(forecasts, obs, ref_forecasts=None):
 
         skill_score = 1.0 - np.mean(scores)/np.mean(ref_scores)
 
-        crps_res['skill_score'] = skill_score
+        crps_res["skill_score"] = skill_score
 
 
-    crps_res['mean'] = np.mean(scores)
-    crps_res['scores'] = scores
+    crps_res["mean"] = np.mean(scores)
+    crps_res["scores"] = scores
 
     return crps_res
 
@@ -123,12 +123,12 @@ def crps_ss(forecasts, obs, ref_forecasts=None):
 
         skill_score = 1.0 - np.mean(scores)/np.mean(ref_scores)
 
-        crps_res['skill_score'] = skill_score
+        crps_res["skill_score"] = skill_score
 
 
 
-    crps_res['mean'] = np.mean(scores)
-    crps_res['scores'] = scores
+    crps_res["mean"] = np.mean(scores)
+    crps_res["scores"] = scores
 
     return crps_res
 
@@ -150,28 +150,28 @@ def bias(forecasts, obs):
 
     bias_res = {}
 
-    bias_res['mean_err'] = np.mean(errors)
-    bias_res['mean_abs_err'] = np.mean(np.abs(errors))
-    bias_res['rel'] = np.mean(errors)/np.mean(obs)*100.0
-    bias_res['fc_means'] = fc_means
-    bias_res['errors'] = errors
-    bias_res['mult'] = np.mean(forecasts)/np.mean(obs)
+    bias_res["mean_err"] = np.mean(errors)
+    bias_res["mean_abs_err"] = np.mean(np.abs(errors))
+    bias_res["rel"] = np.mean(errors)/np.mean(obs)*100.0
+    bias_res["fc_means"] = fc_means
+    bias_res["errors"] = errors
+    bias_res["mult"] = np.mean(forecasts)/np.mean(obs)
 
     return bias_res
 
 
-def rmse(forecasts, obs, fc_centre='median', ref_forecasts=None):
+def rmse(forecasts, obs, fc_centre="median", ref_forecasts=None):
 
     # forecasts.shape = (num_events, num_samples)
     # obs.shape = (num_events)
     # ref_forecasts.shape = (num_events, num_samples)
 
-    assert fc_centre in ['mean', 'median']
+    assert fc_centre in ["mean", "median"]
 
     num_samples = forecasts.shape[1]
     num_events = forecasts.shape[0]
 
-    if fc_centre == 'median':
+    if fc_centre == "median":
         errors = np.median(forecasts[:, :], axis=1) - obs
     else:
         errors = np.mean(forecasts[:, :], axis=1) - obs
@@ -184,7 +184,7 @@ def rmse(forecasts, obs, fc_centre='median', ref_forecasts=None):
 
         ref_scores = []
         for i in range(num_events):
-            if fc_centre == 'median':
+            if fc_centre == "median":
                 errors = np.median(ref_forecasts[:, :], axis=1) - obs
             else:
                 errors = np.mean(ref_forecasts[:, :], axis=1) - obs
@@ -193,10 +193,10 @@ def rmse(forecasts, obs, fc_centre='median', ref_forecasts=None):
 
         skill_score = 1.0 - np.mean(scores)/np.mean(ref_scores)
 
-        rmse_res['skill_score'] = skill_score
+        rmse_res["skill_score"] = skill_score
 
-    rmse_res['mean'] = np.mean(scores)
-    rmse_res['scores'] = scores
+    rmse_res["mean"] = np.mean(scores)
+    rmse_res["scores"] = scores
 
     return rmse_res
 
@@ -232,7 +232,7 @@ def lag1_corr(ens1, ens2):
     # When calculating the mean/median correlation,
     # omit cases where there is no correlation, i.e. one of the variables has no variance,
     # e.g. [0.0, 0.0, 0.0] or [0.5, 0.5, 0.5]
-    corr_res['corr'] = np.nanmean(corr)
+    corr_res["corr"] = np.nanmean(corr)
 
     return corr_res
 
@@ -267,17 +267,17 @@ def lag1_corr_event(ens1, ens2):
     # When calculating the mean/median correlation,
     # omit cases where there is no correlation, i.e. one of the variables has no variance,
     # e.g. [0.0, 0.0, 0.0] or [0.5, 0.5, 0.5]
-    corr_res['corr'] = np.nanmean(corr)
+    corr_res["corr"] = np.nanmean(corr)
 
     return corr_res
 
 
 
 def interp_probs(points, data, probs):
-    '''
+    """
     Interpolate probabilities of points.
     data should be monotonically increasing.
-    '''
+    """
     # Make sure that data is monotically increasing.
     try:
         assert np.all(data == np.sort(data))
@@ -297,21 +297,21 @@ def interp_probs(points, data, probs):
     return point_probs
 
 
-def plotting_positions(n, type='hazen'):
+def plotting_positions(n, type="hazen"):
 
     # n = len(data)
 
-    if type.lower() == 'hazen':
+    if type.lower() == "hazen":
         # good for normal and gumbel shaped distributions
         p = [(i - 0.5)/float(n) for i in range(1, n + 1)]
-    elif type.lower() == 'weibull':
+    elif type.lower() == "weibull":
         # good for uniform distribution
         p = [i/(n+1.0) for i in range(1, n + 1)]
-    elif type.lower() == 'cunnane':
+    elif type.lower() == "cunnane":
         # compromise for all distributions
         p = [(i-0.4)/(n+0.2) for i in range(1, n + 1)]
     else:
-        raise ValueError('{} is not a supported plotting position')
+        raise ValueError("{} is not a supported plotting position")
 
     return p
 
@@ -375,7 +375,7 @@ def crps_bom(ysim, yobs):
         ymin.append(np.min([np.min(ysim[i]), yobs[i]]))
         ymax.append(np.max([np.max(ysim[i]), yobs[i]]))
 
-    prob_sim = plotting_positions(len(ys_sort[0]), 'hazen')
+    prob_sim = plotting_positions(len(ys_sort[0]), "hazen")
     crps_scores = [f(yobs[i], ys_sort[i], prob_sim, ymin[i], ymax[i]) for i in rangeobs]
 
 
