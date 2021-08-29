@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import os
-import subprocess
 import numpy
 
 from setuptools import setup, Extension, find_packages
@@ -12,10 +11,6 @@ import distutils.log
 from Cython.Distutils import build_ext
 
 import versioneer
-
-def read(fname):
-    return open(os.path.join(os.path.dirname(os.path.abspath(__file__)), fname)).read()
-
 
 # Define Cython C extensions
 if os.getenv("HYDRODIY_NO_BUILD") == "1":

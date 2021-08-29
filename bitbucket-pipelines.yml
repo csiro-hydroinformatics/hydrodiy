@@ -14,11 +14,11 @@ pipelines:
               - python setup.py develop
               #- pytest --cov-report html:cov_html_gridverif --cov=gridverif tests
               # Running tests
-              - python -W ignore `which nosetests` hydrodiy/io
-              - python -W ignore `which nosetests` hydrodiy/data
-              - python -W ignore `which nosetests` hydrodiy/stat
-              - python -W ignore `which nosetests` hydrodiy/plot
-              - python -W ignore `which nosetests` hydrodiy/gis
+              - nosetests hydrodiy/io/tests
+              - nosetests hydrodiy/data/tests
+              - nosetests hydrodiy/stat/tests
+              - nosetests hydrodiy/plot/tests
+              - nosetests hydrodiy/gis/tests
 
               # coverage
               - coverage xml --rcfile=.coveragerc
@@ -38,11 +38,11 @@ pipelines:
               # Remove C modules and rerun tests
               - rm -f *.so
               - rm -rf build
-              - python -W ignore `which nosetests` hydrodiy/io
-              - python -W ignore `which nosetests` hydrodiy/data
-              - python -W ignore `which nosetests` hydrodiy/stat
-              - python -W ignore `which nosetests` hydrodiy/plot
-              - python -W ignore `which nosetests` hydrodiy/gis
+              - nosetests hydrodiy/io/tests
+              - nosetests hydrodiy/data/tests
+              - nosetests hydrodiy/stat/tests
+              - nosetests hydrodiy/plot/tests
+              - nosetests hydrodiy/gis/tests
 
             artifacts: 
               - cov_html_gridverif/**
