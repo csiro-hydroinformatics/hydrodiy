@@ -8,6 +8,9 @@ from hydrodiy.stat import sutils
 
 from hydrodiy import has_c_module
 
+if has_c_module("gis", False):
+    import c_hydrodiy_gis
+
 def points_inside_polygon(points, polygon, inside=None, atol=1e-8, \
                     nprint=0):
     """

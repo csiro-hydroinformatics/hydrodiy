@@ -18,9 +18,12 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import griddata
 
-from hydrodiy import has_c_module
 from hydrodiy.gis import gutils
 from hydrodiy.io import csv
+
+from hydrodiy import has_c_module
+if has_c_module("gis", False):
+    import c_hydrodiy_gis
 
 # Codes indicating the flow direction for a cell
 # using ESRI convention
@@ -650,7 +653,8 @@ class Grid(object):
         ierr = c_hydrodiy_gis.coord2cell(nrows, ncols, xll, yll,
                                         csz, xycoords, idxcell)
         if ierr>0:
-            raise ValueError("c_hydrodiy_gis.coord2cell returns "+str(ierr))
+            raise ValueError("c_hydrodiy_gis.coord2cell returns "+\
+                                    str(ierr))
 
         return idxcell
 

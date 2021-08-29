@@ -4,6 +4,9 @@ import pandas as pd
 from hydrodiy.data import dutils
 from hydrodiy import has_c_module
 
+if has_c_module("data", False):
+    import c_hydrodiy_data
+
 def ismisscens(x, censor=0., eps=1e-10):
     """ Check if 1d variable is missing or censored
 

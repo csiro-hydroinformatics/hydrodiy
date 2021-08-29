@@ -7,6 +7,9 @@ import pandas as pd
 from scipy.stats import norm
 
 from hydrodiy import has_c_module
+if has_c_module("stat", False):
+    import c_hydrodiy_stat
+
 
 def ppos(nval, cst=0.3):
     """ Compute plotting position for sample of size nval

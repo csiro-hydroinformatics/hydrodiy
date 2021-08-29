@@ -245,14 +245,14 @@ class UtilsTestCase(unittest.TestCase):
 
         kk = np.random.choice(range(nval), nval//10, replace=False)
         obs[kk] = np.nan
-        obsm = obs.resample('MS', how=lambda x: np.sum(x.values))
+        obsm = obs.resample('MS').apply(lambda x: np.sum(x.values))
         obsm2 = dutils.aggregate(aggindex, obs.values)
 
         idx = np.isnan(obsm.values)
         self.assertTrue(np.allclose(idx, np.isnan(obsm2)))
         self.assertTrue(np.allclose(obsm.values[~idx], obsm2[~idx]))
 
-        obsm = obs.resample('MS', how='sum')
+        obsm = obs.resample('MS').sum()
         obsm3 = dutils.aggregate(aggindex, obs.values, maxnan=31)
         self.assertTrue(np.allclose(obsm.values, obsm3))
 

@@ -1,7 +1,13 @@
+""" Module to run simple arma models """
+
 import numpy as np
 from scipy.linalg import toeplitz
 
+
 from hydrodiy import has_c_module
+if has_c_module("stat", False):
+    import c_hydrodiy_stat
+
 
 def armodel_sim(params, innov, sim_mean=0., sim_ini=None):
     """ Simulate outputs from an AR model.

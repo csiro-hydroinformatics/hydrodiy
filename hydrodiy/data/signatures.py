@@ -15,6 +15,9 @@ from hydrodiy.stat.metrics import corr, nse
 from hydrodiy.stat.transform import Identity, Log
 from hydrodiy import has_c_module
 
+if has_c_module("data", False):
+    import c_hydrodiy_data
+
 EPS = 1e-10
 
 def eckhardt(flow, thresh=0.95, tau=20, BFI_max=0.8, timestep_type=1):

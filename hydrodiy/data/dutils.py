@@ -9,9 +9,9 @@ import pandas as pd
 from pandas.tseries.offsets import DateOffset
 from numpy.polynomial import polynomial as poly
 
-from hydrodiy import PYVERSION, has_c_module
-
-# Try to import C code
+from hydrodiy import has_c_module
+if has_c_module("data", False):
+    import c_hydrodiy_data
 
 def sub(text, to_replace):
     """ Replace in "text" all occurences of any key in the

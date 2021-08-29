@@ -11,7 +11,10 @@ import warnings
 from hydrodiy.stat import transform
 from hydrodiy.stat import sutils
 from hydrodiy.io import csv
+
 from hydrodiy import has_c_module
+if has_c_module("stat", False):
+    import c_hydrodiy_stat
 
 EPS = 1e-10
 

@@ -7,25 +7,27 @@ import pandas as pd
 
 from hydrodiy import has_c_module
 
+if has_c_module("data", False):
+    import c_hydrodiy_data as chd
+
 # Fix seed
 np.random.seed(42)
 
 class DateutilsTestCase(unittest.TestCase):
 
     def setUp(self):
-        print('\t=> DateutilsTestCase (hydata)')
+        print("\t=> DateutilsTestCase (hydata)")
 
-        self.months = pd.date_range('1800-01-01', '2200-12-1', freq='MS')
-        self.days = pd.date_range('1800-01-01', '2200-12-1', freq='5D')
+        self.months = pd.date_range("1800-01-01", "2200-12-1", freq="MS")
+        self.days = pd.date_range("1800-01-01", "2200-12-1", freq="5D")
 
         if not has_c_module("data", False):
-            self.skipTest('Missing C modules')
+            self.skipTest("Missing C modules")
 
     def test_isleapyear(self):
         years = range(1800, 2200)
-        isleap = pd.Series(years).apply(lambda x:
-                            '{0}-02-29'.format(x))
-        isleap = pd.to_datetime(isleap, errors='coerce')
+        isleap = pd.Series(years).apply(lambda x: f"{x}-02-29")
+        isleap = pd.to_datetime(isleap, errors="coerce")
         isleap = pd.notnull(isleap)
 
         si = 0

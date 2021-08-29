@@ -1,5 +1,6 @@
 """ Module providing various data transforms """
 
+import warnings
 import math
 import sys
 import numpy as np
@@ -361,7 +362,8 @@ class BoxCox2(Transform):
             Mininum of the value allowed for lambda in prior probability
         """
         if minilam < -3:
-            raise ValueError("Expected minilam > -3, got {0}".format(minilam))
+            error_msg = f"Expected minilam > -3, got {minilam}."
+            raise ValueError(error_msg)
 
         params = Vector(["nu", "lam"], [mininu, 1.], \
                     [mininu, minilam], [np.inf, 3.])
@@ -669,7 +671,7 @@ class Softmax(Transform):
         # Check inputs
         x = np.atleast_2d(x)
         if x.ndim > 2:
-            raise ValueError("Expected ndim 2, got {0}".format(x.ndim))
+            raise ValueError(f"Expected ndim<=2, got {x.ndim}.")
 
         if np.any(x < 0):
             raise ValueError("x < 0")
@@ -685,7 +687,7 @@ class Softmax(Transform):
         # Check inputs
         y = np.atleast_2d(y)
         if y.ndim > 2:
-            raise ValueError("Expected ndim 2, got {0}".format(y.ndim))
+            raise ValueError(f"Expected ndim<=2, got {y.ndim}.")
 
         # Back transform
         x = np.exp(y)

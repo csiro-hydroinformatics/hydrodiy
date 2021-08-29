@@ -8,11 +8,11 @@ from hydrodiy.stat import bayesutils
 
 np.random.seed(0)
 
-class MCMCStatTestCase(unittest.TestCase):
+class BayesUtilsTestCase(unittest.TestCase):
 
 
     def setUp(self):
-        print("\t=> MCMCStatTestCase (hystat)")
+        print("\t=> BayesUtilsTestCase (hystat)")
         source_file = os.path.abspath(__file__)
         self.ftest = os.path.dirname(source_file)
 

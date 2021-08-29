@@ -113,8 +113,9 @@ class UtilsTestCase(unittest.TestCase):
 
         acf1, cov = sutils.acf(data, idx=data>=0)
         acf2, cov = sutils.acf(data, idx=data<=0)
+
         self.assertTrue(np.allclose([acf1[0], acf2[0]], [rho1, rho2], \
-                            atol=1e-2))
+                            atol=3e-2))
 
 
     def test_lhs_error(self):
