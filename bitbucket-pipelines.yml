@@ -1,0 +1,53 @@
+image: continuumio/miniconda3:latest
+
+pipelines:
+  branches:
+    master:
+        - step:
+            caches:
+              - pip
+              - conda
+            script: # Build env and run tests
+              - apt-get update && apt-get -y install build-essential
+              - conda env update -n diyenv --file  env.yml
+              - source activate diyenv
+              - python setup.py develop
+              #- pytest --cov-report html:cov_html_gridverif --cov=gridverif tests
+              # Running tests
+              - python -W ignore `which nosetests` hydrodiy/io
+              - python -W ignore `which nosetests` hydrodiy/data
+              - python -W ignore `which nosetests` hydrodiy/stat
+              - python -W ignore `which nosetests` hydrodiy/plot
+              - python -W ignore `which nosetests` hydrodiy/gis
+
+              # coverage
+              - coverage xml --rcfile=.coveragerc
+
+              # Pylint
+              #pylint --rcfile pylintrc hydrodiy > pylint_results
+
+              # Install hydrodiy
+              - python setup.py install
+                
+              # Running examples
+              - python -W ignore examples/run_all_examples.py
+
+              # Get list of functions skipping files with basemap
+              - python -W ignore listmembers.py -s
+
+              # Remove C modules and rerun tests
+              - rm -f *.so
+              - rm -rf build
+              - python -W ignore `which nosetests` hydrodiy/io
+              - python -W ignore `which nosetests` hydrodiy/data
+              - python -W ignore `which nosetests` hydrodiy/stat
+              - python -W ignore `which nosetests` hydrodiy/plot
+              - python -W ignore `which nosetests` hydrodiy/gis
+
+            artifacts: 
+              - cov_html_gridverif/**
+
+definitions:
+  caches:
+    conda:  ~/.conda/envs/hydroverif
+
