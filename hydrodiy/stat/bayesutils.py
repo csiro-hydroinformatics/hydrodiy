@@ -1,4 +1,5 @@
 import math
+import warnings
 import pandas as pd
 import numpy as np
 
@@ -192,6 +193,10 @@ def gelman_convergence(samples):
 
     # Get sample dimensions
     nchains, nparams, nsamples = samples.shape
+
+    if nchains == 1:
+        warnings.warn("Only one chain, returning nan")
+        return np.nan*np.ones(nparams)
 
     # Compute mean and var of each chain
     stats = np.concatenate([\

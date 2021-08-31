@@ -145,15 +145,30 @@ def slice2d(ax, logpost, params, ip1, ip2, dval1, dval2, \
     return xx, yy, zz
 
 
-def plotchains(fig, samples, accept):
+def plotchains(fig, samples, accept, parnames=None):
     """ Plot MCMC chains """
 
     # Get dimensions
+    if samples.ndim != 3:
+        errmsg = "Expected samples to be 3D, got"+\
+                    " samples.ndim={samples.ndim}."
+        raise ValueError(errmsg)
+
     nchains, nparams, nens = samples.shape
 
     if accept.shape != (nchains, ):
-        raise ValueError("Expected dimensions of accept to "+
-            "be ({0}, ), got {1}".format(nchains, accept.shape))
+        errmsg = f"Expected accept.shape = ({nchains},), "+\
+            f" got {accept.shape}."
+        raise ValueError(errmsg)
+
+    # Parameter names
+    if parnames is None:
+        parnames = [f"P{i+1}" for i in range(nparams)]
+    else:
+        if len(parnames) != nparams:
+            errmsg = f"Expected len(parnames)={nparams}, "+\
+                f" got {len(parnames)}."
+            raise ValueError(errmsg)
 
     # Initialise figure
     gs = GridSpec(nparams, 2*nparams)
@@ -171,41 +186,45 @@ def plotchains(fig, samples, accept):
     acf = bayesutils.laggedcorr(samples, maxlag=1)
 
     # Loop through parameters
+    lims = {}
     for i in range(nparams):
-        ax = plt.subplot(gs[i, :nparams])
+        ax = fig.add_subplot(gs[i, :nparams])
 
         # Plot traces
         smp = samples[:, i, :]
         for ic in range(nchains):
             smpc = smp[ic, :]
             ar1 = acf[ic, i, 0]
-            ax.plot(smpc, \
-                lw=0.9, \
-                label=r"Ch{0} $\rho_1$={1:0.2f} A={2:0.1f}%".format(\
-                    ic, ar1, accept[ic]*100))
+            A=accept[ic]*100
+            ax.plot(smpc, lw=0.9, \
+                label=f"Ch{ic+1} $\\rho_1$={ar1:0.2f} A={A:0.1f}%")
 
         # Decorate
-        title = "Chains for param {0} - Rc = {1:0.5f}".format(i, Rc[i])
+        title = f"Chains for {parnames[i]}"
+        if not np.isnan(Rc[i]):
+            title += f" - Rc = {Rc[i]:0.5f}"
+
         ax.set_title(title)
-        ax.set_ylabel("P{0}".format(i))
-        ax.set_ylim(ranges[i, :])
+        ax.set_ylabel(parnames[i])
         leg = ax.legend(loc=2)
         leg.get_frame().set_alpha(0.2)
         axs[i][0] = ax
 
         # Plot ditribution
-        ax = plt.subplot(gs[i, nparams+i])
+        ax = fig.add_subplot(gs[i, nparams], sharey=axs[i][0])
         kernel = gaussian_kde(smp.ravel())
         y = np.linspace(ranges[i, 0], ranges[i, 1], 100)
         x = kernel(y)
         ax.plot(x, y, "-", label="samples pdf")
 
-        ax.set_ylabel("P{0}".format(i))
+        ax.set_ylabel(parnames[i])
+        ax.axis("off")
         axs[i][i+1] = ax
 
         # Plot correlations
         for j in range(i+1, nparams):
-            ax = plt.subplot(gs[i, nparams+j])
+            ax = fig.add_subplot(gs[i, nparams+j], \
+                        sharey=axs[i][0])
 
             # Plot kde density
             x = samples[:, j, :].ravel()
@@ -223,13 +242,12 @@ def plotchains(fig, samples, accept):
             # plot points
             ax.plot(x, y, "o", color="grey", alpha=0.2, markersize=0.5, \
                             label="samples")
-
             # Decorate
             ax.set_xlim(ranges[j, :])
-            ax.set_ylim(ranges[i, :])
+            ax.axis("off")
 
             corr = np.corrcoef(xy.T)[0, 1]
-            title = r"$\rho$(P{0},P{1})={2:0.2f}".format(i, j, corr)
+            title = f"$\\rho$({parnames[i]},{parnames[j]})={corr:0.2f}"
             ax.set_title(title)
             axs[i][j+1] = ax
 
