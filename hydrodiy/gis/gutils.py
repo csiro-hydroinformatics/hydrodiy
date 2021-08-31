@@ -59,6 +59,9 @@ def points_inside_polygon(points, polygon, inside=None, atol=1e-8, \
             raise ValueError("Expected inside of length "+\
                     f"{len(points)}, got {len(inside)}.")
 
+        # To make sure that the inside vector is properly initialised
+        inside.fill(0)
+
     # run C code
     ierr = c_hydrodiy_gis.points_inside_polygon(atol, nprint, points, \
                     polygon, inside)
