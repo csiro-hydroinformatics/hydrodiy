@@ -566,5 +566,15 @@ class UtilsTestCase(unittest.TestCase):
         fig.savefig(fp)
 
 
+    def test_waterbalplot(self):
+        """ Test categorical scatter plot """
+        fig, ax = plt.subplots()
+        tm_line = putils.waterbalplot(ax)
+        tm_line.set_linewidth(5)
+        tm_line.set_color("tab:red")
+        fp = os.path.join(self.fimg, "waterbalplot.png")
+        fig.savefig(fp)
+
+
 if __name__ == "__main__":
     unittest.main()

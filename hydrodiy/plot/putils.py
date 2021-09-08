@@ -800,7 +800,7 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="viridis", \
         Argument sent to matplotlib.pyplot.plot command
 
     Returns
-    -----------
+    -------
     plotted : list
         List of dictionaries for each categories. A dictionary contains:
         idx :   Index of category items
@@ -976,4 +976,38 @@ def bivarnplot(ax, xy, add_semicorr=True, namex="var 1", \
     ax.set_ylabel("Standard normal score for {} [-]".format(namey))
 
 
+def waterbalplot(ax, ncoeff=2.5):
+    """ Background for the normalised P/PE vs Q/P adimensional
+    plot. Useful to check catchment water balance.
+
+    Parameters
+    -----------
+    ax : matplotlib.axes
+        Axe to draw the line on
+    ncoeff : float
+        Coefficient of the Turc-Mezentsev model.
+
+    Returns
+    -------
+    tm_line : matplotlib.lines.Line2D
+        Line representing the Truc-Mezentsev model.
+    """
+    xx = np.linspace(1e-5, 5, 1000)
+    yy = np.maximum(0, 1-1./xx)
+    ax.fill_between(xx, yy*0., yy, facecolor="k",
+                            edgecolor="k", hatch="\\", alpha=0.2)
+    ax.fill_between(xx, yy*0.+1., yy*0.+5., facecolor="k", \
+                            edgecolor="k", hatch="\\", alpha=0.2)
+
+    yy = 1-1./(1.+xx**ncoeff)**(1./ncoeff)
+
+    lines = ax.plot(xx, yy, "k-", lw=1, \
+                label=f"Turc-Mezensev (n={ncoeff:0.1f})")
+    tm_line = lines[-1]
+    ax.set_xlim((0, 3))
+    ax.set_ylim((0, 1.1))
+    ax.set_xlabel("Aridity P/PE [-]")
+    ax.set_ylabel("Runoff coef Q/P [-]")
+
+    return tm_line
 
