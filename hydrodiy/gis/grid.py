@@ -17,6 +17,7 @@ import calendar
 import numpy as np
 import pandas as pd
 from scipy.interpolate import griddata
+from scipy.ndimage import gaussian_filter, maximum_filter
 
 from hydrodiy.gis import gutils
 from hydrodiy.io import csv
