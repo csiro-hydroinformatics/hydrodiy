@@ -1774,3 +1774,51 @@ def slope(flowdir, altitude, nprint=100):
     return slopeval
 
 
+def gsmooth(grid, mask=None, coastwin=50, sigma=5., \
+                              minval=-np.inf, eps=1e-6):
+    ''' Smooth gridded value to improve look of map '''
+    # Check coastwin param
+    if coastwin < 10*sigma:
+        warnings.warn('Expected coastwin > 10 x sigma, got '+
+                'coastwin={:0.1f} sigma={:0.1f}'.format(coastwin, \
+                    sigma))
+
+    # Set up smooth grid
+    smooth = grid.clone(dtype=np.float64)
+    z0 = grid.data.copy()
+
+    # Cut mask
+    if not mask is None:
+        # Check grid and mask have the same geometry
+        if not grid.same_geometry(mask):
+            raise ValueError('Mask does not have the same '+
+                'geometry than input grid')
+
+        # Check mask as integer dtype
+        if not issubclass(mask.data.dtype.type, np.integer):
+            raise ValueError('Expected integer dtype for mask, '+\
+                        'got {}'.format(mask.dtype))
+
+        # Set mask
+        z0[mask.data == 0] = np.nan
+
+    # Gapfill with nearest neighbour
+    idx = np.isnan(z0) | (z0<minval-eps)
+    z0[idx] = -np.inf
+
+    z1 = maximum_filter(z0, size=coastwin, mode='nearest')
+    z1[~idx] = z0[~idx]
+
+    # Smooth
+    z2 = gaussian_filter(z1, sigma=sigma, mode='nearest')
+
+    # Final mask cut
+    if not mask is None:
+        z2[mask.data == 0] = np.nan
+
+    # Store
+    smooth.data = z2
+
+    return smooth
+
+
