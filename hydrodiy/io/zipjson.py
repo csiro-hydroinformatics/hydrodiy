@@ -78,7 +78,8 @@ def write_zipjson(data, filename, \
     # Zip the file
     with zipfile.ZipFile(str(filename), "w", \
                 compression=compression) as archive:
-        with archive.open(filename.name, "w") as fo:
+        f = filename.stem + ".json"
+        with archive.open(f, "w") as fo:
                     fo.write(json.dumps(towrite, **kwargs)\
                                     .encode(encoding))
 
