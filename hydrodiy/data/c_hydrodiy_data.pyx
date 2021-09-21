@@ -28,9 +28,9 @@ cdef extern from 'c_qualitycontrol.h':
 cdef extern from 'c_var2h.h':
     int c_var2h(int nvalvar, int nvalh, int display,
         int maxgapsec,
-        int * varsec,
+        long long * varsec,
         double * varvalues,
-        int hstartsec,
+        long long hstartsec,
         double * hvalues)
 
 cdef extern from 'c_baseflow.h':
@@ -173,8 +173,8 @@ def islin(double thresh, double tol, int npoints,
     return ierr
 
 
-def var2h(int maxgapsec, int hstartsec, int display,
-        np.ndarray[int, ndim=1, mode='c'] varsec not None,
+def var2h(int maxgapsec, long long hstartsec, int display,
+        np.ndarray[long long, ndim=1, mode='c'] varsec not None,
         np.ndarray[double, ndim=1, mode='c'] varvalues not None,
         np.ndarray[double, ndim=1, mode='c'] hvalues not None):
 
@@ -187,7 +187,7 @@ def var2h(int maxgapsec, int hstartsec, int display,
 
     # Run C
     ierr = c_var2h(nvalvar, nvalh, display, maxgapsec,
-            <int*> np.PyArray_DATA(varsec),
+            <long long*> np.PyArray_DATA(varsec),
             <double*> np.PyArray_DATA(varvalues),
             hstartsec,
             <double*> np.PyArray_DATA(hvalues))

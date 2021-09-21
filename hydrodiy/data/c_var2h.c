@@ -17,9 +17,9 @@
  *****************************************************************************/
 int c_var2h(int nvalvar, int nvalh, int display,
     int maxgapsec,
-    int * varsec,
+    long long * varsec,
     double * varvalues,
-    int hstartsec,
+    long long hstartsec,
     double * hvalues)
 {
     int ierr, i, varindex, miss;
@@ -31,10 +31,13 @@ int c_var2h(int nvalvar, int nvalh, int display,
     /* Display status */
     if(display==1)
     {
-        fprintf(stdout, "\n\tConverting to fixed time step (%d variable ts values -> %d hourly values)..\n",
-      		nvalvar, nvalh);
-        fprintf(stdout, "\tMax gap between valid values : %d sec\n", maxgapsec);
-        fprintf(stdout, "\tprogression (percent)..\n\t");
+        fprintf(stdout, "\n\t--------------------------------\n");
+        fprintf(stdout, "\tConverting %d variable values to "
+            "%d hourly values.\n", nvalvar, nvalh);
+        fprintf(stdout, "\tStart time (hstartsec) : %lld\n", hstartsec);
+        fprintf(stdout, "\tMax gap between valid values : "
+            "%d sec\n", maxgapsec);
+        fprintf(stdout, "\n\tprogression (percent)..\n\t");
     }
 
     /* Set first time step to be immediately before hstart */
@@ -44,7 +47,12 @@ int c_var2h(int nvalvar, int nvalh, int display,
 
     /* hstart is smaller than first value in varsec */
     if(varindex<0)
+    {
+        if(display==1)
+            fprintf(stdout, "\n\tERROR: hstart is smaller than "
+                    "the first value in varsec\n");
         return VAR2H_ERROR + __LINE__;
+    }
 
     /* Initialisation */
     nan = zero/zero;
@@ -86,8 +94,13 @@ int c_var2h(int nvalvar, int nvalh, int display,
             val2 = varvalues[varindex+1];
 
             if(t2<t1)
+            {
+                if(display==1)
+                    fprintf(stdout, "\tERROR: Expected t1<=t2, "
+                                        "got t1=%0.2f and "
+                                        "t2=%0.2f\n", t1, t2);
                 return VAR2H_ERROR + __LINE__;
-
+            }
         	/*
             * prevent the calculation of hourly total
         	* Apply the maximum isolated criteria if both va1 and val2 are strictly positive

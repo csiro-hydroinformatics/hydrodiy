@@ -401,20 +401,21 @@ def var2h(se, maxgapsec=5*86400, display=False):
 
     # Allocate arrays
     maxgapsec = np.int32(maxgapsec)
-    display = np.int32(display)
-    varvalues = se.values.astype(np.float64)
-    varsec = (se.index.values.astype(np.int64)/1000000000).astype(\
-                        np.int32)
-
     if maxgapsec < 3600:
         raise ValueError(f"Expected maxgapsec>=3600, got {maxgapsec}.")
+
+    display = np.int32(display)
+    varvalues = se.values.astype(np.float64)
+
+    time = se.index.tz_localize(None).values
+    varsec = np.int64(time.astype(np.int64)/1000000000)
 
     # Determines start and end of hourly series
     start = se.index[0]
     hstart = datetime(start.year, start.month, start.day, \
                         start.hour)+delta(hours=1)
     ref = datetime(1970, 1, 1)
-    hstartsec = np.int32((hstart-ref).total_seconds())
+    hstartsec = np.int64((hstart-ref).total_seconds())
 
     end = se.index[-1]
     hend = datetime(end.year, end.month, end.day, \

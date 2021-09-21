@@ -10,9 +10,9 @@
 
 int c_var2h(int nvalvar, int nvalh,
     int starthour, int maxgapsec,
-    int * varsec,
+    long long * varsec,
     double * varvalues,
-    int hstartsec,
+    long long hstartsec,
     double * hvalues);
 
 #endif
