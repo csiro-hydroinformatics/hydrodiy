@@ -526,16 +526,39 @@ class UtilsTestCase(unittest.TestCase):
     def test_water_year(self):
         t = pd.date_range("2010-06-25", "2010-07-10")
         wy = dutils.water_year(t, 1)
-        assert np.allclose(wy.values, 2010)
+        assert np.allclose(wy, 2010)
 
         wy = dutils.water_year(t)
-        assert np.allclose(wy.values[:6], 2009)
-        assert np.allclose(wy.values[6:], 2010)
+        assert np.allclose(wy[:6], 2009)
+        assert np.allclose(wy[6:], 2010)
 
         try:
             wy = dutils.water_year(t, 15)
         except AssertionError as err:
             self.assertTrue(str(err).startswith("Expected start"))
+
+
+    def test_compute_aggindex(self):
+        t = pd.date_range("2003-01-01", "2004-12-31")
+        a = dutils.compute_aggindex(t, "AS")
+        assert np.allclose(a[:365], 2003)
+        assert np.allclose(a[365:], 2004)
+
+        m = dutils.compute_aggindex(t, "MS")
+        assert np.allclose(m, t.year*100+t.month)
+
+        t = pd.date_range("2003-01-01", "2004-12-31", freq="H")
+        d = dutils.compute_aggindex(t, "D")
+        assert np.unique(d).shape[0] == 731
+        assert d[-1] == 20041231
+
+        t = pd.date_range("2003-01-01 00:00:00", \
+                        "2003-01-10 23:00:00", freq="min")
+        h = dutils.compute_aggindex(t, "H")
+        assert np.unique(h).shape[0] == 240
+        assert h[-1] == 2003011023
+
+
 
 if __name__ == "__main__":
     unittest.main()

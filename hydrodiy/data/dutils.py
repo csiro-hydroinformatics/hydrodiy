@@ -135,6 +135,29 @@ def dayofyear(days):
     return doy
 
 
+def compute_aggindex(time, timestep):
+    """ Compute the aggregation index for certain aggregation times.
+
+    Parameters
+    -----------
+    time : pandas.DatetimeIndex
+        Data time stamps.
+    """
+    allowed = ["D", "H", "MS", "AS"]
+    errmsg = f"Expected time step in {'/'.join(allowed)}, got {timestep}."
+    assert timestep in allowed, errmsg
+
+    if timestep == "AS":
+        return time.year.values
+    elif timestep == "MS":
+        return time.year*100+time.month
+    elif timestep == "D":
+        return time.year*10000+time.month*100+time.day
+    elif timestep == "H":
+        return time.year*1000000+time.month*10000\
+                    +time.day*100+time.hour
+
+
 def aggregate(aggindex, inputs, oper=0, maxnan=0):
     """ Fast aggregation of inputs based on aggregation indices
         This is an equivalent of pandas.Series.resample method,
@@ -252,6 +275,8 @@ def lag(data, lag, missing=np.nan):
         Data series where linear interpolation is suspected
     lag : int
         Lag. If >0, lag the data forward. If<0 lag the data backward.
+    missing : float
+        Missing value pasted at the end or the beginning of the data.
 
     Returns
     -----------
@@ -280,9 +305,10 @@ def water_year(time, start_month=7):
 
     Parameters
     -----------
-    sem : pandas.core.series.Series
-        Monthly series
-
+    time : pandas.DatetimeIndex
+        Data time stamps.
+    start_month : int
+        Water year start month.
     """
     errmsg = f"Expected start month in [1, 12], got {start_month}."
     assert start_month>=1 and start_month<=12, errmsg
@@ -294,7 +320,7 @@ def water_year(time, start_month=7):
     y1 = years[~missing].min()
     years[missing] = y1-1
 
-    return pd.Series(years, index=time)
+    return years
 
 
 def monthly2daily(se, interpolation="flat", minthreshold=0.):
