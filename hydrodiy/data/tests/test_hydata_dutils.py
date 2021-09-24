@@ -523,5 +523,19 @@ class UtilsTestCase(unittest.TestCase):
         self.assertEqual(tz, "Australia/Perth")
 
 
+    def test_water_year(self):
+        t = pd.date_range("2010-06-25", "2010-07-10")
+        wy = dutils.water_year(t, 1)
+        assert np.allclose(wy.values, 2010)
+
+        wy = dutils.water_year(t)
+        assert np.allclose(wy.values[:6], 2009)
+        assert np.allclose(wy.values[6:], 2010)
+
+        try:
+            wy = dutils.water_year(t, 15)
+        except AssertionError as err:
+            self.assertTrue(str(err).startswith("Expected start"))
+
 if __name__ == "__main__":
     unittest.main()

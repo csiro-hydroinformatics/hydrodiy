@@ -238,7 +238,7 @@ def flathomogen(aggindex, inputs, maxnan=0):
     return outputs
 
 
-def lag(data, lag):
+def lag(data, lag, missing=np.nan):
     """ Lag a numpy array and adds NaN at the beginning or end of the
         lagged data depending on the lag value. The lag is introduced
         using numpy.roll
@@ -266,13 +266,35 @@ def lag(data, lag):
     # Lagg data
     lagged = np.roll(data, lag, axis=0)
     if lag < 0:
-        lagged[lag:] = np.nan
+        lagged[lag:] = missing
     elif lag > 0:
-        lagged[:lag] = np.nan
+        lagged[:lag] = missing
     else:
         lagged = data.copy()
 
     return lagged
+
+
+def water_year(time, start_month=7):
+    """ Define the water year for a set of time stamps.
+
+    Parameters
+    -----------
+    sem : pandas.core.series.Series
+        Monthly series
+
+    """
+    errmsg = f"Expected start month in [1, 12], got {start_month}."
+    assert start_month>=1 and start_month<=12, errmsg
+
+    years = lag(time.year.values, start_month-1, -1)
+
+    # Fill in missing values
+    missing = years < 0
+    y1 = years[~missing].min()
+    years[missing] = y1-1
+
+    return pd.Series(years, index=time)
 
 
 def monthly2daily(se, interpolation="flat", minthreshold=0.):
