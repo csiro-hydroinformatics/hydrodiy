@@ -14,7 +14,7 @@ def has_c_module(name, raise_error=True):
         return True
     else:
         if raise_error:
-            raise ImportError(f"C module c_hydrodiy_{name} is "+\
+            raise ImportError(f"C module {name} is "+\
                 "not available, please run python setup.py build")
         else:
             return False
