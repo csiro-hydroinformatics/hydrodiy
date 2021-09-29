@@ -246,9 +246,13 @@ def plotchains(fig, samples, accept, parnames=None):
             ax.set_xlim(ranges[j, :])
             ax.axis("off")
 
-            corr = np.corrcoef(xy.T)[0, 1]
-            title = f"$\\rho$({parnames[i]},{parnames[j]})={corr:0.2f}"
+            title = f"{parnames[i]} / {parnames[j]}"
             ax.set_title(title)
+            corr = np.corrcoef(xy.T)[0, 1]
+            ax.text(0.01, 0.99, r"$\rho$"+f"={corr:0.2f}", \
+                va="top", ha="left", \
+                transform=ax.transAxes)
+
             axs[i][j+1] = ax
 
     return fig, np.array(axs)
