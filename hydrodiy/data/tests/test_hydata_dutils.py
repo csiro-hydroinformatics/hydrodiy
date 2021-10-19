@@ -544,6 +544,21 @@ class UtilsTestCase(unittest.TestCase):
         assert np.allclose(a[:365], 2003)
         assert np.allclose(a[365:], 2004)
 
+        try:
+            a = dutils.compute_aggindex(t, "AS-Bidule")
+        except AssertionError as err:
+            self.assertTrue(str(err).startswith("Expected month"))
+
+        a = dutils.compute_aggindex(t, "AS-JUN")
+        assert np.allclose(a[:181], 2002)
+        assert np.allclose(a[181:547], 2003)
+        assert np.allclose(a[547:729], 2004)
+
+        a = dutils.compute_aggindex(t, "AS-NOV")
+        assert np.allclose(a[:334], 2002)
+        assert np.allclose(a[334:700], 2003)
+        assert np.allclose(a[700:729], 2004)
+
         m = dutils.compute_aggindex(t, "MS")
         assert np.allclose(m, t.year*100+t.month)
 

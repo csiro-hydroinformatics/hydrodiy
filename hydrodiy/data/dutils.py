@@ -1,6 +1,7 @@
 """ Utility functions to process data """
 import re
 from datetime import datetime
+from calendar import month_abbr
 from dateutil.relativedelta import relativedelta as delta
 
 import numpy as np
@@ -143,12 +144,23 @@ def compute_aggindex(time, timestep):
     time : pandas.DatetimeIndex
         Data time stamps.
     """
-    allowed = ["D", "H", "MS", "AS"]
-    errmsg = f"Expected time step in {'/'.join(allowed)}, got {timestep}."
-    assert timestep in allowed, errmsg
+    if timestep.startswith("AS"):
+        if timestep != "AS":
+            mth = re.sub("AS-", "", timestep)
+            allowed = [month_abbr[i].upper() for i in range(1, 13)]
+            errmsg = f"Expected month in {'/'.join(allowed)}, got"+\
+                        f" timestep={timestep}."
+            assert mth in allowed, errmsg
+    else:
+        allowed = ["D", "H", "MS"]
+        errmsg = f"Expected time step in {'/'.join(allowed)}, got {timestep}."
+        assert timestep in allowed, errmsg
 
     if timestep == "AS":
         return time.year.values
+    elif timestep.startswith("AS") and timestep != "AS":
+        imth = 11-np.where([mth == m for m in allowed])[0][0]
+        return (time+pd.DateOffset(months=imth)).year.values-1
     elif timestep == "MS":
         return time.year*100+time.month
     elif timestep == "D":
