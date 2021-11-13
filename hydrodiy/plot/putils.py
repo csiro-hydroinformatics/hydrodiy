@@ -352,6 +352,18 @@ def xdate(ax, interval="M", by=None, format="%b\n%Y"):
 
         loc = mdates.DayLocator(interval=interv, bymonthday=by)
 
+    elif interval.endswith("H"):
+        if interval == "H":
+            interv = 1
+        else:
+            interv = int(interval[:-1])
+
+        if by is None:
+            by = [0, 6, 12, 18]
+
+        loc = mdates.HourLocator(interval=interv, byhour=by)
+
+
     elif interval.endswith("Y"):
         if interval == "Y":
             interv = 1
@@ -368,7 +380,7 @@ def xdate(ax, interval="M", by=None, format="%b\n%Y"):
         loc = mdates.YearLocator(base=interv, month=by[0])
 
     else:
-        raise ValueError("Expected interval to end with D, M or Y, "+\
+        raise ValueError("Expected interval to end with H, D, M or Y, "+\
             "got {0}".format(interval))
 
     ax.xaxis.set_major_locator(loc)
