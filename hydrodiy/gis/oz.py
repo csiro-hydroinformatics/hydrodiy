@@ -273,7 +273,7 @@ class Oz:
 
 
 def ozlayer(ax, name, filter_field=None, filter_regex=None, proj=None, \
-                *args, **kwargs):
+                fixed_lim=True, *args, **kwargs):
     ''' plot Australian geographic layer in axes using data
     from Natural Earth.
     (see https://www.naturalearthdata.com/)
@@ -335,6 +335,9 @@ def ozlayer(ax, name, filter_field=None, filter_regex=None, proj=None, \
         # Return line object
         return (recs, lines[-1])
 
+    # Get xlim and ylim
+    xlim = ax.get_xlim()
+    ylim = ax.get_ylim()
 
     # Plot shapefile
     with shapefile.Reader(fshp) as shp_object:
@@ -380,5 +383,9 @@ def ozlayer(ax, name, filter_field=None, filter_regex=None, proj=None, \
             else:
                 # plot
                 lines.append(plotit(x, y, recs))
+
+    if fixed_lim:
+        ax.set_xlim(xlim)
+        ax.set_ylim(ylim)
 
     return lines
