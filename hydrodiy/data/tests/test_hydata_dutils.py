@@ -1,4 +1,4 @@
-import os
+import os, math
 import time
 import unittest
 from pathlib import Path
@@ -523,19 +523,28 @@ class UtilsTestCase(unittest.TestCase):
         self.assertEqual(tz, "Australia/Perth")
 
 
-    def test_water_year(self):
-        t = pd.date_range("2010-06-25", "2010-07-10")
-        wy = dutils.water_year(t, 1)
-        assert np.allclose(wy, 2010)
+    def test_water_year_end(self):
+        t = pd.date_range("2000-01-01", "2010-12-31")
+        a = 8
+        for _ in range(100):
+            e = np.random.uniform(-0.05, 0.05, size=len(t))
+            q = pd.Series(e+(np.cos((t.month-a)*math.pi/6)+1)/2, \
+                            index=t)
 
-        wy = dutils.water_year(t)
-        assert np.allclose(wy[:6], 2009)
-        assert np.allclose(wy[6:], 2010)
+            wye = dutils.water_year_end(q)
+            assert np.allclose(wye, 2)
 
         try:
-            wy = dutils.water_year(t, 15)
+            wy = dutils.water_year_end(q, 12)
         except AssertionError as err:
-            self.assertTrue(str(err).startswith("Expected start"))
+            self.assertTrue(str(err).startswith("Expected convolve_window"))
+
+        try:
+            q = pd.Series(q.values)
+            wy = dutils.water_year_end(q)
+        except AssertionError as err:
+            self.assertTrue(str(err).startswith("Expected x with"))
+
 
 
     def test_compute_aggindex(self):

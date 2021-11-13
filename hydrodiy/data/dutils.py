@@ -312,27 +312,43 @@ def lag(data, lag, missing=np.nan):
     return lagged
 
 
-def water_year(time, start_month=7):
-    """ Define the water year for a set of time stamps.
+def water_year_end(x, convolve_window=3):
+    """ Define the water year end month for a given time series.
+    End of water year is defined as the month for which the average flow
+    during a window centered in this month and of duration 'convolve_window'
+    is the lowest in the year.
+
+    To aggregate data to water year, use compute_aggindex function
+    with timestep set to "AS-{end month}" (using calendar month abbreviations
+    from calendar.month_abbr).
 
     Parameters
     -----------
-    time : pandas.DatetimeIndex
-        Data time stamps.
-    start_month : int
-        Water year start month.
+    x : pandas.Series
+        Series with Datetime index.
+    convolve_window : int
+        Duration of convolution window.
+
+    Returns
+    -------
+    year_star : int
+        Month corresponding to water year start.
     """
-    errmsg = f"Expected start month in [1, 12], got {start_month}."
-    assert start_month>=1 and start_month<=12, errmsg
+    errmsg = f"Expected x with a datetime index."
+    assert isinstance(x.index, pd.DatetimeIndex), errmsg
+    errmsg = f"Expected convolve_window in [1, 3, 5], got {convolve_window}."
+    assert convolve_window in [1, 3, 5], errmsg
 
-    years = lag(time.year.values, start_month-1, -1)
+    m = x.groupby(x.index.month).mean()
+    # Perform a circular convolution
+    w = convolve_window
+    mm = np.convolve(np.tile(m, 2), np.ones(w)/w, mode="same")
 
-    # Fill in missing values
-    missing = years < 0
-    y1 = years[~missing].min()
-    years[missing] = y1-1
+    # Eliminate beginning and end of convolution
+    mm = np.concatenate([mm[12:18], mm[6:12]])
 
-    return years
+    # Returns the month with lowest mean
+    return np.argmin(mm)+1
 
 
 def monthly2daily(se, interpolation="flat", minthreshold=0.):
