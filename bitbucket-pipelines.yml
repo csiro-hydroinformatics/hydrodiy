@@ -1,4 +1,4 @@
-imag0: continuumio/miniconda3:latest
+image: continuumio/miniconda3:latest
 
 pipelines:
   branches:
