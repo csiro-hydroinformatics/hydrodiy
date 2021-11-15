@@ -2,7 +2,7 @@ image: continuumio/miniconda3:latest
 
 pipelines:
   branches:
-    master:
+    '{master,cleanup}':
         - step:
             caches:
               - pip
