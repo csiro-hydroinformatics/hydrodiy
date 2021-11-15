@@ -6,11 +6,11 @@ import pandas as pd
 from hydrodiy.stat import sutils
 from hydrodiy.plot import putils
 
-from matplotlib import lines
+from matplotlib import lines, colors as mcolors
 from matplotlib.patches import FancyBboxPatch, BoxStyle
 import matplotlib.pyplot as plt
 
-COLORS = putils.COLORS_TAB
+COLORS = mcolors.TABLEAU_COLORS
 EPS = 1e-10
 
 class BoxplotError(Exception):

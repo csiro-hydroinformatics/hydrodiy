@@ -1,4 +1,4 @@
-image: continuumio/miniconda3:latest
+imag0: continuumio/miniconda3:latest
 
 pipelines:
   branches:
@@ -12,16 +12,9 @@ pipelines:
               - conda env update -n diyenv --file  env.yml
               - source activate diyenv
               - python setup.py develop
-              #- pytest --cov-report html:cov_html_gridverif --cov=gridverif tests
+              
               # Running tests
-              - nosetests hydrodiy/io/tests
-              - nosetests hydrodiy/data/tests
-              - nosetests hydrodiy/stat/tests
-              - nosetests hydrodiy/plot/tests
-              - nosetests hydrodiy/gis/tests
-
-              # coverage
-              - coverage xml --rcfile=.coveragerc
+              - pytest --junitxml=junit/test-results.xml --cov=hydrodiy --cov-config=.coveragerc --cov-report=xml hydrodiy
 
               # Pylint
               #pylint --rcfile pylintrc hydrodiy > pylint_results
@@ -38,16 +31,12 @@ pipelines:
               # Remove C modules and rerun tests
               - rm -f *.so
               - rm -rf build
-              - nosetests hydrodiy/io/tests
-              - nosetests hydrodiy/data/tests
-              - nosetests hydrodiy/stat/tests
-              - nosetests hydrodiy/plot/tests
-              - nosetests hydrodiy/gis/tests
+              - pytest --junitxml=junit/test-results.xml --cov=hydrodiy --cov-config=.coveragerc --cov-report=xml hydrodiy
 
             artifacts: 
               - cov_html_gridverif/**
 
 definitions:
   caches:
-    conda:  ~/.conda/envs/hydroverif
+    conda:  ~/.conda/envs/diyenv
 
