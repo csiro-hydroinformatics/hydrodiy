@@ -3,6 +3,7 @@
 import sys, os, re
 
 from datetime import datetime
+from getpass import getuser
 
 import gzip
 import zipfile
@@ -94,7 +95,7 @@ def _csvhead(nrow, ncol, comment, source_file, author=None):
     # seek author
     if author is None:
         try:
-            author = os.getlogin()
+            author = getuser()
         except Exception:
             author = 'unknown'
 

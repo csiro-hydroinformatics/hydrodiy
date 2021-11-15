@@ -89,7 +89,8 @@ setup(
         "Cython (>=0.20.1)",
         "numpy (>=1.8)",
         "matplotlibb (>=1.3.1)",
-        "requests"
+        "requests",
+        "PIL"
     ],
     cmdclass = cmdclass,
     ext_modules = ext_modules,

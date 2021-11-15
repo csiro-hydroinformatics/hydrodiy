@@ -1,6 +1,6 @@
 import os
 import unittest
-
+from pathlib import Path
 import pandas as pd
 import numpy as np
 from scipy.stats import norm
@@ -18,13 +18,10 @@ class UtilsTestCase(unittest.TestCase):
 
     def setUp(self):
         print("\t=> UtilsTestCase (hyplot)")
-        source_file = os.path.abspath(__file__)
-        self.test = os.path.dirname(source_file)
-        self.fimg = os.path.join(self.test, "images")
-        try:
-            os.mkdir(self.fimg)
-        except:
-            pass
+        source_file = Path(__file__).resolve()
+        self.test = source_file.parent
+        self.fimg = self.test / "images"
+        self.fimg.mkdir(exist_ok=True)
 
         # Reset matplotlib defaults
         mpl.rcdefaults()
@@ -49,7 +46,7 @@ class UtilsTestCase(unittest.TestCase):
                 ax.add_patch(r)
 
             fig.set_size_inches((12, 5))
-            fp = os.path.join(self.fimg, "colorset_{}.png".format(colname))
+            fp = self.fimg / f"colorset_{colname}.png"
             fig.savefig(fp)
 
 
@@ -61,7 +58,7 @@ class UtilsTestCase(unittest.TestCase):
         x = np.arange(1, 257).reshape((1,256))
         fig, ax = plt.subplots()
         ax.pcolor(x, cmap=cmap, vmin=1, vmax=256)
-        fp = os.path.join(self.fimg, "cmap.png")
+        fp = self.fimg / "cmap.png"
         fig.savefig(fp)
 
 
@@ -76,7 +73,7 @@ class UtilsTestCase(unittest.TestCase):
         fig, axs = plt.subplots(ncols=2)
         axs[0].pcolor(x, cmap=cmap, vmin=1, vmax=256)
         axs[1].pcolor(x, cmap=grayscale, vmin=1, vmax=256)
-        fp = os.path.join(self.fimg, "grayscale.png")
+        fp = self.fimg / "grayscale.png"
         fig.savefig(fp)
 
 
@@ -103,7 +100,7 @@ class UtilsTestCase(unittest.TestCase):
                 ax.add_patch(r)
 
             fig.set_size_inches((12, 5))
-            fp = os.path.join(self.fimg, "cmap2colors_{}.png".format(cmap))
+            fp = self.fimg / f"cmap2colors_{cmap}.png"
             fig.savefig(fp)
 
 
@@ -124,6 +121,7 @@ class UtilsTestCase(unittest.TestCase):
         putils.line(ax, 1, 0.2, 1., 2, "-.")
 
         fp = os.path.join(self.fimg, "lines.png")
+        fp = self.fimg / "lines.png"
         fig.savefig(fp)
 
 
@@ -142,14 +140,14 @@ class UtilsTestCase(unittest.TestCase):
         putils.line(ax, 1, 0, x0, 0, "--")
         putils.line(ax, 1, 0.4, x0, 0, ":")
 
-        fp = os.path.join(self.fimg, "lines_date.png")
+        fp = self.fimg / "lines_date.png"
         fig.savefig(fp)
 
 
     def test_equation(self):
         """ Test equations """
         tex = r"\begin{equation} y = ax+b \end{equation}"
-        fp = os.path.join(self.fimg, "equations1.png")
+        fp = self.fimg / "equations1.png"
         try:
             putils.equation(tex, fp)
         except (FileNotFoundError, RuntimeError) as err:
@@ -159,7 +157,7 @@ class UtilsTestCase(unittest.TestCase):
 
         tex = r"\begin{equation} y = \frac{\int_0^{+\infty}"+\
                             " x\ \exp(-\\alpha x)}{\pi} \end{equation}"
-        fp = os.path.join(self.fimg, "equations2.png")
+        fp = self.fimg / "equations2.png"
         try:
             putils.equation(tex, fp)
         except (FileNotFoundError, RuntimeError) as err:
@@ -168,7 +166,7 @@ class UtilsTestCase(unittest.TestCase):
             self.skipTest(message)
 
         tex = r"\begin{eqnarray} y & = & ax+b \\ z & = & \zeta \end{eqnarray}"
-        fp = os.path.join(self.fimg, "equations3.png")
+        fp = self.fimg / "equations3.png"
         try:
             putils.equation(tex, fp)
         except (FileNotFoundError, RuntimeError) as err:
@@ -178,7 +176,7 @@ class UtilsTestCase(unittest.TestCase):
 
         tex = r"\begin{equation} y = \begin{bmatrix} 1 & 0 & 0 \\ " +\
             r"0 & 1 & 0 \\ 0 & 0 & 1\end{bmatrix} \end{equation}"
-        fp = os.path.join(self.fimg, "equations4.png")
+        fp = self.fimg / "equations4.png"
         try:
             putils.equation(tex, fp)
         except (FileNotFoundError, RuntimeError) as err:
@@ -209,22 +207,22 @@ class UtilsTestCase(unittest.TestCase):
             fig.savefig(fp)
 
         putils.set_mpl()
-        fp = os.path.join(self.fimg, "set_mpl1.png")
+        fp = self.fimg / "set_mpl1.png"
         plot(fp)
 
         mpl.rcdefaults()
         putils.set_mpl(color_theme="white")
-        fp = os.path.join(self.fimg, "set_mpl2.png")
+        fp = self.fimg / "set_mpl2.png"
         plot(fp)
 
         mpl.rcdefaults()
         putils.set_mpl(font_size=25)
-        fp = os.path.join(self.fimg, "set_mpl3.png")
+        fp = self.fimg / "set_mpl3.png"
         plot(fp)
 
         mpl.rcdefaults()
         putils.set_mpl(usetex=True)
-        fp = os.path.join(self.fimg, "set_mpl4.png")
+        fp = self.fimg / "set_mpl4.png"
         try:
             plot(fp, True)
         except (FileNotFoundError, RuntimeError) as err:
@@ -248,7 +246,7 @@ class UtilsTestCase(unittest.TestCase):
         cont = ax.contourf(xx, yy, zz, cmap="Blues")
         ax.contour(cont, colors="grey")
         ax.plot(xy[:, 0], xy[:, 1], ".", alpha=0.2, mfc="grey", mec="none")
-        fp = os.path.join(self.fimg, "kde.png")
+        fp = self.fimg / "kde.png"
         fig.savefig(fp)
 
 
@@ -267,7 +265,7 @@ class UtilsTestCase(unittest.TestCase):
         cont = ax.contourf(xx, yy, zz, cmap="Blues")
         ax.contour(cont, colors="grey")
         ax.plot(xy[:, 0], xy[:, 1], ".", alpha=0.2, mfc="grey", mec="none")
-        fp = os.path.join(self.fimg, "kde_ties.png")
+        fp = self.fimg / "kde_ties.png"
         fig.savefig(fp)
 
 
@@ -291,7 +289,7 @@ class UtilsTestCase(unittest.TestCase):
                             edgecolor=colors[i])
                 ax.add_patch(el)
 
-        fp = os.path.join(self.fimg, "ellipse.png")
+        fp = self.fimg / "ellipse.png"
         fig.savefig(fp)
 
 
@@ -303,20 +301,20 @@ class UtilsTestCase(unittest.TestCase):
         plt.close("all")
         fig, ax = plt.subplots()
         putils.qqplot(ax, x)
-        fp = os.path.join(self.fimg, "qpplot1.png")
+        fp = self.fimg / "qqplot1.png"
         fig.savefig(fp)
 
         fig, ax = plt.subplots()
         putils.qqplot(ax, x, True)
         ax.legend(loc=2)
-        fp = os.path.join(self.fimg, "qpplot2.png")
+        fp = self.fimg / "qqplot2.png"
         fig.savefig(fp)
 
         fig, ax = plt.subplots()
         xc = np.maximum(x, 1)
         putils.qqplot(ax, xc, True, 1)
         ax.legend(loc=2)
-        fp = os.path.join(self.fimg, "qpplot3.png")
+        fp = self.fimg / "qqplot3.png"
         fig.savefig(fp)
 
         mpl.rcdefaults()
@@ -333,18 +331,19 @@ class UtilsTestCase(unittest.TestCase):
         ax.plot(dt, x)
         putils.xdate(ax)
         fp = os.path.join(self.fimg, "xdate_monthly1.png")
+        fp = self.fimg / "xdate_monthly1.png"
         fig.savefig(fp)
 
         fig, ax = plt.subplots()
         ax.plot(dt, x)
         putils.xdate(ax, "3M")
-        fp = os.path.join(self.fimg, "xdate_monthly2.png")
+        fp = self.fimg / "xdate_monthly2.png"
         fig.savefig(fp)
 
         fig, ax = plt.subplots()
         ax.plot(dt, x)
         putils.xdate(ax, "M", [2, 4, 5])
-        fp = os.path.join(self.fimg, "xdate_monthly3.png")
+        fp = self.fimg / "xdate_monthly3.png"
         fig.savefig(fp)
 
 
@@ -359,7 +358,7 @@ class UtilsTestCase(unittest.TestCase):
         fig, ax = plt.subplots()
         ax.plot(dt, x)
         putils.xdate(ax, "D", by=[1, 15], format="%d\n%b\n%y")
-        fp = os.path.join(self.fimg, "xdate_daily.png")
+        fp = self.fimg / "xdate_daily.png"
         fig.savefig(fp)
 
 
@@ -374,13 +373,13 @@ class UtilsTestCase(unittest.TestCase):
         fig, ax = plt.subplots()
         ax.plot(dt, x)
         putils.xdate(ax, "Y", by=[1], format="%b\n%y")
-        fp = os.path.join(self.fimg, "xdate_yearl1.png")
+        fp = self.fimg / "xdate_yearly1.png"
         fig.savefig(fp)
 
         fig, ax = plt.subplots()
         ax.plot(dt, x)
         putils.xdate(ax, "3Y", by=[7], format="%b\n%y")
-        fp = os.path.join(self.fimg, "xdate_yearl2.png")
+        fp = self.fimg / "xdate_yearly2.png"
         fig.savefig(fp)
 
 
@@ -396,7 +395,7 @@ class UtilsTestCase(unittest.TestCase):
             ax.plot(dt, x)
             xticks = ax.get_xticks()
             putils.xdate(ax, "Y", by=[1], format="%b\n%y")
-            fp = os.path.join(self.fimg, "xdate_yearl1.png")
+            fp = self.fimg / "xdate_yearly1.png"
             fig.savefig(fp)
         except ValueError as err:
             self.assertTrue(str(err).startswith("xaxis does not seem"))
@@ -419,7 +418,7 @@ class UtilsTestCase(unittest.TestCase):
             cmap = putils.cmap_accentuate("RdBu", params[iax])
             ax.contourf(zz, levels=levels, vmin=0., vmax=1., cmap=cmap)
 
-        fp = os.path.join(self.fimg, "cmap_accentuate.png")
+        fp = self.fimg / "cmap_accentuate.png"
         fig.savefig(fp)
 
 
@@ -437,7 +436,7 @@ class UtilsTestCase(unittest.TestCase):
                                             band_width=widths[iax])
             ax.contourf(zz, levels=levels, vmin=0., vmax=1., cmap=cmap)
 
-        fp = os.path.join(self.fimg, "cmap_neutral.png")
+        fp = self.fimg / "cmap_neutral.png"
         fig.savefig(fp)
 
 
@@ -453,7 +452,7 @@ class UtilsTestCase(unittest.TestCase):
             lines[nm].set_linestyle(":")
 
         ax.legend(loc=2)
-        fp = os.path.join(self.fimg, "ecdfplot.png")
+        fp = self.fimg / "ecdf_plot.png"
         fig.savefig(fp)
 
 
@@ -469,7 +468,7 @@ class UtilsTestCase(unittest.TestCase):
         lines = putils.ecdfplot(ax, df, label_stat="nunique", \
                                     label_stat_format="0.0f")
         ax.legend(loc=2)
-        fp = os.path.join(self.fimg, "ecdfplot_nan.png")
+        fp = self.fimg / "ecdf_plot_nan.png"
         fig.savefig(fp)
 
 
@@ -483,7 +482,7 @@ class UtilsTestCase(unittest.TestCase):
         lines = putils.ecdfplot(ax, df, "std", "0.3f")
 
         ax.legend(loc=2)
-        fp = os.path.join(self.fimg, "ecdfplot_labels.png")
+        fp = self.fimg / "ecdf_plot_labels.png"
         fig.savefig(fp)
 
 
@@ -495,7 +494,7 @@ class UtilsTestCase(unittest.TestCase):
                                 markersizemin=5, markersizemax=12, \
                                 alpha=0.6)
         ax.legend(loc=2, title="categories")
-        fp = os.path.join(self.fimg, "scattercat.png")
+        fp = self.fimg / "scattercat.png"
         fig.savefig(fp)
 
 
@@ -507,7 +506,7 @@ class UtilsTestCase(unittest.TestCase):
                                 markersizemin=5, markersizemax=12, \
                                 cmap=None)
         ax.legend(loc=2, title="categories")
-        fp = os.path.join(self.fimg, "scattercat_nocmap.png")
+        fp = self.fimg / "scattercat_nocmap.png"
         fig.savefig(fp)
 
 
@@ -532,7 +531,7 @@ class UtilsTestCase(unittest.TestCase):
                                 alpha=0.6)
         ax.legend(loc=2, title="categories")
 
-        fp = os.path.join(self.fimg, "scattercat_cat.png")
+        fp = self.fimg / "scattercat_cat.png"
         fig.savefig(fp)
 
 
@@ -551,7 +550,7 @@ class UtilsTestCase(unittest.TestCase):
                                 1./ncols, 1./ncols, facecolor=col)
             ax.add_patch(r)
 
-        fp = os.path.join(self.fimg, "interpolate.png")
+        fp = self.fimg / "interpolate.png"
         fig.savefig(fp)
 
 
@@ -562,18 +561,42 @@ class UtilsTestCase(unittest.TestCase):
         xy = np.random.multivariate_normal(mean, cov, size=100)
         fig, ax = plt.subplots()
         putils.bivarnplot(ax, xy)
-        fp = os.path.join(self.fimg, "bivarnplot.png")
+        fp = self.fimg / "bivarnplot.png"
         fig.savefig(fp)
 
 
     def test_waterbalplot(self):
         """ Test categorical scatter plot """
+        plt.close("all")
         fig, ax = plt.subplots()
         tm_line = putils.waterbalplot(ax)
         tm_line.set_linewidth(5)
         tm_line.set_color("tab:red")
-        fp = os.path.join(self.fimg, "waterbalplot.png")
+        fp = self.fimg / "waterbalplot.png"
         fig.savefig(fp)
+
+
+    def test_png_metadata(self):
+        plt.close("all")
+        fig, ax = plt.subplots()
+        x = np.random.uniform(0, 1, size=50)
+        ax.plot(x)
+        fp = self.fimg / "metadata.png"
+        fig.savefig(fp)
+
+        meta = {\
+            "source_file": Path(__file__).resolve(), \
+            "bidule": "truc", \
+            "xdata": ", ".join([f"{xx:0.2f}" for xx in x])
+        }
+        putils.add_metadata_to_png(fp, meta)
+
+        meta2 = putils.read_metadata_from_png(fp)
+        for k in meta2:
+            if k in ["author", "time_created"]:
+                continue
+            assert meta2[k] == str(meta[k])
+
 
 
 if __name__ == "__main__":

@@ -187,6 +187,12 @@ gs.tight_layout(fig, rect=[0, 0., 1, 0.95])
 fp = fimg / f"image.{imgext}"
 fig.savefig(fp, dpi=fdpi)
 
+metadata = {\
+    "source_file": source_file, \
+    "other": "other"
+}
+putils.add_metadata_to_png(fp, metadata)
+
 # To save to pdf
 #pdf.savefig(fig)
 #pdf.close()

@@ -1,9 +1,10 @@
 import os, math, re
 import warnings
 from datetime import datetime
-
+from getpass import getuser
 from scipy.stats import gaussian_kde, chi2, norm
 from scipy import linalg
+from PIL.PngImagePlugin import PngImageFile, PngInfo
 
 HAS_CYCLER = False
 try:
@@ -36,12 +37,6 @@ from hydrodiy.stat import sutils
 COLORS_SLIDE_BACKGROUND = "#002745"
 COLORS_BADGOOD = ["#4D935F", "#915592"]
 COLORS_TERCILES = ["#FF9933", "#64A0C8", "#005BBB"]
-COLORS_TAB = [mcolors.rgb2hex([float(coo)/255 for coo in co]) for co in [ \
-            (31, 119, 180), (255, 127, 14), (44, 160, 44), \
-            (214, 39, 40), (148, 103, 189), (140, 86, 75), \
-            (227, 119, 194), (127, 127, 127), (188, 189, 34), \
-            (23, 190, 207)
-        ] ]
 
 # Palette for color blind readers
 # see https://www.somersault1824.com/tips-for-designing-scientific-figures-for-color-blind-readers/
@@ -518,7 +513,7 @@ def equation(tex, filename, \
 
 
 def set_mpl(color_theme="black", font_size=18, usetex=False, \
-                    color_cycle=COLORS_TAB):
+                    color_cycle=mcolors.TABLEAU_COLORS):
     """ Set convenient default matplotlib parameters
 
     Parameters
@@ -1023,3 +1018,65 @@ def waterbalplot(ax, ncoeff=2.5):
 
     return tm_line
 
+
+def add_metadata_to_png(fimg, metadata, author=None):
+    """ Add metadata to a png file
+
+    Parameters
+    ----------
+    fimg : pathlib.Path or str
+        Path to png file
+    metadata : dict
+        Dictionary {str, str} containing metadata key and value.
+    add_author : bool
+        Automatically add author if not provided in metadata.
+    add_time : bool
+        Automatically add time of creation if not provided in metadata.
+    """
+    # Enforce a key named "source file" to locate
+    # generation script
+    errmsg = "Expected metadata to have a key named 'source_file'"
+    assert "source_file" in metadata, errmsg
+
+    # Check source file exists
+    source_file = metadata["source_file"]
+    if isinstance(source_file, str):
+        source_file = Path(source_file)
+    errmsg = f"{source_file} does not exists"
+    assert source_file.exists(), errmsg
+
+    # Add metadata
+    img = PngImageFile(fimg)
+    fileinfo = PngInfo()
+    for key, value in metadata.items():
+        k = re.sub(" ", "_", str(key))
+        fileinfo.add_text(k, str(value))
+
+    # Add author and time created
+    if author is None:
+        author = getuser()
+    fileinfo.add_text("author", author)
+
+    fileinfo.add_text("time_created", str(datetime.now()))
+
+    # Store in png file
+    img.save(fimg, pnginfo=fileinfo)
+
+
+def read_metadata_from_png(fimg):
+    """ Reads metadata from a png file
+
+    Parameters
+    ----------
+    fimg : pathlib.Path or str
+        Path to png file
+
+    Returns
+    -------
+    metadata : dict
+        Dictionary {str, str} containing metadata key and value.
+    """
+    img = PngImageFile(fimg)
+    metadata = img.text
+
+    return metadata
