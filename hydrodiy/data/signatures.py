@@ -54,10 +54,7 @@ def eckhardt(flow, thresh=0.95, tau=20, BFI_max=0.8, timestep_type=1):
     >>> signatures.baseflow(q)
 
     """
-    # Check C modules are available
-    if not HAS_C_DATA_MODULE:
-        raise ValueError("Compiled C module c_hydrodiy_data is not available, "+\
-                "please run python setup.py build")
+    has_c_module("data")
 
     # run C code via cython
     thresh = np.float64(thresh)
