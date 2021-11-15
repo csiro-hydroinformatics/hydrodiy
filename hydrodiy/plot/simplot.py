@@ -22,7 +22,7 @@ from hydrodiy.plot import putils
 from hydrodiy import has_c_module
 
 # Select color scheme
-COLOR_SCHEME = colors.TABLEAU_COLORS
+COLOR_SCHEME = [v for k, v in colors.TABLEAU_COLORS.items()]
 
 def get_colors(skip=0):
     return cycle(COLOR_SCHEME[skip:])

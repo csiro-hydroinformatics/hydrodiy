@@ -10,7 +10,7 @@ from matplotlib import lines, colors as mcolors
 from matplotlib.patches import FancyBboxPatch, BoxStyle
 import matplotlib.pyplot as plt
 
-COLORS = mcolors.TABLEAU_COLORS
+COLORS = [v for k, v in mcolors.TABLEAU_COLORS.items()]
 EPS = 1e-10
 
 class BoxplotError(Exception):
