@@ -354,10 +354,10 @@ class TransformTestCase(unittest.TestCase):
                 idx = idx & (jac>0.) & (jac<5e3)
                 crit = np.abs(jac-jacn)/(1+jac+jacn)
                 idx = idx & ~np.isnan(crit)
-                ck = np.all(crit[idx]<1e-3)
+                ck = np.all(crit[idx]<3e-3)
                 if not ck:
-                    print(("\n\n!!!Transform {0} failing the"+\
-                        " numerical Jacobian test").format(trans.name))
+                    print(f"\n\n!!!Transform {trans.name} failing the"+\
+                        f" numerical Jacobian test ({crit[idx].max():3.3e}")
 
                 self.assertTrue(ck)
 
