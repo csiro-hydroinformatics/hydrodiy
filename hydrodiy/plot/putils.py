@@ -34,7 +34,6 @@ from scipy.stats import norm
 from hydrodiy.stat import sutils
 
 # Some useful colors
-COLORS_SLIDE_BACKGROUND = "#002745"
 COLORS_BADGOOD = ["#4D935F", "#915592"]
 COLORS_TERCILES = ["#FF9933", "#64A0C8", "#005BBB"]
 
@@ -49,6 +48,31 @@ COLORS_CBLIND = ["#000000", "#074751", "#009292", "#FE6CB5", "#FEB5DA", \
 # see http://colorbrewer2.org/
 COLORS_SAFE = ["#E66101", "#FDB863", "#B2ABD2", "#5E3C99"]
 
+# Useful palette
+COLORS_CORE = {
+    "middayblue": "#00a9ce", \
+    "midnightblue": "#001d34", \
+    "steel": "#757579", \
+    "mist": "#dadbdc"
+}
+
+COLORS_PRIMARY = {
+    "blueberry": "#1e2277", \
+    "oceanblue": "#004b87", \
+    "teal": "#007377", \
+    "mint": "#007a53"
+}
+
+COLORS_SECONDARY = {
+    "plum": "#6d2077", \
+    "fuschia": "#df1995", \
+    "orange": "#e77722", \
+    "gold": "#e1b81c", \
+    "lavender": "#9faee5", \
+    "lightteal": "#2dccd3", \
+    "forest": "#78be20", \
+    "lightmint": "#71cc98"
+}
 
 def cmap2colors(ncols=10, cmap="Paired"):
     """ Generates a set of colors from a colormap
