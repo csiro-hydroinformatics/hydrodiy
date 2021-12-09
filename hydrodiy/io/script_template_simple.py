@@ -35,7 +35,7 @@ parser = argparse.ArgumentParser(\
 parser.add_argument("-v", "--version", \
                     help="Version number", \
                     type=int, required=True)
-parser.add_argument("-p", "--sitepattern", help="Site selection pattern", \
+parser.add_argument("-s", "--sitepattern", help="Site selection pattern", \
                     type=str, default="")
 parser.add_argument("-i", "--ibatch", help="Batch process number", \
                     type=int, default=-1)
