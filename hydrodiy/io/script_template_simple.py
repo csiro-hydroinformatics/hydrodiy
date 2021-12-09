@@ -18,6 +18,8 @@ from dateutil.relativedelta import relativedelta as delta
 
 from hydrodiy.io import csv, iutils
 
+from tqdm import tqdm
+
 #import importlib.util
 #spec = importlib.util.spec_from_file_location("foo", "/path/to/foo.py")
 #foo = importlib.util.module_from_spec(spec)
@@ -39,11 +41,17 @@ parser.add_argument("-i", "--ibatch", help="Batch process number", \
                     type=int, default=-1)
 parser.add_argument("-n", "--nbatch", help="Number of batch processes", \
                     type=int, default=7)
+parser.add_argument("-j", "--jobid", help="JobID", \
+                    type=int, default=-1)
+parser.add_argument("-p", "--progress", help=" Show progress", \
+                    action="store_true", default=False)
 args = parser.parse_args()
 
 version = args.version
 ibatch = args.ibatch
 nbatch = args.nbatch
+jobid = args.jobid
+progress = args.jobid
 sitepattern = args.sitepattern
 
 #----------------------------------------------------------------------
