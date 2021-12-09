@@ -509,9 +509,8 @@ def equation(tex, filename, \
 
     # Set tex options
     mpl.rc("text", usetex=True)
-    mpl.rc("text.latex", preamble=[r"\usepackage{amsmath}", \
-                                    r"\usepackage{amssymb}"])
-
+    mpl.rc("text.latex", preamble=r"\usepackage{amsmath}"+\
+                                    r"\usepackage{amssymb}")
     # Plot
     plt.close("all")
 
@@ -555,8 +554,8 @@ def set_mpl(color_theme="black", font_size=18, usetex=False, \
     # Latex mode
     mpl.rc("text", usetex=usetex)
     if usetex:
-        preamble = [r"\usepackage{amsmath}", \
-                        r"\usepackage{amssymb}"]
+        preamble = r"\usepackage{amsmath}\n"+ \
+                        r"\usepackage{amssymb}"
         mpl.rc("text.latex", preamble=preamble)
 
     # Font size
