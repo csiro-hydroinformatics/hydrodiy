@@ -82,10 +82,10 @@ def str2dict(source, num2str=True):
 
     for match in search:
         # Get name
-        name = re.sub("\[.*", "", match)
+        name = re.sub("\\[.*", "", match)
 
         # Get value
-        value = re.sub(".*\[|\]", "", match)
+        value = re.sub(".*\\[|\\]", "", match)
 
         # Remove item from prefix
         prefix = re.sub("_*"+name+"\\[" + value + "\\]", "", prefix)
@@ -157,7 +157,7 @@ def script_template(filename, comment,
     meta += f"## Created : {datetime.now()}\n"
     meta += f"## Comment : {comment}\n"
     meta += "##\n## ------------------------------\n"
-    txt = re.sub("\[COMMENT\]", meta, txt)
+    txt = re.sub("\\[COMMENT\\]", meta, txt)
 
     # -- Add paths --
     filename = Path(filename)
@@ -172,22 +172,22 @@ def script_template(filename, comment,
         nlevelup = parts[::-1].index("scripts")
         froot += "".join([".parent"]*nlevelup)
 
-    txt = re.sub("\[FROOT\]", froot, txt)
+    txt = re.sub("\\[FROOT\\]", froot, txt)
 
     if fout is None:
         fout = "froot / \"outputs\"\nfout.mkdir(exist_ok=True)\n"
-    txt = re.sub("\[FOUT\]", fout, txt)
+    txt = re.sub("\\[FOUT\\]", fout, txt)
 
     if fdata is None:
         fdata = "froot / \"data\"\nfdata.mkdir(exist_ok=True)\n"
-    txt = re.sub("\[FDATA\]", fdata, txt)
+    txt = re.sub("\\[FDATA\\]", fdata, txt)
 
     if type == "plot":
         if fimg is None:
             fimg = "froot / \"images\"\nfimg.mkdir(exist_ok=True)\n"
-        txt = re.sub("\[FIMG\]", fimg, txt)
+        txt = re.sub("\\[FIMG\\]", fimg, txt)
     else:
-        txt = re.sub("fimg = \[FIMG\]", "", txt)
+        txt = re.sub("fimg = \\[FIMG\\]", "", txt)
 
     # Write
     with filename.open("w") as fs:
@@ -335,8 +335,8 @@ def read_logfile(flog, \
         raise ValueError("File {0} does not exist".format(flog))
 
     # Build regex
-    regex = re.sub("\)s", ">.*)", re.sub("\%\(", "(?P<", fmt))
-    regex = re.sub("\|", "\|", regex)
+    regex = re.sub("\\)s", ">.*)", re.sub("\\%\\(", "(?P<", fmt))
+    regex = re.sub("\\|", "\\|", regex)
 
     # Open log file
     with open(flog, "r") as fobj:
@@ -353,7 +353,7 @@ def read_logfile(flog, \
 
     # Process contextual info
     if "message" in logs:
-        context = logs.message.str.findall("(?<=\{)[^\}]+(?=\})")
+        context = logs.message.str.findall("(?<=\\{)[^\\}]+(?=\\})")
         context = context.apply(lambda x: "".join(x).strip())
         logs["context"] = context
 
