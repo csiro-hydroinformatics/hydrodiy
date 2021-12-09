@@ -30,11 +30,13 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_color_sets(self):
         """ Test color sets """
-        for colname in ["slide_background", "badgood", "terciles", \
-                            "cblind", "safe"]:
+        for colname in ["badgood", "terciles", "cblind", "safe", \
+                        "core", "primary", "secondary"]:
             cols = getattr(putils, "COLORS_{}".format(colname.upper()))
             if isinstance(cols, str):
                 cols = [cols]
+            elif isinstance(cols, dict):
+                cols = [col for cn, col in cols.items()]
 
             fig, ax = plt.subplots()
             ax.plot([0, 1], [0, 1], color="none")
@@ -156,7 +158,8 @@ class UtilsTestCase(unittest.TestCase):
             self.skipTest(message)
 
         tex = r"\begin{equation} y = \frac{\int_0^{+\infty}"+\
-                            " x\ \exp(-\\alpha x)}{\pi} \end{equation}"
+                            r" x\ \exp(-\alpha x)}{\pi} "+\
+                            r"\end{equation}"
         fp = self.fimg / "equations2.png"
         try:
             putils.equation(tex, fp)
@@ -198,7 +201,7 @@ class UtilsTestCase(unittest.TestCase):
 
             label = "y"
             if usetex:
-                label="$\displaystyle \sum_1^\infty x^i$"
+                label=r"$\displaystyle \sum_1^\infty x^i$"
             ax.plot(x, y2, "o-", label=label)
             leg = ax.legend()
             ax.set_title("Title")
