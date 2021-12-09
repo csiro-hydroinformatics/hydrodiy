@@ -224,7 +224,7 @@ class UtilsTestCase(unittest.TestCase):
                         flog=flog2)
 
         mess = ["flog2 A", "flog2 B"]
-        logger2.warn(mess[0])
+        logger2.warning(mess[0])
         logger2.critical(mess[1])
 
         self.assertTrue(os.path.exists(flog2))
@@ -273,8 +273,8 @@ class UtilsTestCase(unittest.TestCase):
         with open(flog, "r") as fl:
             txt = fl.readlines()
 
-        ck = bool(re.search("\{ context1 \}", txt[0]))
-        ck = ck & bool(re.search("\{ context2 \}", txt[1]))
+        ck = bool(re.search("\\{ context1 \\}", txt[0]))
+        ck = ck & bool(re.search("\\{ context2 \\}", txt[1]))
         self.assertTrue(ck)
 
 
