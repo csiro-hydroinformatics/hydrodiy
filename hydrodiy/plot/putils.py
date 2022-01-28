@@ -794,7 +794,7 @@ def ecdfplot(ax, df, label_stat=None, label_stat_format="4.2f", \
 
 def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="viridis", \
                         markersizemin=8, markersizemax=8, \
-                        fmt="0.2f", nval=False, \
+                        fmt="0.2f", nval=False, eps=1e-5, \
                         *args, **kwargs):
     """ Draw a scatter plot using different colors or markersize depending
     on categories defined by z. Be careful when z has a lot of zeros,
@@ -826,6 +826,8 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="viridis", \
         Number format to be used in labels
     nval : bool
         Add number of points in labels
+    eps : float
+        Tolerance on min and max value if using cuts.
     args, kwargs
         Argument sent to matplotlib.pyplot.plot command
 
@@ -873,9 +875,9 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="viridis", \
 
             # make sure the cuts cover the full range
             if cuts[0] >= z.min():
-                cuts[0] = z.min()-1e-10
+                cuts[0] = z.min()-eps
             if cuts[-1] <= z.max():
-                cuts[-1] = z.max()+1e-10
+                cuts[-1] = z.max()+eps
 
             # Create categories
             ncats = len(cuts)-1
