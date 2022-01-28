@@ -74,7 +74,9 @@ def points_inside_polygon(points, polygon, inside=None, atol=1e-8, \
 
 
 def xy2kml(x, y, fkml, z=None, siteid=None, label=None,
-            icon="placemark_circle", scale=1.2):
+            icon=None, \
+            icon_default="placemark_circle", \
+            scale=None, scale_default=1.2):
     """ Convert a series of x/y points to KML format
 
     Parameters
@@ -87,11 +89,19 @@ def xy2kml(x, y, fkml, z=None, siteid=None, label=None,
         File path to kml file
     z : numpy.ndarray
         Z coordinates
+    icon : numpy.ndarray
+        Icon for each point
     siteid : numpy.ndarray
         Id of sites
     label : numpy.ndarray
         Label displayed for each site
-
+    icon_default : str
+        Default icon used if icon is None.
+    scale : dict
+        Dictionary containing icon scaling
+        for each icon.
+    scale_default : float
+        Default icon scaling factor.
     Example
     -----------
     >>> x = np.linspace(0, 1, 10)
@@ -101,11 +111,21 @@ def xy2kml(x, y, fkml, z=None, siteid=None, label=None,
     """
 
     nval = len(x)
-    for v in [y, siteid, label]:
+    for v in [y, siteid, label, icon]:
         if not v is None:
             if not len(v) == nval:
                 raise ValueError("Expected input size equal to "+\
                                     f"{nval}, got {len(v)}")
+    # Deals with icons
+    if icon is None:
+        icon_list = [icon_default]
+    else:
+        icon_list = np.unique(icon).tolist()
+
+    if scale is None:
+        scale = {}
+
+    # Populate Kml file
     with open(fkml, "w") as f:
         # Preamble
         f.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\n")
@@ -116,31 +136,38 @@ def xy2kml(x, y, fkml, z=None, siteid=None, label=None,
         f.write("<Document>\n\n")
 
         # Icon
-        f.write("<Style id=\"s_icon\">\n")
-        f.write("\t<IconStyle>\n")
-        f.write("\t\t<scale>{0:0.1f}</scale>\n".format(scale))
-        f.write("\t\t<Icon>\n")
-        f.write("\t\t\t<href>http://maps.google.com/mapfiles/"+\
-                    f"kml/shapes/{icon}.png</href>\n")
-        f.write("\t\t</Icon>\n")
-        f.write("\t</IconStyle>\n")
-        f.write("\t<ListStyle></ListStyle>\n")
-        f.write("</Style>\n")
-        f.write("<StyleMap id=\"m_icon\">\n")
-        f.write("\t<Pair>\n")
-        f.write("\t\t<key>normal</key>\n")
-        f.write("\t\t<styleUrl>#s_icon</styleUrl>\n")
-        f.write("\t</Pair>\n")
-        f.write("\t<Pair>\n")
-        f.write("\t\t<key>highlight</key>\n")
-        f.write("\t\t<styleUrl>#s_icon</styleUrl>\n")
-        f.write("\t</Pair>\n")
-        f.write("</StyleMap>\n\n")
+        for ic, icon_name in enumerate(icon_list):
+            f.write(f"<Style id=\"s_icon{ic:03d}\">\n")
+            f.write("\t<IconStyle>\n")
+            icon_scale = scale.get(icon_name, scale_default)
+            f.write(f"\t\t<scale>{icon_scale:0.1f}</scale>\n")
+            f.write("\t\t<Icon>\n")
+            f.write("\t\t\t<href>http://maps.google.com/mapfiles/"+\
+                        f"kml/shapes/{icon_name}.png</href>\n")
+            f.write("\t\t</Icon>\n")
+            f.write("\t</IconStyle>\n")
+            f.write("\t<ListStyle></ListStyle>\n")
+            f.write("</Style>\n")
+            f.write(f"<StyleMap id=\"m_icon{ic:03d}\">\n")
+            f.write("\t<Pair>\n")
+            f.write("\t\t<key>normal</key>\n")
+            f.write(f"\t\t<styleUrl>#s_icon{ic:03d}</styleUrl>\n")
+            f.write("\t</Pair>\n")
+            f.write("\t<Pair>\n")
+            f.write("\t\t<key>highlight</key>\n")
+            f.write(f"\t\t<styleUrl>#s_icon{ic:03d}</styleUrl>\n")
+            f.write("\t</Pair>\n")
+            f.write("</StyleMap>\n\n")
 
         # Data
         for i in range(nval):
             f.write("<Placemark>\n")
-            f.write("\t<styleUrl>#m_icon</styleUrl>\n")
+
+            if icon is None:
+                ic = 1
+            else:
+                ic = icon_list.index(icon[i])
+            f.write(f"\t<styleUrl>#m_icon{ic:03d}</styleUrl>\n")
 
             if not siteid is None:
                 f.write(f"\t<name>{siteid[i]}</name>\n")
