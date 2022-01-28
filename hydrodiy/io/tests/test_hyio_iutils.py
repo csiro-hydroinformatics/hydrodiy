@@ -83,6 +83,8 @@ class UtilsTestCase(unittest.TestCase):
         iutils.script_template(fs, "test")
 
         stderr, hasError = run_script(fs)
+        if hasError:
+            print(stderr)
         self.assertFalse(hasError)
 
 
