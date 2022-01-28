@@ -39,7 +39,9 @@ class GutilsTestCase(unittest.TestCase):
         gutils.xy2kml(x, y, fkml, siteid=siteid, label=label)
 
         fkml = '{0}/test5.kml'.format(self.ftest)
-        gutils.xy2kml(x, y, fkml, siteid=siteid, icon='caution', scale=3)
+        gutils.xy2kml(x, y, fkml, siteid=siteid, \
+                        icon=['caution']*2+["placemark_circle"]*3, \
+                        scale={"caution": 2, "placemark_circle":0.5})
 
 
     def test_point_inside_triangle(self):
