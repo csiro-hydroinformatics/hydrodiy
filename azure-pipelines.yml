@@ -11,7 +11,7 @@ strategy:
       python.version: '3.8'
 
 variables:
-  CONDA_ENV: gppenv
+  CONDA_ENV: diyenv
   CONDA_HOME: /usr/share/miniconda/envs/$(CONDA_ENV)/
 
 steps:
