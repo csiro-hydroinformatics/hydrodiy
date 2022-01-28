@@ -1,0 +1,59 @@
+# Pipeline to create ananconda environment and run my tests
+
+trigger:
+- master
+
+pool:
+  vmImage: ubuntu-latest
+strategy:
+  matrix:
+    Python38:
+      python.version: '3.8'
+
+variables:
+  CONDA_ENV: gppenv
+  CONDA_HOME: /usr/share/miniconda/envs/$(CONDA_ENV)/
+
+steps:
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '$(python.version)'
+  displayName: 'Use Python $(python.version)'
+
+- bash: echo "##vso[task.prependpath]$CONDA/bin"
+  displayName: Add conda to PATH
+
+- task: Cache@2
+  displayName: Use cached Anaconda environment
+  inputs:
+    key: conda | env.yml
+    path: $(CONDA_HOME)
+    cacheHitVar: CONDA_CACHE_RESTORED
+
+- bash: conda env create --file  env.yml
+  displayName: Create Anaconda environment (if not restored from cache)
+  condition: eq(variables.CONDA_CACHE_RESTORED, 'false')
+
+- script: |
+    source activate $(CONDA_ENV)
+    python setup.py develop
+  displayName: package_install
+
+- script: |
+    source activate $(CONDA_ENV)
+    pytest --junitxml=junit/test-results.xml --cov=hydrodiy --cov-config=.coveragerc --cov-report=xml hydrodiy 
+  displayName: test
+
+- task: PublishTestResults@2
+  condition: succeededOrFailed()
+  inputs:
+    testResultsFiles: '**/test-*.xml'
+    testRunTitle: 'Publish test results for Python $(python.version)'
+
+- task: PublishCodeCoverageResults@1
+  displayName: 'Publish Cobertura Coverage Report'
+  inputs:
+    codeCoverageTool: Cobertura
+    summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/coverage.xml'
+    reportDirectory: '$(System.DefaultWorkingDirectory)/**/htmlcov'
+
