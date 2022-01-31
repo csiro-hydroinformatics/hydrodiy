@@ -360,42 +360,4 @@ def read_logfile(flog, \
     return logs
 
 
-def get_ibatch(nsites, nbatch, ibatch):
-    """ Returns the indices of sites within a batch
-
-    Parameters
-    -----------
-    nsites : int
-        Number of sites
-    nbatch : int
-        Number of batches
-    ibatch : int
-        Batch index (from 0 to nbatch-1)
-
-    Returns
-    -----------
-    idx : list
-        List of integer containing sites indexes (0 = first site)
-
-    Example
-    -----------
-    >>>  idx = iutils.get_ibatch(20, 5, 1)
-    [4, 5, 6, 7]
-    >>>  idx = iutils.get_ibatch(20, 5, 2)
-    [8, 9, 10, 11]
-
-    """
-    if nsites < 1:
-        raise ValueError(f"Expected nsites>=1, got {nsites}.")
-
-    if nsites < nbatch:
-        raise ValueError(f"Expected nsites ({nsites}) "+\
-                            f">= nbatch ({nbatch})")
-
-    if ibatch < 0 or ibatch >= nbatch:
-        raise ValueError(f"Expected ibatch ({ibatch}) in "+\
-                        f"[0, {nbatch-1}].")
-
-    return np.array_split(np.arange(nsites), nbatch)[ibatch]
-
 

@@ -280,57 +280,5 @@ class UtilsTestCase(unittest.TestCase):
         self.assertTrue(ck)
 
 
-    def test_get_ibatch(self):
-        """ Test get_ibatch for small batches """
-        nbatch = 5
-        nsites = 26
-        idx = [iutils.get_ibatch(nsites, nbatch, ibatch) \
-                    for ibatch in range(nbatch)]
-        prev = -1
-        for i, ii in enumerate(idx):
-            self.assertTrue(np.all(np.diff(ii) == 1))
-
-            self.assertTrue(ii[0] == prev+1)
-            prev = ii[-1]
-
-            self.assertTrue(len(ii) == (6 if i==0 else 5))
-
-        self.assertTrue(idx[-1][0] == 21)
-        self.assertTrue(idx[-1][1] == 22)
-
-        try:
-            idx = iutils.get_ibatch(20, 40, 1)
-        except ValueError as err:
-            self.assertTrue(str(err).startswith(\
-                            "Expected nsites"))
-        else:
-            raise Exception("Problem with error handling")
-
-        try:
-            idx = iutils.get_ibatch(40, 5, 7)
-        except ValueError as err:
-            self.assertTrue(str(err).startswith(\
-                    "Expected ibatch"))
-        else:
-            raise Exception("Problem with error handling")
-
-
-    def test_get_ibatch_large(self):
-        """ Test get_ibatch for large batches """
-        nbatch = 6
-        nsites = 502
-        idx = [iutils.get_ibatch(nsites, nbatch, ibatch) \
-                    for ibatch in range(nbatch)]
-
-        prev = -1
-        for i, ii in enumerate(idx):
-            self.assertTrue(np.all(np.diff(ii) == 1))
-
-            self.assertTrue(ii[0] == prev+1)
-            prev = ii[-1]
-
-            self.assertTrue(len(ii) == (84 if i<nbatch-2 else 83))
-
-
 if __name__ == "__main__":
     unittest.main()
