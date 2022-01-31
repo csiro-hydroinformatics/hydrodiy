@@ -65,20 +65,25 @@ def test_get_batch_large():
 
 
 def test_option_manager():
-    opm = hyruns.OptionManager.from_cartesian_product(v1=["a", "b"], v2=[1, 2, 3])
+    opm = hyruns.OptionManager(bidule="test")
+    opm.from_cartesian_product(v1=["a", "b"], v2=[1, 2, 3])
 
     assert opm.ntasks == 6
 
     t = opm.get_task(0)
     assert t.names == ["v1", "v2"]
+    assert t.context["bidule"] == "test"
     assert t.v1 == "a"
+    assert t.get("bidule") == "test"
     assert t.get("v1") == "a"
     assert t.v2 == 1
     assert t.get("v2") == 1
 
     t = opm.get_task(1)
     assert t.names == ["v1", "v2"]
+    assert t.context["bidule"] == "test"
     assert t.v1 == "a"
+    assert t.get("bidule") == "test"
     assert t.get("v1") == "a"
     assert t.v2 == 2
     assert t.get("v2") == 2
@@ -100,7 +105,8 @@ def test_option_manager():
 
 
 def test_option_manager_search():
-    opm = hyruns.OptionManager.from_cartesian_product(v1=["a", "b"], \
+    opm = hyruns.OptionManager()
+    opm.from_cartesian_product(v1=["a", "b"], \
                     v2=[1, 2, 3], v3=[[1, 2], [3, 4]])
     found = opm.search(v1="a", v2="1|3")
     assert found == [0, 1, 4, 5]
@@ -111,7 +117,8 @@ def test_option_manager_search():
 
 
 def test_option_manager_single_values():
-    opm = hyruns.OptionManager.from_cartesian_product(v1="a", v2=[1, 2, 3])
+    opm = hyruns.OptionManager()
+    opm.from_cartesian_product(v1="a", v2=[1, 2, 3])
 
     assert opm.ntasks == 3
     t = opm.get_task(2)

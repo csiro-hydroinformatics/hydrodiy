@@ -48,32 +48,35 @@ def get_batch(nelements, nbatch, ibatch):
 
 
 class OptionManager():
-    """ Object to manage task configuration built from lists of parameters """
+    """ Object to manage task contexturation built from lists of parameters """
 
-    def __init__(self, name="Option Manager", description="List of tasks"):
+    def __init__(self, name="Task Manager", **kwargs):
         self.name = name
-        self.description = description
         self.options = {}
         self.tasks = []
+        self.context = kwargs
 
 
     def __str__(self):
         txt = f"\n*****\n"
         txt += f"Options manager with {len(self.options)} "
-        txt += f"options and {self.ntasks} tasks:\n"
-        txt += "Options values\n"
+        txt += f"options, {len(self.context)} context and {self.ntasks} tasks:\n"
+        txt += "\tOptions values\n"
         for key, value in self.options.items():
-            txt += f"\t{key} ({len(value)} values): {value}\n"
+            txt += f"\t\t{key} ({len(value)} values): {value}\n"
+
+        if len(self.context)>0:
+            txt += "\tConfig values\n"
+            for key, value in self.context.items():
+                txt += f"\t\t{key}: {value}\n"
+
         return txt
 
 
-    @classmethod
-    def from_cartesian_product(cls, **kwargs):
+    def from_cartesian_product(self, **kwargs):
         """ Build an option manager from a cartesian product of options """
 
-        opm = OptionManager("Option Manager", \
-                        "Tasks built from cartesian product")
-        opm.options = {}
+        self.options = {}
         for k, v in kwargs.items():
             if isinstance(v, str) or isinstance(v, float) \
                                     or isinstance(v, int):
@@ -85,15 +88,13 @@ class OptionManager():
                         f"an int or a string, got {type(v)}."
                 raise TypeError(errmsg)
 
-            opm.options[k] = v2
+            self.options[k] = v2
 
-        opm.tasks = []
-        keys = list(opm.options.keys())
-        for t in prod(*[opm.options[k] for k in keys]):
+        self.tasks = []
+        keys = list(self.options.keys())
+        for t in prod(*[self.options[k] for k in keys]):
             dd = {k: tt for k, tt in zip(keys, t)}
-            opm.tasks.append(dd)
-
-        return opm
+            self.tasks.append(dd)
 
 
     @property
@@ -111,8 +112,9 @@ class OptionManager():
         # with basic properties
         task = type("Task", (),self.tasks[taskid])
         task.names = list(self.options.keys())
-        task.get = lambda k: getattr(task, k)
-
+        task.context = self.context
+        task.get = lambda k: task.context[k] if k in task.context \
+                                    else getattr(task, k)
         return task
 
 
@@ -124,8 +126,11 @@ class OptionManager():
 
     def save(self, fout):
         df = self.to_dataframe()
+        comment = {"option_manager_name": self.name}
+        comment.update({f"context_{k}": v for k, v in self.context.items()})
+
         csv.write_csv(df, fout, \
-                f"Content of option manager {self.name}", \
+                comment, \
                 Path(__file__).resolve(), \
                 write_index=True, compress=False)
 
