@@ -220,7 +220,8 @@ def get_logger(name, level="INFO", \
         overwrite=True,
         excepthook=True,
         no_duplicate_handler=True,\
-        contextual=False):
+        contextual=False, \
+        start_message=True):
     """ Get a logger object that can handle contextual info
 
     Parameters
@@ -246,6 +247,8 @@ def get_logger(name, level="INFO", \
         Creates a logger with a context attribute
         to add context between curly braces before message
         (see hydrodiy.io.HydrodiyContextualLogger)
+    start_message : bool
+        Log a "Process started" message.
 
     Returns
     -----------
@@ -310,6 +313,9 @@ def get_logger(name, level="INFO", \
         # A bit dangerous, but will do for now
         logger.__class__ = HydrodiyContextualLogger
         logger.context = ""
+
+    if start_message:
+        logger.info("Process started")
 
     return logger
 

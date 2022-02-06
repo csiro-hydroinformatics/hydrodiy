@@ -216,8 +216,9 @@ class UtilsTestCase(unittest.TestCase):
 
         with open(flog1, "r") as fl:
             txt = fl.readlines()
-        ck = txt[0].strip().endswith("INFO | "+mess[0])
-        ck = ck & txt[1].strip().endswith("INFO | "+mess[1])
+        ck = txt[0].strip().endswith("INFO | Process started")
+        ck = ck & txt[1].strip().endswith("INFO | "+mess[0])
+        ck = ck & txt[2].strip().endswith("INFO | "+mess[1])
         self.assertTrue(ck)
 
         # Test logging with different format
@@ -233,7 +234,7 @@ class UtilsTestCase(unittest.TestCase):
 
         with open(flog2, "r") as fl:
             txt = fl.readlines()
-        self.assertEqual(mess, [t.strip() for t in txt])
+        self.assertEqual(["Process started"]+mess, [t.strip() for t in txt])
 
         # Close log file handler and delete files
         logger1.handlers[1].close()
@@ -275,8 +276,8 @@ class UtilsTestCase(unittest.TestCase):
         with open(flog, "r") as fl:
             txt = fl.readlines()
 
-        ck = bool(re.search("\\{ context1 \\}", txt[0]))
-        ck = ck & bool(re.search("\\{ context2 \\}", txt[1]))
+        ck = bool(re.search("\\{ context1 \\}", txt[1]))
+        ck = ck & bool(re.search("\\{ context2 \\}", txt[2]))
         self.assertTrue(ck)
 
 
