@@ -1,13 +1,14 @@
-''' Module to plot data on an Australia map '''
+""" Module to plot data on an Australia map """
 
 import re, os, json, tarfile
+from pathlib import Path
 import pkg_resources
 
 import numpy as np
 import pandas as pd
 
 import matplotlib as mpl
-mpl.use('Agg')
+mpl.use("Agg")
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
@@ -32,25 +33,28 @@ except (ImportError, FileNotFoundError) as err:
 
 
 # Decompress australia shoreline shapefile
-FDATA = pkg_resources.resource_filename(__name__, 'data')
-FCOAST10 = os.path.join(FDATA, 'ne_10m_admin_0_countries_australia.shp')
-FCOAST50 = os.path.join(FDATA, 'ne_50m_admin_0_countries_australia.shp')
-FSTATES50 = os.path.join(FDATA, 'ne_50m_admin_1_states_australia.shp')
-FDRAINAGE = os.path.join(FDATA, 'drainage_divisions_lines_simplified.shp')
+FDATA = Path(pkg_resources.resource_filename(__name__, "data"))
+SHAPEFILES = {
+    "ozcoast10m": FDATA / "ne_10m_admin_0_countries_australia.shp", \
+    "ozcoast50m": FDATA / "ne_50m_admin_0_countries_australia.shp", \
+    "ozstates50m": FDATA / "ne_50m_admin_1_states_australia.shp", \
+    "drainage": FDATA / "drainage_divisions_lines_simplified.shp", \
+    "basins": FDATA / "rbasin_lines_simplified.shp"
+}
 
 # Lat long coordinate boxes for regions in Australia
-freg = os.path.join(FDATA, 'regions.json')
-with open(freg, 'r') as fo:
+freg = FDATA / "regions.json"
+with open(freg, "r") as fo:
     REGIONS = json.load(fo)
 
 class Oz:
-    ''' Class to plot data on an Australia map '''
+    """ Class to plot data on an Australia map """
 
     def __init__(self, ax=None,
         ulat=-9., llat=-43., llon=108., rlon=151.5,
-        resolution='l',
+        resolution="l",
         remove_axis = True):
-        '''
+        """
         Plot data on Australia map
 
         Parameters
@@ -67,11 +71,11 @@ class Oz:
             Longiture of map right bound
         resolution : string
             Map coastline resolution. See mpl_toolkits.basemap
-            'c' : Crude
-            'l' : Low
-            'i' : Intermediate
-            'h' : High
-            'f' : Full
+            "c" : Crude
+            "l" : Low
+            "i" : Intermediate
+            "h" : High
+            "f" : Full
         remove_axis : bool
             Hide axis in axe or not
 
@@ -86,11 +90,11 @@ class Oz:
         >>> fig, ax = plt.subplots()
         >>> om = oz.Oz(ax = ax)
         >>> om.drawcoast()
-        >>> om.plot(x, y, 'o')
+        >>> om.plot(x, y, "o")
 
-        '''
+        """
         if not HAS_BASEMAP:
-            raise HYGisOzError('Basemap package could not be imported')
+            raise HYGisOzError("Basemap package could not be imported")
 
         self.ulat = ulat
         self.llat = llat
@@ -104,11 +108,11 @@ class Oz:
         self._map = basemap.Basemap(self.llon, self.llat, self.rlon, self.ulat,
             lat_0=24.75, lon_0=134.0, lat_1=-10, lat_2=-40,
             rsphere=(6378137.00,6356752.3142),
-            projection='lcc', resolution=resolution,
+            projection="lcc", resolution=resolution,
             area_thresh=1000, suppress_ticks=True, ax = self.ax)
 
         if remove_axis:
-            self.ax.axis('off')
+            self.ax.axis("off")
 
 
     @property
@@ -117,27 +121,27 @@ class Oz:
 
 
     def get_range(self):
-        ''' Get x/y range for the map '''
+        """ Get x/y range for the map """
 
         return (self.llon, self.rlon, self.ulat, self.llat)
 
 
     def set_axrange(self):
-        ''' Get nice x/y range for Australian coastline '''
+        """ Get nice x/y range for Australian coastline """
         self.ax.set_xlim((self.llon, self.rlon))
         self.ax.set_ylim((self.ulat, self.llat))
 
 
     def drawdrainage(self, *args, **kwargs):
-        ''' plot drainage divisions for Australia only '''
+        """ plot drainage divisions for Australia only """
 
         # Adding default color to drainage
-        if not 'color' in kwargs:
-            kwargs['color'] = 'k'
+        if not "color" in kwargs:
+            kwargs["color"] = "k"
 
         # Read shape
-        nm = 'drainage'
-        self._map.readshapefile(re.sub('\\.shp$', '', FDRAINAGE),
+        nm = "drainage"
+        self._map.readshapefile(re.sub("\\.shp$", "", FDRAINAGE),
                         nm, drawbounds=False)
 
         # Loop through shapes
@@ -147,10 +151,10 @@ class Oz:
             self._map.plot(x, y, marker=None, *args, **kwargs)
 
 
-    def drawcoast(self, hires=False, edgecolor='black', \
-            facecolor='none', alpha=1., \
-            linestyle='-', linewidth=1.):
-        ''' plot coast line
+    def drawcoast(self, hires=False, edgecolor="black", \
+            facecolor="none", alpha=1., \
+            linestyle="-", linewidth=1.):
+        """ plot coast line
 
             Parameters
             -----------
@@ -166,17 +170,17 @@ class Oz:
                 Line style
             linewidth : float
                 Line width
-        '''
+        """
 
         if hires:
-            self.drawpolygons(re.sub('.shp', '', FCOAST10), \
+            self.drawpolygons(re.sub(".shp", "", SHAPEFILES["coast10"]), \
                 facecolor=facecolor, \
                 edgecolor=edgecolor, \
                 linewidth=linewidth, \
                 linestyle=linestyle, \
                 alpha=alpha)
         else:
-            self.drawpolygons(re.sub('.shp', '', FCOAST50), \
+            self.drawpolygons(re.sub(".shp", "", SHAPEFILES["coast50"]), \
                 facecolor=facecolor, \
                 edgecolor=edgecolor, \
                 linewidth=linewidth, \
@@ -185,24 +189,24 @@ class Oz:
 
 
     def drawrelief(self, *args, **kwargs):
-        ''' plot shaded relief map '''
+        """ plot shaded relief map """
 
         self._map.shadedrelief(*args, **kwargs)
 
 
     def drawstates(self, *args, **kwargs):
-        ''' plot states boundaries '''
+        """ plot states boundaries """
         self._map.drawstates(*args, **kwargs)
 
 
     def drawpolygons(self, shp, \
-                facecolor='none', \
-                edgecolor='k',\
+                facecolor="none", \
+                edgecolor="k",\
                 linewidth=1., \
-                linestyle='-', \
+                linestyle="-", \
                 alpha=1., \
                 hatch=None):
-        ''' Draw polygon shapefile. Arguments sent to PatchCollection constructor  '''
+        """ Draw polygon shapefile. Arguments sent to PatchCollection constructor  """
         nm = os.path.basename(shp)
         self._map.readshapefile(shp, nm, drawbounds = False)
 
@@ -216,7 +220,7 @@ class Oz:
 
             # plot interior
             poly = Polygon(np.array(shape), closed=True,\
-                    ec='none', \
+                    ec="none", \
                     fc=facecolor, \
                     alpha=alpha, \
                     hatch=hatch)
@@ -227,18 +231,18 @@ class Oz:
 
 
     def plot(self, long, lat, *args, **kwargs):
-        ''' Plot points in map '''
+        """ Plot points in map """
 
         if len(long) != len(lat):
-            raise ValueError(('len(long) (%d) != '
-                'len(lat) (%d)') % (len(long), len(lat)))
+            raise ValueError(("len(long) (%d) != "
+                "len(lat) (%d)") % (len(long), len(lat)))
 
         x, y = self._map(long, lat)
         self._map.plot(x, y, *args, **kwargs)
 
 
     def set_lim(self, xlim, ylim):
-        ''' Set a lat/lon box range '''
+        """ Set a lat/lon box range """
 
         # Set lim to map
         xxlim, yylim = self._map(np.sort(xlim),np.sort(ylim))
@@ -248,25 +252,25 @@ class Oz:
 
 
     def set_lim_region(self, region=None):
-        ''' Set lat/lon box for specific regions in Australia
+        """ Set lat/lon box for specific regions in Australia
 
         Parameters
         -----------
         region : str
             Region name. See hydrodiy.gis.oz.REGIONS.
             If None, set region to AUS (Australia)
-        '''
+        """
         if region is None:
-            region = 'AUS'
+            region = "AUS"
 
         if region in REGIONS:
             reg = REGIONS[region]
-            xlim = reg['xlim']
-            ylim = reg['ylim']
+            xlim = reg["xlim"]
+            ylim = reg["ylim"]
         else:
-            allregions = '/'.join(list(REGIONS.keys()))
-            raise ValueError(('Expected region in {0}, ' +\
-                    'got {1}').format(allregions, region))
+            allregions = "/".join(list(REGIONS.keys()))
+            raise ValueError(("Expected region in {0}, " +\
+                    "got {1}").format(allregions, region))
 
         self.set_lim(xlim, ylim)
 
@@ -274,7 +278,7 @@ class Oz:
 
 def ozlayer(ax, name, filter_field=None, filter_regex=None, proj=None, \
                 fixed_lim=True, *args, **kwargs):
-    ''' plot Australian geographic layer in axes using data
+    """ plot Australian geographic layer in axes using data
     from Natural Earth.
     (see https://www.naturalearthdata.com/)
 
@@ -288,36 +292,27 @@ def ozlayer(ax, name, filter_field=None, filter_regex=None, proj=None, \
             10m and 50m resolution respectively.
         - states50m : Natural Earth state boundaries at 50m
             resolution.
-        - drain: Drainage boundaries from Geofabric.
+        - drainage: Drainage boundaries from Geofabric.
+        - basins: Basin boundaries from GA.
     filter_field : str
         Shapefile field to filter on.
     fiter_regex : str
         Regular expression to filter from filtered field.
     proj : pyproj.projProj
         Map projection. Example with transform to GDA94:
-        proj = pyproj.Proj('+init=EPSG:3112')
+        proj = pyproj.Proj("+init=EPSG:3112")
     args, kwargs
         Arguments passed to matplotlib.axes.plot function.
-    '''
+    """
     if not HAS_PYSHP:
-        raise HYGisOzError('pyshp package could not be imported')
+        raise HYGisOzError("pyshp package could not be imported")
 
     # Select shapefile to draw
-    if name == 'ozcoast10m':
-        fshp = FCOAST10
-    elif name == 'ozcoast50m':
-        fshp = FCOAST50
-    elif name == 'drainage':
-        fshp = FDRAINAGE
-    elif name == 'states50m':
-        fshp = FSTATES50
-    else:
-        if os.path.exists(name):
-            fshp = name
-        else:
-            raise HYGisOzError('Expected name in '+\
-                '[ozcoast50m|ozcoast110m|states50m|drainage],'+\
-                ' got {}'.format(name))
+    if not name in SHAPEFILES:
+        names = "|".join(list(SHAPEFILES.keys()))
+        raise HYGisOzError(f"Expected name in {names}, got {name}.")
+
+    fshp = str(SHAPEFILES[name])
 
     # Select axis
     if ax is None:
@@ -330,7 +325,7 @@ def ozlayer(ax, name, filter_field=None, filter_regex=None, proj=None, \
             x, y = np.array([proj(xx, yy) for xx, yy in zip(x, y)]).T
 
         # Plot
-        lines = ax.plot(x, y, '-', *args, **kwargs)
+        lines = ax.plot(x, y, "-", *args, **kwargs)
 
         # Return line object
         return (recs, lines[-1])
@@ -347,8 +342,8 @@ def ozlayer(ax, name, filter_field=None, filter_regex=None, proj=None, \
         if not filter_field is None:
             # Filter field
             if not filter_field in fields:
-                raise HYGisOzError('Expected filter_field in '+\
-                    '/'.join(list(fields)) + ', got '+filter_field)
+                raise HYGisOzError("Expected filter_field in "+\
+                    "/".join(list(fields)) + ", got "+filter_field)
 
             ifilter = np.where(fields == filter_field)[0][0]
         else:
@@ -368,7 +363,7 @@ def ozlayer(ax, name, filter_field=None, filter_regex=None, proj=None, \
             # Get polygon coordinates
             x, y = np.array(shp.points).T
 
-            if hasattr(shp, 'parts'):
+            if hasattr(shp, "parts"):
                 if len(shp.parts) > 1:
                     starts = np.array(shp.parts)
                     ends = np.append(np.array(shp.parts)[1:], len(x))
