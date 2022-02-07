@@ -766,7 +766,7 @@ def ecdfplot(ax, df, label_stat=None, label_stat_format="4.2f", \
     """
     lines = {}
     for name, se in df.iteritems():
-        values = se.sort_values()
+        values = se.sort_values().values
         values = values[~np.isnan(values)]
 
         pp = sutils.ppos(len(values), cst=cst)
@@ -782,12 +782,13 @@ def ecdfplot(ax, df, label_stat=None, label_stat_format="4.2f", \
 
     # Decorate
     ax.set_ylabel("Empirical CDF [-]")
+    ax.set_ylim((0, 1))
     ax.set_yticks([0., 0.5, 1.])
     ax.set_yticklabels(["0", chr(189)+" ", "1"])
     ylabs = ax.get_yticklabels()
-    ylabs[0].set_va("bottom")
-    ylabs[2].set_va("top")
-    ax.set_ylim((0, 1))
+    if len(ylabs)>0:
+        ylabs[0].set_va("bottom")
+        ylabs[2].set_va("top")
 
     return lines
 
