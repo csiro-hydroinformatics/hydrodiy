@@ -255,7 +255,6 @@ def get_logger(name, level="INFO", \
     logger : logging.Logger
         Logger instance
     """
-
     logger = logging.getLogger(name)
 
     # Set logging level
@@ -287,11 +286,12 @@ def get_logger(name, level="INFO", \
 
     # log to file
     if not flog is None and not has_flog:
+        flog = Path(flog)
         if overwrite:
             try:
-                if os.path.exists(flog): os.remove(flog)
-            except PermissionError as err:
-                warnings.warn("log file not deleted: "+str(err))
+                flog.unlink()
+            except Exception as err:
+                warnings.warn(f"log file not deleted: {err}")
 
         fh = logging.FileHandler(flog)
         fh.setFormatter(ft)
