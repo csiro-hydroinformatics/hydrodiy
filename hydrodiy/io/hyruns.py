@@ -58,7 +58,7 @@ class OptionTask():
         for key, value in self.items.items():
             txt += f"\t\t{key}: {value}\n"
         txt += "\tContext values\n"
-        for key, value in self.items.items():
+        for key, value in self.context.items():
             txt += f"\t\t{key}: {value}\n"
         return txt
 
@@ -72,6 +72,7 @@ class OptionTask():
         else:
             super(self).__getattr__(key)
 
+
     def __getitem__(self, key):
         txt = "/".join(self.items.keys())
         txt += "/" + "/".join(self.context.keys())
@@ -80,6 +81,22 @@ class OptionTask():
         if key in self.items:
             return self.items[key]
         return self.context[key]
+
+
+    def log(self, logger):
+        """ Log task """
+        logger.info("")
+        logger.info(f"****** TASK {self.taskid} *******")
+        for key, value in self.context.items():
+            logger.info(f"Context {key}: {value}")
+
+        logger.info("")
+        for key, value in self.items.items():
+            logger.info(f"Item {key}: {value}")
+
+        logger.info("***********************")
+        logger.info("")
+
 
 
 class OptionManager():

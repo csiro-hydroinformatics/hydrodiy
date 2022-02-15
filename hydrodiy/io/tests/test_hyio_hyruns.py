@@ -106,6 +106,28 @@ def test_option_manager():
     assert fout.exists()
     fout.unlink()
 
+class FakeLogger():
+    def __init__(self):
+        self.content = []
+
+    def info(self, line):
+        self.content.append(line)
+
+
+def test_task_log():
+    opm = hyruns.OptionManager(bidule="test")
+    opm.from_cartesian_product(v1=["a", "b"], v2=[1, 2, 3])
+
+    t = opm.get_task(0)
+    logger = FakeLogger()
+    t.log(logger)
+
+    content = ['', '****** TASK 0 *******', \
+                'Context bidule: test', '', \
+                'Item v1: a', 'Item v2: 1', \
+                '***********************', '']
+    assert logger.content == content
+
 
 def test_option_manager_search():
     opm = hyruns.OptionManager()
