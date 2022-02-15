@@ -71,22 +71,25 @@ def test_option_manager():
     assert opm.ntasks == 6
 
     t = opm.get_task(0)
+    print(t)
     assert t.names == ["v1", "v2"]
     assert t.context["bidule"] == "test"
     assert t.v1 == "a"
-    assert t.get("bidule") == "test"
-    assert t.get("v1") == "a"
+    assert t.bidule == "test"
+    assert t["bidule"] == "test"
+    assert t.v1 == "a"
+    assert t["v1"] == "a"
     assert t.v2 == 1
-    assert t.get("v2") == 1
+    assert t["v2"] == 1
 
     t = opm.get_task(1)
     assert t.names == ["v1", "v2"]
     assert t.context["bidule"] == "test"
     assert t.v1 == "a"
-    assert t.get("bidule") == "test"
-    assert t.get("v1") == "a"
+    assert t.bidule == "test"
+    assert t["bidule"] == "test"
+    assert t.v1 == "a"
     assert t.v2 == 2
-    assert t.get("v2") == 2
 
     msg = "Expected taskid in"
     with pytest.raises(AssertionError, match=msg):

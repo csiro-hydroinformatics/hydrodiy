@@ -1,4 +1,5 @@
 import re
+import copy
 from pathlib import Path
 from itertools import product as prod
 import numpy as np
@@ -45,6 +46,40 @@ def get_batch(nelements, nbatch, ibatch):
 
     return np.array_split(np.arange(nelements), nbatch)[ibatch]
 
+
+class OptionTask():
+    def __init__(self, taskid, opm):
+        self.taskid = taskid
+        self.items = opm.tasks[taskid]
+        self.context = opm.context
+
+    def __str__(self):
+        txt = f"Task {self.taskid}:\n\tOptions values\n"
+        for key, value in self.items.items():
+            txt += f"\t\t{key}: {value}\n"
+        txt += "\tContext values\n"
+        for key, value in self.items.items():
+            txt += f"\t\t{key}: {value}\n"
+        return txt
+
+    def __getattr__(self, key):
+        if key in self.items:
+            return self.items[key]
+        elif key in self.context:
+            return self.context[key]
+        elif key == "names":
+            return list(self.items.keys())
+        else:
+            super(self).__getattr__(key)
+
+    def __getitem__(self, key):
+        txt = "/".join(self.items.keys())
+        txt += "/" + "/".join(self.context.keys())
+        errmsg = f"Expected key {key} in {txt}."
+        assert key in self.items or key in self.context, errmsg
+        if key in self.items:
+            return self.items[key]
+        return self.context[key]
 
 
 class OptionManager():
@@ -109,13 +144,7 @@ class OptionManager():
         assert taskid>=0 and taskid<ntsks, errmsg
 
         # Build task object on the fly
-        # with basic properties
-        task = type("Task", (),self.tasks[taskid])
-        task.names = list(self.options.keys())
-        task.context = self.context
-        task.get = lambda k: task.context[k] if k in task.context \
-                                    else getattr(task, k)
-        return task
+        return OptionTask(taskid, self)
 
 
     def to_dataframe(self):
