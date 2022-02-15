@@ -177,6 +177,7 @@ def ozcities(ax, filter_regex=None, \
     plot_kwargs["mfc"] = plot_kwargs.get("mfc", "tab:orange")
     plot_kwargs["mec"] = plot_kwargs.get("mec", "black")
     plot_kwargs["ms"] = plot_kwargs.get("ms", 7)
+    plot_kwargs["color"] = plot_kwargs.get("color", "none")
 
     text_kwargs["color"] = text_kwargs.get("color", "black")
     pe = [patheff.withStroke(linewidth=2, foreground="w")]
