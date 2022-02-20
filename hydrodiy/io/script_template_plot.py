@@ -30,8 +30,8 @@ from hydrodiy.io import csv, iutils
 from hydrodiy.plot import putils
 
 # Package to plot spatial data
-from hydrodiy.gis.oz import Oz
-#import pyproj
+import pyproj
+from hydrodiy.gis.oz import ozlayer
 
 import tqdm
 
@@ -66,9 +66,12 @@ imgext = args.extension
 # Plot dimensions
 fnrows = 2
 fncols = 2
-fdpi = 100
-awidth = 1000
-aheight = 1000
+fdpi = 120
+awidth = 8
+aheight = 8
+
+# Figure transparency
+ftransparent = False
 
 # Set matplotlib options
 #mpl.rcdefaults() # to reset
@@ -77,19 +80,6 @@ putils.set_mpl()
 # Manage projection
 #proj = pyproj.Proj("+init=EPSG:{0}".format(args.projection))
 #
-#def proj2map(x, y, map):
-#    """ Convert projected coordinate to basemap.map coordinates """
-#    coords = [map(*proj(xx, yy, inverse=True)) \
-#                        for xx, yy in zip(x, y)]
-#    x2, y2 = np.array(coords).T
-#    return x2, y2
-
-#def lonlat2map(x, y, map):
-#    """ Convert long/lat to basemap.map coordinates """
-#    coords = [map(xx, yy) for xx, yy in zip(x, y)]
-#    x2, y2 = np.array(coords).T
-#    return x2, y2
-
 #----------------------------------------------------------------------
 # Folders
 #----------------------------------------------------------------------
@@ -128,23 +118,25 @@ LOGGER.info(mess)
 
 plt.close("all")
 
-fig = plt.figure()
+# Create figure
+figsize = (awidth*fncols, aheight*fnrows)
+fig = plt.figure(constrained_layout=True, figsize=figsize)
 
-gs = gridspec.GridSpec(fnrows, fncols,
-        width_ratios=[1] * fncols,
-        height_ratios=[1] * fnrows)
+# Create mosaic with named axes
+mosaic = [[f"F{fncols*i+j}" for j in range(fncols)] for i in range(fnrows)]
+gw = dict(height_ratios=[1]*fnrows, width_ratios=[1]*fncols)
+axs = fig.subplot_mosaic(mosaic, gridspec_kw=gw)
 
 nval = 10
 LOGGER.info("Drawing plot")
 
-for i in range(fnrows*fncols):
-    icol = i%fncols
-    irow = i//fncols
-    ax = fig.add_subplot(gs[irow, icol])
+for name, ax in axs.items():
+    # Retrieve column and row numbers
+    iplot = int(name[1:])
+    icol = iplot % fncols
+    irow = iplot // fncols
 
-    # To use oz
-    #om = Oz(ax=ax)
-
+    # Get data
     x = pd.date_range("2001-01-01", freq="MS", periods=nval)
     x = x.to_pydatetime()
     y = np.random.uniform(size=nval)
@@ -158,18 +150,16 @@ for i in range(fnrows*fncols):
         label="points")
 
     # Spatial
-    #om = oz.Oz(ax=ax)
-    #x2, y2 = proj2map(x, y, om.map)
-    #ax.plot(x2, y2)
+    #ozlayer(ax, "ozcoast50m")
 
     # Decoration
-    ax.legend(shadow=True,
-        framealpha=0.7)
+    ax.legend(shadow=True, framealpha=0.7)
 
     # Axis
     putils.xdate(ax)
 
-    ax.set_title("Title")
+    title = f"{name}: Row {irow} / Column {icol}"
+    ax.set_title(title)
     ax.set_xlabel("X label")
     ax.set_xlabel("Y label")
 
@@ -179,21 +169,16 @@ fig.suptitle("Overall title")
 label = "Generated: %s" % datetime.now().strftime("%H:%M %d/%m/%Y")
 fig.text(0.05, 0.010, label, color="#595959", ha="left", fontsize=9)
 
-# Save figure
-fig.set_size_inches(float(fncols * awidth)/fdpi,
-                float(fnrows * aheight)/fdpi)
-
-# Resize the grid slightly to avoid overlap with the fig title
-gs.tight_layout(fig, rect=[0, 0., 1, 0.95])
-
+# Save file
 fp = fimg / f"image.{imgext}"
-fig.savefig(fp, dpi=fdpi)
+fig.savefig(fp, dpi=fdpi, transparent=ftransparent)
 
-metadata = {\
-    "source_file": source_file, \
-    "other": "other"
-}
-putils.add_metadata_to_png(fp, metadata)
+if imgext == "png":
+    metadata = {\
+        "source_file": source_file, \
+        "other": "other"
+    }
+    putils.add_metadata_to_png(fp, metadata)
 
 # To save to pdf
 #pdf.savefig(fig)

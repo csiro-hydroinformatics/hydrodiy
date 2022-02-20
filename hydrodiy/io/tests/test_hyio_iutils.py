@@ -17,14 +17,6 @@ from hydrodiy import PYVERSION
 
 from requests.exceptions import HTTPError
 
-# Skip if package cannot be imported (circleci build)
-import_error = True
-try:
-    from hydrodiy.gis.oz import Oz, REGIONS
-    import_error = False
-except ImportError:
-    pass
-
 
 def run_script(fs, stype="python"):
     """ Run script and check there are no errors in stderr """
@@ -90,9 +82,6 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_script_template_plot(self):
         """ Test running script template plot """
-        if import_error:
-            self.skipTest("Import error")
-
         sites = pd.DataFrame({"siteid":[1, 2, 3, 4], \
                     "id":["a", "b", "c", "d"]})
         fs = self.fdata / "sites.csv"
