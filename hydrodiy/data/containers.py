@@ -1,6 +1,7 @@
 """ Module providing data containers """
 
 import numpy as np
+import pandas as pd
 
 EPS = 1e-10
 
@@ -279,4 +280,9 @@ class Vector(object):
             dct["data"].append(elem)
 
         return dct
+
+
+    def to_series(self):
+        """ Write vector data to json format """
+        return pd.Series(self.values, index=self.names)
 

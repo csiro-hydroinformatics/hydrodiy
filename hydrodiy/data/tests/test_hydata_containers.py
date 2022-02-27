@@ -227,6 +227,10 @@ class VectorTestCases(unittest.TestCase):
         vect.a = np.nan
 
 
+    def test_to_series(self):
+        vect = Vector(['a', 'b'], [0.5]*2, [0]*2, [1]*2)
+        se = vect.to_series()
+        assert np.all([idx1 == idx2 for idx1, idx2 in zip(se.index, ["a", "b"])])
 
 
 if __name__ == '__main__':
