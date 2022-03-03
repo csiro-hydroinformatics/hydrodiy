@@ -48,10 +48,10 @@ def get_batch(nelements, nbatch, ibatch):
 
 
 class OptionTask():
-    def __init__(self, taskid, opm):
+    def __init__(self, taskid, context, items):
         self.taskid = taskid
-        self.items = opm.tasks[taskid]
-        self.context = opm.context
+        self.context = context
+        self.items = items
 
     def __str__(self):
         txt = f"Task {self.taskid}:\n\tOptions values\n"
@@ -81,6 +81,22 @@ class OptionTask():
         if key in self.items:
             return self.items[key]
         return self.context[key]
+
+
+    def to_dict(self):
+        dd = {\
+            "taskid": self.taskid, \
+            "context": self.context, \
+            "items": self.items
+        }
+        return dd
+
+
+    @classmethod
+    def from_dict(cls, dd):
+        return OptionTask(dd["taskid"], \
+                    dd["context"], \
+                    dd["items"])
 
 
     def log(self, logger):
@@ -125,6 +141,29 @@ class OptionManager():
         return txt
 
 
+    @classmethod
+    def from_dict(cls, dd):
+        opm = OptionManager(dd.get("name", "Task Manager"))
+        opm.context = dd.get("context", {})
+        opm.options = dd.get("options", {})
+        tasks = dd.get("tasks", [])
+        for t in tasks:
+            to = OptionTask.from_dict(t)
+            opm.tasks.append(to.items)
+
+        return opm
+
+
+    def to_dict(self):
+        dd = {"name": self.name, \
+                "context": self.context, \
+                "options": self.options, \
+                "tasks": [self.get_task(taskid).to_dict() \
+                                for taskid in range(self.ntasks)]
+        }
+        return dd
+
+
     def from_cartesian_product(self, **kwargs):
         """ Build an option manager from a cartesian product of options """
 
@@ -140,11 +179,12 @@ class OptionManager():
                         f"an int or a string, got {type(v)}."
                 raise TypeError(errmsg)
 
-            self.options[k] = v2
+            sk = str(k)
+            self.options[sk] = v2
 
         self.tasks = []
         keys = list(self.options.keys())
-        for t in prod(*[self.options[k] for k in keys]):
+        for t in prod(*[self.options[sk] for sk in keys]):
             dd = {k: tt for k, tt in zip(keys, t)}
             self.tasks.append(dd)
 
@@ -161,7 +201,7 @@ class OptionManager():
         assert taskid>=0 and taskid<ntsks, errmsg
 
         # Build task object on the fly
-        return OptionTask(taskid, self)
+        return OptionTask(taskid, self.context, self.tasks[taskid])
 
 
     def to_dataframe(self):
@@ -190,10 +230,11 @@ class OptionManager():
         for taskid, task in enumerate(self.tasks):
             match = []
             for key, val in kwargs.items():
-                errmsg = f"Expected option '{key}' in {txt}"
-                assert key in self.options, errmsg
+                skey = str(key)
+                errmsg = f"Expected option '{skey}' in {txt}"
+                assert skey in self.options, errmsg
 
-                if re.search(val, str(task[key])):
+                if re.search(val, str(task[skey])):
                     match.append(True)
                 else:
                     match.append(False)

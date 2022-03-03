@@ -64,6 +64,19 @@ def test_get_batch_large():
         assert len(ii) == (84 if i<nbatch-2 else 83)
 
 
+def test_task_dict():
+    t = hyruns.OptionTask(0, {"bidule": "truc"}, \
+                    {"opt1": 1, "opt2": 3})
+    dd = t.to_dict()
+    assert dd == {"taskid": 0, \
+                    "context": {"bidule": "truc"},
+                    "items": {"opt1": 1, "opt2": 3}
+                 }
+
+    t2 = hyruns.OptionTask.from_dict(dd)
+    assert str(t) == str(t2)
+
+
 def test_option_manager():
     opm = hyruns.OptionManager(bidule="test")
     opm.from_cartesian_product(v1=["a", "b"], v2=[1, 2, 3])
@@ -105,6 +118,7 @@ def test_option_manager():
     opm.save(fout)
     assert fout.exists()
     fout.unlink()
+
 
 class FakeLogger():
     def __init__(self):
@@ -152,3 +166,15 @@ def test_option_manager_single_values():
     assert t.v2 == 3
 
 
+def test_option_dict():
+    opm = hyruns.OptionManager(bidule="test")
+    opm.from_cartesian_product(v1=["a", "b"], v2=[1, 2, 3])
+
+    dd = opm.to_dict()
+    opm2 = hyruns.OptionManager.from_dict(dd)
+    assert opm.context == opm2.context
+    assert opm.name == opm.name
+    for t1, t2 in zip(opm.tasks, opm2.tasks):
+        assert t1 == t2
+
+    assert str(opm) == str(opm2)
