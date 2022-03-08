@@ -32,6 +32,22 @@ def test_get_batch():
     assert idx[-1][1] == 22
 
 
+def test_sitebatch():
+    siteids = ["a", "b", "c", "d", "e", "f"]
+    sb = hyruns.SiteBatch(siteids, 2)
+    assert sb.siteids.tolist() == siteids
+    b = sb[1]
+    assert b == ["d", "e", "f"]
+
+    ib = sb.search("d")
+    assert ib == 1
+
+    msg = "Non unique"
+    with pytest.raises(AssertionError, match=msg):
+        sb = hyruns.SiteBatch(["a", "a", "b"], 2)
+
+
+
 def test_get_batch_errors():
     nbatch = 5
     nsites = 26

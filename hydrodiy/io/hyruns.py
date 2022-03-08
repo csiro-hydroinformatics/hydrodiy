@@ -47,6 +47,34 @@ def get_batch(nelements, nbatch, ibatch):
     return np.array_split(np.arange(nelements), nbatch)[ibatch]
 
 
+
+class SiteBatch():
+    """ Class to handle site batches """
+    def __init__(self, siteids, nbatch):
+        siteids = np.array(siteids)
+        nsites = len(siteids)
+
+        errmsg = "Non unique siteids"
+        assert len(np.unique(siteids)) == nsites, errmsg
+
+        self.siteids = siteids
+        self.nsites = nsites
+        self.nbatch = nbatch
+
+
+    def __getitem__(self, ibatch):
+        isites = get_batch(self.nsites, self.nbatch, ibatch)
+        return self.siteids[isites].tolist()
+
+
+    def search(self, siteid):
+        for ibatch in range(self.nbatch):
+            s = self[ibatch]
+            if siteid in s:
+                return ibatch
+
+
+
 class OptionTask():
     def __init__(self, taskid, context, items):
         self.taskid = taskid
