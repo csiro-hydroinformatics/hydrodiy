@@ -1,4 +1,4 @@
-import re
+import re, json
 import copy
 from pathlib import Path
 from itertools import product as prod
@@ -180,6 +180,14 @@ class OptionManager():
             opm.tasks.append(to.items)
 
         return opm
+
+
+    @classmethod
+    def from_file(cls, path):
+        with open(path, "r") as fo:
+            js = json.load(fo)
+
+        return cls.from_dict(js)
 
 
     def to_dict(self):

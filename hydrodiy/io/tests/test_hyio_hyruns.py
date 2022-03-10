@@ -194,3 +194,19 @@ def test_option_dict():
         assert t1 == t2
 
     assert str(opm) == str(opm2)
+
+
+def test_option_file():
+    opm = hyruns.OptionManager(bidule="test")
+    opm.from_cartesian_product(v1=["a", "b"], v2=[1, 2, 3])
+
+    dd = opm.to_dict()
+    f = TESTS_DIR / "opm.json"
+    with f.open("w") as fo:
+        json.dump(dd, fo, indent=4)
+
+    opm2 = hyruns.OptionManager.from_file(f)
+    assert opm.context == opm2.context
+
+    f.unlink()
+
