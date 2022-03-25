@@ -169,6 +169,42 @@ class OptionManager():
         return txt
 
 
+    def __eq__(self, other):
+        # Check other is an option manager
+        if not isinstance(other, OptionManager):
+            return False
+
+        # Check context
+        context = self.context
+        context_other = other.context
+        for k, v in context.items():
+            if k in context_other:
+                if not context_other[k] == context[k]:
+                    return False
+            else:
+                return False
+
+        # Check options
+        options = self.options
+        options_other = other.options
+        for k, v in options.items():
+            if k in options_other:
+                if not options_other[k] == options[k]:
+                    return False
+            else:
+                return False
+
+        # Check tasks
+        if not self.ntasks == other.ntasks:
+            return False
+
+        for task, otask in zip(self.tasks, other.tasks):
+            if not task == otask:
+                return False
+
+        return True
+
+
     @classmethod
     def from_dict(cls, dd):
         opm = OptionManager(dd.get("name", "Task Manager"))
@@ -198,6 +234,21 @@ class OptionManager():
                                 for taskid in range(self.ntasks)]
         }
         return dd
+
+
+    def save(self, filename):
+        """ Save option manager to disk. Overwrite existing one if different."""
+        dd = self.to_dict()
+        filename = Path(filename)
+
+        if filename.exists():
+            opm = OptionManager.from_file(filename)
+            if opm != self:
+                with filename.open("w") as fo:
+                    json.dump(dd, fo, indent=4)
+        else:
+            with filename.open("w") as fo:
+                json.dump(dd, fo, indent=4)
 
 
     def from_cartesian_product(self, **kwargs):
@@ -240,23 +291,6 @@ class OptionManager():
         return OptionTask(taskid, self.context, self.tasks[taskid])
 
 
-    def to_dataframe(self):
-        df = pd.DataFrame(self.tasks)
-        df.index.name = "taskid"
-        return df
-
-
-    def save(self, fout):
-        df = self.to_dataframe()
-        comment = {"option_manager_name": self.name}
-        comment.update({f"context_{k}": v for k, v in self.context.items()})
-
-        csv.write_csv(df, fout, \
-                comment, \
-                Path(__file__).resolve(), \
-                write_index=True, compress=False)
-
-
     def search(self, **kwargs):
         """ Search options with particular characteristics,
             e.g. month="(1|10)" will search month equal to 1 or 10.
@@ -279,7 +313,6 @@ class OptionManager():
                 taskids.append(taskid)
 
         return taskids
-
 
 
 

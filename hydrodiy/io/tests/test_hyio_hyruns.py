@@ -126,11 +126,7 @@ def test_option_manager():
 
     print(opm)
 
-    df = opm.to_dataframe()
-    assert df.shape == (6, 2)
-    assert df.columns.tolist() == ["v1", "v2"]
-
-    fout = TESTS_DIR / "option_manager.csv"
+    fout = TESTS_DIR / "option_manager.json"
     opm.save(fout)
     assert fout.exists()
     fout.unlink()
@@ -182,6 +178,26 @@ def test_option_manager_single_values():
     assert t.v2 == 3
 
 
+def test_option_manager_equality():
+    opm1 = hyruns.OptionManager(bidule=[1, 2])
+    opm1.from_cartesian_product(v1="a", v2=[1, 2, 3])
+
+    opm2 = hyruns.OptionManager(bidule=[1, 2])
+    opm2.from_cartesian_product(v1="a", v2=[1, 2, 3])
+    assert opm1 == opm2
+
+    opm3 = hyruns.OptionManager()
+    opm3.from_cartesian_product(v1="a", v2=[1, 2, 3])
+    assert opm1 != opm3
+
+    opm4 = hyruns.OptionManager(bidule=[1, 2])
+    opm4.from_cartesian_product(v1="a", v2=[1, 2])
+    assert opm1 != opm4
+
+    assert "bidule" != opm1
+    assert opm1 != "bidule"
+
+
 def test_option_dict():
     opm = hyruns.OptionManager(bidule="test")
     opm.from_cartesian_product(v1=["a", "b"], v2=[1, 2, 3])
@@ -200,10 +216,17 @@ def test_option_file():
     opm = hyruns.OptionManager(bidule="test")
     opm.from_cartesian_product(v1=["a", "b"], v2=[1, 2, 3])
 
-    dd = opm.to_dict()
     f = TESTS_DIR / "opm.json"
-    with f.open("w") as fo:
-        json.dump(dd, fo, indent=4)
+    if f.exists():
+        f.unlink()
+
+    opm.save(f)
+    t1 = f.stat().st_mtime
+
+    opm.save(f)
+    t2 = f.stat().st_mtime
+    # Check save has not overwritten an existing file
+    assert t1 == t2
 
     opm2 = hyruns.OptionManager.from_file(f)
     assert opm.context == opm2.context
