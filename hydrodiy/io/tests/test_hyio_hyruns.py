@@ -80,13 +80,19 @@ def test_get_batch_large():
         assert len(ii) == (84 if i<nbatch-2 else 83)
 
 
+def test_task_print():
+    t = hyruns.OptionTask(0, {"bidule": "truc"}, \
+                    {"opt1": 1, "opt2": 3})
+    s = str(t)
+
+
 def test_task_dict():
     t = hyruns.OptionTask(0, {"bidule": "truc"}, \
                     {"opt1": 1, "opt2": 3})
     dd = t.to_dict()
     assert dd == {"taskid": 0, \
                     "context": {"bidule": "truc"},
-                    "items": {"opt1": 1, "opt2": 3}
+                    "options": {"opt1": 1, "opt2": 3}
                  }
 
     t2 = hyruns.OptionTask.from_dict(dd)
@@ -98,6 +104,7 @@ def test_option_manager():
     opm.from_cartesian_product(v1=["a", "b"], v2=[1, 2, 3])
 
     assert opm.ntasks == 6
+    assert opm.bidule == "test"
 
     t = opm.get_task(0)
     print(t)
@@ -188,21 +195,21 @@ def test_option_manager_match():
     opm.from_cartesian_product(v1=["a", "b"], \
                     v2=[1, 2, 3], v3=[[1, 2], [3, 4]])
 
-    task = hyruns.OptionTask(0, [], {"v1": "a", "v2": 1, "v3":[1, 2]})
+    task = hyruns.OptionTask(0, {}, {"v1": "a", "v2": 1, "v3":[1, 2]})
     taskids = opm.match(task)
     assert taskids == [0]
 
-    task = hyruns.OptionTask(0, [], {"v1": "c", "v2": 1, "v3":[1, 2]})
+    task = hyruns.OptionTask(0, {}, {"v1": "c", "v2": 1, "v3":[1, 2]})
     taskids = opm.match(task)
     assert taskids == []
 
 
-    task = hyruns.OptionTask(0, [], {"v1": "a", "v2": 1, "v4": 1})
+    task = hyruns.OptionTask(0, {}, {"v1": "a", "v2": 1, "v4": 1})
     msg = "Expected option 'v4' in"
     with pytest.raises(AssertionError, match=msg):
         taskids = opm.match(task)
 
-    task = hyruns.OptionTask(0, [], {"v1": "a", "v2": 1, "v4": 1})
+    task = hyruns.OptionTask(0, {}, {"v1": "a", "v2": 1, "v4": 1})
     taskids = opm.match(task, exclude="v4")
     assert taskids == [0, 1]
 

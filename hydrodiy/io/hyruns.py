@@ -76,38 +76,39 @@ class SiteBatch():
 
 
 class OptionTask():
-    def __init__(self, taskid, context, items):
+    def __init__(self, taskid, context, options):
         self.taskid = taskid
         self.context = context
-        self.items = items
+        self.options = options
 
     def __str__(self):
         txt = f"Task {self.taskid}:\n\tOptions values\n"
-        for key, value in self.items.items():
+        for key, value in self.options.items():
             txt += f"\t\t{key}: {value}\n"
         txt += "\tContext values\n"
         for key, value in self.context.items():
             txt += f"\t\t{key}: {value}\n"
         return txt
 
+
     def __getattr__(self, key):
-        if key in self.items:
-            return self.items[key]
+        if key in self.options:
+            return self.options[key]
         elif key in self.context:
             return self.context[key]
         elif key == "names":
-            return list(self.items.keys())
+            return list(self.options.keys())
         else:
             super(self).__getattr__(key)
 
 
     def __getitem__(self, key):
-        txt = "/".join(self.items.keys())
+        txt = "/".join(self.options.keys())
         txt += "/" + "/".join(self.context.keys())
         errmsg = f"Expected key {key} in {txt}."
-        assert key in self.items or key in self.context, errmsg
-        if key in self.items:
-            return self.items[key]
+        assert key in self.options or key in self.context, errmsg
+        if key in self.options:
+            return self.options[key]
         return self.context[key]
 
 
@@ -115,7 +116,7 @@ class OptionTask():
         dd = {\
             "taskid": self.taskid, \
             "context": self.context, \
-            "items": self.items
+            "options": self.options
         }
         return dd
 
@@ -124,7 +125,7 @@ class OptionTask():
     def from_dict(cls, dd):
         return OptionTask(dd["taskid"], \
                     dd["context"], \
-                    dd["items"])
+                    dd["options"])
 
 
     def log(self, logger):
@@ -135,7 +136,7 @@ class OptionTask():
             logger.info(f"Context {key}: {value}")
 
         logger.info("")
-        for key, value in self.items.items():
+        for key, value in self.options.items():
             logger.info(f"Item {key}: {value}")
 
         logger.info("***********************")
@@ -167,6 +168,13 @@ class OptionManager():
                 txt += f"\t\t{key}: {value}\n"
 
         return txt
+
+
+    def __getattr__(self, key):
+        if key in self.context:
+            return self.context[key]
+        else:
+            super(self).__getattr__(key)
 
 
     def __eq__(self, other):
@@ -213,7 +221,7 @@ class OptionManager():
         tasks = dd.get("tasks", [])
         for t in tasks:
             to = OptionTask.from_dict(t)
-            opm.tasks.append(to.items)
+            opm.tasks.append(to.options)
 
         return opm
 
@@ -292,7 +300,7 @@ class OptionManager():
 
 
     def search(self, **kwargs):
-        """ Search options with particular characteristics,
+        """ Search tasks with criteria on options,
             e.g. month="(1|10)" will search month equal to 1 or 10.
         """
         taskids = []
@@ -315,42 +323,34 @@ class OptionManager():
 
 
     def find(self, **kwargs):
-        """ Find options with sepecific values for options,
+        """ Find options with specific values for options,
             e.g. month=1 will search month equal to 1.
         """
-        taskids = []
-        txt = "/".join(self.options.keys())
-        for taskid, task in enumerate(self.tasks):
-            match = []
-            for key, val in kwargs.items():
-                errmsg = f"Expected option '{key}' in {txt}"
-                assert key in self.options, errmsg
-
-                if task[key] == val:
-                    match.append(True)
-                else:
-                    match.append(False)
-
-            if all(match):
-                taskids.append(taskid)
-
-        return taskids
+        kw = {k: f"^{v}$" for k, v in kwargs.items()}
+        return self.search(**kw)
 
 
-    def match(self, other_task, exclude=[]):
+    def match(self, other_task, exclude=[], **kwargs):
         """ Find all tasks that match another task excluding certain items.
         """
-        taskids = []
+        # Perform a search first
+        if kwargs == {}:
+            taskids_initial = list(range(self.ntasks))
+        else:
+            taskids_initial = self.find(**kwargs)
+
         txt = "/".join(self.options.keys())
-        for taskid, task in enumerate(self.tasks):
+        taskids = []
+        for taskid in taskids_initial:
+            task = self.tasks[taskid]
             match = True
-            for key, val in other_task.items.items():
+            for key, val in other_task.options.items():
                 # Skip items flagged as such
                 if key in exclude:
                     continue
 
                 errmsg = f"Expected option '{key}' in {txt}"
-                assert key in self.options, errmsg
+                assert key in task, errmsg
 
                 # Check equality of items
                 if not task[key] == val:
