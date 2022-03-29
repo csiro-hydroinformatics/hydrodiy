@@ -162,9 +162,49 @@ def test_option_manager_search():
     found = opm.search(v1="a", v2="1|3")
     assert found == [0, 1, 4, 5]
 
+    found = opm.search(v1="a", v2=1)
+    assert found == [0, 1]
+
     msg = "Expected option 'bidule' in"
     with pytest.raises(AssertionError, match=msg):
         found = opm.search(bidule="a")
+
+
+def test_option_manager_find():
+    opm = hyruns.OptionManager()
+    opm.from_cartesian_product(v1=["a", "b"], \
+                    v2=[1, 2, 3], v3=[[1, 2], [3, 4]])
+
+    found = opm.find(v1="a", v2=1)
+    assert found == [0, 1]
+
+    msg = "Expected option 'bidule' in"
+    with pytest.raises(AssertionError, match=msg):
+        found = opm.search(bidule="a")
+
+
+def test_option_manager_match():
+    opm = hyruns.OptionManager()
+    opm.from_cartesian_product(v1=["a", "b"], \
+                    v2=[1, 2, 3], v3=[[1, 2], [3, 4]])
+
+    task = hyruns.OptionTask(0, [], {"v1": "a", "v2": 1, "v3":[1, 2]})
+    taskids = opm.match(task)
+    assert taskids == [0]
+
+    task = hyruns.OptionTask(0, [], {"v1": "c", "v2": 1, "v3":[1, 2]})
+    taskids = opm.match(task)
+    assert taskids == []
+
+
+    task = hyruns.OptionTask(0, [], {"v1": "a", "v2": 1, "v4": 1})
+    msg = "Expected option 'v4' in"
+    with pytest.raises(AssertionError, match=msg):
+        taskids = opm.match(task)
+
+    task = hyruns.OptionTask(0, [], {"v1": "a", "v2": 1, "v4": 1})
+    taskids = opm.match(task, exclude="v4")
+    assert taskids == [0, 1]
 
 
 def test_option_manager_single_values():

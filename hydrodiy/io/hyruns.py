@@ -300,11 +300,10 @@ class OptionManager():
         for taskid, task in enumerate(self.tasks):
             match = []
             for key, val in kwargs.items():
-                skey = str(key)
-                errmsg = f"Expected option '{skey}' in {txt}"
-                assert skey in self.options, errmsg
+                errmsg = f"Expected option '{key}' in {txt}"
+                assert key in self.options, errmsg
 
-                if re.search(val, str(task[skey])):
+                if re.search(str(val), str(task[key])):
                     match.append(True)
                 else:
                     match.append(False)
@@ -315,4 +314,50 @@ class OptionManager():
         return taskids
 
 
+    def find(self, **kwargs):
+        """ Find options with sepecific values for options,
+            e.g. month=1 will search month equal to 1.
+        """
+        taskids = []
+        txt = "/".join(self.options.keys())
+        for taskid, task in enumerate(self.tasks):
+            match = []
+            for key, val in kwargs.items():
+                errmsg = f"Expected option '{key}' in {txt}"
+                assert key in self.options, errmsg
 
+                if task[key] == val:
+                    match.append(True)
+                else:
+                    match.append(False)
+
+            if all(match):
+                taskids.append(taskid)
+
+        return taskids
+
+
+    def match(self, other_task, exclude=[]):
+        """ Find all tasks that match another task excluding certain items.
+        """
+        taskids = []
+        txt = "/".join(self.options.keys())
+        for taskid, task in enumerate(self.tasks):
+            match = True
+            for key, val in other_task.items.items():
+                # Skip items flagged as such
+                if key in exclude:
+                    continue
+
+                errmsg = f"Expected option '{key}' in {txt}"
+                assert key in self.options, errmsg
+
+                # Check equality of items
+                if not task[key] == val:
+                    match = False
+                    break
+
+            if match:
+                taskids.append(taskid)
+
+        return taskids
