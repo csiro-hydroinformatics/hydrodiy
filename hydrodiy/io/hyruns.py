@@ -14,8 +14,9 @@ from hydrodiy.io import csv
 # !! Do not change this attribute directly, always use the set_dict_keyname
 # function
 _DICT_KEYNAMES_DEFAULT = {
-    "context": "context",
-    "options": "options"
+    "context_name": "context",
+    "task_options_name": "options", \
+    "manager_options_name": "options"
 }
 
 _DICT_KEYNAMES = {}
@@ -144,8 +145,8 @@ class OptionTask():
     def to_dict(self):
         dd = {\
             "taskid": self.taskid, \
-            _DICT_KEYNAMES["context"]: self.context, \
-            _DICT_KEYNAMES["options"]: self.options
+            _DICT_KEYNAMES["context_name"]: self.context, \
+            _DICT_KEYNAMES["task_options_name"]: self.options
         }
         return dd
 
@@ -153,8 +154,8 @@ class OptionTask():
     @classmethod
     def from_dict(cls, dd):
         return OptionTask(dd["taskid"], \
-                    dd[_DICT_KEYNAMES["context"]], \
-                    dd[_DICT_KEYNAMES["options"]])
+                    dd[_DICT_KEYNAMES["context_name"]], \
+                    dd[_DICT_KEYNAMES["task_options_name"]])
 
 
     def log(self, logger):
@@ -245,8 +246,8 @@ class OptionManager():
     @classmethod
     def from_dict(cls, dd):
         opm = OptionManager(dd.get("name", "Task Manager"))
-        opm.context = dd.get(_DICT_KEYNAMES["context"], {})
-        opm.options = dd.get(_DICT_KEYNAMES["options"], {})
+        opm.context = dd.get(_DICT_KEYNAMES["context_name"], {})
+        opm.options = dd.get(_DICT_KEYNAMES["manager_options_name"], {})
         tasks = dd.get("tasks", [])
         for t in tasks:
             to = OptionTask.from_dict(t)
@@ -265,8 +266,8 @@ class OptionManager():
 
     def to_dict(self):
         dd = {"name": self.name, \
-                _DICT_KEYNAMES["context"]: self.context, \
-                _DICT_KEYNAMES["options"]: self.options, \
+                _DICT_KEYNAMES["context_name"]: self.context, \
+                _DICT_KEYNAMES["manager_options_name"]: self.options, \
                 "tasks": [self.get_task(taskid).to_dict() \
                                 for taskid in range(self.ntasks)]
         }

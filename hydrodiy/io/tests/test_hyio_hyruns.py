@@ -134,7 +134,7 @@ def test_option_manager():
     print(opm)
 
     fout = TESTS_DIR / "option_manager.json"
-    opm.save(fout)
+    opm.save(fout, overwrite=True)
     assert fout.exists()
 
     with fout.open("r") as fo:
@@ -148,24 +148,35 @@ def test_option_manager_changed_keys():
     opm = hyruns.OptionManager(bidule="test")
     opm.from_cartesian_product(v1=["a", "b"], v2=[1, 2, 3])
 
-    hyruns.set_dict_keyname("options", "items")
+    hyruns.set_dict_keyname("manager_options_name", "items")
     fout = TESTS_DIR / "option_manager.json"
     opm.save(fout, overwrite=True)
     with fout.open("r") as fo:
         js = json.load(fo)
     assert not set(list(js.keys())) ^ set(["name", "tasks", "context", "items"])
 
-    hyruns.set_dict_keyname("options", "truc")
+    hyruns.set_dict_keyname("manager_options_name", "truc")
+    assert hyruns._DICT_KEYNAMES["manager_options_name"] == "truc"
     opm.save(fout, overwrite=True)
     with fout.open("r") as fo:
         js = json.load(fo)
     assert not set(list(js.keys())) ^ set(["name", "tasks", "context", "truc"])
+
+    hyruns.set_dict_keyname("task_options_name", "truc")
+    assert hyruns._DICT_KEYNAMES["task_options_name"] == "truc"
+    opm.save(fout, overwrite=True)
+    with fout.open("r") as fo:
+        js = json.load(fo)
+    assert "truc" in js["tasks"][0]
 
     msg = "Expected key in"
     with pytest.raises(AssertionError, match=msg):
         hyruns.set_dict_keyname("truc", "truc")
 
     fout.unlink()
+    hyruns.reset_dict_keyname()
+    assert hyruns._DICT_KEYNAMES["manager_options_name"] == "options"
+    assert hyruns._DICT_KEYNAMES["task_options_name"] == "options"
 
 
 class FakeLogger():
