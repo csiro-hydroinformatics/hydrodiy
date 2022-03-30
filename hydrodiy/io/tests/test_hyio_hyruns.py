@@ -136,6 +136,35 @@ def test_option_manager():
     fout = TESTS_DIR / "option_manager.json"
     opm.save(fout)
     assert fout.exists()
+
+    with fout.open("r") as fo:
+        js = json.load(fo)
+    assert not set(list(js.keys())) ^ set(["name", "tasks", "context", "options"])
+
+    fout.unlink()
+
+
+def test_option_manager_changed_keys():
+    opm = hyruns.OptionManager(bidule="test")
+    opm.from_cartesian_product(v1=["a", "b"], v2=[1, 2, 3])
+
+    hyruns.set_dict_keyname("options", "items")
+    fout = TESTS_DIR / "option_manager.json"
+    opm.save(fout, overwrite=True)
+    with fout.open("r") as fo:
+        js = json.load(fo)
+    assert not set(list(js.keys())) ^ set(["name", "tasks", "context", "items"])
+
+    hyruns.set_dict_keyname("options", "truc")
+    opm.save(fout, overwrite=True)
+    with fout.open("r") as fo:
+        js = json.load(fo)
+    assert not set(list(js.keys())) ^ set(["name", "tasks", "context", "truc"])
+
+    msg = "Expected key in"
+    with pytest.raises(AssertionError, match=msg):
+        hyruns.set_dict_keyname("truc", "truc")
+
     fout.unlink()
 
 
@@ -182,6 +211,9 @@ def test_option_manager_find():
     opm.from_cartesian_product(v1=["a", "b"], \
                     v2=[1, 2, 3], v3=[[1, 2], [3, 4]])
 
+    found = opm.find(v3=[1, 2])
+    assert found == [0, 2, 4, 6, 8, 10]
+
     found = opm.find(v1="a", v2=1)
     assert found == [0, 1]
 
@@ -211,6 +243,13 @@ def test_option_manager_match():
 
     task = hyruns.OptionTask(0, {}, {"v1": "a", "v2": 1, "v4": 1})
     taskids = opm.match(task, exclude="v4")
+    assert taskids == [0, 1]
+
+    # Match with a sub selection
+    taskids = opm.match(task, exclude="v4", v3=[1, 2])
+    assert taskids == [0]
+
+    taskids = opm.match(task, exclude=["v2", "v4"], v2=1)
     assert taskids == [0, 1]
 
 

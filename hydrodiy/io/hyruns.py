@@ -7,6 +7,34 @@ import pandas as pd
 
 from hydrodiy.io import csv
 
+# Specify key names to allow possibily to change this
+# and solve backward compatibility issues when
+# importing / exporting data to json
+#
+# !! Do not change this attribute directly, always use the set_dict_keyname
+# function
+_DICT_KEYNAMES_DEFAULT = {
+    "context": "context",
+    "options": "options"
+}
+_DICT_KEYNAMES = {
+    "context": _DICT_KEYNAMES_DEFAULT["context"],
+    "options": _DICT_KEYNAMES_DEFAULT["options"]
+}
+
+def set_dict_keyname(key, name):
+    """ Set a new key/name pair for import and export of json data """
+    txt = "/".join(list(_DICT_KEYNAMES.keys()))
+    errmsg = f"Expected key in {txt}, got {key}"
+    assert key in _DICT_KEYNAMES, errmsg
+    _DICT_KEYNAMES[key] = name
+
+
+def reset_dict_keyname():
+    """ Reset all key/name pairs for import and export of json data """
+    for key, val in _DICT_KEYNAMES_DEFAULT:
+        _DICT_KEYNAMES[key] = val
+
 
 def get_batch(nelements, nbatch, ibatch):
     """ Returns the indices of elements within a batch
@@ -115,8 +143,8 @@ class OptionTask():
     def to_dict(self):
         dd = {\
             "taskid": self.taskid, \
-            "context": self.context, \
-            "options": self.options
+            _DICT_KEYNAMES["context"]: self.context, \
+            _DICT_KEYNAMES["options"]: self.options
         }
         return dd
 
@@ -124,8 +152,8 @@ class OptionTask():
     @classmethod
     def from_dict(cls, dd):
         return OptionTask(dd["taskid"], \
-                    dd["context"], \
-                    dd["options"])
+                    dd[_DICT_KEYNAMES["context"]], \
+                    dd[_DICT_KEYNAMES["options"]])
 
 
     def log(self, logger):
@@ -216,8 +244,8 @@ class OptionManager():
     @classmethod
     def from_dict(cls, dd):
         opm = OptionManager(dd.get("name", "Task Manager"))
-        opm.context = dd.get("context", {})
-        opm.options = dd.get("options", {})
+        opm.context = dd.get(_DICT_KEYNAMES["context"], {})
+        opm.options = dd.get(_DICT_KEYNAMES["options"], {})
         tasks = dd.get("tasks", [])
         for t in tasks:
             to = OptionTask.from_dict(t)
@@ -236,20 +264,20 @@ class OptionManager():
 
     def to_dict(self):
         dd = {"name": self.name, \
-                "context": self.context, \
-                "options": self.options, \
+                _DICT_KEYNAMES["context"]: self.context, \
+                _DICT_KEYNAMES["options"]: self.options, \
                 "tasks": [self.get_task(taskid).to_dict() \
                                 for taskid in range(self.ntasks)]
         }
         return dd
 
 
-    def save(self, filename):
+    def save(self, filename, overwrite=False):
         """ Save option manager to disk. Overwrite existing one if different."""
         dd = self.to_dict()
         filename = Path(filename)
 
-        if filename.exists():
+        if filename.exists() and not overwrite:
             opm = OptionManager.from_file(filename)
             if opm != self:
                 with filename.open("w") as fo:
@@ -310,8 +338,9 @@ class OptionManager():
             for key, val in kwargs.items():
                 errmsg = f"Expected option '{key}' in {txt}"
                 assert key in self.options, errmsg
-
-                if re.search(str(val), str(task[key])):
+                s1 = re.sub("\[|\]", "", str(val))
+                s2 = re.sub("\[|\]", "", str(task[key]))
+                if re.search(s1, s2):
                     match.append(True)
                 else:
                     match.append(False)
