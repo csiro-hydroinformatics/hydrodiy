@@ -17,23 +17,24 @@ _DICT_KEYNAMES_DEFAULT = {
     "context": "context",
     "options": "options"
 }
-_DICT_KEYNAMES = {
-    "context": _DICT_KEYNAMES_DEFAULT["context"],
-    "options": _DICT_KEYNAMES_DEFAULT["options"]
-}
 
-def set_dict_keyname(key, name):
-    """ Set a new key/name pair for import and export of json data """
-    txt = "/".join(list(_DICT_KEYNAMES.keys()))
-    errmsg = f"Expected key in {txt}, got {key}"
-    assert key in _DICT_KEYNAMES, errmsg
-    _DICT_KEYNAMES[key] = name
-
+_DICT_KEYNAMES = {}
 
 def reset_dict_keyname():
     """ Reset all key/name pairs for import and export of json data """
-    for key, val in _DICT_KEYNAMES_DEFAULT:
+    for key, val in _DICT_KEYNAMES_DEFAULT.items():
         _DICT_KEYNAMES[key] = val
+
+# Initial setup of keynames
+reset_dict_keyname()
+
+def set_dict_keyname(key, name):
+    """ Set a new key/name pair for import and export of json data """
+    txt = "/".join(list(_DICT_KEYNAMES_DEFAULT.keys()))
+    errmsg = f"Expected key in {txt}, got {key}"
+    assert key in _DICT_KEYNAMES_DEFAULT, errmsg
+    _DICT_KEYNAMES[key] = name
+
 
 
 def get_batch(nelements, nbatch, ibatch):
@@ -338,8 +339,8 @@ class OptionManager():
             for key, val in kwargs.items():
                 errmsg = f"Expected option '{key}' in {txt}"
                 assert key in self.options, errmsg
-                s1 = re.sub("\[|\]", "", str(val))
-                s2 = re.sub("\[|\]", "", str(task[key]))
+                s1 = re.sub("\\[|\\]", "", str(val))
+                s2 = re.sub("\\[|\\]", "", str(task[key]))
                 if re.search(s1, s2):
                     match.append(True)
                 else:
