@@ -330,3 +330,15 @@ def test_option_file():
 
     f.unlink()
 
+    # Try writing wrong file
+    f2 = f.parent / f"{f.stem}_wrong.json"
+    js = opm.to_dict()
+    with f2.open("w") as fo:
+        fo.write(str(js)[:100])
+
+    msg = "Cannot read"
+    with pytest.raises(IOError, match=msg):
+        opm3 = hyruns.OptionManager.from_file(f2)
+
+    f2.unlink()
+

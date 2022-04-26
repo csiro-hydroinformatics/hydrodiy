@@ -1,4 +1,5 @@
 import re, json
+import time
 import copy
 from pathlib import Path
 from itertools import product as prod
@@ -257,9 +258,19 @@ class OptionManager():
 
 
     @classmethod
-    def from_file(cls, path):
+    def from_file(cls, path, wait_secs=2):
         with open(path, "r") as fo:
-            js = json.load(fo)
+            # Attempt to open the file several times in case
+            # it's being written from another process
+            js = None
+            for attempt in range(2):
+                try:
+                    js = json.load(fo)
+                except json.decoder.JSONDecodeError:
+                    time.sleep(wait_secs)
+
+            if js is None:
+                raise IOError(f"Cannot read file {path}")
 
         return cls.from_dict(js)
 
