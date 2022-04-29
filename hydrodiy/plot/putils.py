@@ -834,8 +834,9 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="viridis", \
 
     Returns
     -------
-    plotted : list
-        List of dictionaries for each categories. A dictionary contains:
+    plotted : dict
+        Dictionary containing dictionaries for each categories index by
+        category number. Each dictionary contains:
         idx :   Index of category items
         label:  Label of category
         color:  Color used for category
@@ -904,7 +905,7 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="viridis", \
     markersizes = np.linspace(markersizemin, markersizemax, ncats)
 
     # Plot all categories
-    plotted = []
+    plotted = {}
 
     for icat in range(ncats):
         # plot config
@@ -948,7 +949,7 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="viridis", \
             "line": line, \
             "x": x[idx], "y": y[idx]}
 
-        plotted.append(dd)
+        plotted[icat] = dd
 
     return plotted, cats
 
