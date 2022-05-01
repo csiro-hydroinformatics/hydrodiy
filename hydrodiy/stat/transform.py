@@ -14,7 +14,7 @@ from hydrodiy.data import dutils
 from hydrodiy.stat import sutils
 
 __all__ = ["Identity", "Logit", "Log", "BoxCox2", \
-                "BoxCox1lam","BoxCox1nu", \
+                "BoxCox1lam","BoxCox1nu", "BoxCox2sym", \
                 "YeoJohnson", "Reciprocal", "Softmax", "Sinh", \
                 "LogSinh", "Manly"]
 
@@ -442,6 +442,39 @@ class BoxCox1lam(Transform):
 
     def params_sample(self, nsamples=500, minval=0., maxval=1.):
         return self.BC.params_sample(nsamples, minval, maxval)[:, 1][:, None]
+
+
+
+class BoxCox2sym(Transform):
+    """ Symetrical boxcox transform y = ((nu+x)^lambda-1)/lambda
+    """
+    def __init__(self, mininu=EPS, minilam=0.):
+        if minilam < -3:
+            error_msg = f"Expected minilam > -3, got {minilam}."
+            raise ValueError(error_msg)
+
+        params = Vector(["nu", "lam"], [mininu, 1.], \
+                    [mininu, minilam], [np.inf, 3.])
+
+        super(BoxCox2sym, self).__init__("BoxCox2sym", params)
+        self.BC = BoxCox2(mininu=mininu, minilam=minilam)
+
+    def _forward(self, x):
+        self.BC.params.values = self.params.values
+        y0 = self.BC.forward(0.)
+        return np.sign(x)*(self.BC.forward(np.abs(x))-y0)
+
+    def _backward(self, y):
+        self.BC.params.values = self.params.values
+        y0 = self.BC.forward(0.)
+        return np.sign(y)*(self.BC.backward(np.abs(y)+y0))
+
+    def _jacobian(self, x):
+        self.BC.params.values = self.params.values
+        return self.BC.jacobian(np.abs(x))
+
+    def params_sample(self, nsamples=500, minval=0., maxval=1.):
+        return self.BC.params_sample(nsamples, minval, maxval)
 
 
 
