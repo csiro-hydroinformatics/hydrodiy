@@ -43,7 +43,9 @@ parser.add_argument("-n", "--nbatch", help="Number of batch processes", \
                     type=int, default=7)
 parser.add_argument("-j", "--jobid", help="JobID", \
                     type=int, default=-1)
-parser.add_argument("-p", "--progress", help=" Show progress", \
+parser.add_argument("-p", "--progress", help="Show progress", \
+                    action="store_true", default=False)
+parser.add_argument("-d", "--debug", help="Debug mode", \
                     action="store_true", default=False)
 args = parser.parse_args()
 
@@ -51,7 +53,8 @@ version = args.version
 ibatch = args.ibatch
 nbatch = args.nbatch
 jobid = args.jobid
-progress = args.jobid
+progress = args.progress
+debug = args.debug
 sitepattern = args.sitepattern
 
 #----------------------------------------------------------------------
