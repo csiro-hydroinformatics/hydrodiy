@@ -1,5 +1,5 @@
 import os, math
-
+import pytest
 import unittest
 import numpy as np
 from itertools import product as prod
@@ -257,5 +257,16 @@ class UtilsTestCase(unittest.TestCase):
         #plt.show()
         #import pdb; pdb.set_trace()
 
-if __name__ == "__main__":
-    unittest.main()
+    def test_lstsq(self):
+        #FIXME add more tests with statsmodel results
+        nval, nvar = 100, 3
+        for repeat in range(10):
+            t_true = np.random.uniform(0, 2, nvar)
+            X = np.random.uniform(0, 1, (nval, nvar))
+            std = 1e-4
+            err = np.random.normal(0, std, size=nval)
+            y = X.dot(t_true)+err
+
+            res = sutils.lstsq(X, y)
+            assert np.allclose(res.params, t_true, rtol=0, atol=1e-3)
+

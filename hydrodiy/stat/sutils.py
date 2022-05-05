@@ -4,7 +4,7 @@ import numpy as np
 from scipy import linalg
 import pandas as pd
 
-from scipy.stats import norm
+from scipy.stats import norm, t as tstud
 
 from hydrodiy import has_c_module
 if has_c_module("stat", False):
@@ -324,4 +324,55 @@ def pareto_front(data, orientation=1):
 
     return isdominated
 
+def lstsq(X, y, add_intercept=False):
+    """ Perform OLS fit
 
+    Parameters
+    ----------
+    X : numpy.ndarray
+        2D array of predictors
+    y : numpy.ndarray
+        1D array of predictands
+
+    """
+    # Prepare data
+    y = np.atleast_1d(y)
+    X = np.atleast_2d(X)
+    errmsg = "Expected X.shape[0] == y.shape[0]"
+    assert y.shape[0] == X.shape[0]
+
+    if add_intercept:
+        ones = np.ones_like(y)
+        try:
+            X.loc[:, "intercept"] = ones
+        except:
+            X = np.column_stack([X, ones])
+
+    # Regular OLS fit
+    t, _, _, _ = np.linalg.lstsq(X, y, rcond=None)
+
+    # compute parameter uncertainty
+    yhat = X.dot(t)
+    err = yhat-y
+    sse = np.sum(err*err)
+    degf = len(err)-3
+    ecov = sse/degf
+    XX = X.T.dot(X)
+    XXinv = np.linalg.inv(XX)
+    t_std = np.sqrt(np.diag(ecov*XXinv))
+
+    # student test of 0 value
+    tstat = t/t_std
+    p1 = tstud.cdf(np.abs(tstat), df=degf)
+    p2 = tstud.cdf(-np.abs(tstat), df=degf)
+    t_pvalue = 1-p1+p2
+
+    # Store
+    if hasattr(X, "columns"):
+        idx = X.columns
+    else:
+        idx = None
+    res = pd.DataFrame({"params": t, "stderr": t_std, "tstat": tstat, \
+                            "tpvalue": t_pvalue}, index=idx)
+
+    return res
