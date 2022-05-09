@@ -4,7 +4,7 @@ import numpy as np
 from scipy import linalg
 import pandas as pd
 
-from scipy.stats import norm, t as tstud
+from scipy.stats import norm, t as tstud, f as fisch
 
 from hydrodiy import has_c_module
 if has_c_module("stat", False):
@@ -324,7 +324,7 @@ def pareto_front(data, orientation=1):
 
     return isdominated
 
-def lstsq(X, y, add_intercept=False):
+def lstsq(X, y, add_intercept=False, Rtest=None, rtest=None):
     """ Perform OLS fit
 
     Parameters
@@ -333,46 +333,106 @@ def lstsq(X, y, add_intercept=False):
         2D array of predictors
     y : numpy.ndarray
         1D array of predictands
+    Rtest : numpy.ndarray
+        2D Constraint matrix (nparams x nconstraints). If none, set to
+        identity matrix.
+    rtest : numpy.ndarray
+        1D Constraint vector (nconstraints). If none, set to
+        zero vector of same length than parameter vector.
 
+    Returns
+    -------
+    res : pandas.core.DataFrame
+        Results of ols fit including:
+        params  - Parameter value
+        stderr  - Standard error for each parameter
+        tstat   - Student-T statistic against the assumption of 0
+                 parameter value.
+        tpvalue - Student-T p-value against the assumption of 0
+                 parameter value.
+    fstat : float
+        F-statistic testing that Rtest.dot(theta) = rtest.
+    fpvalue : float
+        F-pvalue
+    Xi : numpy.ndarray
+        X matrix potentially extended with an intercept.
     """
     # Prepare data
-    y = np.atleast_1d(y)
-    X = np.atleast_2d(X)
     errmsg = "Expected X.shape[0] == y.shape[0]"
     assert y.shape[0] == X.shape[0]
 
     if add_intercept:
         ones = np.ones_like(y)
         try:
+            cols = X.columns.tolist()
             X.loc[:, "intercept"] = ones
+            cc = ["intercept"] + cols
+            X = X.loc[:, cc]
         except:
             X = np.column_stack([X, ones])
 
+    # Constraints
+    nparams = X.shape[1]
+    if Rtest is None:
+        if add_intercept:
+            # Does not test intercept by default
+            Rtest = np.column_stack([np.eye(nparams-1), \
+                        np.zeros(nparams-1)])
+        else:
+            Rtest = np.eye(nparams)
+    else:
+        Rtest = np.atleast_2d(Rtest)
+
+    nconst = Rtest.shape[0]
+    if rtest is None:
+        rtest = np.zeros(nconst)
+    else:
+        rtest = np.atleast_1d(rtest)
+
+    errmsg = f"Expected Rtest.shape[0] == rtest.shape[0], "+\
+                f"got, Rtest.shape[0]={Rtest.shape[0]}, "+\
+                f"rtest.shape[0]={rtest.shape[0]}."
+    assert Rtest.shape[0] == rtest.shape[0], errmsg
+
+    errmsg = f"Expected Rtest.shape[1] == {nparams}, "+\
+                f"got Rtest.shape[1]={Rtest.shape[1]}."
+    assert Rtest.shape[1] == nparams, errmsg
+
     # Regular OLS fit
-    t, _, _, _ = np.linalg.lstsq(X, y, rcond=None)
+    theta, _, _, _ = np.linalg.lstsq(X, y, rcond=None)
 
     # compute parameter uncertainty
-    yhat = X.dot(t)
+    yhat = X.dot(theta)
     err = yhat-y
     sse = np.sum(err*err)
-    degf = len(err)-3
-    ecov = sse/degf
+    degf = len(err)-nparams
+    sig2 = sse/degf
     XX = X.T.dot(X)
     XXinv = np.linalg.inv(XX)
-    t_std = np.sqrt(np.diag(ecov*XXinv))
+    theta_std = np.sqrt(np.diag(sig2*XXinv))
 
-    # student test of 0 value
-    tstat = t/t_std
+    # Test using fischer distribution
+    delta = Rtest.dot(theta)-rtest
+    M = Rtest.dot(XXinv).dot(Rtest.T)
+    Minv = np.linalg.inv(M)
+    fstat = np.sum(delta*Minv.dot(delta))/nconst/sig2
+    fpvalue = 1-fisch.cdf(fstat, nconst, degf)
+
+    # student test for theta=0
+    tstat = theta/theta_std
     p1 = tstud.cdf(np.abs(tstat), df=degf)
-    p2 = tstud.cdf(-np.abs(tstat), df=degf)
-    t_pvalue = 1-p1+p2
+    tpvalue = 2*(1-p1)
 
     # Store
     if hasattr(X, "columns"):
         idx = X.columns
     else:
         idx = None
-    res = pd.DataFrame({"params": t, "stderr": t_std, "tstat": tstat, \
-                            "tpvalue": t_pvalue}, index=idx)
 
-    return res
+    res = pd.DataFrame({"params": theta, \
+                        "stderr": theta_std, \
+                        "tstat": tstat, \
+                        "tpvalue": tpvalue}, \
+                        index=idx)
+
+    return res, fstat, fpvalue, X

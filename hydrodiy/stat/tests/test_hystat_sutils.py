@@ -257,16 +257,63 @@ class UtilsTestCase(unittest.TestCase):
         #plt.show()
         #import pdb; pdb.set_trace()
 
+
     def test_lstsq(self):
         #FIXME add more tests with statsmodel results
         nval, nvar = 100, 3
         for repeat in range(10):
-            t_true = np.random.uniform(0, 2, nvar)
+            t_true = np.random.uniform(-0.5, 0.5, nvar)
             X = np.random.uniform(0, 1, (nval, nvar))
             std = 1e-4
             err = np.random.normal(0, std, size=nval)
             y = X.dot(t_true)+err
-
-            res = sutils.lstsq(X, y)
+            res, _, _, _ = sutils.lstsq(X, y)
             assert np.allclose(res.params, t_true, rtol=0, atol=1e-3)
+
+            std = np.std(X.dot(t_true))*2
+            err = np.random.normal(0, std, size=nval)
+            y = X.dot(t_true)+err
+            for iparam in range(nvar):
+                Rtest = np.zeros((1, nvar))
+                Rtest[0, iparam] = 1
+                res, fstat, fpvalue, _ = sutils.lstsq(X, y, Rtest=Rtest)
+                # Default zero value constraint, so fstat should be equal to tstat**2
+                # and get same pvalue
+                assert np.isclose(fstat, res.tstat[iparam]**2)
+                assert np.isclose(fpvalue, res.tpvalue[iparam])
+
+
+    def test_lstsq_constraints(self):
+        #FIXME add more tests with statsmodel results
+        nval, nvar = 100, 3
+        for repeat in range(10):
+            t_true = np.random.uniform(1, 2, nvar)
+            t_true[-1] = 5-1e-5
+            X = np.random.uniform(0, 1, (nval, nvar))
+            std = np.std(X.dot(t_true))/2
+            err = np.random.normal(0, std, size=nval)
+            y = X.dot(t_true)+err
+            Rtest = np.zeros((1, nvar))
+            Rtest[0, -1] = 1
+            rtest = np.array([5])
+            res, fstat, fpvalue, _ = sutils.lstsq(X, y, Rtest=Rtest, rtest=rtest)
+            # Failing to assume that the last param is different from 5
+            assert fpvalue>0.02
+
+
+    def test_lstsq_wikipedia(self):
+        # See https://en.wikipedia.org/wiki/Ordinary_least_squares
+        height = np.array([1.47, 1.50,	1.52, 1.55, 1.57, 1.60, 1.63, 1.65, 1.68, 1.70, \
+                                    1.73, 1.75, 1.78, 1.80, 1.83])
+        weight = np.array([52.21, 53.12, 54.48, 55.84, 57.20, 58.57, 59.93, \
+                                61.29, 63.11, 64.47, 66.28, 68.10, 69.92, \
+                                72.19, 74.46])
+        X = np.column_stack([height, height**2])
+        res, fstat, fpvalue, Xi = sutils.lstsq(X, weight, add_intercept=True)
+        assert res.shape[0] == 3
+        assert np.allclose(res.params, [-143.1620, 61.9603, 128.8128])
+        assert np.allclose(res.stderr, [19.8332, 6.0084, 16.3083])
+        assert np.allclose(res.tstat, [-7.2183, 10.3122, 7.8986])
+        assert np.isclose(fstat, 5471.24)
+
 
