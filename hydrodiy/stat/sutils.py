@@ -334,10 +334,10 @@ def lstsq(X, y, add_intercept=False, Rtest=None, rtest=None):
     y : numpy.ndarray
         1D array of predictands
     Rtest : numpy.ndarray
-        2D Constraint matrix (nparams x nconstraints). If none, set to
+        3D Constraint matrix (nconstraints x nparams x ntests). If none, set to
         identity matrix.
     rtest : numpy.ndarray
-        1D Constraint vector (nconstraints). If none, set to
+        2D Constraint vector (nconstraints x ntests). If none, set to
         zero vector of same length than parameter vector.
 
     Returns
@@ -377,26 +377,24 @@ def lstsq(X, y, add_intercept=False, Rtest=None, rtest=None):
         if add_intercept:
             # Does not test intercept by default
             Rtest = np.column_stack([np.eye(nparams-1), \
-                        np.zeros(nparams-1)])
+                        np.zeros(nparams-1)])[:, :, None]
         else:
-            Rtest = np.eye(nparams)
+            Rtest = np.eye(nparams)[:, :, None]
     else:
-        Rtest = np.atleast_2d(Rtest)
+        errmsg = "Expected a 3d array for Rest"
+        assert Rtest.ndim == 3, errmsg
 
     nconst = Rtest.shape[0]
     if rtest is None:
-        rtest = np.zeros(nconst)
+        rtest = np.zeros((nconst, 1))
     else:
-        rtest = np.atleast_1d(rtest)
+        errmsg = "Expected a 2d array for Rest"
+        assert rtest.ndim == 2, errmsg
 
-    errmsg = f"Expected Rtest.shape[0] == rtest.shape[0], "+\
-                f"got, Rtest.shape[0]={Rtest.shape[0]}, "+\
-                f"rtest.shape[0]={rtest.shape[0]}."
-    assert Rtest.shape[0] == rtest.shape[0], errmsg
-
-    errmsg = f"Expected Rtest.shape[1] == {nparams}, "+\
-                f"got Rtest.shape[1]={Rtest.shape[1]}."
-    assert Rtest.shape[1] == nparams, errmsg
+    assert Rtest.shape[0] == rtest.shape[0]
+    assert Rtest.shape[1] == nparams
+    assert Rtest.shape[2] == rtest.shape[1]
+    ntests = Rtest.shape[2]
 
     # Regular OLS fit
     theta, _, _, _ = np.linalg.lstsq(X, y, rcond=None)
@@ -412,11 +410,14 @@ def lstsq(X, y, add_intercept=False, Rtest=None, rtest=None):
     theta_std = np.sqrt(np.diag(sig2*XXinv))
 
     # Test using fischer distribution
-    delta = Rtest.dot(theta)-rtest
-    M = Rtest.dot(XXinv).dot(Rtest.T)
-    Minv = np.linalg.inv(M)
-    fstat = np.sum(delta*Minv.dot(delta))/nconst/sig2
-    fpvalue = 1-fisch.cdf(fstat, nconst, degf)
+    fstats, fpvalues = np.zeros(ntests), np.zeros(ntests)
+    for itest in range(ntests):
+        R, r = Rtest[:, :, itest], rtest[:, itest]
+        delta = R.dot(theta)-r
+        M = R.dot(XXinv).dot(R.T)
+        Minv = np.linalg.inv(M)
+        fstats[itest] = np.sum(delta*Minv.dot(delta))/nconst/sig2
+        fpvalues[itest] = 1-fisch.cdf(fstats[itest], nconst, degf)
 
     # student test for theta=0
     tstat = theta/theta_std
@@ -435,4 +436,4 @@ def lstsq(X, y, add_intercept=False, Rtest=None, rtest=None):
                         "tpvalue": tpvalue}, \
                         index=idx)
 
-    return res, fstat, fpvalue, X
+    return res, fstats, fpvalues, X
