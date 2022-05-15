@@ -273,14 +273,12 @@ class UtilsTestCase(unittest.TestCase):
             std = np.std(X.dot(t_true))*2
             err = np.random.normal(0, std, size=nval)
             y = X.dot(t_true)+err
-            for iparam in range(nvar):
-                Rtest = np.zeros((1, nvar, 1))
-                Rtest[0, iparam, 0] = 1
-                res, fstats, fpvalues, _ = sutils.lstsq(X, y, Rtest=Rtest)
-                # Default zero value constraint, so fstat should be equal to tstat**2
-                # and get same pvalue
-                assert np.isclose(fstats[0], res.tstat[iparam]**2)
-                assert np.isclose(fpvalues[0], res.tpvalue[iparam])
+            res, fstats, fpvalues, _ = sutils.lstsq(X, y)
+            # Default zero value constraint,
+            # so fstat should be equal to tstat**2
+            # and get same pvalue
+            assert np.allclose(fstats, res.tstat**2)
+            assert np.allclose(fpvalues, res.tpvalue)
 
 
     def test_lstsq_constraints(self):
@@ -293,10 +291,11 @@ class UtilsTestCase(unittest.TestCase):
             std = np.std(X.dot(t_true))/2
             err = np.random.normal(0, std, size=nval)
             y = X.dot(t_true)+err
-            Rtest = np.zeros((1, nvar, 1))
-            Rtest[0, -1, 0] = 1
-            rtest = np.array([[5]])
-            res, fstats, fpvalues, _ = sutils.lstsq(X, y, Rtest=Rtest, rtest=rtest)
+            R = np.zeros((1, nvar))
+            R[0, -1] = 1
+            r = np.array([5])
+            res, fstats, fpvalues, _ = sutils.lstsq(X, y, Rtest=[R], \
+                                            rtest=[r])
             # Failing to assume that the last param is different from 5
             assert fpvalues[0]>0.02
 
@@ -309,11 +308,15 @@ class UtilsTestCase(unittest.TestCase):
                                 61.29, 63.11, 64.47, 66.28, 68.10, 69.92, \
                                 72.19, 74.46])
         X = np.column_stack([height, height**2])
-        res, fstats, fpvalues, Xi = sutils.lstsq(X, weight, add_intercept=True)
+        R = np.column_stack([np.zeros(2), np.eye(2)])
+        r = np.zeros(2)
+        res, fstats, fpvalues, Xi = sutils.lstsq(X, weight, \
+                    add_intercept=True, Rtest=[R], rtest=[r])
+
         assert res.shape[0] == 3
-        assert np.allclose(res.params, [-143.1620, 61.9603, 128.8128])
-        assert np.allclose(res.stderr, [19.8332, 6.0084, 16.3083])
-        assert np.allclose(res.tstat, [-7.2183, 10.3122, 7.8986])
+        assert np.allclose(res.params, [128.8128, -143.1620, 61.9603])
+        assert np.allclose(res.stderr, [16.3083, 19.8332, 6.0084])
+        assert np.allclose(res.tstat, [7.8986, -7.2183, 10.3122])
         assert np.isclose(fstats[0], 5471.24)
 
 
