@@ -23,8 +23,10 @@ def ppos(nval, cst=0.3):
         * 0.3: Value proposed by Benar and Bos-Levenbach (1953)
         * 0.375: This is Blom"s value to approximate the mean of normal
                 order statistics (Blom, 1958)
-        * 0.3175: This is Filliben"s value to approximate the mode
+        * 0.3175: This is Filliben's value to approximate the mode
                 of uniform order statistics (Filliben, 1975)
+        * 0.4: This is Cunnane's approach to plot unbiased quantile
+                estimates for a range of probability families.
 
     Returns
     -----------
@@ -397,6 +399,12 @@ def lstsq(X, y, add_intercept=False, Rtest=None, rtest=None):
     assert all([R.shape[1]==nparams for R in Rtest])
     assert all([R.shape[0]==r.shape[0] for R, r in zip(Rtest, rtest)])
     assert len(Rtest) == len(rtest)
+
+    # Remove nan
+    iok = np.all(~np.isnan(X), axis=1) & ~np.isnan(y)
+    errmsg = "Expected at least {X.shape[1]+1} samples, got {iok.sum()}."
+    assert iok.sum()>=X.shape[1]+1, errmsg
+    X, y = X[iok], y[iok]
 
     # Regular OLS fit
     theta, _, _, _ = np.linalg.lstsq(X, y, rcond=None)
