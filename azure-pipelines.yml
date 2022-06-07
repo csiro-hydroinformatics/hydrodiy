@@ -1,7 +1,9 @@
 # Pipeline to create ananconda environment and run my tests
 
 trigger:
-- master
+    branch:
+        include:
+        - master
 
 pool:
   vmImage: ubuntu-latest
