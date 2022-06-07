@@ -15,6 +15,7 @@ strategy:
 variables:
   CONDA_ENV: diyenv
   CONDA_HOME: /usr/share/miniconda/envs/$(CONDA_ENV)/
+  BUILD_DIR: $(System.DefaultWorkingDirectory)
 
 steps:
 - task: UsePythonVersion@0
