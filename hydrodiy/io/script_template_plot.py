@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+[COMMENT]
+
 import sys, os, re, json, math
 import argparse
 from pathlib import Path
@@ -45,7 +47,7 @@ import tqdm
 #----------------------------------------------------------------------
 
 parser = argparse.ArgumentParser(\
-    description="A plotting script", \
+    description="[DESCRIPTION]", \
     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 parser.add_argument("-v", "--version", \

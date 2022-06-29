@@ -159,7 +159,10 @@ def script_template(filename, comment,
     meta += "##\n## ------------------------------\n"
     txt = re.sub("\\[COMMENT\\]", meta, txt)
 
-    # -- Add paths --
+    # Add description in command line options
+    txt = re.sub("\\[DESCRIPTION\\]", comment, txt)
+
+    # Add paths
     filename = Path(filename)
 
     # By default, the root folder is the script folder

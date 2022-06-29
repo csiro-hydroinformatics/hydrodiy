@@ -29,7 +29,7 @@ from tqdm import tqdm
 # Config
 #----------------------------------------------------------------------
 parser = argparse.ArgumentParser(\
-    description="A script", \
+    description="[DESCRIPTION]", \
     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 parser.add_argument("-v", "--version", \
