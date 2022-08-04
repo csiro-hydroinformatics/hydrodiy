@@ -215,7 +215,7 @@ class Grid(object):
 
             # Check the cell are squared (i.e. xdim=ydim)
             if "ydim" in config:
-                if config["ydim"] != config["xdim"]:
+                if abs(config["ydim"]-config["xdim"])>1e-10:
                     raise ValueError(("xdim {0} != " +
                         "ydim {1}").format(config["xdim"],
                             config["ydim"]))
