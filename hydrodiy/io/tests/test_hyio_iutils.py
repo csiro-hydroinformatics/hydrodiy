@@ -276,3 +276,22 @@ def test_get_logger_contextual():
     logger.handlers[1].close()
     flog.unlink()
 
+
+def test_thousands_separator():
+    x = 56.1
+    xfmt = iutils.thousands_separator(x)
+    assert xfmt == "56.1"
+
+    x = 1056.3
+    xfmt = iutils.thousands_separator(x)
+    assert xfmt == "1,056.3"
+
+    x = 5101056.3
+    xfmt = iutils.thousands_separator(x)
+    assert xfmt == "5,101,056.3"
+
+    x = 1056.3456
+    xfmt = iutils.thousands_separator(x, dec=2)
+    assert xfmt == "1,056.35"
+
+

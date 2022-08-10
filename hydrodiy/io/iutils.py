@@ -369,4 +369,35 @@ def read_logfile(flog, \
     return logs
 
 
+def thousands_separator(x, dec=None, sep=',', dot='.'):
+    """ Format number with separators for thousands
+
+    Code adapted from
+    https://stackoverflow.com/questions/1823058/how-to-print-a-number-using-commas-as-thousands-separators/4205875#4205875
+
+    Parameters
+    ----------
+    x : float
+        Number to be formatted
+    dec : int
+        Number of decimals to use. If None use all decimals.
+    sep : str
+        Thousands separator.
+    dot : str
+        Separator between integer and decimal parts.
+
+    Returns
+    -------
+    xfmt : str
+        Formatted number.
+    """
+    xd = x if dec is None else round(x, dec)
+    num, _, frac = str(xd).partition(dot)
+    xfmt = re.sub(r'(\d{3})(?=\d)', r'\1'+sep, num[::-1])[::-1]
+    if frac:
+        if re.search("[1-9]", frac):
+            xfmt += dot + frac
+
+    return xfmt
+
 
