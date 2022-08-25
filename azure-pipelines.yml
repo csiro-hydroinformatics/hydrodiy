@@ -11,7 +11,7 @@ strategy:
       python.version: '3.8'
 
 variables:
-  CONDA_ENV: diyenv
+  CONDA_ENV: env_nriv_v2
   CONDA_HOME: /usr/share/miniconda/envs/$(CONDA_ENV)/
   BUILD_DIR: $(System.DefaultWorkingDirectory)
 
@@ -27,11 +27,11 @@ steps:
 - task: Cache@2
   displayName: Use cached Anaconda environment
   inputs:
-    key: conda | env.yml
+    key: conda | env_nriv_v2.yml
     path: $(CONDA_HOME)
     cacheHitVar: CONDA_CACHE_RESTORED
 
-- bash: conda env create --file  env.yml
+- bash: conda env create --file  env_nriv_v2.yml
   displayName: Create Anaconda environment (if not restored from cache)
   condition: eq(variables.CONDA_CACHE_RESTORED, 'false')
 
