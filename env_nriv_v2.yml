@@ -5,6 +5,7 @@ channels:
 dependencies:
   - cartopy
   - cmdstanpy=1.0.6
+  - cython=0.29.32
   - gprof2dot
   - gsl=2.7
   - graphviz
