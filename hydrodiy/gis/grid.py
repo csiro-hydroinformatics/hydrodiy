@@ -549,6 +549,7 @@ class Grid(object):
 
     def save(self, filename):
         """ Save data as a BIL file """
+        filename = str(filename)
 
         if not filename.endswith("bil"):
             raise ValueError(("Filename ({0}) should end with a" + \

@@ -260,6 +260,9 @@ def get_logger(name, level="INFO", \
     """
     logger = logging.getLogger(name)
 
+    # remove all handlers
+    logger.handlers = []
+
     # Set logging level
     if not level in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
         raise ValueError("{0} not a valid level".format(level))
