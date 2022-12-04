@@ -1,0 +1,30 @@
+.css_style {
+    font-size: 11pt; 
+    font-family: Calibri;
+    border-collapse: collapse; 
+    border: 1px solid silver;
+
+}
+
+
+.css_style td {
+    padding: 5px;
+}
+
+.css_style th {
+    padding: 5px;
+    position: sticky;
+	position: -webkit-sticky;
+    background: deepskyblue;
+	top: 0px;
+	z-index: 2;
+}
+
+.css_style tr:nth-child(even) {
+    background: #E0E0E0;
+}
+
+.css_style tr:hover {
+    background: silver;
+    cursor: pointer;
+}
