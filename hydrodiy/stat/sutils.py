@@ -326,7 +326,7 @@ def pareto_front(data, orientation=1):
 
     return isdominated
 
-def lstsq(X, y, add_intercept=False, Rtest=None, rtest=None):
+def lstsq(X, y, add_intercept=False, Rtest=None, rtest=None, rcond=1e-4):
     """ Perform OLS fit
 
     Parameters
@@ -342,6 +342,9 @@ def lstsq(X, y, add_intercept=False, Rtest=None, rtest=None):
         List containing 1D constraint vectors (nconstraints x 1).
         If none, set to a list containing a zero vector of same length
         than parameter vector.
+    rcond : float
+        Cut-off ratio for small singular values. See
+        https://numpy.org/doc/stable/reference/generated/numpy.linalg.lstsq.html
 
     Returns
     -------
@@ -407,7 +410,7 @@ def lstsq(X, y, add_intercept=False, Rtest=None, rtest=None):
     X, y = X[iok], y[iok]
 
     # Regular OLS fit
-    theta, _, _, _ = np.linalg.lstsq(X, y, rcond=None)
+    theta, _, _, _ = np.linalg.lstsq(X, y, rcond=rcond)
 
     # compute parameter uncertainty
     yhat = X.dot(theta)
