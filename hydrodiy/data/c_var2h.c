@@ -15,7 +15,9 @@
  * hvalues : hourly data
  *
  *****************************************************************************/
-int c_var2h(int nvalvar, int nvalh, int display,
+int c_var2h(int nvalvar, int nvalh,
+    int nbsec_per_period,
+    int display,
     int maxgapsec,
     long long * varsec,
     double * varvalues,
@@ -27,6 +29,9 @@ int c_var2h(int nvalvar, int nvalh, int display,
     double start, end, nan, vali1, vali2;
 
     static double zero=0.;
+
+    if((nbsec_per_period != 1800) && (nbsec_per_period !=3600))
+        return VAR2H_ERROR + __LINE__;
 
     /* Display status */
     if(display==1)
@@ -70,8 +75,8 @@ int c_var2h(int nvalvar, int nvalh, int display,
         }
 
         /* Start and end of integration */
-        start = (double)(hstartsec+i*3600);
-        end = start+3600.;
+        start = (double)(hstartsec+i*nbsec_per_period);
+        end = start+(double)nbsec_per_period;
 
         /* Initialisation */
         t1 = (double) varsec[varindex];
@@ -96,9 +101,9 @@ int c_var2h(int nvalvar, int nvalh, int display,
             if(t2<t1)
             {
                 if(display==1)
-                    fprintf(stdout, "\tERROR: Expected t1<=t2, "
+                    fprintf(stdout, "\n\tERROR: [%d] Expected t1<=t2, "
                                         "got t1=%0.2f and "
-                                        "t2=%0.2f\n", t1, t2);
+                                        "t2=%0.2f\n", varindex, t1, t2);
                 return VAR2H_ERROR + __LINE__;
             }
         	/*
@@ -128,9 +133,9 @@ int c_var2h(int nvalvar, int nvalh, int display,
 
             /* Loop */
             varindex++;
-
-            if(varindex>=nvalvar)
-                return ierr;
+            if(varindex+1>=nvalvar) {
+                break;
+            }
 
             t1 = t2;
             val1 = val2;
@@ -143,7 +148,7 @@ int c_var2h(int nvalvar, int nvalh, int display,
         varindex--;
 
         /* Store Hourly values */
-        hvalues[i] = miss == 0 ? hvalue/3600. : nan;
+        hvalues[i] = miss == 0 ? hvalue/(double)nbsec_per_period : nan;
 
         //fprintf(stdout, "hvalues[%d] = %f\n\n", i, hvalues[i]);
     }

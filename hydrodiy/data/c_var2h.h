@@ -9,7 +9,9 @@
 #define VAR2H_ERROR 130000
 
 int c_var2h(int nvalvar, int nvalh,
-    int starthour, int maxgapsec,
+    int nbsec_per_period,
+    int display,
+    int maxgapsec,
     long long * varsec,
     double * varvalues,
     long long hstartsec,

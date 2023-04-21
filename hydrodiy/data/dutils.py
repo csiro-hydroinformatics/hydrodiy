@@ -455,14 +455,21 @@ def monthly2daily(se, interpolation="flat", minthreshold=0.):
     return sed
 
 
-def var2h(se, maxgapsec=5*86400, display=False):
-    """ Convert a variable time step time series to hourly using
-        linear interpolation and aggregation
+def var2h(se, nbsec_per_period=3600, maxgapsec=5*86400, display=False):
+    """ Convert a variable time step time series to half-hourly or hourly using
+        linear interpolation and aggregation.
+
+        Data are mapped to the beginning of the time stamp.
+        Example: Average over [1/1/2000 00:00 - 1/1/2000 01:00] -> 1/1/2000 00:00
 
     Parameters
     -----------
     se : pandas.core.series.Series
         Irregular time series
+    nbsec_per_period : int
+        Number of second per period. Allows for half-hourly values to
+        be computed. Possible values:
+        1800 (half-hourly), 3600 (hourly)
     maxgapsec : int
         Maximum number of seconds between two valid measurements
     display : bool
@@ -475,6 +482,11 @@ def var2h(se, maxgapsec=5*86400, display=False):
     """
     has_c_module("data")
 
+    nbsec_per_period = np.int32(nbsec_per_period)
+    errmsg = f"Expected nbsec_per_period in [1800, 3600], "+\
+                f"got {nbsec_per_period}"
+    assert nbsec_per_period in [1800, 3600], errmsg
+
     # Allocate arrays
     maxgapsec = np.int32(maxgapsec)
     if maxgapsec < 3600:
@@ -486,7 +498,7 @@ def var2h(se, maxgapsec=5*86400, display=False):
     time = se.index.tz_localize(None).values
     varsec = np.int64(time.astype(np.int64)/1000000000)
 
-    # Determines start and end of hourly series
+    # Determines start and end of time series
     start = se.index[0]
     hstart = datetime(start.year, start.month, start.day, \
                         start.hour)+delta(hours=1)
@@ -496,18 +508,22 @@ def var2h(se, maxgapsec=5*86400, display=False):
     end = se.index[-1]
     hend = datetime(end.year, end.month, end.day, \
                         end.hour)-delta(hours=1)
-    nvalh = np.int32((end-start).total_seconds()/3600)
+    nvalh = np.int32((end-start).total_seconds()/nbsec_per_period)
     hvalues = np.nan*np.ones(nvalh, dtype=np.float64)
 
     # Run C function
-    ierr = c_hydrodiy_data.var2h(maxgapsec, hstartsec, display, \
+    ierr = c_hydrodiy_data.var2h(maxgapsec, \
+                hstartsec, \
+                nbsec_per_period, \
+                display, \
                 varsec, varvalues, hvalues)
 
     if ierr > 0:
         raise ValueError(f"c_hydrodiy_data.var2h returns {ierr}")
 
     # Convert to hourly series
-    dt = pd.date_range(hstart, freq="H", periods=nvalh)
+    freq = "H" if nbsec_per_period == 3600 else "30min"
+    dt = pd.date_range(hstart, freq=freq, periods=nvalh)
     hvalues = pd.Series(hvalues, index=dt)
 
     return hvalues
