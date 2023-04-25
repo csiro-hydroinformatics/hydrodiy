@@ -92,12 +92,11 @@ fdata = [FDATA]
 fout = [FOUT]
 fimg = [FIMG]
 
+#------------------------------------------------------------
+# Logging
+#------------------------------------------------------------
 basename = source_file.stem
 LOGGER = iutils.get_logger(basename)
-
-for arg in vars(args):
-    LOGGER.info("{0} script argument {1} = {2}".format(basename, \
-                            arg, getattr(args, arg)))
 
 #------------------------------------------------------------
 # Get data

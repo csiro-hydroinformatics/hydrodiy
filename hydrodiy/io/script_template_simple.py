@@ -41,7 +41,7 @@ parser.add_argument("-i", "--ibatch", help="Batch process number", \
                     type=int, default=-1)
 parser.add_argument("-n", "--nbatch", help="Number of batch processes", \
                     type=int, default=7)
-parser.add_argument("-j", "--jobid", help="JobID", \
+parser.add_argument("-t", "--taskid", help="JobID", \
                     type=int, default=-1)
 parser.add_argument("-p", "--progress", help="Show progress", \
                     action="store_true", default=False)
@@ -52,7 +52,7 @@ args = parser.parse_args()
 version = args.version
 ibatch = args.ibatch
 nbatch = args.nbatch
-jobid = args.jobid
+taskid = args.taskid
 progress = args.progress
 debug = args.debug
 sitepattern = args.sitepattern
@@ -66,12 +66,11 @@ fdata = [FDATA]
 fout = [FOUT]
 fimg = [FIMG]
 
+#----------------------------------------------------------------------
+# Logging
+#----------------------------------------------------------------------
 basename = source_file.stem
 LOGGER = iutils.get_logger(basename)
-
-for arg in vars(args):
-    LOGGER.info("{0} script argument {1} = {2}".format(basename, \
-                            arg, getattr(args, arg)))
 
 #----------------------------------------------------------------------
 # Get data
@@ -85,19 +84,18 @@ if not sitepattern == "":
     idx = sites_all.index.str.findall(sitepattern).astype(bool)
     sites = sites_all.loc[idx, :]
 else:
-    if args.ibatch >=0:
+    if ibatch>=0:
         idx = iutils.get_ibatch(sites_all.shape[0], nbatch, ibatch)
         sites = sites_all.iloc[idx, :]
 
 #----------------------------------------------------------------------
 # Process
 #----------------------------------------------------------------------
-
-for i, (siteid, row) in enumerate(sites.iterrows()):
-
-    LOGGER.info("dealing with {0} ({1}/{2})".format( \
-        siteid, i, len(sites)))
-
+nsites = len(sites)
+for i, (siteid, row) in tqdm(enumerate(sites.iterrows()), \
+                total=nsites, disable=not progress):
+    if not progress:
+        LOGGER.info(f"dealing with {siteid} ({i+1}/{nsites})")
 
 
 LOGGER.info("Process completed")
