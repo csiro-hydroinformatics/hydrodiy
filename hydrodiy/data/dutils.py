@@ -455,7 +455,7 @@ def monthly2daily(se, interpolation="flat", minthreshold=0.):
     return sed
 
 
-def var2h(se, nbsec_per_period=3600, maxgapsec=5*86400, display=False):
+def var2h(se, nbsec_per_period=3600, maxgapsec=5*86400, rainfall=False, display=False):
     """ Convert a variable time step time series to half-hourly or hourly using
         linear interpolation and aggregation.
 
@@ -470,6 +470,8 @@ def var2h(se, nbsec_per_period=3600, maxgapsec=5*86400, display=False):
         Number of second per period. Allows for half-hourly values to
         be computed. Possible values:
         1800 (half-hourly), 3600 (hourly)
+    rainfall : bool
+        Are we aggregating rainfall data?
     maxgapsec : int
         Maximum number of seconds between two valid measurements
     display : bool
@@ -488,6 +490,7 @@ def var2h(se, nbsec_per_period=3600, maxgapsec=5*86400, display=False):
     assert nbsec_per_period in [1800, 3600], errmsg
 
     # Allocate arrays
+    rainfall = np.int32(rainfall)
     maxgapsec = np.int32(maxgapsec)
     if maxgapsec < 3600:
         raise ValueError(f"Expected maxgapsec>=3600, got {maxgapsec}.")
@@ -515,6 +518,7 @@ def var2h(se, nbsec_per_period=3600, maxgapsec=5*86400, display=False):
     ierr = c_hydrodiy_data.var2h(maxgapsec, \
                 hstartsec, \
                 nbsec_per_period, \
+                rainfall, \
                 display, \
                 varsec, varvalues, hvalues)
 

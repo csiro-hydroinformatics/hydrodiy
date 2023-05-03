@@ -28,6 +28,7 @@ cdef extern from 'c_qualitycontrol.h':
 cdef extern from 'c_var2h.h':
     int c_var2h(int nvalvar, int nvalh,
         int nbsec_per_period,
+        int rainfall,
         int display,
         int maxgapsec,
         long long * varsec,
@@ -178,6 +179,7 @@ def islin(double thresh, double tol, int npoints,
 
 def var2h(int maxgapsec, long long hstartsec,
         int nbsec_per_period,
+        int rainfall,
         int display,
         np.ndarray[long long, ndim=1, mode='c'] varsec not None,
         np.ndarray[double, ndim=1, mode='c'] varvalues not None,
@@ -193,6 +195,7 @@ def var2h(int maxgapsec, long long hstartsec,
     # Run C
     ierr = c_var2h(nvalvar, nvalh,
             nbsec_per_period,
+            rainfall,
             display,
             maxgapsec,
             <long long*> np.PyArray_DATA(varsec),

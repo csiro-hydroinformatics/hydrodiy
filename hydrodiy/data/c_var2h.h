@@ -10,6 +10,7 @@
 
 int c_var2h(int nvalvar, int nvalh,
     int nbsec_per_period,
+    int rainfall,
     int display,
     int maxgapsec,
     long long * varsec,

@@ -467,6 +467,36 @@ def test_var2h_halfhourly(allclose):
                         expected.values[2:][idx])
 
 
+def test_var2h_rainfall(allclose):
+    """ Test conversion to half-hourly for half-hourly data """
+    if not has_c_module("data", False):
+        self.skipTest("Missing C module c_hydrodiy_data")
+
+    values = [
+        ["1/04/1989 7:50", 2.79], \
+        ["1/04/1989 9:20",	3.09], \
+        ["1/04/1989 9:44",	9.65], \
+        ["1/04/1989 11:37",	3.45], \
+        ["1/04/1989 13:06",	8.03], \
+        ["1/04/1989 14:03",	25.78], \
+        ["1/04/1989 14:21",	11.61], \
+        ["1/04/1989 14:39",	32.65], \
+        ["1/04/1989 14:55",	5.74], \
+        ["1/04/1989 15:34",	50], \
+        ["1/04/1989 15:51",	8.9], \
+        ["1/04/1989 16:22",	41.1], \
+        ["1/04/1989 16:34",	15.03], \
+        ["1/04/1989 17:05",	4.22]
+    ]
+    se = pd.DataFrame(values)
+    se.loc[:, 0] = pd.to_datetime(se.loc[:, 0], dayfirst=True)
+    se = se.set_index(0).squeeze()
+
+    seh = dutils.var2h(se, rainfall=True)
+    t = "1989-04-01 14:00:00"
+    assert allclose(seh.loc[t], 57.77, atol=1e-2)
+
+
 def test_flathomogen(allclose):
     """ Test flat disaggregation """
     if not has_c_module("data", False):
