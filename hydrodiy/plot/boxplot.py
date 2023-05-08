@@ -235,10 +235,10 @@ class Boxplot(object):
 
     def __init__(self, data,
                 style="default", by=None, \
-                show_mean=True, \
+                show_mean=False, \
                 show_median=True, \
-                show_text=True, \
-                centertext=False, \
+                show_text=False, \
+                centertext=True, \
                 linewidth=2, \
                 width_from_count=False,
                 digitnumber=2, \
@@ -332,7 +332,7 @@ class Boxplot(object):
                             fontcolor=COLORS[3], fontsize=9, \
                             marker="none",\
                             linewidth=linewidth, \
-                            show_text=show_text)
+                            show_text=True)
 
             if show_mean:
                 self.mean = BoxplotItem(marker="o", \
