@@ -17,6 +17,7 @@
  *****************************************************************************/
 int c_var2h(int nvalvar, int nvalh,
     int nbsec_per_period,
+    int rainfall,
     int display,
     int maxgapsec,
     long long * varsec,
@@ -27,8 +28,12 @@ int c_var2h(int nvalvar, int nvalh,
     int ierr, i, varindex, miss;
     double a, hvalue, t1, t2, it1, it2, val1, val2;
     double start, end, nan, vali1, vali2;
+    double nbsec_per_period_d = (double)nbsec_per_period;
 
     static double zero=0.;
+
+    if(rainfall<0 || rainfall>1)
+        return VAR2H_ERROR + __LINE__;
 
     if((nbsec_per_period != 1800) && (nbsec_per_period !=3600))
         return VAR2H_ERROR + __LINE__;
@@ -76,7 +81,7 @@ int c_var2h(int nvalvar, int nvalh,
 
         /* Start and end of integration */
         start = (double)(hstartsec+i*nbsec_per_period);
-        end = start+(double)nbsec_per_period;
+        end = start+nbsec_per_period_d;
 
         /* Initialisation */
         t1 = (double) varsec[varindex];
@@ -121,14 +126,20 @@ int c_var2h(int nvalvar, int nvalh,
             /* Check that t1<t2, otherwise skip point */
             if(it2-it1>1e-8)
             {
-                /* Compute interpolated values at start and end of
-                 * interpolation period */
-                a = (val2-val1)/(t2-t1);
-                vali1 = a*(it1-t1)+val1;
-                vali2 = a*(it2-t1)+val1;
+                if(rainfall == 1) {
+                    /* Accumulate value */
+                    hvalue += val2*(it2-it1)/(t2-t1)*nbsec_per_period_d;
+                }
+                else {
+                    /* Compute interpolated values at start and end of
+                     * interpolation period */
+                    a = (val2-val1)/(t2-t1);
+                    vali1 = a*(it1-t1)+val1;
+                    vali2 = a*(it2-t1)+val1;
 
-                /* Trapezoidal integration */
-                hvalue += (vali2+vali1)*(it2-it1)/2;
+                    /* Trapezoidal integration */
+                    hvalue += (vali2+vali1)*(it2-it1)/2;
+                }
             }
 
             /* Loop */
@@ -148,7 +159,7 @@ int c_var2h(int nvalvar, int nvalh,
         varindex--;
 
         /* Store Hourly values */
-        hvalues[i] = miss == 0 ? hvalue/(double)nbsec_per_period : nan;
+        hvalues[i] = miss == 0 ? hvalue/nbsec_per_period_d : nan;
 
         //fprintf(stdout, "hvalues[%d] = %f\n\n", i, hvalues[i]);
     }
