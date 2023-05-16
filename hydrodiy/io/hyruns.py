@@ -285,19 +285,19 @@ class OptionManager():
         return dd
 
 
-    def save(self, filename, overwrite=False, wait_secs=2):
+    def save(self, filename, overwrite=False):
         """ Save option manager to disk. Overwrite existing one if different."""
         dd = self.to_dict()
         filename = Path(filename)
 
         if filename.exists() and not overwrite:
-            opm = OptionManager.from_file(filename, wait_secs)
-            if opm != self:
-                with filename.open("w") as fo:
-                    json.dump(dd, fo, indent=4)
-        else:
+            return
+
+        try:
             with filename.open("w") as fo:
                 json.dump(dd, fo, indent=4)
+        except:
+            pass
 
 
     def from_cartesian_product(self, **kwargs):
