@@ -883,7 +883,9 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="viridis", \
 
             # Create categories
             ncats = len(cuts)-1
-            cats = pd.cut(z, cuts, right=True, labels=False).astype(int)
+            cats = pd.cut(z, cuts, right=True, labels=False)
+            cats[cats.isnull()] = -1
+            cats = cats.astype(int)
 
             if len(set(cuts)) != len(cuts):
                 raise ValueError(\
