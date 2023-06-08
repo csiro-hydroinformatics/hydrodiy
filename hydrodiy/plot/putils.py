@@ -793,10 +793,10 @@ def ecdfplot(ax, df, label_stat=None, label_stat_format="4.2f", \
     return lines
 
 
-def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="viridis", \
-                        markersizemin=8, markersizemax=8, \
+def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG", \
+                        markersizemin=None, markersizemax=None, \
                         fmt="0.2f", nval=False, eps=1e-5, \
-                        *args, **kwargs):
+                        alphas=1.0, *args, **kwargs):
     """ Draw a scatter plot using different colors or markersize depending
     on categories defined by z. Be careful when z has a lot of zeros,
     quantile computation may lead to non-unique category boundaries.
@@ -829,6 +829,8 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="viridis", \
         Add number of points in labels
     eps : float
         Tolerance on min and max value if using cuts.
+    alphas : float
+        Transparency. Can be passed as vector for individual points.
     args, kwargs
         Argument sent to matplotlib.pyplot.plot command
 
@@ -850,11 +852,24 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="viridis", \
     # Check inputs
     if not len(x) == len(y):
         raise ValueError("Expected x and y of same length, got "+\
-                "len(x)={}, len(y)={}".format(len(x), len(y)))
+                                f"len(x)={len(x)}, len(y)={len(y)}")
 
     if not len(x) == len(z):
         raise ValueError("Expected x and z of same length, got "+\
-                "len(x)={}, len(z)={}".format(len(x), len(z)))
+                                f"len(x)={len(x)}, len(z)={len(z)}")
+    try:
+        len(alphas)
+        if not len(alphas) == len(x):
+            raise ValueError("Expected x and alpha of same length, got "+\
+                                f"len(x)={len(x)}, len(alphas)={len(alphas)}")
+    except TypeError:
+        alphas = alphas*np.ones(len(x))
+
+    if markersizemin is None:
+        markersizemin = mpl.rcParams["lines.markersize"]**2
+
+    if markersizemax is None:
+        markersizemax = mpl.rcParams["lines.markersize"]**2
 
     # Format categorical data
     z = pd.Series(z)
@@ -900,7 +915,9 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="viridis", \
             raise ValueError("Expected ncats or cuts to be not-None")
 
     # Get colors for each category
-    if not cmap is None:
+    if cmap is None:
+        colors = ["grey"]*ncats
+    else:
         colors = cmap2colors(ncats, cmap)
 
     # Get size for each category
@@ -912,17 +929,14 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="viridis", \
     for icat in range(ncats):
         # plot config
         idx = cats == icat
+        if idx.sum() == 0:
+            continue
         label = labels[icat]
         markersize = markersizes[icat]
+        col = colors[icat]
 
-        if not cmap is None:
-            col = colors[icat]
-        else:
-            if icat == 0:
-                col = None
-            else:
-                # Reuse same color than previous
-                col = last_col
+        # List of alphas
+        alpha = alphas[idx]
 
         if np.sum(idx) > 0:
             u, v = x[idx], y[idx]
@@ -932,23 +946,17 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="viridis", \
                         "{0} ({1})".format(icat, label))
 
         # Plot category
-        if "color" in kwargs:
-            ax.plot(u, v, "o", label=label, \
-                                markersize=markersize, \
-                                *args, **kwargs)
-        else:
-            ax.plot(u, v, "o", color=col, label=label, \
-                                markersize=markersize, \
-                                *args, **kwargs)
-
-        line = ax.get_lines()[-1]
-        last_col = line.get_color()
+        sc = ax.scatter(u, v, label=label, \
+                        color=col, \
+                        alpha=alpha, \
+                        s=markersize, \
+                        *args, **kwargs)
 
         # Store plotted data
         dd = {"idx": idx, \
             "label": label, \
-            "color": last_col, \
-            "line": line, \
+            "color": col, \
+            "scatter": sc, \
             "x": x[idx], "y": y[idx]}
 
         plotted[icat] = dd

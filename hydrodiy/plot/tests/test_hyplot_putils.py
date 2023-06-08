@@ -495,7 +495,7 @@ class UtilsTestCase(unittest.TestCase):
         fig, ax = plt.subplots()
         plotted, cats = putils.scattercat(ax, x, y, z, 5, \
                                 markersizemin=5, markersizemax=12, \
-                                alpha=0.6)
+                                alphas=0.6)
         ax.legend(loc=2, title="categories")
         fp = self.fimg / "scattercat.png"
         fig.savefig(fp)
@@ -523,7 +523,7 @@ class UtilsTestCase(unittest.TestCase):
         ax = axs[0]
         plotted, cats = putils.scattercat(ax, x, y, z, 5, \
                                 markersizemin=5, markersizemax=12, \
-                                alpha=0.6)
+                                alphas=0.6)
         ax.legend(loc=2, title="categories")
 
         # Plot categorical data extracted from a dataframe
@@ -531,7 +531,7 @@ class UtilsTestCase(unittest.TestCase):
         df = pd.DataFrame({"z": z, "a": np.nan})
         plotted, cats = putils.scattercat(ax, x, y, df.loc[:, "z"], 5, \
                                 markersizemin=5, markersizemax=12, \
-                                alpha=0.6)
+                                alphas=0.6)
         ax.legend(loc=2, title="categories")
 
         fp = self.fimg / "scattercat_cat.png"
