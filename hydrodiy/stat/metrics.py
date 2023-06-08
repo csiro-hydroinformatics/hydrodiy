@@ -1,5 +1,5 @@
+from pathlib import Path
 import re, os, math
-import pkg_resources
 
 import numpy as np
 import pandas as pd
@@ -19,8 +19,8 @@ if has_c_module("stat", False):
 EPS = 1e-10
 
 # Reads Cramer-Von Mises table
-CVPATH = pkg_resources.resource_filename(__name__, \
-           os.path.join("data", "cramer_von_mises_test_pvalues.zip"))
+CVPATH = Path(__file__).resolve().parent / "data" / \
+            "cramer_von_mises_test_pvalues.zip"
 CVM_TABLE, _ = csv.read_csv(CVPATH, index_col=0)
 CVM_NSAMPLE  = CVM_TABLE.columns.values.astype(int)
 CVM_QQ = CVM_TABLE.index.values
