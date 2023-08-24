@@ -229,10 +229,10 @@ def cramer_von_mises_test(data):
 
     Returns
     -----------
-    pvalue : float
-        CV test pvalue
     cvstat : float
         CV test statistic
+    pvalue : float
+        CV test pvalue
     """
 
     # Compute Cramer-Von Mises statistic
