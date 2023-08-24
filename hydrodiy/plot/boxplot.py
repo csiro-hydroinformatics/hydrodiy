@@ -385,13 +385,13 @@ class Boxplot(object):
                         " got {0}".format(style))
 
         # Set text format
-        for obj in [self.median, self.whiskers, self.box, self.caps]:
+        for obj in [self.median, self.mean, self.whiskers, self.box, self.caps]:
             if not obj is None:
                 obj.textformat = "%0.{0}f".format(digitnumber)
 
         self.centertext = centertext
         if centertext:
-            for obj in [self.median, self.box, self.whiskers]:
+            for obj in [self.median, self.mean, self.box, self.whiskers]:
                 if not obj is None:
                     obj.ha = "center"
                     obj.va = "bottom"
