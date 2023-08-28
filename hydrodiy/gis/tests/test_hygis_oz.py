@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 
 from matplotlib import pyplot as plt
+import matplotlib.patheffects as pe
 
 FHERE = Path(__file__).resolve().parent
 FIMG = FHERE / "images"
@@ -85,9 +86,16 @@ def test_ozcities():
     fig, ax = plt.subplots()
     lines = ozlayer(ax, "ozcoast50m",  \
                 color="k", lw=0.5, fixed_lim=False)
-    elems = ozcities(ax)
 
-    fp = FIMG / "ozcities.png"
+    kw = {
+        "path_effects": [pe.withStroke(linewidth=3, foreground="w")], \
+        "textcoords": "offset pixels",
+        "ha": "center", \
+        "xytext": (0, 8)
+    }
+    elems = ozcities(ax, text_kwargs=kw)
+
+    fp = FIMG / "ozcities_kw.png"
     plt.savefig(fp)
 
 

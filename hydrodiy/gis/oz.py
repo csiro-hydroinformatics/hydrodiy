@@ -199,7 +199,7 @@ def ozcities(ax, filter_regex=None, \
 
         lab = "Capital city" if icity == 0 else ""
         lines = ax.plot(*xyproj, label=lab, **plot_kwargs)
-        txt = ax.text(*xyproj, city, **text_kwargs)
+        txt = ax.annotate(city, xyproj, **text_kwargs)
 
         # Store
         elements[city] = {"plot": lines[-1], "text": txt}
