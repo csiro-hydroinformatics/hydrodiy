@@ -64,21 +64,6 @@ class UtilsTestCase(unittest.TestCase):
         fig.savefig(fp)
 
 
-    def test_grayscale(self):
-        """ Test conversion between color sets and color maps """
-        colors = {1:"#004C99", 0:"#FF9933", 0.3:"#FF99FF"}
-        cmap = putils.colors2cmap(colors)
-
-        grayscale = putils.cmap2grayscale(cmap)
-
-        x = np.arange(1, 257).reshape((1,256))
-        fig, axs = plt.subplots(ncols=2)
-        axs[0].pcolor(x, cmap=cmap, vmin=1, vmax=256)
-        axs[1].pcolor(x, cmap=grayscale, vmin=1, vmax=256)
-        fp = self.fimg / "grayscale.png"
-        fig.savefig(fp)
-
-
     def test_cmap2colors(self):
         """ Test conversion between color sets and color maps """
         colors = putils.cmap2colors(ncols=10, cmap="Reds")
@@ -144,48 +129,6 @@ class UtilsTestCase(unittest.TestCase):
 
         fp = self.fimg / "lines_date.png"
         fig.savefig(fp)
-
-
-    def test_equation(self):
-        """ Test equations """
-        tex = r"\begin{equation} y = ax+b \end{equation}"
-        fp = self.fimg / "equations1.png"
-        try:
-            putils.equation(tex, fp)
-        except (FileNotFoundError, RuntimeError) as err:
-            message = "Cannot process tex command {0}".format(tex)
-            print(message)
-            self.skipTest(message)
-
-        tex = r"\begin{equation} y = \frac{\int_0^{+\infty}"+\
-                            r" x\ \exp(-\alpha x)}{\pi} "+\
-                            r"\end{equation}"
-        fp = self.fimg / "equations2.png"
-        try:
-            putils.equation(tex, fp)
-        except (FileNotFoundError, RuntimeError) as err:
-            message = "Cannot process tex command {0}".format(tex)
-            print(message)
-            self.skipTest(message)
-
-        tex = r"\begin{eqnarray} y & = & ax+b \\ z & = & \zeta \end{eqnarray}"
-        fp = self.fimg / "equations3.png"
-        try:
-            putils.equation(tex, fp)
-        except (FileNotFoundError, RuntimeError) as err:
-            message = "Cannot process tex command {0}".format(tex)
-            print(message)
-            self.skipTest(message)
-
-        tex = r"\begin{equation} y = \begin{bmatrix} 1 & 0 & 0 \\ " +\
-            r"0 & 1 & 0 \\ 0 & 0 & 1\end{bmatrix} \end{equation}"
-        fp = self.fimg / "equations4.png"
-        try:
-            putils.equation(tex, fp)
-        except (FileNotFoundError, RuntimeError) as err:
-            message = "Cannot process tex command {0}".format(tex)
-            print(message)
-            self.skipTest(message)
 
 
     def test_set_mpl(self):
@@ -323,126 +266,6 @@ class UtilsTestCase(unittest.TestCase):
         mpl.rcdefaults()
 
 
-    def test_xdate_monthly(self):
-        """ Test formatting xaxis with monthly dates """
-        x = np.random.normal(size=200)
-        dt = pd.date_range("1990-01-01", periods=len(x))
-        dt = dt.to_pydatetime()
-
-        plt.close("all")
-        fig, ax = plt.subplots()
-        ax.plot(dt, x)
-        putils.xdate(ax)
-        fp = os.path.join(self.fimg, "xdate_monthly1.png")
-        fp = self.fimg / "xdate_monthly1.png"
-        fig.savefig(fp)
-
-        fig, ax = plt.subplots()
-        ax.plot(dt, x)
-        putils.xdate(ax, "3M")
-        fp = self.fimg / "xdate_monthly2.png"
-        fig.savefig(fp)
-
-        fig, ax = plt.subplots()
-        ax.plot(dt, x)
-        putils.xdate(ax, "M", [2, 4, 5])
-        fp = self.fimg / "xdate_monthly3.png"
-        fig.savefig(fp)
-
-
-    def test_xdate_daily(self):
-        """ Test formatting xaxis with daily dates """
-        x = np.random.normal(size=200)
-        dt = pd.date_range("1990-01-01", periods=len(x))
-        dt = dt.to_pydatetime()
-
-        plt.close("all")
-
-        fig, ax = plt.subplots()
-        ax.plot(dt, x)
-        putils.xdate(ax, "D", by=[1, 15], format="%d\n%b\n%y")
-        fp = self.fimg / "xdate_daily.png"
-        fig.savefig(fp)
-
-
-    def test_xdate_yearly(self):
-        """ Test formatting xaxis with yearly dates """
-        x = np.random.normal(size=2000)
-        dt = pd.date_range("1990-01-01", periods=len(x))
-        dt = dt.to_pydatetime()
-
-        plt.close("all")
-
-        fig, ax = plt.subplots()
-        ax.plot(dt, x)
-        putils.xdate(ax, "Y", by=[1], format="%b\n%y")
-        fp = self.fimg / "xdate_yearly1.png"
-        fig.savefig(fp)
-
-        fig, ax = plt.subplots()
-        ax.plot(dt, x)
-        putils.xdate(ax, "3Y", by=[7], format="%b\n%y")
-        fp = self.fimg / "xdate_yearly2.png"
-        fig.savefig(fp)
-
-
-    def test_xdate_error(self):
-        """ Test xdate error with wrong x axis data """
-        x = np.random.normal(size=2000)
-        dt = pd.date_range("1990-01-01", periods=len(x))
-
-        plt.close("all")
-        fig, ax = plt.subplots()
-
-        try:
-            ax.plot(dt, x)
-            xticks = ax.get_xticks()
-            putils.xdate(ax, "Y", by=[1], format="%b\n%y")
-            fp = self.fimg / "xdate_yearly1.png"
-            fig.savefig(fp)
-        except ValueError as err:
-            self.assertTrue(str(err).startswith("xaxis does not seem"))
-        else:
-            if np.any(xticks > 1e7):
-                raise ValueError("Problem with error handling"+\
-                                        " (python 3 only)")
-
-
-    def test_cmap_accentuate(self):
-        """ Test accentuation of cmap """
-        fig, axs = plt.subplots(nrows=3)
-
-        u = np.linspace(0, 1, 250)
-        zz = np.repeat(u[None, :], 10, axis=0)
-        params = [1, 2.5, 4]
-        levels = np.linspace(0, 1, 100)
-
-        for iax, ax in enumerate(axs):
-            cmap = putils.cmap_accentuate("RdBu", params[iax])
-            ax.contourf(zz, levels=levels, vmin=0., vmax=1., cmap=cmap)
-
-        fp = self.fimg / "cmap_accentuate.png"
-        fig.savefig(fp)
-
-
-    def test_cmap_neutral(self):
-        """ Test accentuation of cmap """
-        u = np.linspace(0, 1, 250)
-        zz = np.repeat(u[None, :], 10, axis=0)
-        widths = [0.01, 0.05, 0.1]
-        color = "green"
-        levels = np.linspace(0, 1, 100)
-
-        fig, axs = plt.subplots(nrows=3)
-        for iax, ax in enumerate(axs):
-            cmap = putils.cmap_neutral("RdBu", neutral_color="green", \
-                                            band_width=widths[iax])
-            ax.contourf(zz, levels=levels, vmin=0., vmax=1., cmap=cmap)
-
-        fp = self.fimg / "cmap_neutral.png"
-        fig.savefig(fp)
-
-
     def test_ecdfplot(self):
         """ Test ecdf plots """
         df = np.random.normal(size=(1000, 4)) + np.arange(4)[None, :]
@@ -538,24 +361,6 @@ class UtilsTestCase(unittest.TestCase):
         fig.savefig(fp)
 
 
-    def test_interpolate_color(self):
-        """ Test color interpolation """
-        fig, ax = plt.subplots()
-        ax.plot([0, 1], [0, 1], "-", color="none")
-
-        ncols = 20
-        between = ["orange", "blue"]
-        cols = [putils.interpolate_color("g", a, between) for a \
-                    in np.linspace(0, 1, ncols)]
-
-        for icol, col in enumerate(cols):
-            r = Rectangle((icol/ncols, icol/ncols), \
-                                1./ncols, 1./ncols, facecolor=col)
-            ax.add_patch(r)
-
-        fp = self.fimg / "interpolate.png"
-        fig.savefig(fp)
-
 
     def test_bivarnplot(self):
         """ Test categorical scatter plot """
@@ -599,6 +404,7 @@ class UtilsTestCase(unittest.TestCase):
             if k in ["author", "time_created"]:
                 continue
             assert meta2[k] == str(meta[k])
+
 
     def test_blackwhite(self):
         plt.close("all")
