@@ -173,7 +173,8 @@ fig.text(0.05, 0.010, label, color="#595959", ha="left", fontsize=9)
 # Save file
 fp = fimg / f"image.{imgext}"
 fig.savefig(fp, dpi=fdpi, transparent=ftransparent)
-
+putils.blackwhite(fp)
+# .. save meta data
 if imgext == "png":
     metadata = {\
         "source_file": source_file, \

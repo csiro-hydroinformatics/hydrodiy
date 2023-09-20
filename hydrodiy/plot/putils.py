@@ -4,6 +4,8 @@ from datetime import datetime
 from getpass import getuser
 from scipy.stats import gaussian_kde, chi2, norm
 from scipy import linalg
+
+from PIL import Image
 from PIL.PngImagePlugin import PngImageFile, PngInfo
 
 HAS_CYCLER = False
@@ -73,6 +75,13 @@ COLORS_SECONDARY = {
     "forest": "#78be20", \
     "lightmint": "#71cc98"
 }
+
+
+def blackwhite(fimg, prefix="BW_"):
+    fimgbw = fimg.parent / f"{prefix}{fimg.name}"
+    im = Image.open(fimg).convert("L")
+    im.save(fimgbw)
+
 
 def cmap2colors(ncols=10, cmap="Paired"):
     """ Generates a set of colors from a colormap

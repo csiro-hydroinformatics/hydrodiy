@@ -600,6 +600,15 @@ class UtilsTestCase(unittest.TestCase):
                 continue
             assert meta2[k] == str(meta[k])
 
+    def test_blackwhite(self):
+        plt.close("all")
+        fig, ax = plt.subplots()
+        x = np.random.uniform(0, 1, size=(50, 3))
+        ax.scatter(x[:, 0], x[:, 1], c=x[:,2])
+        fp = self.fimg / "blackwhite.png"
+        fig.savefig(fp)
+        putils.blackwhite(fp)
+
 
 
 if __name__ == "__main__":
