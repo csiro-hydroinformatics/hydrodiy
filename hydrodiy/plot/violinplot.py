@@ -1,39 +1,261 @@
 # Code modified from matplotlib demo
 # https://matplotlib.org/stable/gallery/statistics/customized_violin.html
+
+import numpy as np
+import pandas as pd
+from scipy.stats import gaussian_kde
+
 import matplotlib.pyplot as plt
 
+from hydrodiy.plot.boxplot import compute_percentiles, BoxplotItem, COLORS
 
-def adjacent_values(vals, q1, q3):
-    upper_adjacent_value = q3 + (q3 - q1) * 1.5
-    upper_adjacent_value = np.clip(upper_adjacent_value, q3, vals[-1])
+COVERAGE_CENTER = 50
+COVERAGE_EXTREMES = 100
 
-    lower_adjacent_value = q1 - (q3 - q1) * 1.5
-    lower_adjacent_value = np.clip(lower_adjacent_value, vals[0], q1)
-    return lower_adjacent_value, upper_adjacent_value
+VIOLIN_WIDTH = 0.7
 
-def violin(ax, data):
-    data = np.sort(np.array(data), axis=0)
+class ViolinplotError(Exception):
+    pass
 
-    parts = ax.violinplot(
-            data, showmeans=False, showmedians=False,
-            showextrema=False)
+class Violin(object):
+    """ Object allowing to draw violinplots """
 
-    for pc in parts['bodies']:
-        pc.set_facecolor("tab:blue")
-        pc.set_edgecolor("0.8")
-        pc.set_alpha(0.7)
+    def __init__(self, data,
+                show_text=True, \
+                linewidth=2, \
+                number_format="0.2f", \
+                npoints_kde=None):
+        """ Draw boxplots with labels and defined colors
 
-    quartile1, medians, quartile3 = np.percentile(data, [25, 50, 75], axis=0)
-    whiskers = np.array([
-        adjacent_values(sorted_array, q1, q3)
-            for sorted_array, q1, q3 in zip(data.T, quartile1, quartile3)])
+        Parameters
+        -----------
+        data : pandas.Series, pandas.DataFrame, numpy.ndarray
+            Data to be plotted
+        show_text : bool
+            Display summary statistics values
+        linewidth : int
+            Plot lines width in points
+        number_format : str
+            Number format for printing
+        npoints_kde: int
+            Number points used in kde density estimation
+        """
+        # Check input data
+        try:
+            data = pd.DataFrame(data).astype(np.float64)
+        except Exception as err:
+            raise ViolinplotError("Failed to convert data to float"+\
+                    f" dataframe: {err}")
 
-    whiskers_min, whiskers_max = whiskers[:, 0], whiskers[:, 1]
+        # initialise objects
+        self.npoints_kde = 2*len(data) if npoints_kde is None else int(npoints_kde)
+        self._ax = None
+        self._data = data
+        self._kde_x = None
+        self._kde_y = None
 
-    inds = np.arange(1, len(medians) + 1)
-    ax.scatter(inds, medians, marker='o', edgecolor="0.8", \
-                        facecolor='white', s=15, zorder=3)
-    ax.vlines(inds, quartile1, quartile3, color='k', linestyle='-', lw=6)
-    ax.vlines(inds, whiskers_min, whiskers_max, color='k', linestyle='-', lw=1)
+        # Configure objects
+        self.median = BoxplotItem(linecolor=COLORS[3], \
+                    fontcolor=COLORS[3], fontsize=9, \
+                    marker="none",\
+                    linewidth=linewidth, \
+                    ha="center", va="bottom", \
+                    number_format=number_format, \
+                    show_text=show_text)
+
+        self.extremes = BoxplotItem(linecolor=COLORS[0], \
+                            facecolor=COLORS[0], \
+                            linewidth=linewidth, \
+                            ha="center", va="bottom", \
+                            number_format=number_format, \
+                            alpha=0.8)
+
+        self.center = BoxplotItem(linecolor=COLORS[0], \
+                        width=0.7, fontcolor=COLORS[0], \
+                        number_format=number_format, \
+                        fontsize=8, \
+                        linewidth=linewidth, \
+                        ha="center", va="bottom", \
+                        show_text=show_text)
+
+        # Compute violin stats
+        self._compute()
 
 
+    @property
+    def data(self):
+        """ Returns the violin data """
+        return self._data
+
+    @property
+    def ax(self):
+        """ Returns the boxplot axe """
+        return self._ax
+
+    @property
+    def kde_x(self):
+        """ Returns the kde x axis """
+        return self._kde_x
+
+    @property
+    def kde_y(self):
+        """ Returns the kde y axis """
+        return self._kde_y
+
+
+    def _compute(self):
+        """ Compute stats """
+        data = self._data
+
+        # Compute stats
+        self.stat_median = data.median()
+
+        cpp1, cpp2 = compute_percentiles(COVERAGE_CENTER)
+        clow = data.quantile(cpp1/100)
+        self.stat_center_low = clow
+
+        chigh = data.quantile(cpp2/100)
+        self.stat_center_high = chigh
+
+        epp1, epp2 = compute_percentiles(COVERAGE_EXTREMES)
+        elow = data.quantile(epp1/100)
+        self.stat_extremes_low = elow
+        ehigh = data.quantile(epp2/100)
+        self.stat_extremes_high = ehigh
+
+        # initialise
+        npts = self.npoints_kde
+        kde_x = pd.DataFrame(np.nan, columns=data.columns, \
+                                index=np.arange(npts))
+        kde_y = kde_x.copy()
+
+        # Compute kde
+        for cn, se in data.items():
+            kernel = gaussian_kde(se.values)
+
+            # blend regular spacing and ecdf spacing
+            x = np.linspace(elow[cn]-1, ehigh[cn]+1, (npts-len(se)))
+            err = 1e-6*np.random.uniform(-1, 1, len(se))
+            x = np.sort(np.concatenate([x, se.values+err]))
+            y = kernel(x)
+            y = (y-y.min())/(y.max()-y.min())
+            kde_x.loc[:, cn] = x
+            kde_y.loc[:, cn] = y
+
+        self._kde_x = kde_x
+        self._kde_y = kde_y
+
+
+    def draw(self, ax=None, logscale=False):
+        """ Draw the boxplot
+
+        Parameters
+        -----------
+        ax : matplotlib.axes
+            Axe to draw the boxplot on
+        logscale : bool
+            Use y axis log scale or not
+        """
+        if ax is None:
+            self._ax = plt.gca()
+        else:
+            self._ax = ax
+
+        ax = self._ax
+        kde_x, kde_y = self.kde_x, self.kde_y
+        ncols = kde_x.shape[1]
+        vw = VIOLIN_WIDTH
+
+        self.elements = {}
+        for i, colname in enumerate(kde_x.columns):
+            # Get kde data
+            x = kde_x.loc[:, colname]
+            y = kde_y.loc[:, colname]
+
+            # initialise boxplot elements
+            colelement = {}
+
+            # Draw median
+            med = self.stat_median[colname]
+            vm = [med]*2
+            u0 = np.interp(med, x, y)
+            um = [i-u0*vw/2, i+u0*vw/2]
+            item = self.median
+            ax.plot(um, vm, lw=item.linewidth, \
+                color=item.linecolor, \
+                alpha=item.alpha)
+
+            colelement["median-line"] = ax.get_lines()[-1]
+
+            # Draw center
+            item = self.center
+            ix = (x>=self.stat_center_low[colname]) & \
+                    (x<=self.stat_center_high[colname])
+            uu1, uu2 = i-y[ix]*vw/2, i+y[ix]*vw/2
+            vv = x[ix]
+            uc = np.concatenate([uu1, uu2[::-1], [uu1.iloc[0]]])
+            vc = np.concatenate([vv, vv[::-1], [vv.iloc[0]]])
+            ax.plot(uc, vc, lw=item.linewidth, \
+                    color=item.linecolor, \
+                    alpha=item.alpha)
+            colelement["center-line"] = ax.get_lines()[-1]
+
+            # Draw extremes
+            item = self.extremes
+            for iext in [1, 2]:
+                if iext == 1:
+                    ix = (x>=self.stat_extremes_low[colname]) & \
+                        (x<=self.stat_center_low[colname])
+                else:
+                    ix = (x>=self.stat_center_high[colname]) & \
+                        (x<=self.stat_extremes_high[colname])
+
+                uu1, uu2 = i-y[ix]*vw/2, i+y[ix]*vw/2
+                vv = x[ix]
+                uc = np.concatenate([uu1, uu2[::-1], [uu1.iloc[0]]])
+                vc = np.concatenate([vv, vv[::-1], [vv.iloc[0]]])
+                ax.plot(uc, vc, lw=item.linewidth, \
+                        color=item.linecolor, \
+                        alpha=item.alpha)
+
+                n = "extremelow-line" if iext==1 else "extremehigh-line"
+                colelement[n] = ax.get_lines()[-1]
+
+            # Text
+            for statname in ["median", "centerlow", "centerhigh"]:
+                item = self.median if statname == "median" else self.center
+                if statname == "median":
+                    item = self.median
+                    value = self.stat_median[colname]
+                elif statname == "centerlow":
+                    item = self.center
+                    value = self.stat_center_low[colname]
+                elif statname == "centerhigh":
+                    item = self.center
+                    value = self.stat_center_high[colname]
+
+                if item.show_text and not np.isnan(value):
+                    if item.ha == "left":
+                        valuetext = f" {value:{item.number_format}}"
+                        xshift = vw/2
+                    else:
+                        valuetext = f"{value:{item.number_format}}"
+                        xshift = 0
+
+                    colelement[statname+"-text"] = \
+                        ax.text(i+xshift, \
+                            value, \
+                            valuetext, \
+                            fontsize=item.fontsize, \
+                            color=item.fontcolor, \
+                            va=item.va, ha=item.ha, \
+                            alpha=item.alpha)
+
+
+
+            # Store
+            self.elements[colname] = colelement
+
+        xt = np.arange(ncols)
+        ax.set_xticks(xt)
+        ax.set_xticklabels(kde_x.columns)
