@@ -240,8 +240,8 @@ class BoxplotTestCase(unittest.TestCase):
         fig.savefig(os.path.join(self.fimg, "bx16_showtext.png"))
 
 
-    def test_centertext(self):
-        """ Testing centertext """
+    def test_center_text(self):
+        """ Testing center_text """
 
         nval = 200
         nvar = 5
@@ -252,14 +252,14 @@ class BoxplotTestCase(unittest.TestCase):
         bx = Boxplot(data=df)
         bx.draw(ax=axs[0])
 
-        bx = Boxplot(data=df, centertext=True)
+        bx = Boxplot(data=df, center_text=True)
         bx.draw(ax=axs[1])
 
-        fig.savefig(os.path.join(self.fimg, "bx17_centertext.png"))
+        fig.savefig(os.path.join(self.fimg, "bx17_center_text.png"))
 
 
-    def test_digitnumber(self):
-        """ Testing digitnumber """
+    def test_number_format(self):
+        """ Testing number_format """
 
         nval = 200
         nvar = 5
@@ -267,14 +267,14 @@ class BoxplotTestCase(unittest.TestCase):
                 columns = ["data{0}".format(i) for i in range(nvar)])
 
         fig, ax = plt.subplots()
-        bx = Boxplot(data=df, digitnumber=4)
+        bx = Boxplot(data=df, number_format="3.3e")
         bx.draw(ax=ax)
-        fig.savefig(os.path.join(self.fimg, "bx18_digitnumber.png"))
+        fig.savefig(os.path.join(self.fimg, "bx18_number_format.png"))
 
 
     def test_change_elements(self):
         fig, ax = plt.subplots()
-        bx = Boxplot(data=self.data)
+        bx = Boxplot(data=self.data, show_text=True)
         bx.draw(ax=ax)
 
         line = bx.elements["data2"]["median-line"]

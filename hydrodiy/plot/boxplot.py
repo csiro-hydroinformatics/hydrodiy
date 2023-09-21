@@ -90,7 +90,7 @@ class BoxplotItem(object):
         va="center", \
         ha="left", \
         fontcolor="k", \
-        textformat="%0.1f", \
+        number_format="%0.1f", \
         fontsize=10, \
         boxstyle="Square,pad=0", \
         marker="o", \
@@ -131,7 +131,7 @@ class BoxplotItem(object):
         self.markerfacecolor = markerfacecolor
         self.markeredgecolor = markeredgecolor
 
-        self.textformat = textformat
+        self.number_format = number_format
 
         self.show_line = show_line
         self.show_text = show_text
@@ -238,10 +238,10 @@ class Boxplot(object):
                 show_mean=False, \
                 show_median=True, \
                 show_text=False, \
-                centertext=True, \
+                center_text=True, \
                 linewidth=2, \
                 width_from_count=False,
-                digitnumber=2, \
+                number_format="0.2f", \
                 box_coverage=50.,
                 whiskers_coverage=90.):
         """ Draw boxplots with labels and defined colors
@@ -264,13 +264,13 @@ class Boxplot(object):
             Display summary statistics values
         show_text : bool
             Display summary statistics values
-        centertext : bool
+        center_text : bool
             Center the text within the boxplot instead of on the side
         linewidth : int
             Plot lines width in points
         width_from_count : bool
             Use counts to define the boxplot width
-        digitnumber : int
+        number_format : int
             Number of digits in number format
         box_coverage : float
             Coverage defining the percentile used to compute box extent.
@@ -332,7 +332,7 @@ class Boxplot(object):
                             fontcolor=COLORS[3], fontsize=9, \
                             marker="none",\
                             linewidth=linewidth, \
-                            show_text=True)
+                            show_text=show_text)
 
             if show_mean:
                 self.mean = BoxplotItem(marker="o", \
@@ -354,7 +354,7 @@ class Boxplot(object):
 
             self.box = BoxplotItem(linecolor=COLORS[0], \
                             width=0.7, fontcolor=COLORS[0], \
-                            textformat = "%0.{0}f".format(digitnumber), \
+                            number_format = "%0.{0}f".format(number_format), \
                             fontsize=8, \
                             linewidth=linewidth, \
                             show_text=show_text)
@@ -387,10 +387,10 @@ class Boxplot(object):
         # Set text format
         for obj in [self.median, self.mean, self.whiskers, self.box, self.caps]:
             if not obj is None:
-                obj.textformat = "%0.{0}f".format(digitnumber)
+                obj.number_format = number_format
 
-        self.centertext = centertext
-        if centertext:
+        self.center_text = center_text
+        if center_text:
             for obj in [self.median, self.mean, self.box, self.whiskers]:
                 if not obj is None:
                     obj.ha = "center"
@@ -399,7 +399,7 @@ class Boxplot(object):
 
         # Items not affected by style
         self.count = BoxplotItem(fontsize=7, \
-                        fontcolor="grey", textformat="%d")
+                        fontcolor="grey", number_format="%d")
 
         self.minmax = BoxplotItem(markerfacecolor=COLORS[0], \
                             marker="none", \
@@ -519,7 +519,7 @@ class Boxplot(object):
                         element[statname+"-marker"] = ax.get_lines()[-1]
 
                     if item.show_text and valid_value:
-                        formatter = item.textformat
+                        formatter = item.number_format
                         xshift = 0
                         if item.ha == "left":
                             formatter = " "+formatter
@@ -619,7 +619,7 @@ class Boxplot(object):
             item = self.box
             if item.show_text:
                 # Define formatter
-                formatter = item.textformat
+                formatter = item.number_format
                 if item.ha == "left":
                     formatter = " "+formatter
                     xshift = bw/2
@@ -634,7 +634,7 @@ class Boxplot(object):
 
                     # Slight realignment of label for centered text option
                     va, ha = item.va, item.ha
-                    if self.centertext:
+                    if self.center_text:
                         xshift = 0
                         va = "top" if ivalue == 0 else "bottom"
 
@@ -723,7 +723,7 @@ class Boxplot(object):
             _, y1 = trans1((0, ypos))
             _, y = trans2((0., y1))
 
-            formatter = "("+item.textformat+")"
+            formatter = "("+item.number_format+")"
 
             for i, cn in enumerate(stats.columns):
                 cnt = formatter % stats.loc["count", cn]
