@@ -357,7 +357,7 @@ class Boxplot(object):
                             number_format = "%0.{0}f".format(number_format), \
                             fontsize=8, \
                             linewidth=linewidth, \
-                            show_text=show_text)
+                            show_text=False)
 
         elif style == "narrow":
             obj = BoxplotItem(marker="o", \
@@ -519,13 +519,12 @@ class Boxplot(object):
                         element[statname+"-marker"] = ax.get_lines()[-1]
 
                     if item.show_text and valid_value:
-                        formatter = item.number_format
-                        xshift = 0
                         if item.ha == "left":
-                            formatter = " "+formatter
+                            valuetext = f" {value:{item.number_format}}"
                             xshift = bw/2
-
-                        valuetext = formatter % value
+                        else:
+                            valuetext = f"{value:{item.number_format}}"
+                            xshift = 0
 
                         element[statname+"-text"] = \
                             ax.text(i+xshift+xoffset, \
@@ -630,10 +629,13 @@ class Boxplot(object):
                                     for qq in [bqq1txt, bqq2txt]]
 
                 for ivalue, value in enumerate(values):
-                    valuetext = formatter % value
+                    va, ha = item.va, item.ha
+                    if item.ha == "left":
+                        valuetext = f" {value:{item.number_format}}"
+                    else:
+                        valuetext = f"{value:{item.number_format}}"
 
                     # Slight realignment of label for centered text option
-                    va, ha = item.va, item.ha
                     if self.center_text:
                         xshift = 0
                         va = "top" if ivalue == 0 else "bottom"
