@@ -50,3 +50,11 @@ def test_violin_draw():
     fig.savefig(fp)
 
 
+    fig, ax = plt.subplots()
+    vl.col_ref_others = "tab:orange"
+    vl.set_items()
+    vl.draw(ax=ax)
+    fp = FIMG / "violin_plot_colors.png"
+    fig.savefig(fp)
+
+

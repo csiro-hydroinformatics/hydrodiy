@@ -26,6 +26,8 @@ class Violin(object):
                 show_text=True, \
                 linewidth=2, \
                 number_format="0.2f", \
+                col_ref_median=COLORS[3], \
+                col_ref_others=COLORS[0], \
                 npoints_kde=None):
         """ Draw boxplots with labels and defined colors
 
@@ -39,6 +41,10 @@ class Violin(object):
             Plot lines width in points
         number_format : str
             Number format for printing
+        col_ref_median : str
+            Color of median line
+        col_ref_others : str
+            Color of other elements
         npoints_kde: int
             Number points used in kde density estimation
         """
@@ -57,38 +63,12 @@ class Violin(object):
         self._kde_y = None
 
         # Configure objects
-        col_ref = COLORS[3]
-        self.median = BoxplotItem(linecolor=col_ref, \
-                    fontcolor=col_ref,\
-                    fontsize=9, \
-                    fontweight="bold", \
-                    marker="none",\
-                    linewidth=linewidth, \
-                    ha="center", va="bottom", \
-                    number_format=number_format, \
-                    show_text=show_text)
-
-        col_ref = COLORS[0]
-        col_light = putils.darken_or_lighten(COLORS[0], -0.5)
-        col_superlight = putils.darken_or_lighten(COLORS[0], -1)
-
-        self.extremes = BoxplotItem(linecolor="none", \
-                            fontcolor=col_ref, \
-                            facecolor=col_superlight, \
-                            linewidth=linewidth, \
-                            hatch="///", \
-                            ha="center", va="bottom", \
-                            number_format=number_format)
-
-        self.center = BoxplotItem(linecolor=col_ref, \
-                        fontcolor=col_ref, \
-                        facecolor=col_light, \
-                        width=0.7, \
-                        number_format=number_format, \
-                        fontsize=8, \
-                        linewidth=linewidth, \
-                        ha="center", va="bottom", \
-                        show_text=False)
+        self.show_text = show_text
+        self.linewidth = linewidth
+        self.number_format = number_format
+        self.col_ref_median = col_ref_median
+        self.col_ref_others = col_ref_others
+        self.set_items()
 
         # Compute violin stats
         self._compute()
@@ -113,6 +93,46 @@ class Violin(object):
     def kde_y(self):
         """ Returns the kde y axis """
         return self._kde_y
+
+
+    def set_items(self):
+        show_text = self.show_text
+        linewidth = self.linewidth
+        number_format = self.number_format
+        col_ref_median = self.col_ref_median
+        col_ref_others = self.col_ref_others
+
+        self.median = BoxplotItem(linecolor=col_ref_median, \
+                    fontcolor=col_ref_median,\
+                    fontsize=9, \
+                    fontweight="bold", \
+                    marker="none",\
+                    linewidth=linewidth, \
+                    ha="center", va="bottom", \
+                    number_format=number_format, \
+                    show_text=show_text)
+
+
+        col_light = putils.darken_or_lighten(col_ref_others, -0.5)
+        col_superlight = putils.darken_or_lighten(col_ref_others, -1)
+
+        self.extremes = BoxplotItem(linecolor="none", \
+                            fontcolor=col_ref_others, \
+                            facecolor=col_superlight, \
+                            linewidth=linewidth, \
+                            hatch="///", \
+                            ha="center", va="bottom", \
+                            number_format=number_format)
+
+        self.center = BoxplotItem(linecolor=col_ref_others, \
+                        fontcolor=col_ref_others, \
+                        facecolor=col_light, \
+                        width=0.7, \
+                        number_format=number_format, \
+                        fontsize=8, \
+                        linewidth=linewidth, \
+                        ha="center", va="bottom", \
+                        show_text=False)
 
 
     def _compute(self):
