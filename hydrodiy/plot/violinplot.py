@@ -6,7 +6,9 @@ import pandas as pd
 from scipy.stats import gaussian_kde
 
 import matplotlib.pyplot as plt
+from matplotlib.patches import Polygon
 
+from hydrodiy.plot import putils
 from hydrodiy.plot.boxplot import compute_percentiles, BoxplotItem, COLORS
 
 COVERAGE_CENTER = 50
@@ -55,28 +57,38 @@ class Violin(object):
         self._kde_y = None
 
         # Configure objects
-        self.median = BoxplotItem(linecolor=COLORS[3], \
-                    fontcolor=COLORS[3], fontsize=9, \
+        col_ref = COLORS[3]
+        self.median = BoxplotItem(linecolor=col_ref, \
+                    fontcolor=col_ref,\
+                    fontsize=9, \
+                    fontweight="bold", \
                     marker="none",\
                     linewidth=linewidth, \
                     ha="center", va="bottom", \
                     number_format=number_format, \
                     show_text=show_text)
 
-        self.extremes = BoxplotItem(linecolor=COLORS[0], \
-                            facecolor=COLORS[0], \
-                            linewidth=linewidth, \
-                            ha="center", va="bottom", \
-                            number_format=number_format, \
-                            alpha=0.8)
+        col_ref = COLORS[0]
+        col_light = putils.darken_or_lighten(COLORS[0], -0.5)
+        col_superlight = putils.darken_or_lighten(COLORS[0], -1)
 
-        self.center = BoxplotItem(linecolor=COLORS[0], \
-                        width=0.7, fontcolor=COLORS[0], \
+        self.extremes = BoxplotItem(linecolor="none", \
+                            fontcolor=col_ref, \
+                            facecolor=col_superlight, \
+                            linewidth=linewidth, \
+                            hatch="///", \
+                            ha="center", va="bottom", \
+                            number_format=number_format)
+
+        self.center = BoxplotItem(linecolor=col_ref, \
+                        fontcolor=col_ref, \
+                        facecolor=col_light, \
+                        width=0.7, \
                         number_format=number_format, \
                         fontsize=8, \
                         linewidth=linewidth, \
                         ha="center", va="bottom", \
-                        show_text=show_text)
+                        show_text=False)
 
         # Compute violin stats
         self._compute()
@@ -187,6 +199,25 @@ class Violin(object):
 
             colelement["median-line"] = ax.get_lines()[-1]
 
+            # Draw extremes
+            item = self.extremes
+            ix = (x>=self.stat_extremes_low[colname]) & \
+                (x<=self.stat_extremes_high[colname])
+
+            uu1, uu2 = i-y[ix]*vw/2, i+y[ix]*vw/2
+            vv = x[ix]
+            uc = np.concatenate([uu1, uu2[::-1], [uu1.iloc[0]]])
+            vc = np.concatenate([vv, vv[::-1], [vv.iloc[0]]])
+            epoly = Polygon(np.column_stack([uc, vc]), \
+                                edgecolor="none", \
+                                facecolor=item.facecolor, \
+                                linewidth=item.linewidth, \
+                                hatch=None if item.hatch=="none" else item.hatch , \
+                                alpha=item.alpha)
+            ax.add_patch(epoly)
+            n = "extreme-polygon"
+            colelement[n] = epoly
+
             # Draw center
             item = self.center
             ix = (x>=self.stat_center_low[colname]) & \
@@ -195,31 +226,15 @@ class Violin(object):
             vv = x[ix]
             uc = np.concatenate([uu1, uu2[::-1], [uu1.iloc[0]]])
             vc = np.concatenate([vv, vv[::-1], [vv.iloc[0]]])
-            ax.plot(uc, vc, lw=item.linewidth, \
-                    color=item.linecolor, \
-                    alpha=item.alpha)
-            colelement["center-line"] = ax.get_lines()[-1]
-
-            # Draw extremes
-            item = self.extremes
-            for iext in [1, 2]:
-                if iext == 1:
-                    ix = (x>=self.stat_extremes_low[colname]) & \
-                        (x<=self.stat_center_low[colname])
-                else:
-                    ix = (x>=self.stat_center_high[colname]) & \
-                        (x<=self.stat_extremes_high[colname])
-
-                uu1, uu2 = i-y[ix]*vw/2, i+y[ix]*vw/2
-                vv = x[ix]
-                uc = np.concatenate([uu1, uu2[::-1], [uu1.iloc[0]]])
-                vc = np.concatenate([vv, vv[::-1], [vv.iloc[0]]])
-                ax.plot(uc, vc, lw=item.linewidth, \
-                        color=item.linecolor, \
-                        alpha=item.alpha)
-
-                n = "extremelow-line" if iext==1 else "extremehigh-line"
-                colelement[n] = ax.get_lines()[-1]
+            cpoly = Polygon(np.column_stack([uc, vc]), \
+                                edgecolor=item.linecolor, \
+                                facecolor=item.facecolor, \
+                                linewidth=item.linewidth, \
+                                hatch=None if item.hatch=="none" else item.hatch , \
+                                alpha=item.alpha)
+            ax.add_patch(cpoly)
+            n = "center-polygon"
+            colelement[n] = cpoly
 
             # Text
             for statname in ["median", "centerlow", "centerhigh"]:
@@ -246,6 +261,7 @@ class Violin(object):
                         ax.text(i+xshift, \
                             value, \
                             valuetext, \
+                            fontweight=item.fontweight, \
                             fontsize=item.fontsize, \
                             color=item.fontcolor, \
                             va=item.va, ha=item.ha, \

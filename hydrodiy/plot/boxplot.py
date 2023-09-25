@@ -92,7 +92,9 @@ class BoxplotItem(object):
         fontcolor="k", \
         number_format="%0.1f", \
         fontsize=10, \
+        fontweight="normal", \
         boxstyle="Square,pad=0", \
+        hatch="none", \
         marker="o", \
         markerfacecolor="none", \
         markeredgecolor="k", \
@@ -109,8 +111,10 @@ class BoxplotItem(object):
         self._boxstyle = None
         self._linewidth = None
         self._fontsize = None
+        self._fontweight = None
         self._markersize = None
         self._width = None
+        self._hatch = None
 
         # Set attributes
         self.linestyle = linestyle
@@ -119,9 +123,11 @@ class BoxplotItem(object):
         self.ha = ha
         self.marker = marker
         self.boxstyle = boxstyle
+        self.hatch = hatch
 
         self.linewidth = linewidth
         self.fontsize = fontsize
+        self.fontweight = fontweight
         self.markersize = markersize
         self.width = width
 
@@ -201,6 +207,14 @@ class BoxplotItem(object):
     def fontsize(self, value):
         self._fontsize = _to_float(value)
 
+    @property
+    def fontweight(self):
+        return self._fontweight
+
+    @fontweight.setter
+    def fontweight(self, value):
+        self._fontweight = _is_in(str(value), ["normal", "bold"])
+
 
     @property
     def width(self):
@@ -227,6 +241,16 @@ class BoxplotItem(object):
     @alpha.setter
     def alpha(self, value):
         self._alpha = _to_float(value, maxi=1.)
+
+    @property
+    def hatch(self):
+        return self._hatch
+
+    @hatch.setter
+    def hatch(self, value):
+        self._hatch = _is_in(str(value), ["none", "/", \
+                    "\\", "\\\\", "\\\\\\", "//", "///", "|", "-", \
+                    "+", "x", "o", "O", ".", "*"])
 
 
 

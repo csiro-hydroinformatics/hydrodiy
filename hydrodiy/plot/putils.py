@@ -5,6 +5,8 @@ from getpass import getuser
 from scipy.stats import gaussian_kde, chi2, norm
 from scipy import linalg
 
+import colorsys
+
 from PIL import Image
 from PIL.PngImagePlugin import PngImageFile, PngInfo
 
@@ -26,6 +28,7 @@ from matplotlib.patches import Ellipse
 from matplotlib import colors as mcolors
 from matplotlib.colors import hex2color, rgb2hex
 from matplotlib.colors import LinearSegmentedColormap
+
 
 import matplotlib.dates as mdates
 
@@ -76,11 +79,56 @@ COLORS_SECONDARY = {
     "lightmint": "#71cc98"
 }
 
+def _float(u):
+    """ Function to convert object to float """
+    try:
+        v = float(u)
+    except TypeError:
+        v = u.toordinal()
+    return v
+
+
 
 def blackwhite(fimg, prefix="BW_"):
     fimgbw = fimg.parent / f"{prefix}{fimg.name}"
     im = Image.open(fimg).convert("L")
     im.save(fimgbw)
+
+
+def darken_or_lighten(colname, modifier):
+    """ Generates lighter (factor<0) or darker (factor>0) color.
+    Based on https://stackoverflow.com/questions/37765197/
+                            darken-or-lighten-a-color-in-matplotlib
+    Parameters
+    -----------
+    colname : str
+        Color name or HEX code.
+    Modifier : float
+        Color modifier.
+
+    Returns
+    -----------
+    colors : list
+        List of colors
+    """
+    try:
+        colcode = mcolors.cnames[colname]
+    except:
+        colcode = colname
+
+    colhls = colorsys.rgb_to_hls(*mcolors.to_rgb(colcode))
+    # Get color luminosity
+    lum = colhls[1]
+    assert lum<1, f"Expected hls lum<1 for color {colname}"
+
+    vmax = 1/(1-lum)
+    shift = math.atanh(1-2*lum)
+    assert abs(modifier)<2, "Expected |modifier|<2"
+    m = vmax*(1+np.tanh(modifier+shift))/2
+
+    # Change luminosity
+    modif_lum = 1-m*(1-lum)
+    return colorsys.hls_to_rgb(colhls[0], modif_lum, colhls[2])
 
 
 def cmap2colors(ncols=10, cmap="Paired"):
@@ -163,14 +211,6 @@ def colors2cmap(colors, ncols=256):
 
     return cmap
 
-
-def _float(u):
-    """ Function to convert object to float """
-    try:
-        v = float(u)
-    except TypeError:
-        v = u.toordinal()
-    return v
 
 
 def line(ax, vx=0., vy=1., x0=0., y0=0., *args, **kwargs):

@@ -416,6 +416,26 @@ class UtilsTestCase(unittest.TestCase):
         putils.blackwhite(fp)
 
 
+    def test_darken_lightend(self):
+        plt.close("all")
+        fig, ax = plt.subplots()
+
+        col_ref = "tab:purple"
+        modifs = [-1, -0.5, 0, 0.5, 1]
+
+        x = np.linspace(0, 1, 100)
+        for im, m in enumerate(modifs):
+            c = putils.darken_or_lighten(col_ref, m)
+            lab = f"Modifier = {m}"
+            ax.plot(x, (im+1)*x, color=c, lw=5, label=lab)
+
+        ax.legend(loc=4)
+
+        fp = self.fimg / "darken_lighten.png"
+        fig.savefig(fp)
+        putils.blackwhite(fp)
+
+
 
 if __name__ == "__main__":
     unittest.main()
