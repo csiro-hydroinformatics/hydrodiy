@@ -13,30 +13,27 @@ What is hydrodiy?
 Installation
 ~~~~~~~~~~~~
 
-``pip install hydrodiy`` or download the `source
-code <https://bitbucket.org/jlerat/hydrodiy>`__ and
-``python setup.py install``
+Download the `source code <https://github.com/csiro-hydroinformatics/hydrodiy>`__ and
+run ``python setup.py install``
 
 Basic use
 ~~~~~~~~~
-
 
    .. code:: 
 
        import numpy as np
        import matplotlib.pyplot as plt
-       from hydrodiy.plot import boxplot
+       from hydrodiy.plot import violinplot
 
        data = np.random.normal(size=(200, 5))
        plt.close('all')
-       fig, ax = plt.subplots()
+       fig, ax = plt.subplots(layout='tight')
        
-       # Draw a nice box plot
-       bp = boxplot.Boxplot(data)
-       bp.draw()
+       # Draw a nice violin plot
+       vl = violinplot.Violin(data)
+       vl.draw(ax=ax)
 
-       # Show sample count 
-       bp.show_count()
+       plt.show()
 
 A set of examples is provided in the folder 'examples'.
 
@@ -45,3 +42,4 @@ License
 
 The source code and documentation of the hydrodiy package is licensed under the
 `BSD license <https://opensource.org/licenses/BSD-3-Clauseh>`__.
+
