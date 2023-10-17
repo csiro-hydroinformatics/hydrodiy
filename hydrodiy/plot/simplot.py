@@ -259,7 +259,7 @@ class Simplot(object):
         # Quick aggregate
         data = self.data
         months = data.index.year * 100 + data.index.month
-        monthsu = pd.to_datetime(pd.np.unique(months), format="%Y%m")
+        monthsu = pd.to_datetime(np.unique(months), format="%Y%m")
         lam = lambda x: pd.Series(dutils.aggregate(months, x.values, \
                                     maxnan=self.maxnan_monthly),\
                                         index=monthsu)
