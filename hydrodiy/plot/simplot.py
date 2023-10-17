@@ -372,9 +372,6 @@ class Simplot(object):
                             label=label)
             lines[cn] = ax.get_lines()[-1]
 
-        # Fix x axis
-        putils.xdate(ax, xaxis_freq, xaxis_by, xaxis_fmt)
-
         # Fix legend
         if show_legend:
             leglines, labels = ax.get_legend_handles_labels()
