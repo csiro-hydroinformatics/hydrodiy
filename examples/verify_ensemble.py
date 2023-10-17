@@ -7,7 +7,8 @@
 ## Comment : Generate ensemble verification metrics
 ##
 ## ------------------------------
-import sys, os, re, json, math
+import sys, re, json, math
+from pathlib import Path
 import numpy as np
 import pandas as pd
 from datetime import datetime
@@ -30,13 +31,13 @@ nval = 50
 #----------------------------------------------------------------------
 # Folders
 #----------------------------------------------------------------------
+source_file = Path(__file__).resolve()
+froot  = source_file.parent
 
-# Define folders
-source_file = os.path.abspath(__file__)
-froot = os.path.dirname(source_file)
-
-# Create logger to follow script execution
-basename = re.sub('\\.py.*', '', os.path.basename(source_file))
+#----------------------------------------------------------------------
+# Logging
+#----------------------------------------------------------------------
+basename = source_file.stem
 LOGGER = iutils.get_logger(basename)
 
 #----------------------------------------------------------------------
@@ -95,7 +96,6 @@ LOGGER.info('BiasLog ={0:0.3f}'.format(biaslog))
 
 corrlog = metrics.corr(obs, np.mean(fcst, axis=1), type='Spearman', trans=trans)
 LOGGER.info('CorrLog ={0:0.3f}'.format(corrlog))
-
 
 
 LOGGER.info('Process completed')

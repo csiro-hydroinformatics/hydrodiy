@@ -1,11 +1,9 @@
-import os, re, math
+import re, math
+from pathlib import Path
 import warnings
-import unittest
 import numpy as np
 import pandas as pd
 import warnings
-
-import zipfile
 
 import matplotlib
 matplotlib.use('Agg')
@@ -13,6 +11,8 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from hydrodiy.gis.grid import Grid, Catchment
 from hydrodiy.gis.grid import accumulate, voronoi, delineate_river
+
+from hydrodiy.io import iutils
 
 #----------------------------------------------------------------------
 # Config
@@ -29,13 +29,19 @@ upstreamxy = [145.7, -17.8]
 #----------------------------------------------------------------------
 # Folders
 #----------------------------------------------------------------------
-source_file = os.path.abspath(__file__)
-froot = os.path.dirname(source_file)
+source_file = Path(__file__).resolve()
+froot  = source_file.parent
 
-fgrid = os.path.join(froot, '..', 'hydrodiy', 'gis', 'tests', 'fdtest.bil')
+fgrid = froot.parent / "hydrodiy" / "gis" / "tests" / "fdtest.bil"
 
-fimg = os.path.join(froot, 'images', 'catchments')
-os.makedirs(fimg, exist_ok=True)
+fimg = froot / "images" / "catchments"
+fimg.mkdir(exist_ok=True, parents=True)
+
+#----------------------------------------------------------------------
+# Logging
+#----------------------------------------------------------------------
+basename = source_file.stem
+LOGGER = iutils.get_logger(basename)
 
 #----------------------------------------------------------------------
 # Get data
@@ -74,7 +80,7 @@ gri, _, _ = ca.intersect(coarse)
 #----------------------------------------------------------------------
 
 plt.close('all')
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=(15, 15), layout="tight")
 
 # plot flow dir
 flowdir.dtype = np.float64
@@ -98,9 +104,6 @@ ca.plot_boundary(ax, color='green', lw=4)
 ax.plot(datariver['x'], datariver['y'], 'r', lw=3)
 
 # Save image
-fig.set_size_inches((15, 15))
-fig.tight_layout()
-fp = os.path.join(fimg, \
-            re.sub('\\.bil', '_plot.png', os.path.basename(fgrid)))
+fp = fimg / f"{fgrid.stem}_plot.png"
 fig.savefig(fp)
 
