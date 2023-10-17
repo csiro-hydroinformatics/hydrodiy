@@ -111,6 +111,9 @@ def darken_or_lighten(colname, modifier):
     colors : list
         List of colors
     """
+    if colname == "none":
+        return colname
+
     try:
         colcode = mcolors.cnames[colname]
     except:
