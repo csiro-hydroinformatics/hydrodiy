@@ -62,9 +62,9 @@ cmdclass["build_ext"] = build_ext
 setup(
     name = "hydrodiy",
     author = "Julien Lerat",
-    author_email = "julien.lerat@gmail.com",
-    url = "https://bitbucket.org/jlerat/hydrodiy",
-    download_url = "https://bitbucket.org/jlerat/hydrodiy/downloads",
+    author_email = "julien.lerat@csiro.au",
+    url = "https://github.com/csiro-hydroinformatics/hydrodiy",
+    download_url = "https://github.com/csiro-hydroinformatics/hydrodiy/tags",
     version= versioneer.get_version(),
     description = "Python tools to support hydrological modelling and data analysis",
     packages = find_packages(),
