@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 
 from hydrodiy.plot import putils
-from hydrodiy.plot.boxplot import compute_percentiles, BoxplotItem, COLORS
+from hydrodiy.plot.boxplot import compute_percentiles, BoxplotItem
 
 COVERAGE_CENTER = 50
 COVERAGE_EXTREMES = 100
@@ -26,9 +26,11 @@ class Violin(object):
                 show_text=True, \
                 linewidth=2, \
                 number_format="0.2f", \
-                col_ref_median=COLORS[3], \
-                col_ref_others=COLORS[0], \
-                npoints_kde=None):
+                col_ref_median="darkblue", \
+                col_ref_others="tab:blue", \
+                brightening_factor_light=-0.5, \
+                brightening_factor_superlight=-1.0, \
+                npoints_kde=None, **kwargs):
         """ Draw boxplots with labels and defined colors
 
         Parameters
@@ -45,6 +47,12 @@ class Violin(object):
             Color of median line
         col_ref_others : str
             Color of other elements
+        brightening_factor_light : float
+            Factor use to brighten colors when drawing violin plot region
+            between 0.25 and 0.75 quantiles. Can use 'bfl' abbreviation.
+        brightening_factor_superlight : float
+            Factor use to brighten colors when drawing violin plot outside of
+            0.25 and 0.75 quantiles. Can use 'bfsl' abbreviation.
         npoints_kde: int
             Number points used in kde density estimation
         """
@@ -62,13 +70,35 @@ class Violin(object):
         self._kde_x = None
         self._kde_y = None
 
+        if "bfl" in kwargs:
+            brightening_factor_light = kwargs["bfl"]
+        self.brightening_factor_light = brightening_factor_light
+
+        if "bfsl" in kwargs:
+            brightening_factor_superlight = kwargs["bfsl"]
+        self.brightening_factor_superlight = brightening_factor_superlight
+
         # Configure objects
+        if "st" in kwargs:
+            show_text = kwargs["st"]
         self.show_text = show_text
+
+        if "lw" in kwargs:
+            linewidth = kwargs["lw"]
         self.linewidth = linewidth
+
+        if "nfmt" in kwargs:
+            number_format = kwargs["nfmt"]
         self.number_format = number_format
+
+        if "crm" in kwargs:
+            col_ref_median = kwargs["crm"]
         self.col_ref_median = col_ref_median
+
+        if "cro" in kwargs:
+            col_ref_others = kwargs["cro"]
         self.col_ref_others = col_ref_others
-        self.set_items()
+        self.reset_items()
 
         # Compute violin stats
         self._compute()
@@ -95,7 +125,7 @@ class Violin(object):
         return self._kde_y
 
 
-    def set_items(self):
+    def reset_items(self):
         show_text = self.show_text
         linewidth = self.linewidth
         number_format = self.number_format
@@ -113,8 +143,10 @@ class Violin(object):
                     show_text=show_text)
 
 
-        col_light = putils.darken_or_lighten(col_ref_others, -0.5)
-        col_superlight = putils.darken_or_lighten(col_ref_others, -1)
+        col_light = putils.darken_or_lighten(col_ref_others, \
+                            self.brightening_factor_light)
+        col_superlight = putils.darken_or_lighten(col_ref_others, \
+                            self.brightening_factor_superlight)
 
         self.extremes = BoxplotItem(linecolor="none", \
                             fontcolor=col_ref_others, \
@@ -163,7 +195,7 @@ class Violin(object):
 
         # Compute kde
         for cn, se in data.items():
-            kernel = gaussian_kde(se.values)
+            kernel = gaussian_kde(se[se.notnull()].values)
 
             # blend regular spacing and ecdf spacing
             x = np.linspace(elow[cn]-1, ehigh[cn]+1, (npts-len(se)))
@@ -178,15 +210,13 @@ class Violin(object):
         self._kde_y = kde_y
 
 
-    def draw(self, ax=None, logscale=False):
+    def draw(self, ax=None):
         """ Draw the boxplot
 
         Parameters
         -----------
         ax : matplotlib.axes
             Axe to draw the boxplot on
-        logscale : bool
-            Use y axis log scale or not
         """
         if ax is None:
             self._ax = plt.gca()
@@ -286,8 +316,6 @@ class Violin(object):
                             color=item.fontcolor, \
                             va=item.va, ha=item.ha, \
                             alpha=item.alpha)
-
-
 
             # Store
             self.elements[colname] = colelement
