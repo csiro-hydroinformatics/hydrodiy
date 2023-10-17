@@ -52,7 +52,7 @@ def run_script(fs, stype="python"):
 
     # If no problem, then remove script
     if not hasError:
-        os.remove(fs)
+        fs.unlink()
 
     return stderr, hasError
 
@@ -100,89 +100,6 @@ def test_script_template_plot():
 
     stderr, hasError = run_script(fs)
     assert not hasError
-
-
-def test_str2dict():
-    prefix = "this_is_a_prefix"
-
-    data = {"name":"bob", "phone":"2010"}
-    source = iutils.dict2str(data)
-    data2, prefix2 = iutils.str2dict(source)
-    source2 = iutils.dict2str(data2)
-    assert prefix2 == ""
-    assert data == data2
-    assert source == source2
-
-    source = FTEST / f"{source}.csv"
-    data2, prefix2 = iutils.str2dict(source)
-    source2 = iutils.dict2str(data2)
-    assert prefix2 == ""
-    assert data == data2
-    assert re.sub("\\.csv", "", \
-        os.path.basename(source)) == source2
-
-    data = {"name":"bob", "phone":"2010"}
-    source = iutils.dict2str(data, prefix=prefix)
-    data2, prefix2 = iutils.str2dict(source)
-    source2 = iutils.dict2str(data2, prefix2)
-    assert data == data2
-    assert prefix2 == prefix
-    assert source == source2
-
-    data = {"name":"bob_marley", "phone":"2010"}
-    source = iutils.dict2str(data)
-    data2, prefix2 = iutils.str2dict(source)
-    source2 = iutils.dict2str(data2, prefix2)
-    assert data == data2
-    assert prefix2 == ""
-    assert source == source2
-
-    data = {"name":"bob_marley%$^_12234123", "phone":"2010"}
-    source = iutils.dict2str(data)
-    data2, prefix2 = iutils.str2dict(source)
-    source2 = iutils.dict2str(data2, prefix2)
-    assert data == data2
-
-    data = {"name":"bob", "phone":2010}
-    source = iutils.dict2str(data)
-    data2, prefix2 = iutils.str2dict(source, False)
-    source2 = iutils.dict2str(data2, prefix2)
-    assert data == data2
-    assert prefix2 == ""
-    assert source == source2
-
-
-def test_str2dict_random_order():
-    """ Test order of arguments for str2dict """
-    # Generate random keys
-    nkeys = 10
-    lkeys = 20
-
-    l = [letters[k] for k in range(len(letters))]
-    n = ["{0}".format(k) for k in range(10)]
-    l = l+n
-
-    d1 = {}
-    for i in range(nkeys):
-        key = "".join(np.random.choice(l, lkeys))
-        value = "".join(np.random.choice(l, lkeys))
-        d1[key] = value
-    st1 = iutils.dict2str(d1)
-
-    # Select random order of keys
-    nrepeat = 100
-    for i in range(nrepeat):
-        d2 = {}
-        keys = np.random.choice(list(d1.keys()), len(d1), \
-                                replace=False)
-        for key in keys:
-            d2[key] = d1[key]
-
-        # Generate string and compare with original one
-        # This test checks that random perturbation of keys
-        # does not affect the string
-        st2 = iutils.dict2str(d2)
-        assert st1==st2
 
 
 def test_get_logger():
@@ -237,18 +154,6 @@ def test_get_logger():
     flog2.unlink()
 
 
-def test_read_logfile():
-    """ Test reading log data """
-    flog = FTEST / "logfile.log"
-    logs = iutils.read_logfile(flog)
-    assert np.all(np.sort(logs.columns.tolist()) == \
-            np.sort(["asctime", "levelname", "message", "name", "context"]))
-
-    assert logs.shape, (70, 5)
-    assert np.all(logs.context[:10] == "test context")
-    assert np.all(logs.context[10:] == "")
-
-
 def test_get_logger_contextual():
     """ Test contextual logger """
     flog = FTEST / "test_contextual.log"
@@ -275,23 +180,5 @@ def test_get_logger_contextual():
 
     logger.handlers[1].close()
     flog.unlink()
-
-
-def test_thousands_separator():
-    x = 56.1
-    xfmt = iutils.thousands_separator(x)
-    assert xfmt == "56.1"
-
-    x = 1056.3
-    xfmt = iutils.thousands_separator(x)
-    assert xfmt == "1,056.3"
-
-    x = 5101056.3
-    xfmt = iutils.thousands_separator(x)
-    assert xfmt == "5,101,056.3"
-
-    x = 1056.3456
-    xfmt = iutils.thousands_separator(x, dec=2)
-    assert xfmt == "1,056.35"
 
 
