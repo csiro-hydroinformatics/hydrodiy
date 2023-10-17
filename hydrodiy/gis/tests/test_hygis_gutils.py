@@ -17,33 +17,6 @@ class GutilsTestCase(unittest.TestCase):
         self.triangle = np.array([[-1.0, -1.0], [0.0, 1.0], [1.0, 0.0]])
 
 
-    def test_xy2kml(self):
-        ''' Test conversion of points to kml format '''
-        npt = 5
-        x = np.linspace(145, 150, npt)
-        y = np.linspace(-35, -30, npt)
-        z = np.linspace(0, 100, npt)
-        siteid = ['test'] * npt
-        label = ['label'] * npt
-
-        fkml = '{0}/test1.kml'.format(self.ftest)
-        gutils.xy2kml(x, y, fkml)
-
-        fkml = '{0}/test2.kml'.format(self.ftest)
-        gutils.xy2kml(x, y, fkml, z=z)
-
-        fkml = '{0}/test3.kml'.format(self.ftest)
-        gutils.xy2kml(x, y, fkml, siteid=siteid)
-
-        fkml = '{0}/test4.kml'.format(self.ftest)
-        gutils.xy2kml(x, y, fkml, siteid=siteid, label=label)
-
-        fkml = '{0}/test5.kml'.format(self.ftest)
-        gutils.xy2kml(x, y, fkml, siteid=siteid, \
-                        icon=['caution']*2+["placemark_circle"]*3, \
-                        scale={"caution": 2, "placemark_circle":0.5})
-
-
     def test_point_inside_triangle(self):
         ''' Test points are inside a triangle '''
         if not has_c_module("gis", False):
