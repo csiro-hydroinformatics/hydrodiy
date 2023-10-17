@@ -157,8 +157,6 @@ for name, ax in axs.items():
     ax.legend(shadow=True, framealpha=0.7)
 
     # Axis
-    putils.xdate(ax)
-
     title = f"{name}: Row {irow} / Column {icol}"
     ax.set_title(title)
     ax.set_xlabel("X label")
