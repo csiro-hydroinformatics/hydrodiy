@@ -198,7 +198,8 @@ class Violin(object):
             kernel = gaussian_kde(se[se.notnull()].values)
 
             # blend regular spacing and ecdf spacing
-            x = np.linspace(elow[cn]-1, ehigh[cn]+1, (npts-len(se)))
+            x0, x1 = se.min(), se.max()
+            x = np.linspace(x0, x1, (npts-len(se)))
             err = 1e-6*np.random.uniform(-1, 1, len(se))
             x = np.sort(np.concatenate([x, se.values+err]))
             y = kernel(x)
