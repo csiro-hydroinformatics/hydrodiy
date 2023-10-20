@@ -44,6 +44,10 @@ def test_violin_init(allclose):
     assert vl.kde_y.shape[1] == ncol
     assert allclose(vl.kde_y.max(), 1)
 
+    st = vl.stats
+    assert st.shape == (5, 3)
+    assert st.index.tolist() == ["Q0", "Q25", "median", "Q75", "Q100"]
+
 
 def test_violin_draw():
     plt.close("all")
@@ -96,6 +100,18 @@ def test_violin_draw_extremes():
     fig, ax = plt.subplots()
     vl.draw(ax=ax)
     fp = FIMG / "violin_plot_extremes.png"
+    fig.savefig(fp)
+
+
+def test_violin_missing():
+    plt.close("all")
+    df = DATA1.copy()
+    ir = np.random.randint(0, df.shape[0]-1, 100)
+    df.iloc[ir, 0] = np.nan
+    vl = Violin(data=df)
+    fig, ax = plt.subplots()
+    vl.draw(ax=ax)
+    fp = FIMG / "violin_missing.png"
     fig.savefig(fp)
 
 

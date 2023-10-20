@@ -124,6 +124,20 @@ class Violin(object):
         """ Returns the kde y axis """
         return self._kde_y
 
+    @property
+    def stats(self):
+        """ Returns stats """
+        cpp1, cpp2 = compute_percentiles(COVERAGE_CENTER)
+        epp1, epp2 = compute_percentiles(COVERAGE_EXTREMES)
+        df = pd.DataFrame({
+                f"Q{epp1:0.0f}": self.stat_extremes_low, \
+                f"Q{cpp1:0.0f}": self.stat_center_low, \
+                f"median": self.stat_median, \
+                f"Q{cpp2:0.0f}": self.stat_center_high, \
+                f"Q{epp2:0.0f}": self.stat_extremes_high
+            }).T
+        return df
+
 
     def reset_items(self):
         show_text = self.show_text
@@ -195,13 +209,19 @@ class Violin(object):
 
         # Compute kde
         for cn, se in data.items():
-            kernel = gaussian_kde(se[se.notnull()].values)
+            notnull = se.notnull()
+            if notnull.sum() <= 2:
+                errmess = f"Less than 2 valid data in {cn}."
+                raise ValueError(errmess)
+
+            sen = se[notnull]
+            kernel = gaussian_kde(sen.values)
 
             # blend regular spacing and ecdf spacing
             x0, x1 = se.min(), se.max()
-            x = np.linspace(x0, x1, (npts-len(se)))
-            err = 1e-6*np.random.uniform(-1, 1, len(se))
-            x = np.sort(np.concatenate([x, se.values+err]))
+            x = np.linspace(x0, x1, (npts-len(sen)))
+            err = 1e-6*np.random.uniform(-1, 1, len(sen))
+            x = np.sort(np.concatenate([x, sen.values+err]))
             y = kernel(x)
             y = (y-y.min())/(y.max()-y.min())
             kde_x.loc[:, cn] = x
