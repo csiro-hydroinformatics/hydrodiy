@@ -545,7 +545,8 @@ def ecdfplot(ax, df, label_stat=None, label_stat_format="4.2f", \
 
 
 def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG", \
-                        markersizemin=None, markersizemax=None, \
+                        markers=None, \
+                        markersizes=None, \
                         fmt="0.2f", nval=False, eps=1e-5, \
                         alphas=1.0, *args, **kwargs):
     """ Draw a scatter plot using different colors or markersize depending
@@ -570,10 +571,10 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG", \
     cmap : str
         Matplotlib color map name to change color for each category.
         Input data
-    markersizemin : float
-        Minimum size of marker
-    markersizemax : float
-        Maximum size of marker
+    markers : list
+        Markers for each catergory
+    markersizes : list
+        Size of markers for each catergory
     fmnt : str
         Number format to be used in labels
     nval : bool
@@ -615,12 +616,6 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG", \
                                 f"len(x)={len(x)}, len(alphas)={len(alphas)}")
     except TypeError:
         alphas = alphas*np.ones(len(x))
-
-    if markersizemin is None:
-        markersizemin = mpl.rcParams["lines.markersize"]**2
-
-    if markersizemax is None:
-        markersizemax = mpl.rcParams["lines.markersize"]**2
 
     # Format categorical data
     z = pd.Series(z)
@@ -672,7 +667,17 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG", \
         colors = cmap2colors(ncats, cmap)
 
     # Get size for each category
-    markersizes = np.linspace(markersizemin, markersizemax, ncats)
+    if markers is None:
+        markers = ["o"]*ncats
+    else:
+        errmess = f"Expected {ncats} markers, got {len(markers)}"
+        assert len(markers) == ncats, errmess
+
+    if markersizes is None:
+        markersizes = [mpl.rcParams["lines.markersize"]**2]*ncats
+    else:
+        errmess = f"Expected {ncats} marker sizes, got {len(markersizes)}"
+        assert len(markersizes) == ncats, errmess
 
     # Plot all categories
     plotted = {}
@@ -683,6 +688,7 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG", \
         if idx.sum() == 0:
             continue
         label = labels[icat]
+        marker = markers[icat]
         markersize = markersizes[icat]
         col = colors[icat]
 
@@ -700,6 +706,7 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG", \
         sc = ax.scatter(u, v, label=label, \
                         color=col, \
                         alpha=alpha, \
+                        marker=marker, \
                         s=markersize, \
                         *args, **kwargs)
 

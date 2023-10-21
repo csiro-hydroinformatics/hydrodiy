@@ -317,7 +317,7 @@ class UtilsTestCase(unittest.TestCase):
         x, y, z = np.random.uniform(0, 1, size=(100, 3)).T
         fig, ax = plt.subplots()
         plotted, cats = putils.scattercat(ax, x, y, z, 5, \
-                                markersizemin=5, markersizemax=12, \
+                                markersizes=np.linspace(5, 12, 5), \
                                 alphas=0.6)
         ax.legend(loc=2, title="categories")
         fp = self.fimg / "scattercat.png"
@@ -329,10 +329,23 @@ class UtilsTestCase(unittest.TestCase):
         x, y, z = np.random.uniform(0, 1, size=(100, 3)).T
         fig, ax = plt.subplots()
         plotted, cats = putils.scattercat(ax, x, y, z, 5, \
-                                markersizemin=5, markersizemax=12, \
+                                markersizes=np.linspace(5, 12, 5), \
                                 cmap=None)
         ax.legend(loc=2, title="categories")
         fp = self.fimg / "scattercat_nocmap.png"
+        fig.savefig(fp)
+
+
+    def test_scattercat_markers(self):
+        """ Test categorical scatter plot with different markers"""
+        x, y, z = np.random.uniform(0, 1, size=(100, 3)).T
+        fig, ax = plt.subplots()
+        markers = ["o", "s", "d", "^", "v"]
+        plotted, cats = putils.scattercat(ax, x, y, z, 5, \
+                                markers=markers, \
+                                cmap=None)
+        ax.legend(loc=2, title="categories")
+        fp = self.fimg / "scattercat_markers.png"
         fig.savefig(fp)
 
 
@@ -345,7 +358,6 @@ class UtilsTestCase(unittest.TestCase):
         fig, axs = plt.subplots(ncols=2)
         ax = axs[0]
         plotted, cats = putils.scattercat(ax, x, y, z, 5, \
-                                markersizemin=5, markersizemax=12, \
                                 alphas=0.6)
         ax.legend(loc=2, title="categories")
 
@@ -353,7 +365,6 @@ class UtilsTestCase(unittest.TestCase):
         ax = axs[1]
         df = pd.DataFrame({"z": z, "a": np.nan})
         plotted, cats = putils.scattercat(ax, x, y, df.loc[:, "z"], 5, \
-                                markersizemin=5, markersizemax=12, \
                                 alphas=0.6)
         ax.legend(loc=2, title="categories")
 
