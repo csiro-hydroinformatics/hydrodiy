@@ -1,7 +1,8 @@
-import os, math, re
+import math, re
 import warnings
 from datetime import datetime
-from getpass import getuser
+import numbers
+
 from scipy.stats import gaussian_kde, chi2, norm
 from scipy import linalg
 
@@ -547,8 +548,11 @@ def ecdfplot(ax, df, label_stat=None, label_stat_format="4.2f", \
 def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG", \
                         markers=None, \
                         markersizes=None, \
-                        fmt="0.2f", nval=False, eps=1e-5, \
-                        alphas=1.0, *args, **kwargs):
+                        alphas=None, \
+                        fmt="0.2f", \
+                        eps=1e-5, \
+                        show_extremes_in_legend=True, \
+                        *args, **kwargs):
     """ Draw a scatter plot using different colors or markersize depending
     on categories defined by z. Be careful when z has a lot of zeros,
     quantile computation may lead to non-unique category boundaries.
@@ -572,17 +576,21 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG", \
         Matplotlib color map name to change color for each category.
         Input data
     markers : list
-        Markers for each catergory
+        Markers for each catergory. Can be passed as character which
+        is replicated for each category.
     markersizes : list
-        Size of markers for each catergory
+        Size of markers for each catergory. Can be passed as float which is
+        replicated for each category.
+    alphas : list
+        Transparency for each categoy. Can be passed float which is replicated
+        for each category.
     fmnt : str
         Number format to be used in labels
-    nval : bool
-        Add number of points in labels
+    show_extremes_in_legend : bool
+        Show lowest and highest bounds in legend. If False, report <b or b> in
+        legend.
     eps : float
         Tolerance on min and max value if using cuts.
-    alphas : float
-        Transparency. Can be passed as vector for individual points.
     args, kwargs
         Argument sent to matplotlib.pyplot.plot command
 
@@ -591,12 +599,12 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG", \
     plotted : dict
         Dictionary containing dictionaries for each categories index by
         category number. Each dictionary contains:
-        idx :   Index of category items
-        label:  Label of category
-        color:  Color used for category
-        line:   matplotlib.Line object
-        x:      X coordinate
-        y:      Y coordinate
+        idx :    Index of category items
+        label:   Label of category
+        color:   Color used for category
+        scatter: matplotlib scatter object
+        x:       X coordinate
+        y:       Y coordinate
 
     cats : pandas.Series
         Series containing the category number for each item
@@ -609,14 +617,6 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG", \
     if not len(x) == len(z):
         raise ValueError("Expected x and z of same length, got "+\
                                 f"len(x)={len(x)}, len(z)={len(z)}")
-    try:
-        len(alphas)
-        if not len(alphas) == len(x):
-            raise ValueError("Expected x and alpha of same length, got "+\
-                                f"len(x)={len(x)}, len(alphas)={len(alphas)}")
-    except TypeError:
-        alphas = alphas*np.ones(len(x))
-
     # Format categorical data
     z = pd.Series(z)
 
@@ -628,6 +628,7 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG", \
         z = pd.Categorical(z)
         labels = z.categories.values
         ncats = len(labels)
+        ordered = z.ordered
         cats = z.codes
     else:
         if ncats is not None or cuts is not None:
@@ -646,6 +647,7 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG", \
             ncats = len(cuts)-1
             cats = pd.cut(z, cuts, right=True, labels=False)
             cats[cats.isnull()] = -1
+            ordered = True
             cats = cats.astype(int)
 
             if len(set(cuts)) != len(cuts):
@@ -657,8 +659,12 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG", \
             labels = ["[{0:{fmt}}, {1:{fmt}}]".format(cuts[icat], \
                                            cuts[icat+1], fmt=fmt) \
                                                for icat in range(ncats)]
+            if not show_extremes_in_legend:
+                labels[0] = "< {0:{fmt}}".format(cuts[1], fmt=fmt)
+                labels[-1] = "> {0:{fmt}}".format(cuts[-2], fmt=fmt)
         else:
             raise ValueError("Expected ncats or cuts to be not-None")
+
 
     # Get colors for each category
     if cmap is None:
@@ -667,33 +673,35 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG", \
         colors = cmap2colors(ncats, cmap)
 
     # Get size for each category
-    if markers is None:
-        markers = ["o"]*ncats
-    else:
-        errmess = f"Expected {ncats} markers, got {len(markers)}"
-        assert len(markers) == ncats, errmess
+    ms = mpl.rcParams["lines.markersize"]**2
+    markersizes = [ms]*ncats if markersizes is None else markersizes
+    markersizes = [markersizes]*ncats if not hasattr(markersizes, "__len__") else markersizes
+    assert len(markersizes) == ncats, f"Expected {ncats} marker sizes, got {markersizes}."
 
-    if markersizes is None:
-        markersizes = [mpl.rcParams["lines.markersize"]**2]*ncats
-    else:
-        errmess = f"Expected {ncats} marker sizes, got {len(markersizes)}"
-        assert len(markersizes) == ncats, errmess
+    markers = ["o"]*ncats if markers is None else markers
+    markers = [markers]*ncats if not hasattr(markers, "__len__") else markers
+    assert len(markers) == ncats, f"Expected {ncats} markers, got {markers}."
 
-    # Plot all categories
+    alphas = [1.0]*ncats if alphas is None else alphas
+    alphas = [float(alphas)]*ncats if not hasattr(alphas, "__len__") else alphas
+    assert len(alphas) == ncats, f"Expected {ncats} alphas, got {alphas}."
+
+    # Plot all categories from highest to lowest if categories are ordered
     plotted = {}
+    icats = np.arange(ncats)
+    icats = icats[::-1] if ordered else icats
 
-    for icat in range(ncats):
+    for icat in icats:
         # plot config
         idx = cats == icat
         if idx.sum() == 0:
             continue
+
         label = labels[icat]
         marker = markers[icat]
         markersize = markersizes[icat]
         col = colors[icat]
-
-        # List of alphas
-        alpha = alphas[idx]
+        alpha = alphas[icat]
 
         if np.sum(idx) > 0:
             u, v = x[idx], y[idx]
@@ -813,65 +821,3 @@ def waterbalplot(ax, ncoeff=2.5):
 
     return tm_line
 
-
-def add_metadata_to_png(fimg, metadata, author=None):
-    """ Add metadata to a png file
-
-    Parameters
-    ----------
-    fimg : pathlib.Path or str
-        Path to png file
-    metadata : dict
-        Dictionary {str, str} containing metadata key and value.
-    add_author : bool
-        Automatically add author if not provided in metadata.
-    add_time : bool
-        Automatically add time of creation if not provided in metadata.
-    """
-    # Enforce a key named "source file" to locate
-    # generation script
-    errmsg = "Expected metadata to have a key named 'source_file'"
-    assert "source_file" in metadata, errmsg
-
-    # Check source file exists
-    source_file = metadata["source_file"]
-    if isinstance(source_file, str):
-        source_file = Path(source_file)
-    errmsg = f"{source_file} does not exists"
-    assert source_file.exists(), errmsg
-
-    # Add metadata
-    img = PngImageFile(fimg)
-    fileinfo = PngInfo()
-    for key, value in metadata.items():
-        k = re.sub(" ", "_", str(key))
-        fileinfo.add_text(k, str(value))
-
-    # Add author and time created
-    if author is None:
-        author = getuser()
-    fileinfo.add_text("author", author)
-
-    fileinfo.add_text("time_created", str(datetime.now()))
-
-    # Store in png file
-    img.save(fimg, pnginfo=fileinfo)
-
-
-def read_metadata_from_png(fimg):
-    """ Reads metadata from a png file
-
-    Parameters
-    ----------
-    fimg : pathlib.Path or str
-        Path to png file
-
-    Returns
-    -------
-    metadata : dict
-        Dictionary {str, str} containing metadata key and value.
-    """
-    img = PngImageFile(fimg)
-    metadata = img.text
-
-    return metadata
