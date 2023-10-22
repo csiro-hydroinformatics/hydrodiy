@@ -41,5 +41,5 @@ License
 ~~~~~~~~~
 
 The source code and documentation of the hydrodiy package is licensed under the
-`BSD license <https://opensource.org/licenses/BSD-3-Clauseh>`__.
+`BSD license <https://opensource.org/license/bsd-3-clause/>`__.
 
