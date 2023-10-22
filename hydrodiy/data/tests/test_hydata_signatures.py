@@ -1,6 +1,5 @@
-import os
-import time
-import unittest
+from pathlib import Path
+import pytest
 import numpy as np
 import pandas as pd
 
@@ -10,92 +9,66 @@ from hydrodiy import has_c_module
 from hydrodiy.stat import transform
 from hydrodiy.io import csv
 
-class SignaturesTestCase(unittest.TestCase):
+FTEST = Path(__file__).resolve().parent
+SKIPMESS = "c_hydrodiy_data module is not available. Please compile."
 
-    def setUp(self):
-        print('\t=> SignaturesTestCase (hydata)')
+@pytest.mark.skipif(not has_c_module("data", False), reason=SKIPMESS)
+def test_eckhardt(allclose):
+    fd = FTEST / "baseflow_RDF_EC.csv"
+    data, _  = csv.read_csv(fd)
+    flow = data.iloc[:, 2]
+    bflow_expected = data.iloc[:, 3]
 
-        source_file = os.path.abspath(__file__)
-        self.ftest = os.path.dirname(source_file)
+    bflow = signatures.eckhardt(flow, \
+                tau=100,\
+                thresh=0.95, \
+                BFI_max = 0.80)
 
-
-    def test_eckhardt(self):
-        ''' Test Eckhardt baseflow '''
-        if not has_c_module("data", False):
-            self.skipTest('Missing C module c_hydrodiy_data')
-
-        fd = os.path.join(self.ftest, 'baseflow_RDF_EC.csv')
-        data, _  = csv.read_csv(fd)
-        flow = data.iloc[:, 2]
-        bflow_expected = data.iloc[:, 3]
-
-        bflow = signatures.eckhardt(flow, \
-                    tau=100,\
-                    thresh=0.95, \
-                    BFI_max = 0.80)
-
-        self.assertTrue(np.allclose(bflow_expected, bflow))
+    assert allclose(bflow_expected, bflow)
 
 
-    def test_fdcslope(self):
-        ''' Test fdc slope computation '''
-        x = np.linspace(0, 1, 101)
-        slp, qq = signatures.fdcslope(x, q1=90, q2=100, cst=0.5)
-        self.assertTrue(np.isclose(slp, 1.01))
-        self.assertTrue(np.allclose(qq, [0.9, 1]))
+@pytest.mark.skipif(not has_c_module("data", False), reason=SKIPMESS)
+def test_fdcslope(allclose):
+    """ Test fdc slope computation """
+    x = np.linspace(0, 1, 101)
+    slp, qq = signatures.fdcslope(x, q1=90, q2=100, cst=0.5)
+    assert allclose(slp, 1.01)
+    assert allclose(qq, [0.9, 1])
 
-        try:
-            slplog, qqlog = signatures.fdcslope(x, q1=90, q2=100, cst=0.5, \
-                        trans=transform.Log())
-        except Exception as err:
-            errs = str(err)
-            if errs.startswith('Compiled C modules'):
-                self.skipTest('Missing C modules')
-
-        self.assertTrue(np.isclose(slplog, 1.063857825))
-        self.assertTrue(np.allclose(qq, qqlog))
+    slplog, qqlog = signatures.fdcslope(x, q1=90, q2=100, cst=0.5, \
+                trans=transform.Log())
+    assert allclose(slplog, 1.063857825)
+    assert allclose(qq, qqlog)
 
 
-    def test_fdcslope_error(self):
-        ''' Test fdc slope computation error '''
-        x = np.linspace(0, 1, 101)
-        try:
-            slp = signatures.fdcslope(x, q1=90, q2=80, cst=0.5)
-        except ValueError as err:
-            self.assertTrue(str(err).startswith('Expected q2 > q1'))
-        else:
-            raise ValueError('Problem with error handling')
+def test_fdcslope_error():
+    """ Test fdc slope computation error """
+    x = np.linspace(0, 1, 101)
+    msg = "Expected q2 > q1"
+    with pytest.raises(ValueError, match=msg):
+        slp = signatures.fdcslope(x, q1=90, q2=80, cst=0.5)
 
 
-    def test_goue(self):
-        ''' Test goue computation '''
-        if not has_c_module("data", False):
-            self.skipTest('Missing C module c_hydrodiy_data')
+@pytest.mark.skipif(not has_c_module("data", False), reason=SKIPMESS)
+def test_goue(allclose):
+    dt = pd.date_range("2000-01-10", "2000-06-30")
+    nt = len(dt)
+    values = np.random.uniform(0, 1, nt)
+    aggindex = dt.year*100 + dt.month
+    gv = signatures.goue(aggindex, values)
 
-        dt = pd.date_range('2000-01-10', '2000-06-30')
-        nt = len(dt)
-        values = np.random.uniform(0, 1, nt)
-        aggindex = dt.year*100 + dt.month
+    flat = values*0.
+    for ix in np.unique(aggindex):
+        kk = aggindex == ix
+        flat[kk] = np.nanmean(values[kk])
+    gv_expected = 1-np.sum((flat-values)**2)\
+                    /np.sum((np.mean(values)-values)**2)
 
-        gv = signatures.goue(aggindex, values)
-
-        flat = values*0.
-        for ix in np.unique(aggindex):
-            kk = aggindex == ix
-            flat[kk] = np.nanmean(values[kk])
-        gv_expected = 1-np.sum((flat-values)**2)\
-                        /np.sum((np.mean(values)-values)**2)
-
-        self.assertTrue(np.isclose(gv, gv_expected))
+    assert allclose(gv, gv_expected)
 
 
-    def test_lag1corr(self):
-        ''' Test goue computation '''
-        nval = 100
-        values = np.random.uniform(0, 1, nval)
+def test_lag1corr():
+    nval = 100
+    values = np.random.uniform(0, 1, nval)
+    rho = signatures.lag1corr(values)
 
-        rho = signatures.lag1corr(values)
-
-
-if __name__ == "__main__":
-    unittest.main()

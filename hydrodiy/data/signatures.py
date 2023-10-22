@@ -26,7 +26,7 @@ def eckhardt(flow, thresh=0.95, tau=20, BFI_max=0.8, timestep_type=1):
     baseflow separation. Hydrological processes 19:507-515.
 
     C code was translated from R code provided by
-    Jose Manuel Tunqui Neira and Vazken Andreassian, IRSTEA
+    Jose Manuel Tunqui Neira and Vazken Andreassian, INRAE.
 
     Parameters
     -----------

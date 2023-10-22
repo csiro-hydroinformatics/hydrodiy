@@ -17,6 +17,9 @@ from hydrodiy import has_c_module
 if has_c_module("data", False):
     import c_hydrodiy_data as chd
 
+# Test skip message
+SKIPMESS = "c_hydrodiy_data module is not available. Please compile."
+
 # Utility function to aggregate data
 # using various version of pandas
 def agg_d2m(x, fun="mean"):
@@ -88,21 +91,15 @@ def test_cast_scalar_error(allclose):
     """ Test scalar cast errors """
     x = 6
     y = 7.
-    try:
+    msg = "Cannot cast"
+    with pytest.raises(TypeError, match=msg):
         ycast = dutils.cast(x, y)
-    except TypeError as err:
-        assert (str(err).startswith("Cannot cast"))
-    else:
-        raise ValueError("Problem in error handling")
 
     x = 6
     y = np.array([0.7, 0.8])
-    try:
+    msg = "only "
+    with pytest.raises(TypeError, match=msg):
         ycast = dutils.cast(x, y)
-    except TypeError as err:
-        assert (str(err).startswith("only "))
-    else:
-        raise ValueError("Problem in error handling")
 
 
 def test_cast_array(allclose):
@@ -126,55 +123,23 @@ def test_cast_array(allclose):
     assert allclose(ycast, y)
 
 
-
 def test_cast_array_error(allclose):
     """ Test scalar cast errors """
     x = np.array([6, 7])
     y = np.array([7., 8.])
-    try:
+    msg = "Cannot cast"
+    with pytest.raises(TypeError, match=msg):
         ycast = dutils.cast(x, y)
-
-    except TypeError as err:
-        assert (str(err).startswith("Cannot cast"))
-    else:
-        raise ValueError("Problem in error handling")
 
     x = 6.
     y = np.array([7., 8.])
-    try:
+    msg = "only "
+    with pytest.raises(TypeError, match=msg):
         ycast = dutils.cast(x, y)
-
-    except TypeError as err:
-        assert (str(err).startswith("only "))
-    else:
-        raise ValueError("Problem in error handling")
-
-
-def test_sub(allclose):
-    """ Test replacing with sub """
-    # Basic test
-    text0 = "this is a weird sentence"
-    text1 = dutils.sub(text0, {"this": "that", "weird":"cool"})
-    assert text1 == "that is a cool sentence"
-
-    # With special characters in the source text
-    text0 = "this is a [*.*) // weird sentence"
-    text1 = dutils.sub(text0, {"this": "that", "weird":"cool"})
-    assert text1 == "that is a [*.*) // cool sentence"
-
-    # With special characters in the source and replacement text
-    text0 = "this is a [*.*) // weird sentence"
-    text1 = dutils.sub(text0, {"this": "that.*", "weird":"cool$"})
-    assert text1 == "that.* is a [*.*) // cool$ sentence"
-
-    text0 = "this_ab_"
-    text1 = dutils.sub(text0, {"_$": "", "_(?<!s)": " "})
-    assert text1 == "this ab"
 
 
 def test_sequence_true(allclose):
     """ Test analysis of true sequence """
-
     nrepeat = 100
     nseq = 10
     for irepeat in range(nrepeat):
@@ -209,11 +174,8 @@ def test_dayofyear(allclose):
     assert allclose(doy, expected)
 
 
+@pytest.mark.skipif(not has_c_module("data", False), reason=SKIPMESS)
 def test_aggregate(allclose):
-    """ Test aggregation """
-    if not has_c_module("data", False):
-        self.skipTest("Missing C module c_hydrodiy_data")
-
     dt = pd.date_range("1990-01-01", "2000-12-31")
     nval = len(dt)
     obs = pd.Series(np.random.uniform(0, 1, nval), \
@@ -243,11 +205,8 @@ def test_aggregate(allclose):
     assert allclose(obsm.values, obsm3)
 
 
+@pytest.mark.skipif(not has_c_module("data", False), reason=SKIPMESS)
 def test_aggregate_error(allclose):
-    """ Test aggregation error """
-    if not has_c_module("data", False):
-        self.skipTest("Missing C module c_hydrodiy_data")
-
     dt = pd.date_range("1990-01-01", "2000-12-31")
     nval = len(dt)
     obs = pd.Series(np.random.uniform(0, 1, nval), \
@@ -264,7 +223,6 @@ def test_aggregate_error(allclose):
 
 
 def test_lag(allclose):
-    """ Test lag for 1d data"""
     size = [20, 10, 30, 4]
     for ndim in  range(1, 4):
         data = np.random.normal(size=size[:ndim])
@@ -290,7 +248,6 @@ def test_lag(allclose):
 
 
 def test_monthly2daily_flat(allclose):
-    """ Test monthly2daily with flat disaggregation"""
     dates = pd.date_range("1990-01-01", "2000-12-31", freq="MS")
     nval = len(dates)
     se = pd.Series(np.exp(np.random.normal(size=nval)), index=dates)
@@ -301,7 +258,6 @@ def test_monthly2daily_flat(allclose):
 
 
 def test_monthly2daily_cubic(allclose):
-    """ Test monthly2daily with cubic disaggregation"""
     dates = pd.date_range("1990-01-01", "2000-12-31", freq="MS")
     nval = len(dates)
     se = pd.Series(np.exp(np.random.normal(size=nval)), index=dates)
@@ -312,11 +268,8 @@ def test_monthly2daily_cubic(allclose):
     assert allclose(se.values, se2.values)
 
 
+@pytest.mark.skipif(not has_c_module("data", False), reason=SKIPMESS)
 def test_combi(allclose):
-    """ Test number of combinations """
-    if not has_c_module("data", False):
-        self.skipTest("Missing C module c_hydrodiy_data")
-
     for n in range(1, 65):
         for k in range(n):
             c1 = comb(n, k)
@@ -326,11 +279,8 @@ def test_combi(allclose):
                 assert ck
 
 
+@pytest.mark.skipif(not has_c_module("data", False), reason=SKIPMESS)
 def test_var2h_hourly(allclose):
-    """ Test conversion to hourly for hourly data """
-    if not has_c_module("data", False):
-        self.skipTest("Missing C module c_hydrodiy_data")
-
     nval = 24*365*20
     dt = pd.date_range(start="1968-01-01", freq="H", periods=nval)
     se = pd.Series(np.arange(nval), index=dt)
@@ -342,11 +292,10 @@ def test_var2h_hourly(allclose):
     assert allclose(seh.values[idx], \
                         expected[1:].values[idx])
 
+
+@pytest.mark.skipif(not has_c_module("data", False), reason=SKIPMESS)
 def test_var2h_5min(allclose):
     """ Test conversion to hourly for 10min data """
-    if not has_c_module("data", False):
-        self.skipTest("Missing C module c_hydrodiy_data")
-
     nval = 24 #*365*3
     dt = pd.date_range(start="1968-01-01", freq="5min", \
                             periods=nval*6)
@@ -368,12 +317,8 @@ def test_var2h_5min(allclose):
                 expected.values[1:][idx])
 
 
+@pytest.mark.skipif(not has_c_module("data", False), reason=SKIPMESS)
 def test_var2h_variable(allclose):
-    """ Test variable to hourly conversion by comparing with python
-    algorithm """
-    if not has_c_module("data", False):
-        self.skipTest("Missing C module c_hydrodiy_data")
-
     nvalh =50
     varsec = []
     varvalues = []
@@ -420,11 +365,8 @@ def test_var2h_variable(allclose):
     assert allclose(seh.values[:-1], hvalues)
 
 
+@pytest.mark.skipif(not has_c_module("data", False), reason=SKIPMESS)
 def test_var2h_longgap(allclose):
-    """ Test variable to hourly conversion and apply to dataset """
-    if not has_c_module("data", False):
-        self.skipTest("Missing C module c_hydrodiy_data")
-
     nval = 6*20
     index = pd.date_range("1970-01-01", freq="10min", periods=nval)
     v = np.convolve(np.random.uniform(0, 100, size=nval), \
@@ -439,22 +381,16 @@ def test_var2h_longgap(allclose):
     assert np.all(~np.isnan(seh.values[10:-1]))
 
 
+@pytest.mark.skipif(not has_c_module("data", False), reason=SKIPMESS)
 def test_var2h_timezone(allclose):
-    """ Test variable to hourly conversion with time zone """
-    if not has_c_module("data", False):
-        self.skipTest("Missing C module c_hydrodiy_data")
-
     fts = Path(__file__).resolve().parent / "test_var2h.csv"
     se = pd.read_csv(fts, index_col=0, parse_dates=True).iloc[:, 0]
     seh = dutils.var2h(se, display=True)
     assert (len(seh) == 307832)
 
 
+@pytest.mark.skipif(not has_c_module("data", False), reason=SKIPMESS)
 def test_var2h_halfhourly(allclose):
-    """ Test conversion to half-hourly for half-hourly data """
-    if not has_c_module("data", False):
-        self.skipTest("Missing C module c_hydrodiy_data")
-
     nval = 24*365*20
     dt = pd.date_range(start="1968-01-01", freq="30min", periods=nval)
     se = pd.Series(np.arange(nval), index=dt)
@@ -467,11 +403,8 @@ def test_var2h_halfhourly(allclose):
                         expected.values[2:][idx])
 
 
+@pytest.mark.skipif(not has_c_module("data", False), reason=SKIPMESS)
 def test_var2h_rainfall(allclose):
-    """ Test conversion to half-hourly for half-hourly data """
-    if not has_c_module("data", False):
-        self.skipTest("Missing C module c_hydrodiy_data")
-
     values = [
         ["1/04/1989 7:50", 2.79], \
         ["1/04/1989 9:20",	3.09], \
@@ -497,11 +430,8 @@ def test_var2h_rainfall(allclose):
     assert allclose(seh.loc[t], 57.77, atol=1e-2)
 
 
+@pytest.mark.skipif(not has_c_module("data", False), reason=SKIPMESS)
 def test_flathomogen(allclose):
-    """ Test flat disaggregation """
-    if not has_c_module("data", False):
-        self.skipTest("Missing C module c_hydrodiy_data")
-
     dt = pd.date_range("2000-01-10", "2000-04-05")
     a = pd.Series(np.random.uniform(0, 1, size=len(dt)), index=dt)
     a[15] = np.nan

@@ -14,31 +14,6 @@ from hydrodiy import has_c_module
 if has_c_module("data", False):
     import c_hydrodiy_data
 
-def sub(text, to_replace):
-    """ Replace in "text" all occurences of any key in the
-    dictionary "to_replace" by its corresponding value.
-
-    Parameters
-    -----------
-    text : str
-        Input string.
-    to_replace : dict
-        Pattern to match and replace.
-        Use an ordered dict (collections.OrderedDict) to
-        replace in a certain order.
-
-    Returns
-    -----------
-    replaced : str
-        Processed string.
-    """
-    replaced = text
-    for pattern, rep in to_replace.items():
-        replaced = re.sub(pattern, rep, replaced)
-
-    return replaced
-
-
 def sequence_true(values):
     """ Identify start and end of consecutive "true" values.
     Can be used for gap analysis.
@@ -69,7 +44,7 @@ def cast(x, y):
 
         Useful to make sure that a function returns an output that has
         the same type than the input (e.g. to avoid mixing float with
-        numpy.array 0d).
+        0d numpy arrays).
 
     Parameters
     -----------

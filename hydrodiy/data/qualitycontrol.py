@@ -8,13 +8,13 @@ if has_c_module("data", False):
     import c_hydrodiy_data
 
 def ismisscens(x, censor=0., eps=1e-10):
-    """ Check if 1d variable is missing or censored
+    """ Check if array is containing missing or censored values.
 
     Parameters
     -----------
     x : numpy.ndarray data
         1D or 2d Data series (works with pandas.Series too)
-        returns an error if x is more than 1d.
+        returns an error if x is more than 2d.
     censor : float
         Censoring threshold
     eps : float
@@ -23,16 +23,18 @@ def ismisscens(x, censor=0., eps=1e-10):
     Returns
     -----------
     icens : numpy.ndarray
-        Censoring flags:
+        1D array containing a censoring flag computed as
+        f = sum(fi, i=1:ncols)
+
+        Where fi is censoring flag for column i computed as:
         * 3^i+0 = Missing data
         * 3^i+1 = Censored data
         * 3^i+2 = Valid and not censored
-        where i is the column number
     """
     # Check data dimensions
     ndim = x.ndim
     if ndim > 2:
-        raise ValueError("Expected 1d or 2d vector, got "+\
+        raise ValueError("Expected 1d or 2d data, got "+\
                 "x.shape = {0}".format(x.shape))
 
     # Get dimensions
@@ -52,8 +54,8 @@ def ismisscens(x, censor=0., eps=1e-10):
             u = x
 
         # find censoring flags for column
-        icens[u < censor + eps, i] = 1
-        icens[u >= censor + eps, i] = 2
+        icens[u<censor+eps, i] = 1
+        icens[u>=censor+eps, i] = 2
         icens[:, i] *= 3**i
 
     # Aggregate
@@ -102,7 +104,7 @@ def islinear(data, npoints=3, tol=1e-6, thresh=0.):
     # Check data
     if data.ndim > 1:
         raise ValueError("Expected data as 1d vector, got "+\
-            "data.shape={0}".format(data.shape))
+            f"data.shape={data.shape}.")
 
     islin = np.zeros(len(data), dtype=np.int32)
     npoints = int(npoints)
@@ -110,17 +112,17 @@ def islinear(data, npoints=3, tol=1e-6, thresh=0.):
     thresh = np.float64(thresh)
 
     if npoints<1:
-        raise ValueError("Expected npoints >=1, got {0}".format(npoints))
+        raise ValueError(f"Expected npoints >=1, got {npoints}.")
 
     if tol<1e-10:
-        raise ValueError("Expected tol>1e-10, got {0:5.5e}".format(tol))
+        raise ValueError(f"Expected tol>1e-10, got {tol:5.5e}")
 
     # Run C function
     ierr = c_hydrodiy_data.islin(thresh, tol, npoints, \
                 data, islin)
 
     if ierr>0:
-        raise ValueError("c_hydrodiy_data.islin returns {0}".format(ierr))
+        raise ValueError(f"c_hydrodiy_data.islin returns {ierr}.")
 
     return islin
 

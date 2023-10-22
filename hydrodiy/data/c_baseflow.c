@@ -48,7 +48,7 @@ int c_eckhardt(int nval, int timestep_type,
     C2 = (1 - alpha)*BFI_max;
     C3 = 1 - (alpha*BFI_max);
 
-    /* Initisalise */
+    /* Initialise */
     q = inputs[0];
     q = (q<0 || isnan(q)) ? 0 : inputs[0];
     bf1 = C2*q/C3;
