@@ -172,13 +172,6 @@ fig.text(0.05, 0.010, label, color="#595959", ha="left", fontsize=9)
 fp = fimg / f"image.{imgext}"
 fig.savefig(fp, dpi=fdpi, transparent=ftransparent)
 putils.blackwhite(fp)
-# .. save meta data
-if imgext == "png":
-    metadata = {\
-        "source_file": source_file, \
-        "other": "other"
-    }
-    putils.add_metadata_to_png(fp, metadata)
 
 # To save to pdf
 #pdf.savefig(fig)
