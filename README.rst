@@ -5,16 +5,15 @@ Python toolbox for hydrological data processing.
 
 What is hydrodiy?
 ~~~~~~~~~~~~~~~~~
-
 - hydrodiy is a set of tools to perform standard data analysis
 - the package is structured around typical tasks: io, data checking,
   statistical analysis, gis processing and plotting
 
 Installation
 ~~~~~~~~~~~~
-
-Download the `source code <https://github.com/csiro-hydroinformatics/hydrodiy>`__ and
-run ``python setup.py install``
+- Create a suitable python environment. We recommend using `miniconda <https://docs.conda.io/projects/miniconda/en/latest/>`__ combined with the environment specification provided in the env_nriv_v2.yml file in this repository.
+- Download the `source code <https://github.com/csiro-hydroinformatics/hydrodiy>`__ and
+- run ``python setup.py install``
 
 Basic use
 ~~~~~~~~~
