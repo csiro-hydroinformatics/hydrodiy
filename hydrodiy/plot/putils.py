@@ -688,31 +688,37 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG", \
     else:
         colors = cmap2colors(ncats, cmap)
 
+    # Utility to detect if argument is a list or a string
+    notlist = lambda x: not hasattr(x, "__len__") or isinstance(x, str)
+
     # Get size for each category
     # .. marker sizes
     ms = mpl.rcParams["lines.markersize"]**2
     markersizes = [ms]*ncats if markersizes is None else markersizes
-    if hasattr(markersizes, "__len__"):
-        if len(markersizes) == 1:
-            # Single size
-            markersizes = [markersizes]*ncats
-        elif len(markersizes) == 2:
+
+    if not notlist(markersizes):
+        if len(markersizes) == 2:
             # Allow for [s0, s1]
             markersizes = np.linspace(markersizes[0], markersizes[1], ncats)
+    else:
+        markersizes = [markersizes]*ncats
 
     assert len(markersizes) == ncats, \
                     f"Expected {ncats} marker sizes, got {markersizes}."
+
     # .. markers
     markers = ["o"]*ncats if markers is None else markers
-    markers = [markers]*ncats if not hasattr(markers, "__len__") else markers
+    markers = [markers]*ncats if notlist(markers) else markers
     assert len(markers) == ncats, f"Expected {ncats} markers, got {markers}."
+
     # .. transparency
     alphas = [1.0]*ncats if alphas is None else alphas
-    alphas = [float(alphas)]*ncats if not hasattr(alphas, "__len__") else alphas
+    alphas = [float(alphas)]*ncats if notlist(alphas) else alphas
     assert len(alphas) == ncats, f"Expected {ncats} alphas, got {alphas}."
+
     # .. edge color
     ec = ["none"]*ncats if edgecolors is None else edgecolors
-    ec = [ec]*ncats if not hasattr(ec, "__len__") else ec
+    ec = [ec]*ncats if notlist(ec) else ec
     assert len(ec) == ncats, f"Expected {ncats} edge colors, got {ec}."
     edgecolors = ec
 
