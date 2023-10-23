@@ -549,6 +549,7 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG", \
                         markers=None, \
                         markersizes=None, \
                         alphas=None, \
+                        edgecolors=None, \
                         fmt="0.2f", \
                         eps=1e-5, \
                         show_extremes_in_legend=True, \
@@ -577,13 +578,16 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG", \
         Input data
     markers : list
         Markers for each catergory. Can be passed as character which
-        is replicated for each category.
+        is replicated for each category. Can be abbreviated as 'm'.
     markersizes : list
         Size of markers for each catergory. Can be passed as float which is
-        replicated for each category.
+        replicated for each category. Can be abbreviated as 'ms'.
     alphas : list
         Transparency for each categoy. Can be passed float which is replicated
         for each category.
+    edgecolors : list
+        Edge color of markers for each catergory. Can be passed as character which
+        is replicated for each category. Can be abbreviated as 'ec'.
     fmnt : str
         Number format to be used in labels
     show_extremes_in_legend : bool
@@ -610,6 +614,18 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG", \
         Series containing the category number for each item
     """
     # Check inputs
+    if "m" in kwargs:
+        markers = kwargs["m"]
+        kwargs.pop("m")
+
+    if "ms" in kwargs:
+        markersizes = kwargs["ms"]
+        kwargs.pop("ms")
+
+    if "ec" in kwargs:
+        edgecolors = kwargs["ec"]
+        kwargs.pop("ec")
+
     if not len(x) == len(y):
         raise ValueError("Expected x and y of same length, got "+\
                                 f"len(x)={len(x)}, len(y)={len(y)}")
@@ -673,18 +689,32 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG", \
         colors = cmap2colors(ncats, cmap)
 
     # Get size for each category
+    # .. marker sizes
     ms = mpl.rcParams["lines.markersize"]**2
     markersizes = [ms]*ncats if markersizes is None else markersizes
-    markersizes = [markersizes]*ncats if not hasattr(markersizes, "__len__") else markersizes
-    assert len(markersizes) == ncats, f"Expected {ncats} marker sizes, got {markersizes}."
+    if hasattr(markersizes, "__len__"):
+        if len(markersizes) == 1:
+            # Single size
+            markersizes = [markersizes]*ncats
+        elif len(markersizes) == 2:
+            # Allow for [s0, s1]
+            markersizes = np.linspace(markersizes[0], markersizes[1], ncats)
 
+    assert len(markersizes) == ncats, \
+                    f"Expected {ncats} marker sizes, got {markersizes}."
+    # .. markers
     markers = ["o"]*ncats if markers is None else markers
     markers = [markers]*ncats if not hasattr(markers, "__len__") else markers
     assert len(markers) == ncats, f"Expected {ncats} markers, got {markers}."
-
+    # .. transparency
     alphas = [1.0]*ncats if alphas is None else alphas
     alphas = [float(alphas)]*ncats if not hasattr(alphas, "__len__") else alphas
     assert len(alphas) == ncats, f"Expected {ncats} alphas, got {alphas}."
+    # .. edge color
+    ec = ["none"]*ncats if edgecolors is None else edgecolors
+    ec = [ec]*ncats if not hasattr(ec, "__len__") else ec
+    assert len(ec) == ncats, f"Expected {ncats} edge colors, got {ec}."
+    edgecolors = ec
 
     # Plot all categories from highest to lowest if categories are ordered
     plotted = {}
@@ -702,6 +732,7 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG", \
         markersize = markersizes[icat]
         col = colors[icat]
         alpha = alphas[icat]
+        edgecolor = edgecolors[icat]
 
         if np.sum(idx) > 0:
             u, v = x[idx], y[idx]
@@ -716,6 +747,7 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG", \
                         alpha=alpha, \
                         marker=marker, \
                         s=markersize, \
+                        edgecolor=edgecolor, \
                         *args, **kwargs)
 
         # Store plotted data

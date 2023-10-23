@@ -309,7 +309,7 @@ def test_scattercat():
     x, y, z = np.random.uniform(0, 1, size=(100, 3)).T
     fig, ax = plt.subplots()
     plotted, cats = putils.scattercat(ax, x, y, z, 5, \
-                            markersizes=np.linspace(5, 12, 5), \
+                            markersizes=np.linspace(30, 70, 5), \
                             alphas=0.6)
     ax.legend(loc=2, title="categories")
     fp = FIMG / "scattercat.png"
@@ -321,7 +321,7 @@ def test_scattercat_nocmap():
     x, y, z = np.random.uniform(0, 1, size=(100, 3)).T
     fig, ax = plt.subplots()
     plotted, cats = putils.scattercat(ax, x, y, z, 5, \
-                            markersizes=np.linspace(5, 12, 5), \
+                            markersizes=np.linspace(30, 70, 5), \
                             cmap=None)
     ax.legend(loc=2, title="categories")
     fp = FIMG / "scattercat_nocmap.png"
@@ -342,6 +342,20 @@ def test_scattercat_markers():
     fig.savefig(fp)
 
 
+def test_scattercat_edgecolors():
+    x, y, z = np.random.uniform(0, 1, size=(100, 3)).T
+    fig, ax = plt.subplots()
+
+    cols = ["red", "orange", "white", "lightblue", "blue"]
+    lotted, cats = putils.scattercat(ax, x, y, z, 5, \
+                            ec=cols, \
+                            ms=[30, 80], \
+                            cmap="PiYG")
+    ax.legend(loc=2, title="categories")
+    fp = FIMG / "scattercat_edgecolors.png"
+    fig.savefig(fp)
+
+
 def test_scattercat_cat():
     """ Test categorical scatter plot using categorical data """
     x, y, z = np.random.uniform(0, 1, size=(100, 3)).T
@@ -353,6 +367,7 @@ def test_scattercat_cat():
     plotted, cats = putils.scattercat(ax, x, y, z, 5, \
                             alphas=0.6)
     ax.legend(loc=2, title="categories")
+    ax.set_title("z is Series")
 
     # Plot categorical data extracted from a dataframe
     ax = axs[1]
@@ -360,6 +375,7 @@ def test_scattercat_cat():
     plotted, cats = putils.scattercat(ax, x, y, df.loc[:, "z"], 5, \
                             alphas=0.6)
     ax.legend(loc=2, title="categories")
+    ax.set_title("z is from Data frame")
 
     fp = FIMG / "scattercat_cat.png"
     fig.savefig(fp)
