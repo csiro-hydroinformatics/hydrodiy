@@ -47,6 +47,8 @@ parser.add_argument("-p", "--progress", help="Show progress", \
                     action="store_true", default=False)
 parser.add_argument("-d", "--debug", help="Debug mode", \
                     action="store_true", default=False)
+parser.add_argument("-o", "--overwrite", help="Overwrite data", \
+                    action="store_true", default=False)
 args = parser.parse_args()
 
 version = args.version
@@ -54,6 +56,7 @@ ibatch = args.ibatch
 nbatch = args.nbatch
 taskid = args.taskid
 progress = args.progress
+overwrite = args.overwrite
 debug = args.debug
 sitepattern = args.sitepattern
 
@@ -70,33 +73,35 @@ fimg = [FIMG]
 # Logging
 #----------------------------------------------------------------------
 basename = source_file.stem
-LOGGER = iutils.get_logger(basename)
+flog = froot / "logs" / f"{basename}.log"
+flog.parent.mkdir(exist_ok=True)
+LOGGER = iutils.get_logger(basename, console=False, contextual=True)
 
 #----------------------------------------------------------------------
 # Get data
 #----------------------------------------------------------------------
 fs = fdata / "sites.csv"
-sites_all, _ = csv.read_csv(fs, index_col="siteid")
+allsites, _ = csv.read_csv(fs, index_col="siteid")
 
 # Select sites
-sites = sites_all
+sites = allsites
 if not sitepattern == "":
-    idx = sites_all.index.str.findall(sitepattern).astype(bool)
-    sites = sites_all.loc[idx, :]
+    idx = allsites.index.str.findall(sitepattern).astype(bool)
+    sites = allsites.loc[idx, :]
 else:
     if ibatch>=0:
-        idx = iutils.get_ibatch(sites_all.shape[0], nbatch, ibatch)
-        sites = sites_all.iloc[idx, :]
+        idx = iutils.get_ibatch(allsites.shape[0], nbatch, ibatch)
+        sites = allsites.iloc[idx, :]
 
 #----------------------------------------------------------------------
 # Process
 #----------------------------------------------------------------------
 nsites = len(sites)
-for i, (siteid, row) in tqdm(enumerate(sites.iterrows()), \
+for isite, (siteid, sinfo) in tqdm(enumerate(sites.iterrows()), \
                 total=nsites, disable=not progress):
-    if not progress:
-        LOGGER.info(f"dealing with {siteid} ({i+1}/{nsites})")
+    LOGGER.context = f"{siteid} ({isite+1}/{nsites})"
 
+    LOGGER.info("Processing")
 
 LOGGER.info("Process completed")
 
