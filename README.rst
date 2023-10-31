@@ -11,7 +11,7 @@ What is hydrodiy?
 
 Installation
 ~~~~~~~~~~~~
-- Create a suitable python environment. We recommend using `miniconda <https://docs.conda.io/projects/miniconda/en/latest/>`__ combined with the environment specification provided in the env_nriv_v2.yml file in this repository.
+- Create a suitable python environment. We recommend using `miniconda <https://docs.conda.io/projects/miniconda/en/latest/>`__ combined with the environment specification provided in the `env_mini.yml <env_mini.yml>`__ file in this repository.
 - Download the `source code <https://github.com/csiro-hydroinformatics/hydrodiy>`__ and
 - run ``python setup.py install``
 
@@ -40,5 +40,5 @@ License
 ~~~~~~~~~
 
 The source code and documentation of the hydrodiy package is licensed under the
-`BSD license <https://opensource.org/license/bsd-3-clause/>`__.
+`BSD license <LICENSE.txt>`__.
 
