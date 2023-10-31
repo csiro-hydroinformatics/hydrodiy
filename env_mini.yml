@@ -1,33 +1,21 @@
-name: env_nriv_v2
+name: env_mini
 channels:
   - conda-forge
   - defaults
 dependencies:
-  - cartopy
-  - cmdstanpy=1.0.6
   - cython=0.29.32
-  - gprof2dot
-  - gsl=2.7
-  - graphviz
-  - h5py=3.7.0
   - ipython
   - matplotlib=3.5.3
-  - netcdf4=1.6.0
   - numpy=1.23.2
-  - openpyxl
   - pandas=1.4.3
   - pip
   - pyepsg
   - pyproj
   - pyshp
-  - pytables=3.7.0
   - pytest
   - pytest-cov
   - python=3.10.6
-  - pytz
-  - rasterio
   - requests
-  - rpy2=3.5.1
   - scipy=1.9.0
   - tqdm
   - zarr=2.12.0
