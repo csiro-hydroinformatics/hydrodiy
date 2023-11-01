@@ -32,14 +32,14 @@ jobs:
           conda env create -f env_mini.yml
           
           # Activate conda
-          conda activate env_mini || true
+          conda activate env_mini
           
           # Install hydrodiy
           pip install -e .
 
       - name: Run tests
         run: |
-          # Run test
+          conda activate env_mini
           pytest --cov=hydrodiy --cov-config=.coveragerc --junitxml=junit/test-results.xml --cov-report=xml --cov-report=html hydrodiy
       
       - name: Upload pytest test results
@@ -53,5 +53,6 @@ jobs:
 
       - name: Run examples
         run: |
+          conda activate env_mini
           python examples/run_all_examples.py
         
