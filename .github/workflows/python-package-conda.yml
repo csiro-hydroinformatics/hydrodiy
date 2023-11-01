@@ -1,0 +1,45 @@
+name: Build hydrodiy
+
+on: [push]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      max-parallel: 5
+    
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.10'
+          
+      - name: Add conda to system path
+        run: |
+          # $CONDA is an environment variable pointing to the root of the miniconda directory
+          echo $CONDA/bin >> $GITHUB_PATH
+
+      - name : Main pipeline 
+        run: |
+          # Build conda
+          source $CONDA/etc/profile.d/conda.sh
+          conda env create -f env_mini.yml
+          
+          # Activate conda
+          conda activate env_mini || true
+          
+          # Install hydrodiy
+          pip install -e .
+        
+          # Run test
+          pytest --cov=hydrodiy --cov-config=.coveragerc hydrodiy
+        
+          # Run examples
+          python examples/run_all_examples.py
+        
