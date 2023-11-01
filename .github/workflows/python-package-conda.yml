@@ -39,20 +39,22 @@ jobs:
 
       - name: Run tests
         run: |
+          source $CONDA/etc/profile.d/conda.sh
           conda activate env_mini
           pytest --cov=hydrodiy --cov-config=.coveragerc --junitxml=junit/test-results.xml --cov-report=xml --cov-report=html hydrodiy
       
       - name: Upload pytest test results
         uses: actions/upload-artifact@v3
         with:
-          name: pytest-results-${{ matrix.python-version }}
-          path: junit/test-results-${{ matrix.python-version }}.xml
+          name: pytest-results
+          path: junit/test-results.xml
         
         # Use always() to always run this step to publish test results when there are test failures
         if: ${{ always() }}
 
       - name: Run examples
         run: |
+          source $CONDA/etc/profile.d/conda.sh
           conda activate env_mini
           python examples/run_all_examples.py
         
