@@ -1,4 +1,6 @@
 # hydrodiy
+[![Build hydrodiy](https://github.com/csiro-hydroinformatics/hydrodiy/actions/workflows/python-package-conda.yml/badge.svg)](https://github.com/csiro-hydroinformatics/hydrodiy/actions/workflows/python-package-conda.yml)
+
 Python toolbox for hydrological data processing.
 
 # What is hydrodiy?
@@ -6,12 +8,11 @@ Python toolbox for hydrological data processing.
 - the package is structured around typical tasks: io, data checking,
   statistical analysis, gis processing and plotting
 
-#Installation
+# Installation
 - Create a suitable python environment. We recommend using [miniconda](https://docs.conda.io/projects/miniconda/en/latest/) combined with the environment specification provided in the [env_mini.yml] (env_mini.yml) file in this repository.
-- Download the [source code] (https://github.com/csiro-hydroinformatics/hydrodiy) and
-- run `(pip install .)`
+- Git clone this repository and run `pip install .`
 
-#Basic use
+# Basic use
 ```python
 import numpy as np
 import matplotlib.pyplot as plt
