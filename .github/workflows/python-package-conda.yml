@@ -30,7 +30,7 @@ jobs:
           activate-environment: anaconda-client-env
           python-version: 3.10
           auto-update-conda: true
-          auto-activate-base: true
+          auto-activate-base: false
           
       - run: |
           # Build conda
