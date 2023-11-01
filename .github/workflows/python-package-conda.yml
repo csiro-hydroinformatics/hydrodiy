@@ -18,9 +18,9 @@ jobs:
       - uses: conda-incubator/setup-miniconda@v2
         with:
           activate-environment: anaconda-client-env
-          environment-file: ../env_mini.yml
+          environment-file: $GITHUB_WORKSPACE/hydrodiy/env_mini.yml
           python-version: 3.10
-          condarc-file: ../.condarc
+          condarc-file: $GITHUB_WORKSPACE/hydrodiy/.condarc
           auto-activate-base: false
       - run: |
           # Activate conda
