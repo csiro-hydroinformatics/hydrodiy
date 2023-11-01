@@ -1,5 +1,5 @@
 # hydrodiy
-[![CI](https://github.com/csiro-hydroinformatics/hydrodiy/actions/workflows/python-package-conda.yml/badge.svg)](https://github.com/csiro-hydroinformatics/hydrodiy/actions/workflows/python-package-conda.yml)
+[![CI](https://github.com/csiro-hydroinformatics/hydrodiy/actions/workflows/python-package-conda.yml/badge.svg)](https://github.com/csiro-hydroinformatics/hydrodiy/actions/workflows/python-package-conda.yml) [![codecov](https://codecov.io/gh/csiro-hydroinformatics/hydrodiy/graph/badge.svg?token=ARBFW69TI3)](https://codecov.io/gh/csiro-hydroinformatics/hydrodiy)
 
 Python toolbox for hydrological data processing.
 

@@ -18,8 +18,6 @@ from dateutil.relativedelta import relativedelta as delta
 
 from hydrodiy.io import csv, iutils
 
-from tqdm import tqdm
-
 #import importlib.util
 #spec = importlib.util.spec_from_file_location("foo", "/path/to/foo.py")
 #foo = importlib.util.module_from_spec(spec)
@@ -97,8 +95,8 @@ else:
 # Process
 #----------------------------------------------------------------------
 nsites = len(sites)
-for isite, (siteid, sinfo) in tqdm(enumerate(sites.iterrows()), \
-                total=nsites, disable=not progress):
+for isite, (siteid, sinfo) in enumerate(sites.iterrows()):
+
     LOGGER.context = f"{siteid} ({isite+1}/{nsites})"
 
     LOGGER.info("Processing")

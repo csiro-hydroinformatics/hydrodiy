@@ -19,27 +19,44 @@ jobs:
         uses: actions/setup-python@v3
         with:
           python-version: '3.10'
-          
+     
       - name: Add conda to system path
         run: |
           # $CONDA is an environment variable pointing to the root of the miniconda directory
           echo $CONDA/bin >> $GITHUB_PATH
-
-      - name : Main pipeline 
+      
+      - name: Create conda environment if needed
         run: |
-          # Build conda
+           source $CONDA/etc/profile.d/conda.sh
+           conda env create -f env_mini.yml
+
+      - name : Install hydrodiy package in conda env 
+        run: |
           source $CONDA/etc/profile.d/conda.sh
-          conda env create -f env_mini.yml
-          
-          # Activate conda
-          conda activate env_mini || true
-          
-          # Install hydrodiy
+          conda activate env_mini
           pip install -e .
-        
-          # Run test
+
+      - name: Run tests
+        run: |
+          source $CONDA/etc/profile.d/conda.sh
+          conda activate env_mini
           pytest --cov=hydrodiy --cov-config=.coveragerc --junitxml=junit/test-results.xml --cov-report=xml --cov-report=html hydrodiy
+      
+      - name: Upload pytest test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: pytest-results
+          path: junit/test-results.xml
         
-          # Run examples
+        # Use always() to always run this step to publish test results when there are test failures
+        if: ${{ always() }}
+
+      - name: Upload to codecov
+        uses: codecov/codecov-action@v3        
+        
+      - name: Run examples
+        run: |
+          source $CONDA/etc/profile.d/conda.sh
+          conda activate env_mini
           python examples/run_all_examples.py
         
