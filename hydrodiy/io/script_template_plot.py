@@ -35,8 +35,6 @@ from hydrodiy.plot import putils
 import pyproj
 from hydrodiy.gis.oz import ozlayer
 
-import tqdm
-
 # Code to facilitate import of a "utils" package
 #import utils
 #import importlib
