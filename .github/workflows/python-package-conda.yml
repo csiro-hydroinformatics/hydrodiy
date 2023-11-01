@@ -29,7 +29,7 @@ jobs:
         run: |
           # Build conda
           source $CONDA/etc/profile.d/conda.sh
-          conda create --file env_mini.yml
+          conda env create -f env_mini.yml
           
           # Activate conda
           conda activate env_mini || true
