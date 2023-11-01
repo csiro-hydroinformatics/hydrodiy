@@ -19,19 +19,31 @@ jobs:
         uses: actions/setup-python@v3
         with:
           python-version: '3.10'
-          
+
+      - name: Set conda cache date
+        run: echo "DATE=$(date + '%Y%m%d%H%M')" >> $GITHUB_ENV
+      
+      - uses: actions/cache@v2
+        with:
+          path: ${{ matrix.prefix }}
+          key: ${{ matrix.label }}-conda-${{ hashFiles('environment.yml') }}-${{ env.DATE }}-${{ env.CACHE_NUMBER }}
+        id: cache
+      
       - name: Add conda to system path
         run: |
           # $CONDA is an environment variable pointing to the root of the miniconda directory
           echo $CONDA/bin >> $GITHUB_PATH
-
-      - name : Main pipeline 
+      
+      - name: Create or update conda environment
         run: |
-          # Build conda
-          source $CONDA/etc/profile.d/conda.sh
-          conda env create -f env_mini.yml
-          
+           source $CONDA/etc/profile.d/conda.sh
+           conda env create -f env_mini.yml
+        if: steps.cache.outputs.cache-hit != 'true'
+
+      - name : Install package 
+        run: |
           # Activate conda
+          source $CONDA/etc/profile.d/conda.sh
           conda activate env_mini
           
           # Install hydrodiy
