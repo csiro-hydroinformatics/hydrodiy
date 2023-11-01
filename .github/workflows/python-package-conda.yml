@@ -38,7 +38,7 @@ jobs:
           pip install -e .
         
           # Run test
-          pytest --cov=hydrodiy --cov-config=.coveragerc hydrodiy
+          pytest --cov=hydrodiy --cov-config=.coveragerc --junitxml=junit/test-results.xml --cov-report=xml --cov-report=html hydrodiy
         
           # Run examples
           python examples/run_all_examples.py
