@@ -35,7 +35,7 @@ jobs:
           conda activate env_mini || true
           
           # Install hydrodiy
-          pip install -e hydrodiy
+          pip install -e .
         
           # Run test
           pytest --cov=hydrodiy --cov-config=.coveragerc hydrodiy
