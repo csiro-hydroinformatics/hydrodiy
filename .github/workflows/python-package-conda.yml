@@ -18,9 +18,9 @@ jobs:
       run: |
         # $CONDA is an environment variable pointing to the root of the miniconda directory
         echo $CONDA/bin >> $GITHUB_PATH
-    - name: Install dependencies
+    - name: Create conda env
       run: |
-        conda env update --file env_mini.yml
+        conda env create --file env_mini.yml
     - name: Install hydrodiy package
       run: |
         conda activate env_mini
