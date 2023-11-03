@@ -150,12 +150,9 @@ def test_data():
     assert ck
 
     dt = np.random.uniform(0, 1, (gr.nrows+1, gr.ncols+1))
-    try:
+    msg = "Wrong number"
+    with pytest.raises(ValueError, match=msg):
         gr.data = dt
-    except ValueError as err:
-        assert (str(err).startswith("Wrong number"))
-    else:
-        raise Exception("Problem with handling data error")
 
 def test_fill():
     gr = Grid(**CONFIG)
