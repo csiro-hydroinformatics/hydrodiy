@@ -1242,6 +1242,8 @@ class Catchment(object):
                     idxcells, buffer1, buffer2)
 
         if ierr>0:
+            self._idxcells_area = None
+            self._idxcells_area_filled = None
             raise ValueError(("c_hydrodiy_gis.delineate_area" + \
                 " returns {0}. Consider increasing " + \
                 "buffer size ({1})").format(ierr, nval))
@@ -1249,12 +1251,15 @@ class Catchment(object):
         idx = idxcells >= 0
         self._idxcells_area = idxcells[idx]
 
+
         if idx.sum()>0:
             # Fill area cells
             # .. create a minimal rectangle containing catchment area
             rowcol = flowdir.cell2rowcol(self._idxcells_area)
             i0, j0 = np.maximum(0, rowcol.min(axis=0)-1)
-            i1, j1 = np.minimum(flowdir.nrows-1, rowcol.max(axis=0)+1)
+            i1, j1 = rowcol.max(axis=0)+1
+            i1 = min(flowdir.nrows-1, i1)
+            j1 = min(flowdir.ncols-1, j1)
             nrows, ncols = i1-i0+1, j1-j0+1
             grid = np.zeros((nrows, ncols), dtype=int)
             grid[rowcol[:, 0]-i0, rowcol[:, 1]-j0] = 1
@@ -1264,7 +1269,8 @@ class Catchment(object):
             irows, icols = np.where(grid==1)
             irows += i0
             icols += j0
-            self._idxcells_area_filled = irows*flowdir.ncols+icols
+            filled = irows*flowdir.ncols+icols
+            self._idxcells_area_filled = filled
         else:
             self._idxcells_area_filled = self._idxcells_area
 
