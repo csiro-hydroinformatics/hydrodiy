@@ -18,6 +18,7 @@ np.random.seed(0)
 
 FTEST = Path(__file__).resolve().parent
 FIMG = FTEST / "images"
+FIMG.mkdir(exist_ok=True)
 
 NCHAINS = 3
 NPARAMS = 4
