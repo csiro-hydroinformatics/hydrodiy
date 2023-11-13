@@ -1,6 +1,7 @@
-import os, math
+import math
+from pathlib import Path
 
-import unittest
+import pytest
 import numpy as np
 from scipy import linalg
 
@@ -15,127 +16,97 @@ from hydrodiy.plot import bayesplot, putils
 
 np.random.seed(0)
 
-class BayesPlotTestCase(unittest.TestCase):
+FTEST = Path(__file__).resolve().parent
+FIMG = FTEST / "images"
+FIMG.mkdir(exist_ok=True)
 
-    def setUp(self):
-        print("\t=> BayesPlotTestCase (hyplot)")
-        source_file = os.path.abspath(__file__)
-        self.ftest = os.path.dirname(source_file)
-        self.fimg = os.path.join(self.ftest, "images")
-        if not os.path.exists(self.fimg):
-            os.mkdir(self.fimg)
+NCHAINS = 3
+NPARAMS = 4
+NSAMPLES = 100
 
-        self.nchains = 3
-        self.nparams = 4
-        self.nsamples = 100
+# Generate mean vector
+MU = np.linspace(0, 1, NPARAMS)
 
-        # Generate mean vector
-        self.mu = np.linspace(0, 1, self.nparams)
+# GenerateCOVariance matrix
+rnd = np.random.uniform(-1, 1, (NPARAMS, NPARAMS))
+rnd = rnd+rnd.T
+eig, vects = linalg.eig(rnd)
+COV = np.dot(vects, np.dot(np.diag(np.abs(eig)), vects.T))
 
-        # Generate covariance matrix
-        rnd = np.random.uniform(-1, 1, (self.nparams, self.nparams))
-        rnd = rnd+rnd.T
-        eig, vects = linalg.eig(rnd)
-        self.cov = np.dot(vects, np.dot(np.diag(np.abs(eig)), vects.T))
+# Generate samples
+SAMPLES = np.zeros((NCHAINS, NPARAMS, NSAMPLES))
+for chain in range(NCHAINS):
+    SAMPLES[chain, :, :] = np.random.multivariate_normal(\
+                                    mean=MU, cov=COV, size=NSAMPLES).T
 
-        # Generate samples
-        self.samples = np.zeros((self.nchains, self.nparams, self.nsamples))
-        for chain in range(self.nchains):
-            self.samples[chain, :, :] = np.random.multivariate_normal(\
-                        mean=self.mu, cov=self.cov, size=self.nsamples).T
-
-        # MVT log posterior for the first chain
-        def logpost(theta):
-            """ Mvt logpost """
-            mu = theta[:self.nparams]
-            cov, _, _ = bayesutils.vect2cov(theta[self.nparams:])
-            loglike = mvt.logpdf(self.samples[0, :, :].T, mean=mu, cov=cov)
-            # Jeffreys" prior
-            logprior = -(mu.shape[0]+1)/2*math.log(linalg.det(cov))
-            return np.sum(loglike)+logprior
-
-        self.logpost = logpost
+# MVT log posterior for the first chain
+def logpost(theta):
+    """ Mvt logpost """
+    mu = theta[:NPARAMS]
+    cov, _, _ = bayesutils.vect2cov(theta[NPARAMS:])
+    loglike = mvt.logpdf(SAMPLES[0, :, :].T, mean=mu, cov=cov)
+    # Jeffreys" prior
+    logprior = -(mu.shape[0]+1)/2*math.log(linalg.det(cov))
+    return np.sum(loglike)+logprior
 
 
-    def test_slice2d(self):
-        """ Plot log post slice 2d """
 
-        fig, ax = plt.subplots()
-        vect, _, _ = bayesutils.cov2vect(self.cov)
-        params = np.concatenate([self.mu, vect])
-        zz, yy, zz = bayesplot.slice2d(ax, self.logpost, params, \
-                                    0, 1, 0.5, 0.5)
-        fp = os.path.join(self.fimg, "bayesplot_slice_2d.png")
-        fig.savefig(fp)
-
-
-    def test_slice2d_errors(self):
-        """ Plot log post slice 2d with log spacing """
-
-        fig, ax = plt.subplots()
-        vect, _, _ = bayesutils.cov2vect(self.cov)
-        params = np.concatenate([self.mu, vect])
-
-        try:
-            bayesplot.slice2d(ax, self.logpost, params, \
-                                    len(params), 1, 0.5, 0.5)
-        except ValueError as err:
-            self.assertTrue(str(err).startswith("Expected parameter indexes"))
-        else:
-            raise ValueError("Problem with error handling")
+def test_slice2d():
+    fig, ax = plt.subplots()
+    vect, _, _ = bayesutils.cov2vect(COV)
+    params = np.concatenate([MU, vect])
+    zz, yy, zz = bayesplot.slice2d(ax, logpost, params, \
+                                0, 1, 0.5, 0.5)
+    fp = FIMG / "bayesplot_slice_2d.png"
+    fig.savefig(fp)
 
 
-        try:
-            bayesplot.slice2d(ax, self.logpost, params, \
-                                    0, 1, -0.5, 0.5)
-        except ValueError as err:
-            self.assertTrue(str(err).startswith("Expected dval1"))
-        else:
-            raise ValueError("Problem with error handling")
+def test_slice2d_errors():
+    fig, ax = plt.subplots()
+    vect, _, _ = bayesutils.cov2vect(COV)
+    params = np.concatenate([MU, vect])
+
+    msg = "Expected parameter indexes"
+    with pytest.raises(ValueError, match=msg):
+        bayesplot.slice2d(ax, logpost, params, \
+                                len(params), 1, 0.5, 0.5)
 
 
-        try:
-            bayesplot.slice2d(ax, self.logpost, params, \
-                                    0, 1, 0.5, 0.5, scale1="ll")
-        except ValueError as err:
-            self.assertTrue(str(err).startswith("Expected scale"))
-        else:
-            raise ValueError("Problem with error handling")
+    msg = "Expected dval1"
+    with pytest.raises(ValueError, match=msg):
+        bayesplot.slice2d(ax, logpost, params, \
+                                0, 1, -0.5, 0.5)
+
+    msg = "Expected scale"
+    with pytest.raises(ValueError, match=msg):
+        bayesplot.slice2d(ax, logpost, params, \
+                                0, 1, 0.5, 0.5, scale1="ll")
+
+    msg = "Expected dlogpostmin"
+    with pytest.raises(ValueError, match=msg):
+        bayesplot.slice2d(ax, logpost, params, \
+                                0, 1, 0.5, 0.5, dlogpostmin=-1)
+
+def test_slice2d_log():
+    fig, ax = plt.subplots()
+    vect, _, _ = bayesutils.cov2vect(COV)
+    params = np.concatenate([MU+0.01, vect])
+    bayesplot.slice2d(ax, logpost, params, \
+                                0, 1, 0.5, 0.5, \
+                                scale1="log", scale2="log", \
+                                dlogpostmin=10, dlogpostmax=1e-2, nlevels=5)
+    fp = FIMG / "bayesplot_slice_2d_log.png"
+    fig.savefig(fp)
 
 
-        try:
-            bayesplot.slice2d(ax, self.logpost, params, \
-                                    0, 1, 0.5, 0.5, dlogpostmin=-1)
-        except ValueError as err:
-            self.assertTrue(str(err).startswith("Expected dlogpostmin"))
-        else:
-            raise ValueError("Problem with error handling")
-
-
-    def test_slice2d_log(self):
-        """ Plot log post slice 2d with log spacing """
-
-        fig, ax = plt.subplots()
-        vect, _, _ = bayesutils.cov2vect(self.cov)
-        params = np.concatenate([self.mu+0.01, vect])
-        bayesplot.slice2d(ax, self.logpost, params, \
-                                    0, 1, 0.5, 0.5, \
-                                    scale1="log", scale2="log", \
-                                    dlogpostmin=10, dlogpostmax=1e-2, nlevels=5)
-        fp = os.path.join(self.fimg, "bayesplot_slice_2d_log.png")
-        fig.savefig(fp)
-
-
-    def test_plotchains(self):
-        """ Plot chain diagnostic """
-
-        fig = plt.figure()
-        accept = np.ones(self.samples.shape[0])
-        bayesplot.plotchains(fig, self.samples, accept)
-        fp = os.path.join(self.fimg, "bayesplot_plotchains.png")
-        fig.set_size_inches((18, 10))
-        fig.tight_layout()
-        fig.savefig(fp)
+def test_plotchains():
+    fig = plt.figure()
+    accept = np.ones(SAMPLES.shape[0])
+    bayesplot.plotchains(fig, SAMPLES, accept)
+    fp = FIMG / "bayesplot_plotchains.png"
+    fig.set_size_inches((18, 10))
+    fig.tight_layout()
+    fig.savefig(fp)
 
 
 if __name__ == "__main__":

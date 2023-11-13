@@ -1,5 +1,6 @@
-import os, re
-import unittest
+import re
+import pytest
+from pathlib import Path
 import numpy as np
 import pandas as pd
 import tarfile
@@ -7,200 +8,193 @@ import zipfile
 
 from hydrodiy.io import csv
 
-class CsvTestCase(unittest.TestCase):
-
-    def setUp(self):
-        print('\t=> CsvTestCase')
-        source_file = os.path.abspath(__file__)
-        self.ftest = os.path.dirname(source_file)
+FTEST = Path(__file__).resolve().parent
 
 
-    def test_read_csv1(self):
-        fcsv = '%s/states_centroids.csv.gz'%self.ftest
+def test_read_csv1():
+    fcsv = FTEST / "states_centroids.csv.gz"
+    data, comment = csv.read_csv(fcsv)
+    st = pd.Series(["ACT", "NSW", "NT", "QLD", "SA",
+                        "TAS", "VIC", "WA"])
+    assert (all(data["state"]==st))
+
+
+def test_read_csv_names():
+    fcsv = FTEST / "states_centroids.csv.gz"
+    cc = ["C{0}".format(k) for k in range(1, 8)]
+    data, comment = csv.read_csv(fcsv, names=cc)
+    assert (list(data.columns)==cc)
+
+
+def test_read_csv_names_noheader():
+    fcsv = FTEST / "states_centroids_noheader.csv"
+    cc = ["C{0}".format(k) for k in range(1, 8)]
+    data, comment = csv.read_csv(fcsv, has_colnames=False, names=cc)
+    assert (list(data.columns)==cc)
+
+
+def test_read_csv_noheader():
+    fcsv = FTEST / "states_centroids_noheader.csv"
+    data, comment = csv.read_csv(fcsv, has_colnames=False)
+    st = pd.Series(["ACT", "NSW", "NT", "QLD", "SA",
+                        "TAS", "VIC", "WA"])
+    assert (all(data[0]==st))
+
+
+def test_read_csv3():
+    fcsv = FTEST / "multiindex.csv"
+    data, comment = csv.read_csv(fcsv)
+
+    cols =["metric", "runoff_rank",
+            "logsinh-likelihood", "logsinh-shapirotest",
+            "yeojohnson-likelihood", "yeojohnson-shapirotest"]
+
+    assert (all(data.columns==cols))
+
+
+def test_read_csv4():
+    fcsv = FTEST / "climate.csv"
+    data, comment = csv.read_csv(fcsv,
+            parse_dates=[""], index_col=0)
+
+    assert (len(comment) == 8)
+    assert (comment["written_on"] == "2014-08-12 12:41")
+
+    d = data.index[0]
+    try:
+        assert (isinstance(d, pd.tslib.Timestamp))
+    except AttributeError:
+        # To handle new versions of pandas
+        assert (isinstance(d, pd.Timestamp))
+
+
+def test_read_csv5():
+    fcsv = FTEST / "207004_monthly_total_01.csv"
+    data, comment = csv.read_csv(fcsv,
+            parse_dates=True, index_col=0)
+
+
+def test_read_csv_latin():
+    """ Test read_csv with latin_1 encoding """
+    fcsv = FTEST / "latin_1.zip"
+    with pytest.raises(UnicodeDecodeError):
         data, comment = csv.read_csv(fcsv)
-        st = pd.Series(['ACT', 'NSW', 'NT', 'QLD', 'SA',
-                            'TAS', 'VIC', 'WA'])
-        self.assertTrue(all(data['state']==st))
+
+    data, comment = csv.read_csv(fcsv,
+            encoding="latin_1")
+    assert (np.allclose(data.iloc[:, 1:4].values, -99))
 
 
-    def test_read_csv_names(self):
-        fcsv = '%s/states_centroids.csv.gz'%self.ftest
-        cc = ['C{0}'.format(k) for k in range(1, 8)]
-        data, comment = csv.read_csv(fcsv, names=cc)
-        self.assertEqual(list(data.columns), cc)
+def test_write_csv1():
+    nval = 100
+    nc = 5
+    idx = pd.date_range("1990-01-01", periods=nval, freq="D")
+    df1 = pd.DataFrame(np.random.normal(size=(nval, nc)), index=idx)
+
+    fcsv1 = FTEST / "testwrite1.csv"
+    csv.write_csv(df1, fcsv1, "Random data",
+            Path(__file__),
+            write_index=True)
+
+    fcsv2 = FTEST / "testwrite2.csv"
+    csv.write_csv(df1, fcsv2, "Random data",
+            Path(__file__),
+            float_format=None,
+            write_index=True)
+
+    df1exp, comment = csv.read_csv(fcsv1,
+            parse_dates=[""], index_col=0)
+
+    df2exp, comment = csv.read_csv(fcsv2,
+            parse_dates=[""], index_col=0)
+
+    assert (int(comment["nrow"]) == nval)
+    assert (int(comment["ncol"]) == nc)
+
+    d = df1exp.index[0]
+    try:
+        assert (isinstance(d, pd.tslib.Timestamp))
+    except AttributeError:
+        # To handle new versions of Pandas
+        assert (isinstance(d, pd.Timestamp))
+
+    assert (np.allclose(np.round(df1.values, 5), df1exp))
+    assert (np.allclose(df1, df2exp))
+
+    for f in [fcsv1, fcsv2]:
+        fz = f.parent / f"{f.stem}.zip"
+        fz.unlink()
 
 
-    def test_read_csv_names_noheader(self):
-        fcsv = '%s/states_centroids_noheader.csv'%self.ftest
-        cc = ['C{0}'.format(k) for k in range(1, 8)]
-        data, comment = csv.read_csv(fcsv, has_colnames=False, names=cc)
-        self.assertEqual(list(data.columns), cc)
+def test_write_csv2():
+    nval = 100
+    nc = 5
+    idx = pd.date_range("1990-01-01", periods=nval, freq="D")
+    df1 = pd.DataFrame(np.random.normal(size=(nval, nc)), index=idx)
+
+    comment1 = {"co1":"comment", "co2":"comment 2"}
+    fcsv = FTEST / "testwrite.csv"
+    csv.write_csv(df1, fcsv, comment1,
+            author="toto",
+            source_file=Path(__file__),
+            write_index=True)
+
+    df2, comment2 = csv.read_csv(fcsv,
+            parse_dates=[""], index_col=0)
+
+    assert (comment1["co1"] == comment2["co1"])
+    assert (comment1["co2"] == comment2["co2"])
+    assert ("toto" == comment2["author"])
+    assert (str(Path(__file__)) == comment2["source_file"])
+
+    fz = fcsv.parent / f"{fcsv.stem}.zip"
+    fz.unlink()
 
 
-    def test_read_csv_noheader(self):
-        fcsv = '%s/states_centroids_noheader.csv'%self.ftest
-        data, comment = csv.read_csv(fcsv, has_colnames=False)
-        st = pd.Series(['ACT', 'NSW', 'NT', 'QLD', 'SA',
-                            'TAS', 'VIC', 'WA'])
-        self.assertTrue(all(data[0]==st))
+def test_write_csv3():
+    nval = 100
+    idx = pd.date_range("1990-01-01", periods=nval, freq="D")
+    ds1 = pd.Series(np.random.normal(size=nval), index=idx)
+
+    fcsv1 = FTEST / "testwrite3.csv"
+    csv.write_csv(ds1, fcsv1, "Random data",
+            Path(__file__),
+            write_index=True)
+
+    ds1exp, comment = csv.read_csv(fcsv1,
+            parse_dates=[""], index_col=0)
+    ds1exp = ds1exp.squeeze()
+
+    assert (np.allclose(ds1.round(5), ds1exp))
+
+    fz = fcsv1.parent / f"{fcsv1.stem}.zip"
+    fz.unlink()
 
 
-    def test_read_csv3(self):
-        fcsv = '%s/multiindex.csv'%self.ftest
-        data, comment = csv.read_csv(fcsv)
+def test_read_write_zip():
+    # Generate data
+    df = {}
+    for i in range(4):
+        df["test_{0:02d}/test_{0}.csv".format(i)] = \
+                pd.DataFrame(np.random.normal(size=(100, 4)))
 
-        cols =['metric', 'runoff_rank',
-                'logsinh-likelihood', 'logsinh-shapirotest',
-                'yeojohnson-likelihood', 'yeojohnson-shapirotest']
+    # Write data to archive
+    farc = FTEST / "test_archive.zip"
+    with zipfile.ZipFile(farc, "w") as arc:
+        for k in df:
+            # Add file to tar with a directory structure
+            csv.write_csv(df[k],
+                filename=k,
+                comment="test "+str(i),
+                archive=arc,
+                float_format="%0.20f",
+                source_file=Path(__file__))
 
-        self.assertTrue(all(data.columns==cols))
+    # Read it back and compare
+    with zipfile.ZipFile(farc, "r") as arc:
+        for k in df:
+            df2, _ = csv.read_csv(k, archive=arc)
+            assert (np.allclose(df[k].values, df2.values))
 
+    farc.unlink()
 
-    def test_read_csv4(self):
-        fcsv = '%s/climate.csv'%self.ftest
-
-        data, comment = csv.read_csv(fcsv,
-                parse_dates=[''], index_col=0)
-
-        self.assertTrue(len(comment) == 8)
-        self.assertTrue(comment['written_on'] == '2014-08-12 12:41')
-
-        d = data.index[0]
-        try:
-            self.assertTrue(isinstance(d, pd.tslib.Timestamp))
-        except AttributeError:
-            # To handle new versions of pandas
-            self.assertTrue(isinstance(d, pd.Timestamp))
-
-
-    def test_read_csv5(self):
-        fcsv = '%s/207004_monthly_total_01.csv'%self.ftest
-        data, comment = csv.read_csv(fcsv,
-                parse_dates=True, index_col=0)
-
-
-    def test_read_csv_latin(self):
-        ''' Test read_csv with latin_1 encoding '''
-        fcsv = '%s/latin_1.zip'%self.ftest
-        try:
-            data, comment = csv.read_csv(fcsv)
-        except UnicodeDecodeError as err:
-            pass
-
-        data, comment = csv.read_csv(fcsv,
-                encoding='latin_1')
-        self.assertTrue(np.allclose(data.iloc[:, 1:4].values, -99))
-
-
-    def test_write_csv1(self):
-        nval = 100
-        nc = 5
-        idx = pd.date_range('1990-01-01', periods=nval, freq='D')
-        df1 = pd.DataFrame(np.random.normal(size=(nval, nc)), index=idx)
-
-        fcsv1 = '%s/testwrite1.csv'%self.ftest
-        csv.write_csv(df1, fcsv1, 'Random data',
-                os.path.abspath(__file__),
-                write_index=True)
-
-        fcsv2 = '%s/testwrite2.csv'%self.ftest
-        csv.write_csv(df1, fcsv2, 'Random data',
-                os.path.abspath(__file__),
-                float_format=None,
-                write_index=True)
-
-        df1exp, comment = csv.read_csv(fcsv1,
-                parse_dates=[''], index_col=0)
-
-        df2exp, comment = csv.read_csv(fcsv2,
-                parse_dates=[''], index_col=0)
-
-        self.assertTrue(int(comment['nrow']) == nval)
-        self.assertTrue(int(comment['ncol']) == nc)
-
-        d = df1exp.index[0]
-        try:
-            self.assertTrue(isinstance(d, pd.tslib.Timestamp))
-        except AttributeError:
-            # To handle new versions of Pandas
-            self.assertTrue(isinstance(d, pd.Timestamp))
-
-        self.assertTrue(np.allclose(np.round(df1.values, 5), df1exp))
-        self.assertTrue(np.allclose(df1, df2exp))
-
-        os.remove(re.sub('csv', 'zip', fcsv1))
-        os.remove(re.sub('csv', 'zip', fcsv2))
-
-
-    def test_write_csv2(self):
-        nval = 100
-        nc = 5
-        idx = pd.date_range('1990-01-01', periods=nval, freq='D')
-        df1 = pd.DataFrame(np.random.normal(size=(nval, nc)), index=idx)
-
-        comment1 = {'co1':'comment', 'co2':'comment 2'}
-        fcsv = '%s/testwrite.csv'%self.ftest
-        csv.write_csv(df1, fcsv, comment1,
-                author='toto',
-                source_file=os.path.abspath(__file__),
-                write_index=True)
-
-        df2, comment2 = csv.read_csv(fcsv,
-                parse_dates=[''], index_col=0)
-
-        self.assertTrue(comment1['co1'] == comment2['co1'])
-        self.assertTrue(comment1['co2'] == comment2['co2'])
-        self.assertTrue('toto' == comment2['author'])
-        self.assertTrue(os.path.abspath(__file__) == comment2['source_file'])
-
-        os.remove(re.sub('csv', 'zip', fcsv))
-
-
-    def test_write_csv3(self):
-        nval = 100
-        idx = pd.date_range('1990-01-01', periods=nval, freq='D')
-        ds1 = pd.Series(np.random.normal(size=nval), index=idx)
-
-        fcsv1 = '%s/testwrite3.csv'%self.ftest
-        csv.write_csv(ds1, fcsv1, 'Random data',
-                os.path.abspath(__file__),
-                write_index=True)
-
-        ds1exp, comment = csv.read_csv(fcsv1,
-                parse_dates=[''], index_col=0)
-        ds1exp = ds1exp.squeeze()
-
-        self.assertTrue(np.allclose(ds1.round(5), ds1exp))
-
-        os.remove(re.sub('csv', 'zip', fcsv1))
-
-
-    def test_read_write_zip(self):
-        # Generate data
-        df = {}
-        for i in range(4):
-            df['test_{0:02d}/test_{0}.csv'.format(i)] = \
-                    pd.DataFrame(np.random.normal(size=(100, 4)))
-
-        # Write data to archive
-        farc = os.path.join(self.ftest, 'test_archive.zip')
-        with zipfile.ZipFile(farc, 'w') as arc:
-            for k in df:
-                # Add file to tar with a directory structure
-                csv.write_csv(df[k],
-                    filename=k,
-                    comment='test '+str(i),
-                    archive=arc,
-                    float_format='%0.20f',
-                    source_file=os.path.abspath(__file__))
-
-        # Read it back and compare
-        with zipfile.ZipFile(farc, 'r') as arc:
-            for k in df:
-                df2, _ = csv.read_csv(k, archive=arc)
-                self.assertTrue(np.allclose(df[k].values, df2.values))
-
-        os.remove(farc)
-
-if __name__ == "__main__":
-    unittest.main()
