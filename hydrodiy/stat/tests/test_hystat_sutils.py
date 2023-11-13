@@ -139,7 +139,7 @@ def test_lhs():
 
 def test_lhs_norm(allclose):
     """ Test lhs for mvt data """
-    nsamples = 50000
+    nsamples = 500000
     nvars = 5
     mean = np.linspace(1, 2, nvars)
     rho = 0.95
