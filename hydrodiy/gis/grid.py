@@ -17,7 +17,8 @@ import calendar
 import numpy as np
 import pandas as pd
 from scipy.interpolate import griddata
-from scipy.ndimage import gaussian_filter, maximum_filter
+from scipy.ndimage import gaussian_filter, maximum_filter, \
+                                binary_fill_holes
 
 from hydrodiy.gis import gutils
 from hydrodiy.io import csv
@@ -1019,6 +1020,7 @@ class Catchment(object):
         self._idxcell_outlet = None
         self._idxinlets = None
         self._idxcells_area = None
+        self._idxcells_area_filled = None
         self._idxcells_boundary = None
         self._flowpathlengths = None
         self._xycells_boundary = None
@@ -1075,8 +1077,10 @@ class Catchment(object):
         catchment._idxcells_boundary = None
         catchment._xycells_boundary = None
 
-        catchment._idxcells_area = np.setdiff1d(self._idxcells_area,
-                                    other._idxcells_area)
+        # Difference between filled cell boundary
+        catchment._idxcells_area = np.setdiff1d(\
+                                    self._idxcells_area_filled,
+                                    other._idxcells_area_filled)
 
         return catchment
 
@@ -1103,6 +1107,9 @@ class Catchment(object):
         catchment._idxcells_area = \
                         np.array(dic["idxcells_area"]).astype(np.int64)
 
+        catchment._idxcells_area_filled = \
+                        np.array(dic["idxcells_area_filled"]).astype(np.int64)
+
         return catchment
 
 
@@ -1121,6 +1128,12 @@ class Catchment(object):
     def idxcells_area(self):
         """ Get cells of catchment area """
         return self._idxcells_area
+
+    @property
+    def idxcells_area_filled(self):
+        """ Get cells of filled catchment area (no holes)"""
+        return self._idxcells_area_filled
+
 
     @property
     def flowpathlengths(self):
@@ -1153,11 +1166,11 @@ class Catchment(object):
     def extent(self):
         """ Get catchment area extent """
 
-        if self._idxcells_area is None:
-            raise ValueError("idxcells_area is None, please" + \
+        if self._idxcells_area_filled is None:
+            raise ValueError("idxcells_area_filled is None, please" + \
                         " delineate the area")
 
-        xy = self._flowdir.cell2coord(self._idxcells_area)
+        xy = self._flowdir.cell2coord(self._idxcells_area_filled)
         cz = self.flowdir.cellsize
         return np.min(xy[:, 0])-cz/2, np.max(xy[:, 0])+cz/2, \
                 np.min(xy[:, 1])-cz/2, np.max(xy[:, 1])+cz/2,
@@ -1223,17 +1236,43 @@ class Catchment(object):
         buffer2 = -1*np.ones(nval, dtype=np.int64)
 
         # Compute area
+        flowdir = self.flowdir
         ierr = c_hydrodiy_gis.delineate_area(FLOWDIRCODE,
-                    self.flowdir.data, self.idxcell_outlet, idxinlets,
+                    flowdir.data, self.idxcell_outlet, idxinlets,
                     idxcells, buffer1, buffer2)
 
         if ierr>0:
+            self._idxcells_area = None
+            self._idxcells_area_filled = None
             raise ValueError(("c_hydrodiy_gis.delineate_area" + \
                 " returns {0}. Consider increasing " + \
                 "buffer size ({1})").format(ierr, nval))
 
         idx = idxcells >= 0
         self._idxcells_area = idxcells[idx]
+
+
+        if idx.sum()>0:
+            # Fill area cells
+            # .. create a minimal rectangle containing catchment area
+            rowcol = flowdir.cell2rowcol(self._idxcells_area)
+            i0, j0 = np.maximum(0, rowcol.min(axis=0)-1)
+            i1, j1 = rowcol.max(axis=0)+1
+            i1 = min(flowdir.nrows-1, i1)
+            j1 = min(flowdir.ncols-1, j1)
+            nrows, ncols = i1-i0+1, j1-j0+1
+            grid = np.zeros((nrows, ncols), dtype=int)
+            grid[rowcol[:, 0]-i0, rowcol[:, 1]-j0] = 1
+            # .. fill holes
+            grid = binary_fill_holes(grid)
+            # .. get cell coordinates
+            irows, icols = np.where(grid==1)
+            irows += i0
+            icols += j0
+            filled = irows*flowdir.ncols+icols
+            self._idxcells_area_filled = filled
+        else:
+            self._idxcells_area_filled = self._idxcells_area
 
 
     def delineate_boundary(self, catchment_area_mask=None):
@@ -1248,20 +1287,22 @@ class Catchment(object):
         ncols = self._flowdir.ncols
 
         # Initialise boundary cells with vector of same length
-        # than area
-        nval = np.int64(len(self._idxcells_area))
+        # than area. Use FILLED area cells!
+        cells_area = self._idxcells_area_filled
+        nval = np.int64(len(cells_area))
         idxcells_boundary = -1*np.ones(nval, dtype=np.int64)
         buf = -1*np.ones(nval, dtype=np.int64)
 
         # Initialise catchment area mask
         if catchment_area_mask is None:
             catchment_area_mask = np.zeros(nrows*ncols, dtype=np.int64)
-            catchment_area_mask[self._idxcells_area] = 1
+            catchment_area_mask[cells_area] = 1
 
+        # Use filled area (algorithm failed when there are holes)
         # Compute boundary with varying dmax
         # This point could be improved!!
         ierr = c_hydrodiy_gis.delineate_boundary(nrows, ncols, \
-                    self._idxcells_area, \
+                    cells_area, \
                     buf, catchment_area_mask, \
                     idxcells_boundary)
 
@@ -1332,7 +1373,7 @@ class Catchment(object):
                                         "idxcell_end", "length[cell]"])
 
 
-    def intersect(self, grid):
+    def intersect(self, grid, filled=False):
         """ Intersect catchment area with other grid and compute
         the weight of each cell from the new grid falling into the
         catchment.
@@ -1341,6 +1382,8 @@ class Catchment(object):
         -----------
         grid : hydrodiy.grid.Grid
             Input grid (a.g. rainfall data grid).
+        filled : bool
+            Used filled catchment area.
 
         Returns
         -----------
@@ -1375,7 +1418,8 @@ class Catchment(object):
         xll, yll, csz, nrows, ncols = grid._getsize()
         _, _, csz_area, _, _ = self.flowdir._getsize()
 
-        xy_area = self.flowdir.cell2coord(self._idxcells_area)
+        cells = self._idxcells_area_filled if filled else self._idxcells_area
+        xy_area = self.flowdir.cell2coord(cells)
         npoints = np.zeros((1,), dtype=np.int64)
         idxcells = np.zeros(nrows*ncols, dtype=np.int64)
         weights = np.zeros(nrows*ncols, dtype=np.float64)
@@ -1430,14 +1474,15 @@ class Catchment(object):
         return area_grid, idxcells, weights
 
 
-    def isin(self, idxcell):
+    def isin(self, idxcell, filled=False):
         """ Check if a cell is within the catchment area """
 
         if self._idxcells_area is None:
             raise ValueError("idxcells_area is None, " + \
                 "please delineate the area")
 
-        return idxcell in self._idxcells_area
+        cells = self._idxcells_area_filled if filled else self._idxcells_area
+        return idxcell in cells
 
 
     def compute_area(self, to_proj, from_proj=None):
@@ -1495,7 +1540,10 @@ class Catchment(object):
             raise ValueError("idxcells_boundary is None, " + \
                 "please delineate the area")
 
-        xy = self.flowdir.cell2coord(self._idxcells_area)
+        filled = kwargs.get("filled", False)
+        cells = self._idxcells_area_filled if filled else self._idxcells_area
+
+        xy = self.flowdir.cell2coord(cells)
         ax.plot(xy[:, 0], xy[:, 1], *args, **kwargs)
 
 
@@ -1526,17 +1574,10 @@ class Catchment(object):
             "idxcell_outlet":self._idxcell_outlet,
             "idxinlets":inlets,
             "idxcells_area":list(self._idxcells_area),
+            "idxcells_area_filled":list(self._idxcells_area_filled),
             "flowdir":self.flowdir.to_dict(),
         }
         return dic
-
-
-    def load(self, filename):
-        """ Load data from a JSON file """
-
-        if not filename.endswith("json"):
-            raise ValueError(("Filename ({0}) should end with a" + \
-                " bil extension").format(filename))
 
 
 
