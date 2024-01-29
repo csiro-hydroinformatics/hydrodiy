@@ -133,7 +133,7 @@ class HydrodiyContextualLogger(logging.Logger):
 
 def get_logger(name, level="INFO", \
         console=True, flog=None, \
-        fmt="%(asctime)s | %(name)s | %(levelname)s | %(message)s", \
+        fmt="%(asctime)s | %(levelname)s | %(message)s", \
         overwrite=True,
         excepthook=True,
         no_duplicate_handler=True,\
