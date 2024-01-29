@@ -138,7 +138,8 @@ def get_logger(name, level="INFO", \
         excepthook=True,
         no_duplicate_handler=True,\
         contextual=False, \
-        start_message=True):
+        start_message=True, \
+        date_fmt="%y-%M-%d %H:%m"):
     """ Get a logger object that can handle contextual info
 
     Parameters
@@ -166,6 +167,8 @@ def get_logger(name, level="INFO", \
         (see hydrodiy.io.HydrodiyContextualLogger)
     start_message : bool
         Log a "Process started" message.
+    date_fmt : str
+        Date format.
 
     Returns
     -----------
@@ -184,7 +187,7 @@ def get_logger(name, level="INFO", \
     logger.setLevel(getattr(logging, level))
 
     # Set logging format
-    ft = logging.Formatter(fmt)
+    ft = logging.Formatter(fmt, date_fmt)
 
     # Check handlers
     has_console = False
