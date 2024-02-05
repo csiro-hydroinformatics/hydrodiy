@@ -139,7 +139,7 @@ def get_logger(name, level="INFO", \
         no_duplicate_handler=True,\
         contextual=False, \
         start_message=True, \
-        date_fmt="%y-%M-%d %H:%m"):
+        date_fmt="%y-%m-%d %H:%M"):
     """ Get a logger object that can handle contextual info
 
     Parameters
