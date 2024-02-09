@@ -126,7 +126,7 @@ def test_get_logger():
 
     with open(flog1, "r") as fl:
         txt = fl.readlines()
-    ck = txt[0].strip().endswith("INFO | Process started")
+    ck = txt[0].strip().endswith("INFO | @@@ Process started @@@")
     ck = ck & txt[1].strip().endswith("INFO | "+mess[0])
     ck = ck & txt[2].strip().endswith("INFO | "+mess[1])
     assert ck
@@ -139,12 +139,15 @@ def test_get_logger():
     mess = ["flog2 A", "flog2 B"]
     logger2.warning(mess[0])
     logger2.critical(mess[1])
+    logger2.completed()
 
     assert flog2.exists()
 
     with open(flog2, "r") as fl:
         txt = fl.readlines()
-    assert ["Process started"]+mess == [t.strip() for t in txt]
+    expected = ["@@@ Process started @@@"]+mess+\
+                ["@@@ Process completed @@@"]
+    assert expected == [t.strip() for t in txt]
 
     # Close log file handler and delete files
     logger1.handlers[1].close()
@@ -168,14 +171,17 @@ def test_get_logger_contextual():
 
     logger.context = "context2"
     logger.info(mess[1])
+    logger.completed()
 
     assert flog.exists()
 
     with open(flog, "r") as fl:
         txt = fl.readlines()
 
-    ck = bool(re.search("\\{ context1 \\}", txt[1]))
-    ck = ck & bool(re.search("\\{ context2 \\}", txt[2]))
+    ck = bool(re.search("@@@ Process started @@@", txt[0]))
+    ck &= bool(re.search("\\{ context1 \\}", txt[1]))
+    ck &= bool(re.search("\\{ context2 \\}", txt[2]))
+    ck &= bool(re.search("@@@ Process completed @@@", txt[3]))
     assert ck
 
     logger.handlers[1].close()
