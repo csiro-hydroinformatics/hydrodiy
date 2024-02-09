@@ -146,7 +146,7 @@ def test_get_logger():
     with open(flog2, "r") as fl:
         txt = fl.readlines()
     expected = ["@@@ Process started @@@"]+mess+\
-                ["@@@ Process completed @@@"]
+                ["", "@@@ Process completed @@@"]
     assert expected == [t.strip() for t in txt]
 
     # Close log file handler and delete files
@@ -181,7 +181,7 @@ def test_get_logger_contextual():
     ck = bool(re.search("@@@ Process started @@@", txt[0]))
     ck &= bool(re.search("\\{ context1 \\}", txt[1]))
     ck &= bool(re.search("\\{ context2 \\}", txt[2]))
-    ck &= bool(re.search("@@@ Process completed @@@", txt[3]))
+    ck &= bool(re.search("@@@ Process completed @@@", txt[4]))
     assert ck
 
     logger.handlers[1].close()
