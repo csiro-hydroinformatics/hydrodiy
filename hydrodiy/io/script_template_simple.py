@@ -101,5 +101,5 @@ for isite, (siteid, sinfo) in enumerate(sites.iterrows()):
 
     LOGGER.info("Processing")
 
-LOGGER.info("Process completed")
+LOGGER.completed()
 
