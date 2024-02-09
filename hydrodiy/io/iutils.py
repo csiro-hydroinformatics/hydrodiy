@@ -115,8 +115,21 @@ def script_template(filename, comment,
     os.chmod(filename, st.st_mode | stat.S_IEXEC)
 
 
+class StartedCompletedLogger(logging.Logger):
+    """ Add context to logging messages via the context attribute """
 
-class HydrodiyContextualLogger(logging.Logger):
+    def __init__(self, *args, **kwargs):
+        self.context = ""
+        super(StartedCompletedLogger, self).__init__(*args, **kwargs)
+
+    def started(self):
+        self.info("@@@ Process started @@@")
+
+    def completed(self):
+        self.info("@@@ Process completed @@@")
+
+
+class HydrodiyContextualLogger(StartedCompletedLogger):
     """ Add context to logging messages via the context attribute """
 
     def __init__(self, *args, **kwargs):
@@ -236,9 +249,11 @@ def get_logger(name, level="INFO", \
         # A bit dangerous, but will do for now
         logger.__class__ = HydrodiyContextualLogger
         logger.context = ""
+    else:
+        logger.__class__ = StartedCompletedLogger
 
     if start_message:
-        logger.info("Process started")
+        logger.started()
 
     return logger
 

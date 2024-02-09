@@ -175,4 +175,4 @@ putils.blackwhite(fp)
 #pdf.savefig(fig)
 #pdf.close()
 
-LOGGER.info("Plotting completed")
+LOGGER.completed()
