@@ -126,6 +126,8 @@ class StartedCompletedLogger(logging.Logger):
         self.info("@@@ Process started @@@")
 
     def completed(self):
+        self.context = ""
+        self.info("")
         self.info("@@@ Process completed @@@")
 
 
