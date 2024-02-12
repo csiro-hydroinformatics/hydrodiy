@@ -153,7 +153,7 @@ class HydrodiyContextualLogger(StartedCompletedLogger):
     def context(self, value):
         self._context = str(value)
         if self._context != "":
-            self.info(LOGGER_SEPARATOR*LOGGER_NSEPARATORS)
+            self.info("")
             sep = LOGGER_SEPARATOR_CONTEXTUAL\
                         *LOGGER_NSEPARATORS_CONTEXTUAL
             mess = sep+" "+self._context+" "+sep
