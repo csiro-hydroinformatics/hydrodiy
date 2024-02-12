@@ -126,9 +126,10 @@ def test_get_logger():
 
     with open(flog1, "r") as fl:
         txt = fl.readlines()
+
     ck = txt[0].strip().endswith("INFO | @@@ Process started @@@")
-    ck = ck & txt[1].strip().endswith("INFO | "+mess[0])
-    ck = ck & txt[2].strip().endswith("INFO | "+mess[1])
+    ck = ck & txt[3].strip().endswith("INFO | "+mess[0])
+    ck = ck & txt[4].strip().endswith("INFO | "+mess[1])
     assert ck
 
     # Test logging with different format
@@ -145,8 +146,8 @@ def test_get_logger():
 
     with open(flog2, "r") as fl:
         txt = fl.readlines()
-    expected = ["@@@ Process started @@@"]+mess+\
-                ["@@@ Process completed @@@"]
+    expected = ["@@@ Process started @@@", "-"*50, ""]+mess+\
+                ["", "-"*50, "@@@ Process completed @@@"]
     assert expected == [t.strip() for t in txt]
 
     # Close log file handler and delete files
@@ -179,9 +180,9 @@ def test_get_logger_contextual():
         txt = fl.readlines()
 
     ck = bool(re.search("@@@ Process started @@@", txt[0]))
-    ck &= bool(re.search("\\{ context1 \\}", txt[1]))
-    ck &= bool(re.search("\\{ context2 \\}", txt[2]))
-    ck &= bool(re.search("@@@ Process completed @@@", txt[3]))
+    ck &= bool(re.search("\\{ context1 \\}", txt[5]))
+    ck &= bool(re.search("\\{ context2 \\}", txt[8]))
+    ck &= bool(re.search("@@@ Process completed @@@", txt[11]))
     assert ck
 
     logger.handlers[1].close()
