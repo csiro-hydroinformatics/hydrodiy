@@ -18,6 +18,12 @@ import requests
 import numpy as np
 import pandas as pd
 
+# Configuration of logging messages
+LOGGER_NSEPARATORS = 50
+LOGGER_SEPARATOR = "-"
+LOGGER_NSEPARATORS_CONTEXTUAL = 3
+LOGGER_SEPARATOR_CONTEXTUAL = "#"
+
 
 def script_template(filename, comment,
         type="simple",
@@ -119,15 +125,16 @@ class StartedCompletedLogger(logging.Logger):
     """ Add context to logging messages via the context attribute """
 
     def __init__(self, *args, **kwargs):
-        self.context = ""
         super(StartedCompletedLogger, self).__init__(*args, **kwargs)
 
     def started(self):
         self.info("@@@ Process started @@@")
+        self.info(LOGGER_SEPARATOR*LOGGER_NSEPARATORS)
+        self.info("")
 
     def completed(self):
-        self.context = ""
         self.info("")
+        self.info(LOGGER_SEPARATOR*LOGGER_NSEPARATORS)
         self.info("@@@ Process completed @@@")
 
 
@@ -135,8 +142,26 @@ class HydrodiyContextualLogger(StartedCompletedLogger):
     """ Add context to logging messages via the context attribute """
 
     def __init__(self, *args, **kwargs):
-        self.context = ""
+        self._context = ""
         super(HydrodiyContextualLogger, self).__init__(*args, **kwargs)
+
+    @property
+    def context(self):
+        return self._context
+
+    @context.setter
+    def context(self, value):
+        self._context = str(value)
+        if self._context != "":
+            self.info(LOGGER_SEPARATOR*LOGGER_NSEPARATORS)
+            sep = LOGGER_SEPARATOR_CONTEXTUAL\
+                        *LOGGER_NSEPARATORS_CONTEXTUAL
+            mess = sep+" "+self._context+" "+sep
+            self.info(mess)
+
+    def completed(self):
+        self.context = ""
+        super(HydrodiyContextualLogger, self).completed()
 
     def _log(self, level, msg, args, exc_info=None, extra=None):
         if self.context != "":
