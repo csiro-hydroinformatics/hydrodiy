@@ -121,11 +121,29 @@ def script_template(filename, comment,
     os.chmod(filename, st.st_mode | stat.S_IEXEC)
 
 
-class StartedCompletedLogger(logging.Logger):
+class StartedCompletedLogger():
     """ Add context to logging messages via the context attribute """
 
-    def __init__(self, *args, **kwargs):
-        super(StartedCompletedLogger, self).__init__(*args, **kwargs)
+    def __init__(self, logger):
+        errmess = "Expected a logger object"
+        assert isinstance(logger, logging.Logger), errmess
+        self._logger = logger
+
+    def error(self, msg, *args, **kwargs):
+        return self._logger.error(msg, *args, **kwargs)
+
+    def info(self, msg, *args, **kwargs):
+        return self._logger.info(msg, *args, **kwargs)
+
+    def warning(self, msg, *args, **kwargs):
+        return self._logger.warning(msg, *args, **kwargs)
+
+    def critical(self, msg, *args, **kwargs):
+        return self._logger.critical(msg, *args, **kwargs)
+
+    @property
+    def handlers(self):
+        return self._logger.handlers
 
     def started(self):
         self.info("@@@ Process started @@@")
@@ -138,12 +156,12 @@ class StartedCompletedLogger(logging.Logger):
         self.info("@@@ Process completed @@@")
 
 
-class HydrodiyContextualLogger(StartedCompletedLogger):
+class ContextualLogger(StartedCompletedLogger):
     """ Add context to logging messages via the context attribute """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, logger):
         self._context = ""
-        super(HydrodiyContextualLogger, self).__init__(*args, **kwargs)
+        super(ContextualLogger, self).__init__(logger)
 
     @property
     def context(self):
@@ -151,9 +169,10 @@ class HydrodiyContextualLogger(StartedCompletedLogger):
 
     @context.setter
     def context(self, value):
+        self._context = ""
+        self.info("")
         self._context = str(value)
         if self._context != "":
-            self.info("")
             sep = LOGGER_SEPARATOR_CONTEXTUAL\
                         *LOGGER_NSEPARATORS_CONTEXTUAL
             mess = sep+" "+self._context+" "+sep
@@ -161,14 +180,28 @@ class HydrodiyContextualLogger(StartedCompletedLogger):
 
     def completed(self):
         self.context = ""
-        super(HydrodiyContextualLogger, self).completed()
+        super(ContextualLogger, self).completed()
 
-    def _log(self, level, msg, args, exc_info=None, extra=None):
+    def get_message(self, msg):
         if self.context != "":
-            msg = "{{ {0} }} {1}".format(self.context, msg)
+            return "{{ {0} }} {1}".format(self.context, msg)
+        return msg
 
-        super(HydrodiyContextualLogger, self)._log(\
-                        level, msg, args, exc_info, extra)
+    def error(self, msg, *args, **kwargs):
+        msg = self.get_message(msg)
+        return self._logger.error(msg, *args, **kwargs)
+
+    def info(self, msg, *args, **kwargs):
+        msg = self.get_message(msg)
+        return self._logger.info(msg, *args, **kwargs)
+
+    def warning(self, msg, *args, **kwargs):
+        msg = self.get_message(msg)
+        return self._logger.warning(msg, *args, **kwargs)
+
+    def critical(self, msg, *args, **kwargs):
+        msg = self.get_message(msg)
+        return self._logger.critical(msg, *args, **kwargs)
 
 
 def get_logger(name, level="INFO", \
@@ -271,17 +304,13 @@ def get_logger(name, level="INFO", \
     # Close all handlers
     [h.close() for h in logger.handlers]
 
-    # Create the contextual logger
-    if contextual:
-        # A bit dangerous, but will do for now
-        logger.__class__ = HydrodiyContextualLogger
-        logger.context = ""
-    else:
-        logger.__class__ = StartedCompletedLogger
+    # Create the extended logger
+    elogger = ContextualLogger(logger) if contextual else \
+                    StartedCompletedLogger(logger)
 
     if start_message:
-        logger.started()
+        elogger.started()
 
-    return logger
+    return elogger
 
 
