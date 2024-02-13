@@ -121,6 +121,9 @@ def test_get_logger():
     mess = ["flog1 A", "flog1 B"]
     logger1.info(mess[0])
     logger1.info(mess[1])
+    logger1.error("error")
+    logger1.critical("critical")
+    logger1.warning("warning")
 
     assert flog1.exists()
 
@@ -130,6 +133,9 @@ def test_get_logger():
     ck = txt[0].strip().endswith("INFO | @@@ Process started @@@")
     ck = ck & txt[3].strip().endswith("INFO | "+mess[0])
     ck = ck & txt[4].strip().endswith("INFO | "+mess[1])
+    ck = ck & txt[5].strip().endswith("ERROR | error")
+    ck = ck & txt[6].strip().endswith("CRITICAL | critical")
+    ck = ck & txt[7].strip().endswith("WARNING | warning")
     assert ck
 
     # Test logging with different format
@@ -172,6 +178,10 @@ def test_get_logger_contextual():
 
     logger.context = "context2"
     logger.info(mess[1])
+    logger.error("error")
+    logger.critical("critical")
+    logger.warning("warning")
+
     logger.completed()
 
     assert flog.exists()
@@ -180,9 +190,12 @@ def test_get_logger_contextual():
         txt = fl.readlines()
 
     ck = bool(re.search("@@@ Process started @@@", txt[0]))
-    ck &= bool(re.search("\\{ context1 \\}", txt[5]))
-    ck &= bool(re.search("\\{ context2 \\}", txt[8]))
-    ck &= bool(re.search("@@@ Process completed @@@", txt[11]))
+    ck &= bool(re.search("\\{ context1 \\}", txt[4]))
+    ck &= bool(re.search("\\{ context2 \\}", txt[7]))
+    ck &= bool(re.search("ERROR . \\{ context2 \\}", txt[9]))
+    ck &= bool(re.search("CRITICAL . \\{ context2 \\}", txt[10]))
+    ck &= bool(re.search("WARNING . \\{ context2 \\}", txt[11]))
+    ck &= bool(re.search("@@@ Process completed @@@", txt[15]))
     assert ck
 
     logger.handlers[1].close()

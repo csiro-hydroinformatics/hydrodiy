@@ -24,7 +24,7 @@ from hydrodiy.io import csv, iutils
 #spec.loader.exec_module(foo)
 
 #----------------------------------------------------------------------
-# Config
+# @Config
 #----------------------------------------------------------------------
 parser = argparse.ArgumentParser(\
     description="[DESCRIPTION]", \
@@ -59,7 +59,7 @@ debug = args.debug
 sitepattern = args.sitepattern
 
 #----------------------------------------------------------------------
-# Folders
+# @Folders
 #----------------------------------------------------------------------
 source_file = Path(__file__).resolve()
 froot = [FROOT]
@@ -68,7 +68,7 @@ fout = [FOUT]
 fimg = [FIMG]
 
 #----------------------------------------------------------------------
-# Logging
+# @Logging
 #----------------------------------------------------------------------
 basename = source_file.stem
 flog = froot / "logs" / f"{basename}.log"
@@ -76,7 +76,7 @@ flog.parent.mkdir(exist_ok=True)
 LOGGER = iutils.get_logger(basename, console=False, contextual=True)
 
 #----------------------------------------------------------------------
-# Get data
+# @Get data
 #----------------------------------------------------------------------
 fs = fdata / "sites.csv"
 allsites, _ = csv.read_csv(fs, index_col="siteid")
@@ -92,7 +92,7 @@ else:
         sites = allsites.iloc[idx, :]
 
 #----------------------------------------------------------------------
-# Process
+# @Process
 #----------------------------------------------------------------------
 nsites = len(sites)
 for isite, (siteid, sinfo) in enumerate(sites.iterrows()):

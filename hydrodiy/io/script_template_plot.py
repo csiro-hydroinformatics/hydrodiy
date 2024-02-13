@@ -41,7 +41,7 @@ from hydrodiy.gis.oz import ozlayer
 #importlib.reload(utils)
 
 #----------------------------------------------------------------------
-# Config
+# @Config
 #----------------------------------------------------------------------
 
 parser = argparse.ArgumentParser(\
@@ -81,7 +81,7 @@ putils.set_mpl()
 #proj = pyproj.Proj("+init=EPSG:{0}".format(args.projection))
 #
 #----------------------------------------------------------------------
-# Folders
+# @Folders
 #----------------------------------------------------------------------
 source_file = Path(__file__).resolve()
 
@@ -91,13 +91,13 @@ fout = [FOUT]
 fimg = [FIMG]
 
 #------------------------------------------------------------
-# Logging
+# @Logging
 #------------------------------------------------------------
 basename = source_file.stem
 LOGGER = iutils.get_logger(basename)
 
 #------------------------------------------------------------
-# Get data
+# @Get data
 #------------------------------------------------------------
 #fd = "%s/data.csv" % FDATA
 #data, comment = csv.read_csv(fd)
@@ -108,7 +108,7 @@ mess = "{0} sites found".format(sites.shape[0])
 LOGGER.info(mess)
 
 #------------------------------------------------------------
-# Plot
+# @Plot
 #------------------------------------------------------------
 
 # To use multipage pdf
