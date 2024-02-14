@@ -137,8 +137,8 @@ def test_get_logger():
     ck = ck & txt[5].strip().endswith("ERROR | error")
     ck = ck & txt[6].strip().endswith("CRITICAL | critical")
     ck = ck & txt[7].strip().endswith("WARNING | warning")
-    ck = ck & txt[10].strip().endswith("WARNING | test:")
-    ck = ck & txt[11].strip().endswith("WARNING |     a = 1")
+    ck = ck & txt[9].strip().endswith("WARNING | test:")
+    ck = ck & txt[10].strip().endswith("WARNING |     a = 1")
     assert ck
 
     # Test logging with different format

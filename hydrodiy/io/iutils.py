@@ -156,8 +156,7 @@ class StartedCompletedLogger():
         """ Add log entry for dictionnary (e.g. created from argparse using  vars)"""
         assert level in ["info", "warning", "critical", "error"]
         logfun = getattr(self, level)
-        logfun("")
-        sep = self.get_separator("#", 10)
+        sep = self.get_separator("+", 20)
         logfun(sep)
         if name!="":
             logfun(f"{name}:")
@@ -165,6 +164,7 @@ class StartedCompletedLogger():
             logfun(" "*4+f"{k} = {v}")
 
         logfun(sep)
+        logfun("")
 
 
 
