@@ -74,6 +74,7 @@ basename = source_file.stem
 flog = froot / "logs" / f"{basename}.log"
 flog.parent.mkdir(exist_ok=True)
 LOGGER = iutils.get_logger(basename, console=False, contextual=True)
+LOGGER.log_dict(vars(args), "Command line arguments")
 
 #----------------------------------------------------------------------
 # @Get data
