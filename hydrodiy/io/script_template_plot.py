@@ -95,6 +95,7 @@ fimg = [FIMG]
 #------------------------------------------------------------
 basename = source_file.stem
 LOGGER = iutils.get_logger(basename)
+LOGGER.log_dict(vars(args), "Command line arguments")
 
 #------------------------------------------------------------
 # @Get data
