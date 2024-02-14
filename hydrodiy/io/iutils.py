@@ -18,12 +18,6 @@ import requests
 import numpy as np
 import pandas as pd
 
-# Configuration of logging messages
-LOGGER_NSEPARATORS = 50
-LOGGER_SEPARATOR = "-"
-LOGGER_NSEPARATORS_CONTEXTUAL = 3
-LOGGER_SEPARATOR_CONTEXTUAL = "#"
-
 
 def script_template(filename, comment,
         type="simple",
@@ -129,6 +123,9 @@ class StartedCompletedLogger():
         assert isinstance(logger, logging.Logger), errmess
         self._logger = logger
 
+    def get_separator(self, nsep, sep):
+        return sep*nsep
+
     def error(self, msg, *args, **kwargs):
         return self._logger.error(msg, *args, **kwargs)
 
@@ -147,13 +144,28 @@ class StartedCompletedLogger():
 
     def started(self):
         self.info("@@@ Process started @@@")
-        self.info(LOGGER_SEPARATOR*LOGGER_NSEPARATORS)
+        self.info(self.get_separator("-", 30))
         self.info("")
 
     def completed(self):
         self.info("")
-        self.info(LOGGER_SEPARATOR*LOGGER_NSEPARATORS)
+        self.info(self.get_separator("-", 30))
         self.info("@@@ Process completed @@@")
+
+    def log_dict(self, tolog, name="", level="info"):
+        """ Add log entry for dictionnary (e.g. created from argparse using  vars)"""
+        assert level in ["info", "warning", "critical", "error"]
+        logfun = getattr(self, level)
+        sep = self.get_separator("+", 20)
+        logfun(sep)
+        if name!="":
+            logfun(f"{name}:")
+        for k, v in tolog.items():
+            logfun(" "*4+f"{k} = {v}")
+
+        logfun(sep)
+        logfun("")
+
 
 
 class ContextualLogger(StartedCompletedLogger):
@@ -173,8 +185,7 @@ class ContextualLogger(StartedCompletedLogger):
         self.info("")
         self._context = str(value)
         if self._context != "":
-            sep = LOGGER_SEPARATOR_CONTEXTUAL\
-                        *LOGGER_NSEPARATORS_CONTEXTUAL
+            sep = self.get_separator("#", 3)
             mess = sep+" "+self._context+" "+sep
             self.info(mess)
 

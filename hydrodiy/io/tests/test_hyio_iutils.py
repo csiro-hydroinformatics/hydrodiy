@@ -124,6 +124,7 @@ def test_get_logger():
     logger1.error("error")
     logger1.critical("critical")
     logger1.warning("warning")
+    logger1.log_dict({"a": 1, "b": "asdasd"}, "test", "warning")
 
     assert flog1.exists()
 
@@ -136,6 +137,8 @@ def test_get_logger():
     ck = ck & txt[5].strip().endswith("ERROR | error")
     ck = ck & txt[6].strip().endswith("CRITICAL | critical")
     ck = ck & txt[7].strip().endswith("WARNING | warning")
+    ck = ck & txt[9].strip().endswith("WARNING | test:")
+    ck = ck & txt[10].strip().endswith("WARNING |     a = 1")
     assert ck
 
     # Test logging with different format
@@ -152,8 +155,8 @@ def test_get_logger():
 
     with open(flog2, "r") as fl:
         txt = fl.readlines()
-    expected = ["@@@ Process started @@@", "-"*50, ""]+mess+\
-                ["", "-"*50, "@@@ Process completed @@@"]
+    expected = ["@@@ Process started @@@", "-"*30, ""]+mess+\
+                ["", "-"*30, "@@@ Process completed @@@"]
     assert expected == [t.strip() for t in txt]
 
     # Close log file handler and delete files
