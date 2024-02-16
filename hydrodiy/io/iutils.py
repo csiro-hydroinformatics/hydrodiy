@@ -118,24 +118,48 @@ def script_template(filename, comment,
 class StartedCompletedLogger():
     """ Add context to logging messages via the context attribute """
 
-    def __init__(self, logger):
+    def __init__(self, logger, \
+                    separator_charac="-", \
+                    separator_length=50, \
+                    dictseparator_charac="+", \
+                    dictseparator_length=30, \
+                    tab_length=4):
         errmess = "Expected a logger object"
         assert isinstance(logger, logging.Logger), errmess
         self._logger = logger
 
+        self.separator_charac = separator_charac
+        self.separator_length = separator_length
+
+        self.dictseparator_charac = dictseparator_charac
+        self.dictseparator_length = dictseparator_length
+
+        self.tab_length = tab_length
+
     def get_separator(self, nsep, sep):
         return sep*nsep
 
-    def error(self, msg, *args, **kwargs):
+    def add_tab(self, msg, ntab):
+        if ntab==0:
+            return msg
+
+        tab_space = " "*self.tab_length*ntab
+        return tab_space+msg
+
+    def error(self, msg, ntab=0, *args, **kwargs):
+        msg = self.add_tab(msg, ntab)
         return self._logger.error(msg, *args, **kwargs)
 
-    def info(self, msg, *args, **kwargs):
+    def info(self, msg, ntab=0, *args, **kwargs):
+        msg = self.add_tab(msg, ntab)
         return self._logger.info(msg, *args, **kwargs)
 
-    def warning(self, msg, *args, **kwargs):
+    def warning(self, msg, ntab=0, *args, **kwargs):
+        msg = self.add_tab(msg, ntab)
         return self._logger.warning(msg, *args, **kwargs)
 
-    def critical(self, msg, *args, **kwargs):
+    def critical(self, msg, ntab=0, *args, **kwargs):
+        msg = self.add_tab(msg, ntab)
         return self._logger.critical(msg, *args, **kwargs)
 
     @property
@@ -144,24 +168,28 @@ class StartedCompletedLogger():
 
     def started(self):
         self.info("@@@ Process started @@@")
-        self.info(self.get_separator("-", 30))
+        self.info(self.get_separator(self.separator_charac, \
+                                            self.separator_length))
         self.info("")
 
     def completed(self):
         self.info("")
-        self.info(self.get_separator("-", 30))
+        self.info(self.get_separator(self.separator_charac, \
+                                            self.separator_length))
         self.info("@@@ Process completed @@@")
 
     def log_dict(self, tolog, name="", level="info"):
         """ Add log entry for dictionnary (e.g. created from argparse using  vars)"""
         assert level in ["info", "warning", "critical", "error"]
         logfun = getattr(self, level)
-        sep = self.get_separator("+", 20)
+        sep = self.get_separator(self.dictseparator_charac, \
+                                    self.dictseparator_length)
         logfun(sep)
         if name!="":
             logfun(f"{name}:")
         for k, v in tolog.items():
-            logfun(" "*4+f"{k} = {v}")
+            msg = self.add_tab(f"{k} = {v}", 1)
+            logfun(msg)
 
         logfun(sep)
         logfun("")
@@ -171,9 +199,17 @@ class StartedCompletedLogger():
 class ContextualLogger(StartedCompletedLogger):
     """ Add context to logging messages via the context attribute """
 
-    def __init__(self, logger):
+    def __init__(self, logger, \
+                        context_hasheader=False, \
+                        context_charac="#", \
+                        context_length=3, \
+                        *args, **kwargs):
         self._context = ""
-        super(ContextualLogger, self).__init__(logger)
+        self.context_hasheader = context_hasheader
+        self.context_charac = context_charac
+        self.context_length = context_length
+
+        super(ContextualLogger, self).__init__(logger, *args, **kwargs)
 
     @property
     def context(self):
@@ -184,8 +220,9 @@ class ContextualLogger(StartedCompletedLogger):
         self._context = ""
         self.info("")
         self._context = str(value)
-        if self._context != "":
-            sep = self.get_separator("#", 3)
+        if self._context != "" and self.context_hasheader:
+            sep = self.get_separator(self.context_charac, \
+                                        self.context_length)
             mess = sep+" "+self._context+" "+sep
             self.info(mess)
 
@@ -193,25 +230,26 @@ class ContextualLogger(StartedCompletedLogger):
         self.context = ""
         super(ContextualLogger, self).completed()
 
-    def get_message(self, msg):
+    def get_message(self, msg, ntab):
         if self.context != "":
-            return "{{ {0} }} {1}".format(self.context, msg)
+            tab = " "*self.tab_length*ntab if ntab>0 else ""
+            return "{{ {0} }} {1}{2}".format(self.context, tab, msg)
         return msg
 
-    def error(self, msg, *args, **kwargs):
-        msg = self.get_message(msg)
+    def error(self, msg, ntab=0, *args, **kwargs):
+        msg = self.get_message(msg, ntab)
         return self._logger.error(msg, *args, **kwargs)
 
-    def info(self, msg, *args, **kwargs):
-        msg = self.get_message(msg)
+    def info(self, msg, ntab=0, *args, **kwargs):
+        msg = self.get_message(msg, ntab)
         return self._logger.info(msg, *args, **kwargs)
 
-    def warning(self, msg, *args, **kwargs):
-        msg = self.get_message(msg)
+    def warning(self, msg, ntab=0, *args, **kwargs):
+        msg = self.get_message(msg, ntab)
         return self._logger.warning(msg, *args, **kwargs)
 
-    def critical(self, msg, *args, **kwargs):
-        msg = self.get_message(msg)
+    def critical(self, msg, ntab=0, *args, **kwargs):
+        msg = self.get_message(msg, ntab)
         return self._logger.critical(msg, *args, **kwargs)
 
 

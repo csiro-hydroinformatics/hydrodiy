@@ -121,6 +121,8 @@ def test_get_logger():
     mess = ["flog1 A", "flog1 B"]
     logger1.info(mess[0])
     logger1.info(mess[1])
+    logger1.info("test tab1", 1)
+    logger1.info("test tab2", 2)
     logger1.error("error")
     logger1.critical("critical")
     logger1.warning("warning")
@@ -134,11 +136,14 @@ def test_get_logger():
     ck = txt[0].strip().endswith("INFO | @@@ Process started @@@")
     ck = ck & txt[3].strip().endswith("INFO | "+mess[0])
     ck = ck & txt[4].strip().endswith("INFO | "+mess[1])
-    ck = ck & txt[5].strip().endswith("ERROR | error")
-    ck = ck & txt[6].strip().endswith("CRITICAL | critical")
-    ck = ck & txt[7].strip().endswith("WARNING | warning")
-    ck = ck & txt[9].strip().endswith("WARNING | test:")
-    ck = ck & txt[10].strip().endswith("WARNING |     a = 1")
+    ck = ck & txt[5].strip().endswith("INFO |     test tab1")
+    ck = ck & txt[6].strip().endswith("INFO |         test tab2")
+    ck = ck & txt[7].strip().endswith("ERROR | error")
+    ck = ck & txt[8].strip().endswith("CRITICAL | critical")
+    ck = ck & txt[9].strip().endswith("WARNING | warning")
+    ck = ck & txt[11].strip().endswith("WARNING | test:")
+    ck = ck & txt[12].strip().endswith("WARNING |     a = 1")
+
     assert ck
 
     # Test logging with different format
@@ -155,8 +160,13 @@ def test_get_logger():
 
     with open(flog2, "r") as fl:
         txt = fl.readlines()
-    expected = ["@@@ Process started @@@", "-"*30, ""]+mess+\
-                ["", "-"*30, "@@@ Process completed @@@"]
+    expected = ["@@@ Process started @@@", \
+                    logger2.separator_charac*logger2.separator_length, \
+                        ""]+\
+                mess+\
+                ["", \
+                    logger2.separator_charac*logger2.separator_length, \
+                    "@@@ Process completed @@@"]
     assert expected == [t.strip() for t in txt]
 
     # Close log file handler and delete files
@@ -174,6 +184,7 @@ def test_get_logger_contextual():
     # Test logging
     logger = iutils.get_logger("bidule", flog=flog,\
                 contextual=True)
+    logger.context_hasheader = True
 
     mess = ["flog1 A", "flog1 B"]
     logger.context = "context1"
@@ -184,6 +195,7 @@ def test_get_logger_contextual():
     logger.error("error")
     logger.critical("critical")
     logger.warning("warning")
+    logger.info("test tab3", 3)
 
     logger.completed()
 
@@ -198,7 +210,8 @@ def test_get_logger_contextual():
     ck &= bool(re.search("ERROR . \\{ context2 \\}", txt[9]))
     ck &= bool(re.search("CRITICAL . \\{ context2 \\}", txt[10]))
     ck &= bool(re.search("WARNING . \\{ context2 \\}", txt[11]))
-    ck &= bool(re.search("@@@ Process completed @@@", txt[15]))
+    ck &= bool(re.search("INFO . \\{ context2 \\}             test tab3", txt[12]))
+    ck &= bool(re.search("@@@ Process completed @@@", txt[16]))
     assert ck
 
     logger.handlers[1].close()
