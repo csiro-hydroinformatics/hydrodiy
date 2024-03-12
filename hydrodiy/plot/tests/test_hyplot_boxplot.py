@@ -136,6 +136,7 @@ def test_width_by_count():
 
 
 def test_coverage():
+    plt.close("all")
     fig, axs = plt.subplots(ncols=2)
 
     bx1 = Boxplot(data=DATA)
@@ -150,6 +151,7 @@ def test_coverage():
 
 
 def test_coverage_by():
+    plt.close("all")
     fig, ax = plt.subplots()
     cat = DATA["cat"].copy()
     cat.loc[cat<3] = 0
@@ -160,6 +162,7 @@ def test_coverage_by():
 
 
 def test_item_change():
+    plt.close("all")
     fig, ax = plt.subplots()
     bx = Boxplot(data=DATA)
     bx.median.textformat = "%0.4f"
@@ -169,6 +172,7 @@ def test_item_change():
 
 
 def test_center():
+    plt.close("all")
     fig, ax = plt.subplots()
     bx = Boxplot(data=DATA)
     bx.median.va = "bottom"
@@ -197,6 +201,7 @@ def test_narrow():
     df = pd.DataFrame(np.random.normal(size=(nval, nvar)), \
             columns = ["data{0}".format(i) for i in range(nvar)])
 
+    plt.close("all")
     fig, ax = plt.subplots()
     bx = Boxplot(style="narrow", data=df)
     bx.draw(ax=ax)
@@ -209,6 +214,7 @@ def test_showtext():
     df = pd.DataFrame(np.random.normal(size=(nval, nvar)), \
             columns = ["data{0}".format(i) for i in range(nvar)])
 
+    plt.close("all")
     fig, axs = plt.subplots(ncols=2)
     bx = Boxplot(data=df)
     bx.draw(ax=axs[0])
@@ -225,6 +231,7 @@ def test_center_text():
     df = pd.DataFrame(np.random.normal(size=(nval, nvar)), \
             columns = ["data{0}".format(i) for i in range(nvar)])
 
+    plt.close("all")
     fig, axs = plt.subplots(ncols=2)
     bx = Boxplot(data=df)
     bx.draw(ax=axs[0])
@@ -241,6 +248,7 @@ def test_number_format():
     df = pd.DataFrame(np.random.normal(size=(nval, nvar)), \
             columns = ["data{0}".format(i) for i in range(nvar)])
 
+    plt.close("all")
     fig, ax = plt.subplots()
     bx = Boxplot(data=df, number_format="3.3e")
     bx.draw(ax=ax)
@@ -248,6 +256,7 @@ def test_number_format():
 
 
 def test_change_elements():
+    plt.close("all")
     fig, ax = plt.subplots()
     bx = Boxplot(data=DATA, show_text=True)
     bx.draw(ax=ax)
@@ -257,7 +266,7 @@ def test_change_elements():
     line.set_solid_capstyle("round")
     line.set_linewidth(8)
 
-    line = bx.elements["data1"]["top-cap"]
+    line = bx.elements["data1"]["top-cap1"]
     line.set_color("green")
     line.set_solid_capstyle("round")
     line.set_linewidth(6)
@@ -270,6 +279,7 @@ def test_change_elements():
 
 
 def test_set_ylim():
+    plt.close("all")
     fig, axs = plt.subplots(ncols=2)
     ax = axs[0]
     bx = Boxplot(data=DATA)
@@ -282,3 +292,22 @@ def test_set_ylim():
     bx.set_ylim((1, y1), False)
 
     fig.savefig(FIMG /"bx20_set_ylim.png")
+
+
+def test_set_color():
+    plt.close("all")
+    fig, ax = plt.subplots()
+    bx = Boxplot(data=DATA)
+    bx.draw(ax=ax)
+    bx.set_color(".*a2$", "tab:red")
+
+    fig.savefig(FIMG /"bx21_set_color.png")
+
+    plt.close("all")
+    fig, ax = plt.subplots()
+    bx = Boxplot(data=DATA, style="narrow")
+    bx.draw(ax=ax)
+    bx.set_color(".*a2$", "tab:red")
+
+    fig.savefig(FIMG /"bx22_set_color_narrow.png")
+

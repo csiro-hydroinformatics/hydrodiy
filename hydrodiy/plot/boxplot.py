@@ -594,7 +594,8 @@ class Boxplot(object):
             # Draw whiskers
             item = self.whiskers
             if item.show_line:
-                for cc in [[wqq1txt, bqq1txt], [wqq2txt, bqq2txt]]:
+                wnames = [[wqq1txt, bqq1txt], [wqq2txt, bqq2txt]]
+                for icc, cc in enumerate(wnames):
                     # Get y data
                     q1 = stats.loc[cc[0], colname]
                     q2 = stats.loc[cc[1], colname]
@@ -606,8 +607,8 @@ class Boxplot(object):
                         ax.plot(x, y, lw=item.linewidth,
                             color=item.linecolor, \
                             alpha=item.alpha)
-                        element["bottom-whiskers"] = ax.get_lines()[-2]
-                        element["top-whiskers"] = ax.get_lines()[-1]
+                        element[f"bottom-whiskers{icc+1}"] = ax.get_lines()[-2]
+                        element[f"top-whiskers{icc+1}"] = ax.get_lines()[-1]
                     else:
                         # Draw box
                         bbox = FancyBboxPatch([i-ww/2+xoffset, q1], \
@@ -619,7 +620,7 @@ class Boxplot(object):
                             alpha=item.alpha)
 
                         ax.add_patch(bbox)
-                        element["whiskers"] = ax.patches[-1]
+                        element[f"whiskers{icc+1}"] = ax.patches[-1]
 
             # Cap width
             cw = capswidths[i]
@@ -627,7 +628,7 @@ class Boxplot(object):
             # Draw caps
             item = self.caps
             if item.show_line and cw>0:
-                for qq in [wqq1txt, wqq2txt]:
+                for iqq, qq in enumerate([wqq1txt, wqq2txt]):
                     q1 = stats.loc[qq, colname]
                     x = [i-cw/5+xoffset, i+cw/5+xoffset]
                     y = [q1]*2
@@ -635,8 +636,8 @@ class Boxplot(object):
                         color=item.linecolor, \
                         alpha=item.alpha)
 
-                    element["bottom-cap"] = ax.get_lines()[-2]
-                    element["top-cap"] = ax.get_lines()[-1]
+                    element[f"bottom-cap{iqq+1}"] = ax.get_lines()[-2]
+                    element[f"top-cap{iqq+1}"] = ax.get_lines()[-1]
 
             # Box (quartile) values
             item = self.box
@@ -793,3 +794,39 @@ class Boxplot(object):
 
             # Set axis limits
             self.ax.set_ylim(ylim)
+
+
+    def set_color(self, name_pattern, color, alpha=0.5):
+        """ Set color for selected boxes identied by
+        name_pattern.
+
+        Parameters
+        -----------
+        name_pattern : str
+            Pattern selection for box selection.
+        color : str
+            Color to set
+        alpha : float
+            Transparency level.
+        """
+        props = ["color", "linecolor", \
+                    "edgecolor", "markeredgecolor", \
+                    "facecolor"]
+
+        for ename, elems in self.elements.items():
+            if not re.search(name_pattern, ename):
+                continue
+
+            for on, obj in elems.items():
+                for prop in props:
+                    # Set color to element.
+                    # Try all properties with try
+                    try:
+                        fun = getattr(obj, f"set_{prop}")
+                        fun(color)
+                    except:
+                        pass
+
+                    if re.search("box", on):
+                        obj.set_alpha(alpha)
+
