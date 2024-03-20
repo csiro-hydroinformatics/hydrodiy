@@ -159,7 +159,8 @@ def ozlayer(ax, name, filter_field=None, filter_regex=None, proj=None, \
     return lines
 
 
-def ozcities(ax, filter_regex=None, \
+def ozcities(ax, cities=None, \
+                filter_regex=None, \
                 fixed_lim=True, plot_kwargs={}, \
                 text_kwargs={}, proj=None):
     """ plot Australian capital cities.
@@ -168,10 +169,33 @@ def ozcities(ax, filter_regex=None, \
     -----------
     ax : matplotlib.axes
         Axe to draw data on
-       Shapefile field to filter on.
+        Shapefile field to filter on.
+    cities : dict
+        Dictionnary containing cities and their coordinates:
+        { city_name: [x, y] }
     fiter_regex : str
-        Regular expression to filter cities.
+        Regular expression to filter city name.
+    plot_kwargs : dict
+        Argument passed to plot the point representing a city.
+    text_kwargs : dict
+        Argument passed to write the city name.
+        This can be used to adjust label placement. For example,
+        the following can be used to add shadow (path effect) and
+        offset the labels:
+
+        text_kwargs = dict(
+            path_effects=[pe.withStroke(linewidth=3, foreground="w")], \
+            textcoords="offset pixels",\
+            fontsize=12, \
+            xytext=(20, 8)
+        )
+    proj : pyproj.CRS
+        Projec coordinates.
+
     """
+    if cities is None:
+        cities = CAPITAL_CITIES
+
     # Plot options
     plot_kwargs["marker"] = plot_kwargs.get("marker", "s")
     plot_kwargs["mfc"] = plot_kwargs.get("mfc", "tab:orange")
@@ -187,7 +211,7 @@ def ozcities(ax, filter_regex=None, \
     xlim, ylim = ax.get_xlim(), ax.get_ylim()
 
     elements = {}
-    for icity, (city, xy) in enumerate(CAPITAL_CITIES.items()):
+    for icity, (city, xy) in enumerate(cities.items()):
         # Skip if filtered
         if not filter_regex is None:
             if not re.search(filter_regex, city):
