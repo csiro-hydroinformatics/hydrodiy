@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 import pytest
 
-from hydrodiy.gis.oz import REGIONS, HAS_PYSHP, ozlayer, ozcities
+from hydrodiy.gis.oz import REGIONS, HAS_PYSHP, ozlayer, ozcities, CAPITAL_CITIES
 from hydrodiy.plot import putils
 
 import numpy as np
@@ -80,7 +80,7 @@ def test_ozlayer_proj():
     plt.savefig(fp)
 
 
-def test_ozcities():
+def test_ozcities_kw():
     """ Test plotting oz cities """
     plt.close("all")
     fig, ax = plt.subplots()
@@ -119,22 +119,7 @@ def test_ozcities_options():
                 color="k", lw=0.5, fixed_lim=False)
     elems = ozcities(ax, plot_kwargs={"ms": 5, "mfc": "tab:red"})
 
-    fp = FIMG / "ozcities_options1.png"
-    plt.savefig(fp)
-
-    plt.close("all")
-    fig, ax = plt.subplots()
-    lines = ozlayer(ax, "ozcoast50m",  \
-                color="k", lw=0.5, fixed_lim=False)
-    kw = dict(
-        path_effects=[pe.withStroke(linewidth=3, foreground="w")], \
-        textcoords="offset pixels",\
-        fontsize=12, \
-        xytext=(6, 3)
-    )
-    elems = ozcities(ax, text_kwargs=kw)
-
-    fp = FIMG / "ozcities_options2.png"
+    fp = FIMG / "ozcities_options.png"
     plt.savefig(fp)
 
 
@@ -155,6 +140,39 @@ def test_ozcities_proj():
     fp = FIMG / "ozcities_proj.png"
     plt.savefig(fp)
 
+
+def test_ozcities_manual():
+    """ Test plotting oz cities using filter """
+    plt.close("all")
+    fig, ax = plt.subplots()
+    lines = ozlayer(ax, "ozcoast50m",  \
+                color="k", lw=0.5, fixed_lim=False)
+
+    cities = dict(
+        Sydney=[-33.86785, 151.20732], \
+        Melbourne=[	-37.814, 144.96332], \
+        Brisbane=[-27.46794, 153.02809], \
+        Perth=[-31.95224, 115.8614], \
+        Adelaide=[-34.92866, 138.59863], \
+        Canberra=[-35.28346, 149.12807], \
+        Newcastle=[-32.92953, 151.7801], \
+        Wollongong=[-34.424, 150.89345], \
+        Geelong=[-38.14711, 144.36069], \
+        Hobart=[-42.87936, 147.32941], \
+        Townsville=[-19.26639, 146.80569], \
+        Cairns=[-16.92366, 145.76613], \
+        Ballarat=[-37.56622, 143.84957], \
+        Toowoomba=[-27.56056, 151.95386], \
+        Darwin=[-12.46113, 130.84185], \
+        Mandurah=[-32.5269, 115.7217], \
+        Mackay=[-21.15345, 149.16554], \
+        Bundaberg=[-24.86621, 152.3479]
+    )
+    c = {n: (cc[1], cc[0]) for n, cc in cities.items()}
+    elems = ozcities(ax, cities=c)
+
+    fp = FIMG / "ozcities_manual.png"
+    plt.savefig(fp)
 
 
 
