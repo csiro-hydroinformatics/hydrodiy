@@ -119,7 +119,22 @@ def test_ozcities_options():
                 color="k", lw=0.5, fixed_lim=False)
     elems = ozcities(ax, plot_kwargs={"ms": 5, "mfc": "tab:red"})
 
-    fp = FIMG / "ozcities_options.png"
+    fp = FIMG / "ozcities_options1.png"
+    plt.savefig(fp)
+
+    plt.close("all")
+    fig, ax = plt.subplots()
+    lines = ozlayer(ax, "ozcoast50m",  \
+                color="k", lw=0.5, fixed_lim=False)
+    kw = dict(
+        path_effects=[pe.withStroke(linewidth=3, foreground="w")], \
+        textcoords="offset pixels",\
+        fontsize=12, \
+        xytext=(6, 3)
+    )
+    elems = ozcities(ax, text_kwargs=kw)
+
+    fp = FIMG / "ozcities_options2.png"
     plt.savefig(fp)
 
 
