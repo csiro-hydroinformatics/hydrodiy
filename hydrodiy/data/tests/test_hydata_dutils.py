@@ -282,7 +282,7 @@ def test_combi(allclose):
 @pytest.mark.skipif(not has_c_module("data", False), reason=SKIPMESS)
 def test_var2h_hourly(allclose):
     nval = 24*365*20
-    dt = pd.date_range(start="1968-01-01", freq="H", periods=nval)
+    dt = pd.date_range(start="1968-01-01", freq="h", periods=nval)
     se = pd.Series(np.arange(nval), index=dt)
 
     seh = dutils.var2h(se, display=True)
@@ -531,14 +531,14 @@ def test_compute_aggindex(allclose):
     m = dutils.compute_aggindex(t, "MS")
     assert allclose(m, t.year*100+t.month)
 
-    t = pd.date_range("2003-01-01", "2004-12-31", freq="H")
+    t = pd.date_range("2003-01-01", "2004-12-31", freq="h")
     d = dutils.compute_aggindex(t, "D")
     assert np.unique(d).shape[0] == 731
     assert d[-1] == 20041231
 
     t = pd.date_range("2003-01-01 00:00:00", \
                     "2003-01-10 23:00:00", freq="min")
-    h = dutils.compute_aggindex(t, "H")
+    h = dutils.compute_aggindex(t, "h")
     assert np.unique(h).shape[0] == 240
     assert h[-1] == 2003011023
 
