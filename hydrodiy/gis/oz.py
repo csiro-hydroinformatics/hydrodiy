@@ -2,7 +2,6 @@
 
 import re, os, json, tarfile
 from pathlib import Path
-import pkg_resources
 
 import numpy as np
 import pandas as pd
@@ -23,7 +22,8 @@ except (ImportError, FileNotFoundError) as err:
     pass
 
 # Decompress australia shoreline shapefile
-FDATA = Path(pkg_resources.resource_filename(__name__, "data"))
+FHERE = Path(__file__).resolve().parent
+FDATA = FHERE / "data"
 SHAPEFILES = {
     "ozcoast10m": FDATA / "ne_10m_admin_0_countries_australia.shp", \
     "ozcoast50m": FDATA / "ne_50m_admin_0_countries_australia.shp", \

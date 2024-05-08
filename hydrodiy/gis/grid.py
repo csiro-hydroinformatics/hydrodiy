@@ -2,7 +2,6 @@
 
 import re, os
 from pathlib import Path
-import pkg_resources
 import math
 import copy
 import zipfile
@@ -39,8 +38,8 @@ FLOWDIRCODE = np.array([[32, 64, 128],
                             [8, 4, 2]]).astype(np.int64)
 
 # Path to hygis data
-F_HYGIS_DATA = Path(pkg_resources.resource_filename(__name__, "data"))
-
+FHERE = Path(__file__).resolve().parent
+F_HYGIS_DATA = FHERE / "data"
 
 # AWRAL subgrids
 FZIP_AWRAL_SUBGRIDS = F_HYGIS_DATA/"AWRAL_SUBGRIDS.zip"

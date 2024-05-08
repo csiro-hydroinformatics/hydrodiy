@@ -127,7 +127,7 @@ def compute_aggindex(time, timestep):
                         f" timestep={timestep}."
             assert mth in allowed, errmsg
     else:
-        allowed = ["D", "H", "MS"]
+        allowed = ["D", "h", "MS"]
         errmsg = f"Expected time step in {'/'.join(allowed)}, got {timestep}."
         assert timestep in allowed, errmsg
 
@@ -140,7 +140,7 @@ def compute_aggindex(time, timestep):
         return time.year*100+time.month
     elif timestep == "D":
         return time.year*10000+time.month*100+time.day
-    elif timestep == "H":
+    elif timestep == "h":
         return time.year*1000000+time.month*10000\
                     +time.day*100+time.hour
 
@@ -501,7 +501,7 @@ def var2h(se, nbsec_per_period=3600, maxgapsec=5*86400, rainfall=False, display=
         raise ValueError(f"c_hydrodiy_data.var2h returns {ierr}")
 
     # Convert to hourly series
-    freq = "H" if nbsec_per_period == 3600 else "30min"
+    freq = "h" if nbsec_per_period == 3600 else "30min"
     dt = pd.date_range(hstart, freq=freq, periods=nvalh)
     hvalues = pd.Series(hvalues, index=dt)
 
