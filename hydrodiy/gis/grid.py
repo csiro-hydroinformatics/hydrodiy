@@ -1767,7 +1767,8 @@ def get_grid(name):
         info = AWRAL_SUBGRIDS.loc[idx, :].iloc[0]
 
         # Generate file names
-        fh = "{}/{}.hdr".format(info.entity_type, re.sub("\..*$", "", info.grid_file))
+        fh = "{}/{}.hdr".format(info.entity_type, \
+                            re.sub("\\..*$", "", info.grid_file))
 
         # Reads data
         gr = Grid.from_zip(FZIP_AWRAL_SUBGRIDS, fh)
