@@ -115,6 +115,17 @@ def test_violin_missing():
     fig.savefig(fp)
 
 
+def test_violin_allnan():
+    plt.close("all")
+    df = DATA1.copy()
+    df.iloc[:, 0] = np.nan
+    vl = Violin(data=df)
+    fig, ax = plt.subplots()
+    vl.draw(ax=ax)
+    fp = FIMG / "violin_allnan.png"
+    fig.savefig(fp)
+
+
 def test_violin_log():
     plt.close("all")
     vl = Violin(data=DATA2)

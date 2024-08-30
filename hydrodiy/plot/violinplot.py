@@ -210,9 +210,10 @@ class Violin(object):
         # Compute kde
         for cn, se in data.items():
             notnull = se.notnull()
-            if notnull.sum() <= 2:
-                errmess = f"Less than 2 valid data in {cn}."
-                raise ValueError(errmess)
+            if notnull.sum()<=2:
+                kde_x.loc[:, cn] = np.nan
+                kde_y.loc[:, cn] = np.nan
+                continue
 
             sen = se[notnull]
             kernel = gaussian_kde(sen.values)
@@ -253,6 +254,8 @@ class Violin(object):
         for i, colname in enumerate(kde_x.columns):
             # Get kde data
             x = kde_x.loc[:, colname]
+            if x.isnull().all():
+                continue
             y = kde_y.loc[:, colname]
 
             # initialise boxplot elements
@@ -344,3 +347,8 @@ class Violin(object):
         xt = np.arange(ncols)
         ax.set_xticks(xt)
         ax.set_xticklabels(kde_x.columns)
+
+        ncols = kde_x.shape[1]
+        xlim = (-vw, ncols-1+vw)
+        ax.set_xlim(xlim)
+
