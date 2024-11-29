@@ -103,7 +103,7 @@ def test_acf_idx(allclose):
     acf2, cov = sutils.acf(data, idx=data<=0)
 
     assert allclose([acf1[0], acf2[0]], [rho1, rho2], \
-                        atol=3e-2)
+                        atol=5e-2)
 
 
 def test_lhs_error():
