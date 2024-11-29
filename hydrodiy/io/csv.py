@@ -56,7 +56,8 @@ def _header2comment(header):
     return comment
 
 
-def _csvhead(nrow, ncol, comment, source_file, author=None):
+def _csvhead(nrow, ncol, comment, source_file, author=None, \
+                    add_sys_comments=True):
     """ Produces a nice header for csv files """
 
     # Generate the comments dict
@@ -85,13 +86,6 @@ def _csvhead(nrow, ncol, comment, source_file, author=None):
     head.append(f'# nrow : {nrow}')
     head.append(f'# ncol : {ncol}')
 
-    for key in sorted(comments):
-        head.append(f'# {key} : {comments[key]}')
-
-    now = datetime.now()
-    head.append('# time_generated : ' + \
-                        datetime.strftime(now, '%Y-%m-%d %H:%M:%S'))
-
     # seek author
     if author is None:
         try:
@@ -101,20 +95,29 @@ def _csvhead(nrow, ncol, comment, source_file, author=None):
 
     head.append('# author : ' + author)
 
-    # seek source file
-    head.append(f'# source_file : {source_file}')
+    # Add comments
+    for key in sorted(comments):
+        head.append(f'# {key} : {comments[key]}')
 
-    # Python config
-    head.append(f'# work_dir : {os.getcwd()}')
-    head.append(f'# python_environment {os.name}')
-    version = sys.version.replace("\n", " ")
-    head.append(f'# python_version : {version}')
-    head.append(f'# pandas_version : {pd.__version__}')
-    head.append(f'# numpy_version : {np.__version__}')
+    now = datetime.now()
+    head.append('# time_generated : ' + \
+                        datetime.strftime(now, '%Y-%m-%d %H:%M:%S'))
 
-    if HAS_DISTUTILS:
-        head.append('# python_inc : ' + get_python_inc())
-        head.append('# python_lib : ' + get_python_lib())
+    if add_sys_comments:
+        # seek source file
+        head.append(f'# source_file : {source_file}')
+
+        # Python config
+        head.append(f'# work_dir : {os.getcwd()}')
+        head.append(f'# python_environment {os.name}')
+        version = sys.version.replace("\n", " ")
+        head.append(f'# python_version : {version}')
+        head.append(f'# pandas_version : {pd.__version__}')
+        head.append(f'# numpy_version : {np.__version__}')
+
+        if HAS_DISTUTILS:
+            head.append('# python_inc : ' + get_python_inc())
+            head.append('# python_lib : ' + get_python_lib())
 
     head.append('# --------------------------------------------------')
 
@@ -177,6 +180,7 @@ def write_csv(data, filename, comment,\
         compress=True,\
         float_format='%0.5f',\
         archive=None,\
+        add_sys_comments=True, \
         **kwargs):
     ''' write a pandas dataframe to csv with comments in header
 
@@ -221,7 +225,8 @@ def write_csv(data, filename, comment,\
     head = _csvhead(data.shape[0], data.shape[1],\
                 comment,\
                 source_file=source_file,\
-                author=author)
+                author=author, \
+                add_sys_comments=add_sys_comments)
 
     # Check source_file exists
     if not os.path.exists(source_file):
