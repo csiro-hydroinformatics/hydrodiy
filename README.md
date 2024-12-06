@@ -32,5 +32,5 @@ A set of examples is provided in the folder [examples](examples).
 
 # License
 The source code and documentation of the hydrodiy package is licensed under the
-[BSD license](LICENSE.txt).
+[BSD license](LICENSE).
 

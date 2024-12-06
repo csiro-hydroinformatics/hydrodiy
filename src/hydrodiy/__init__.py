@@ -1,6 +1,8 @@
 import sys
 import importlib
 
+__version__ = "2.7"
+
 # Detect python version
 PYVERSION = 2
 if sys.version_info > (3, 0):
@@ -19,6 +21,3 @@ def has_c_module(name, raise_error=True):
         else:
             return False
 
-from ._version import get_versions
-__version__ = get_versions()['version']
-del get_versions

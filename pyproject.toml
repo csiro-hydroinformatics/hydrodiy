@@ -1,0 +1,49 @@
+[build-system]
+requires = [
+    "setuptools >= 64",
+    "cython >= 3.0.10",
+    "numpy >= 1.20.0"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hydrodiy"
+authors = [{name = "Julien Lerat, CSIRO Environment", email="julien.lerat@csiro.au"}]
+description = "Python toolbox for hydrological data processing"
+readme = "README.md"
+license = {file = "LICENSE"}
+keywords = ["data processing", "rainfall", "streamflow", "rainfall-runoff", "hydrology"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python 3",
+    "Programming Language :: C",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering :: Hydrology"
+]    
+requires-python = ">= 3.8"
+dependencies = [
+    "numpy >= 1.20.0",
+    "scipy >= 1.0.0",
+    "pandas >= 2.0.0"
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/csiro-hydroinformatics/hydrodiy"
+Repository = "https://github.com/csiro-hydroinformatics/hydrodiy"
+
+[tool.pytest.ini_options]
+testpaths = [
+    "src/hydrodiy/data/tests",
+    "src/hydrodiy/gis/tests",
+    "src/hydrodiy/io/tests",
+    "src/hydrodiy/plot/tests",
+    "src/hydrodiy/stats/tests"
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.dynamic]
+version = {attr = "hydrodiy.__version__"}

@@ -28,18 +28,18 @@ jobs:
       - name: Create conda environment if needed
         run: |
            source $CONDA/etc/profile.d/conda.sh
-           conda env create -f env_mini_v2.yml
+           conda env create -f env_hydrodiy.yml
 
       - name : Install hydrodiy package in conda env 
         run: |
           source $CONDA/etc/profile.d/conda.sh
-          conda activate env_mini_v2
+          conda activate env_hydrodiy
           pip install -e .
 
       - name: Run tests
         run: |
           source $CONDA/etc/profile.d/conda.sh
-          conda activate env_mini_v2
+          conda activate env_hydrodiy
           pytest --cov=hydrodiy --cov-config=.coveragerc --junitxml=junit/test-results.xml --cov-report=xml --cov-report=html hydrodiy
       
       - name: Upload pytest test results
@@ -57,6 +57,6 @@ jobs:
       - name: Run examples
         run: |
           source $CONDA/etc/profile.d/conda.sh
-          conda activate env_mini_v2
+          conda activate env_hydrodiy
           python examples/run_all_examples.py
         
