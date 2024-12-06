@@ -9,7 +9,7 @@ Python toolbox for hydrological data processing.
   statistical analysis, gis processing and plotting
 
 # Installation
-- Create a suitable python environment. We recommend using [miniconda](https://docs.conda.io/projects/miniconda/en/latest/) combined with the environment specification provided in the [env_mini.yml] (env_mini.yml) file in this repository.
+- Create a suitable python environment. We recommend using [miniconda](https://docs.conda.io/projects/miniconda/en/latest/) combined with the environment specification provided in the [env\_hydrodiy.yml](env_hydrodiy.yml) file in this repository.
 - Git clone this repository and run `pip install .`
 
 # Basic use
@@ -32,5 +32,5 @@ A set of examples is provided in the folder [examples](examples).
 
 # License
 The source code and documentation of the hydrodiy package is licensed under the
-[BSD license](LICENSE.txt).
+[BSD license](LICENSE).
 

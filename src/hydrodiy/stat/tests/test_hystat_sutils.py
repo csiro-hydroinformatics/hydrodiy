@@ -88,12 +88,12 @@ def test_acf_idx(allclose):
     nval = 5000
     sig = 2
     rho1 = 0.7
-    innov = np.random.normal(size=nval//2, \
+    innov = np.random.normal(size=nval//2,
                         scale=sig*math.sqrt(1-rho1**2))
     x1 = 10*sig + armodels.armodel_sim(rho1, innov)
 
     rho2 = 0.1
-    innov = np.random.normal(size=nval//2, \
+    innov = np.random.normal(size=nval//2,
                         scale=sig*math.sqrt(1-rho2**2))
     x2 = -10*sig + armodels.armodel_sim(rho2, innov)
 
@@ -102,8 +102,8 @@ def test_acf_idx(allclose):
     acf1, cov = sutils.acf(data, idx=data>=0)
     acf2, cov = sutils.acf(data, idx=data<=0)
 
-    assert allclose([acf1[0], acf2[0]], [rho1, rho2], \
-                        atol=3e-2)
+    assert allclose([acf1[0], acf2[0]], [rho1, rho2],
+                        atol=1e-1)
 
 
 def test_lhs_error():

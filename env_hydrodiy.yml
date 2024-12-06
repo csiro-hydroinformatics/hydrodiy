@@ -1,9 +1,10 @@
-name: env_mini_v2
+name: env_hydrodiy
 channels:
   - conda-forge
   - defaults
 dependencies:
   - cython=3.0.10
+  - flake8=7.1.1
   - matplotlib=3.8.4
   - numpy=1.26.4
   - pandas=2.2.1
@@ -16,5 +17,4 @@ dependencies:
   - requests=2.28.1
   - scipy=1.13.0
   - pip:
-    - versioneer
     - pytest-allclose

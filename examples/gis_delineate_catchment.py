@@ -32,7 +32,7 @@ upstreamxy = [145.7, -17.8]
 source_file = Path(__file__).resolve()
 froot  = source_file.parent
 
-fgrid = froot.parent / "hydrodiy" / "gis" / "tests" / "fdtest.bil"
+fgrid = froot.parent / "src" / "hydrodiy" / "gis" / "tests" / "fdtest.bil"
 
 fimg = froot / "images" / "catchments"
 fimg.mkdir(exist_ok=True, parents=True)

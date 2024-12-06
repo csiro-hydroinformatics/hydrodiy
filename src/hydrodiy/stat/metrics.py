@@ -1,5 +1,5 @@
 from pathlib import Path
-import re, os, math
+import math
 
 import numpy as np
 import pandas as pd
@@ -9,7 +9,6 @@ from scipy.stats import kstest, percentileofscore, spearmanr
 import warnings
 
 from hydrodiy.stat import transform
-from hydrodiy.stat import sutils
 from hydrodiy.io import csv
 
 from hydrodiy import has_c_module
@@ -22,7 +21,7 @@ EPS = 1e-10
 CVPATH = Path(__file__).resolve().parent / "data" / \
             "cramer_von_mises_test_pvalues.zip"
 CVM_TABLE, _ = csv.read_csv(CVPATH, index_col=0)
-CVM_NSAMPLE  = CVM_TABLE.columns.values.astype(int)
+CVM_NSAMPLE = CVM_TABLE.columns.values.astype(int)
 CVM_QQ = CVM_TABLE.index.values
 CVM_TABLE = CVM_TABLE.values
 
@@ -40,11 +39,9 @@ def __check_ensemble_data(obs, ens):
     ens = np.atleast_2d(ens).astype(np.float64)
 
     # Check dimensions
-    if ens.shape[0]!=obs.shape[0]:
-        raise ValueError("Expected ens with first dim equal to"+\
-            " {0}, got {1}".format( \
-            obs.shape[0], ens.shape[0]))
-
+    if ens.shape[0] != obs.shape[0]:
+        raise ValueError("Expected ens with first dim equal to" +
+                         " {0}, got {1}".format(obs.shape[0], ens.shape[0]))
     # Skip nan
     idx = pd.notnull(obs)
     idx = idx & pd.notnull(ens).any(axis=1)
@@ -70,8 +67,8 @@ def __nonulldata(tobs, tsim):
     nok = np.sum(idx)
     nval = len(tobs)
     if nok != nval:
-        warnings.warn(("There are {0} null values in"+\
-                " transformed data").format(nval-nok))
+        warnings.warn(("There are {0} null values in" +
+                       " transformed data").format(nval-nok))
 
     return tobs[idx], tsim[idx]
 
@@ -118,11 +115,11 @@ def pit(obs, ens, random=False, cst=0.3, kind="rank", censor=0.):
         dobs = np.random.uniform(-EPS, EPS, size=nforc)
         dens = np.random.uniform(-EPS, EPS, size=(nforc, nens))
 
-        pits = (ens+dens-(obs+dobs)[:, None]<0).astype(int)
+        pits = (ens+dens-(obs+dobs)[:, None] < 0).astype(int)
         pits = (np.sum(pits, 1)+0.5-cst)/(1.-cst+nens)
     else:
-        pits = np.array([percentileofscore(ensval, obsval, kind)/100. \
-                    for ensval, obsval in zip(ens, obs)])
+        pits = np.array([percentileofscore(ensval, obsval, kind)/100.
+                        for ensval, obsval in zip(ens, obs)])
 
     return pits, is_sudo
 
@@ -161,18 +158,17 @@ def crps(obs, ens):
     decompos = np.zeros(5, dtype=np.float64)
     is_sorted = 0
     ierr = c_hydrodiy_stat.crps(use_weights, is_sorted, obs, ens,
-                    weights, table, decompos)
-
-    if ierr!=0:
-        raise ValueError("c_crps returns %d"%ierr)
+                                weights, table, decompos)
+    if ierr != 0:
+        raise ValueError(f"c_crps returns {ierr}")
 
     table = pd.DataFrame(table)
     table.columns = ["freq", "a", "b", "g", "rank",
-                "reliability", "crps_potential"]
+                     "reliability", "crps_potential"]
 
-    decompos= pd.Series(decompos, \
-        index = ["crps", "reliability", "resolution", \
-            "uncertainty", "potential"])
+    index = ["crps", "reliability", "resolution",
+             "uncertainty", "potential"]
+    decompos = pd.Series(decompos, index=index)
 
     return decompos, table
 
@@ -208,8 +204,8 @@ def anderson_darling_test(unifdata):
     # run C code via cython
     ierr = c_hydrodiy_stat.ad_test(unifdata, outputs)
 
-    if ierr!=0:
-        raise ValueError("ad_test returns %d"%ierr)
+    if ierr != 0:
+        raise ValueError(f"ad_test returns {ierr}")
 
     adstat = outputs[0]
     pvalue = outputs[1]
@@ -286,8 +282,8 @@ def alpha(obs, ens, cst=0.3, type="CV", sudo_perc_threshold=5):
 
     # Warning if too much sudo pits
     if np.sum(is_sudo) > nforc*float(sudo_perc_threshold)/100:
-        warnings.warn(f"More than {sudo_perc_threshold}% sudo"+\
-                        " pits in pits series.")
+        warnings.warn(f"More than {sudo_perc_threshold}% sudo" +
+                      " pits in pits series.")
 
     if type == "KS":
         # KS test
@@ -299,8 +295,8 @@ def alpha(obs, ens, cst=0.3, type="CV", sudo_perc_threshold=5):
         # Anderson Darlin test
         stat, pvalue = anderson_darling_test(pits)
     else:
-        raise ValueError("Expected test type in [CV/KS/AD],"+\
-                " got {0}".format(type))
+        raise ValueError("Expected test type in [CV/KS/AD]," +
+                         f" got {type}")
 
     return stat, pvalue, is_sudo
 
@@ -355,23 +351,23 @@ def iqr(ens, ref, coverage=50.):
     nforc, _ = ens.shape
 
     if ref.shape[0] != nforc:
-        raise ValueError(("Expected clim to have {0} forecasts, "+\
-                        "got {1}").format(ref.shape[0], ens.shape[0]))
+        raise ValueError(f"Expected clim to have {ref.shape[0]} forecasts, "
+                         + f"got {ens.shape[0]}")
 
     # Initialise
     iqr = np.zeros((nforc, 3))
     iqr_clim = np.zeros((nforc, 3))
 
     # Coverage percentiles
-    perc =[coverage/2, 100.-coverage/2]
+    perc = [coverage/2, 100.-coverage/2]
 
     # Loop through forecasts
     for i in range(nforc):
-        iqr_clim[i, :2] = np.nanpercentile(ref[i,:], perc)
-        iqr_clim[i, 2] = iqr_clim[i,1]-iqr_clim[i,0]
+        iqr_clim[i, :2] = np.nanpercentile(ref[i, :], perc)
+        iqr_clim[i, 2] = iqr_clim[i, 1] - iqr_clim[i, 0]
 
-        iqr[i, :2] = np.nanpercentile(ens[i,:], perc)
-        iqr[i, 2] = iqr[i,1]-iqr[i,0]
+        iqr[i, :2] = np.nanpercentile(ens[i, :], perc)
+        iqr[i, 2] = iqr[i, 1] - iqr[i, 0]
 
     skill = 100*np.mean((iqr_clim[:, 2]-iqr[:, 2])/(iqr_clim[:, 2]+iqr[:, 2]))
     ratio = np.mean(iqr[:, 2]/iqr_clim[:, 2])
@@ -381,8 +377,8 @@ def iqr(ens, ref, coverage=50.):
     return skill, score, clim, ratio
 
 
-def bias(obs, sim, trans=transform.Identity(), excludenull=False, \
-                type="standard"):
+def bias(obs, sim, trans=transform.Identity(), excludenull=False,
+         type="standard"):
     """ Compute simulation bias
 
     Parameters
@@ -411,23 +407,21 @@ def bias(obs, sim, trans=transform.Identity(), excludenull=False, \
     sim = np.atleast_1d(sim)
 
     if obs.shape != sim.shape:
-        raise ValueError("Expected sim with dim equal "+\
-            "to {0}, got{1}".format( \
-            obs.shape, sim.shape))
+        raise ValueError("Expected sim with dim equal " +
+                         f"to {obs.shape}, got{sim.shape}")
 
     # Transform
     tobs = trans.forward(obs)
     tsim = trans.forward(sim)
 
     if excludenull:
-        tobs, tsim =  __nonulldata(tobs, tsim)
+        tobs, tsim = __nonulldata(tobs, tsim)
 
     # Compute mean(obs) and mean(sim)
     meano = np.mean(tobs)
     if abs(meano) < EPS:
-        warnings.warn(("Mean value of obs is close to "+\
-                "zero ({0:3.3e}), returning nan").format(\
-                    meano))
+        warnings.warn("Mean value of obs is close to " +
+                      f"zero ({meano:3.3e}), returning nan")
         return np.nan
 
     means = np.mean(tsim)
@@ -441,12 +435,12 @@ def bias(obs, sim, trans=transform.Identity(), excludenull=False, \
         if means > EPS and meano > EPS:
             bias_value = math.log(means)-math.log(meano)
         else:
-            warnings.warn("Cannot compute bias-log with "+\
-                "mo={:0.2f} and ms={:0.2f}".format(meano, means))
+            warnings.warn("Cannot compute bias-log with " +
+                          f"mo = {meano:0.2f} and ms = {means:0.2f}.")
             return np.nan
     else:
-        raise ValueError("Expected type in "+\
-                f"[standard/normalised/log], got {type}.")
+        raise ValueError("Expected type in " +
+                         f"[standard/normalised/log], got {type}.")
 
     return bias_value
 
@@ -476,15 +470,15 @@ def nse(obs, sim, trans=transform.Identity(), excludenull=False):
     sim = np.atleast_1d(sim)
 
     if obs.shape[0] != sim.shape[0]:
-        raise ValueError("Expected sim with dim equal "+\
-            f"to {obs.shape[0]}, got {sim.shape[0]}.")
+        raise ValueError("Expected sim with dim equal " +
+                         f"to {obs.shape[0]}, got {sim.shape[0]}.")
 
     # Transform
     tobs = trans.forward(obs)
     tsim = trans.forward(sim)
 
     if excludenull:
-        tobs, tsim =  __nonulldata(tobs, tsim)
+        tobs, tsim = __nonulldata(tobs, tsim)
 
     # SSE
     errs = np.sum((tsim-tobs)**2)
@@ -532,8 +526,8 @@ def dscore(obs, sim, eps=1e-6):
     eps = np.float64(eps)
 
     if sim.ndim != 2:
-        raise ValueError("Expected sim of dimension 2, "+\
-            "got {0}".format(sim.shape))
+        raise ValueError("Expected sim of dimension 2, " +
+                         f"got {sim.shape}.")
 
     nval, nens = sim.shape
 
@@ -582,22 +576,20 @@ def kge(obs, sim, trans=transform.Identity(), excludenull=False):
     sim = np.atleast_1d(sim)
 
     if obs.shape[0] != sim.shape[0]:
-        raise ValueError("KGE - Expected sim with dim equal "+\
-            "to {0}, got {1}".format( \
-            obs.shape[0], sim.shape[0]))
+        raise ValueError("KGE - Expected sim with dim equal " +
+                         f"to {obs.shape[0]}, got {sim.shape[0]}.")
 
     # Transform
     tobs = trans.forward(obs)
     tsim = trans.forward(sim)
     if excludenull:
-        tobs, tsim =  __nonulldata(tobs, tsim)
+        tobs, tsim = __nonulldata(tobs, tsim)
 
     # Means
     meano = np.mean(tobs)
     if abs(meano) < EPS:
-        warnings.warn(("KGE - Mean value of obs is close to "+\
-                "zero ({0:3.3e}), returning nan").format(\
-                    meano))
+        warnings.warn("KGE - Mean value of obs is close to " +
+                      f"zero ({meano:3.3e}), returning nan")
         return np.nan
 
     means = np.mean(tsim)
@@ -607,18 +599,17 @@ def kge(obs, sim, trans=transform.Identity(), excludenull=False):
     stds = np.std(tsim)
 
     if abs(stdo) < EPS:
-        warnings.warn(("KGE - Standard dev of obs is close to "+\
-                "zero ({0:3.3e}), returning nan").format(\
-                    stdo))
+        warnings.warn("KGE - Standard dev of obs is close to " +
+                      f"zero ({stdo:3.3e}), returning nan.")
         return np.nan
 
     # Correlation
     if abs(stds) > EPS:
         corr = np.corrcoef(tobs, tsim)[0, 1]
     else:
-        warnings.warn(("KGE - Standard dev of sim is close to "+\
-                "zero ({0:3.3e}), cannot compute correlation, "+\
-                "returning nan").format(stds))
+        warnings.warn("KGE - Standard dev of sim is close to " +
+                      f"zero ({stds:3.3e}), cannot compute correlation, " +
+                      "returning nan")
         return np.nan
 
     # KGE
@@ -627,9 +618,8 @@ def kge(obs, sim, trans=transform.Identity(), excludenull=False):
     return kge_value
 
 
-def corr(obs, ens, trans=transform.Identity(), \
-                    excludenull=False, \
-                    stat="median", type="Pearson", censor=1e-10):
+def corr(obs, ens, trans=transform.Identity(),
+         excludenull=False, stat="median", type="Pearson", censor=1e-10):
     """ Compute correlation coefficient
 
     Parameters
@@ -662,12 +652,12 @@ def corr(obs, ens, trans=transform.Identity(), \
     # Check data
     obs, ens, nforc, nens = __check_ensemble_data(obs, ens)
 
-    if not stat in ["median", "mean"]:
+    if stat not in ["median", "mean"]:
         raise ValueError("Expected stat in [mean/median], got "+stat)
 
-    if not type in ["Pearson", "Spearman", "censored"]:
-        raise ValueError("Expected type in [Pearson/Spearman/censored], "+\
-                                "got "+type)
+    if type not in ["Pearson", "Spearman", "censored"]:
+        raise ValueError("Expected type in [Pearson/Spearman/censored]," +
+                         f" got {type}.")
 
     # Transform
     tobs = trans.forward(obs)
@@ -680,13 +670,13 @@ def corr(obs, ens, trans=transform.Identity(), \
         tsim = np.nanmedian(tens, axis=1)
 
     if excludenull:
-        tobs, tsim =  __nonulldata(tobs, tsim)
+        tobs, tsim = __nonulldata(tobs, tsim)
 
     # Check std
     stdo = np.std(tobs)
     if abs(stdo) < EPS:
-        warnings.warn(("CORR - Standard dev of obs is close to "+\
-                "zero ({0:3.3e}), returning nan").format(stdo))
+        warnings.warn("CORR - Standard dev of obs is close to " +
+                      f"zero ({stdo:3.3e}), returning nan")
         return np.nan
 
     # Compute
@@ -698,8 +688,8 @@ def corr(obs, ens, trans=transform.Identity(), \
     return corr_value
 
 
-def absolute_peak_error(obs, sim, winerase=300, winpeakbefore=5, \
-                    winpeakafter=10, neventmax=500):
+def absolute_peak_error(obs, sim, winerase=300, winpeakbefore=5,
+                        winpeakafter=10, neventmax=500):
     """ Mean absolute peak time error
 
     Parameters
@@ -726,10 +716,10 @@ def absolute_peak_error(obs, sim, winerase=300, winpeakbefore=5, \
 
     # Check data
     obsc = np.array(obs).squeeze().copy()
-    obsc[obsc<0] = np.nan
+    obsc[obsc < 0] = np.nan
 
     simc = np.array(sim).squeeze().copy()
-    simc[simc<0] = np.nan
+    simc[simc < 0] = np.nan
 
     # Initialise
     nval = len(obsc)
@@ -742,20 +732,21 @@ def absolute_peak_error(obs, sim, winerase=300, winpeakbefore=5, \
     while nvalid > winerase and nevent < neventmax:
         # find max obs
         imax = np.nanargmax(obsc)
-        idx = np.clip(np.arange(imax-winpeakbefore, \
-                            imax+winpeakafter+1), 0, nval-1)
+        idx = np.clip(np.arange(imax-winpeakbefore,
+                      imax+winpeakafter+1), 0, nval-1)
 
         # find peak location in both obs and sim
         imaxo = np.nanargmax(obsc[idx])
         imaxs = np.nanargmax(simc[idx])
         delta = abs(imaxs-imaxo)
         aperr += delta
-        events.append({"start": idx[0], "end":idx[-1], "delta":delta, \
-                "imax_obs": imaxo, "imax_sim": imaxs})
+        events.append({"start": idx[0], "end": idx[-1],
+                       "delta": delta, "imax_obs": imaxo,
+                       "imax_sim": imaxs})
 
         # loop
-        idx = np.clip(np.arange(imax-winerase, imax+winerase+1), 0, \
-                    nval-1)
+        idx = np.clip(np.arange(imax-winerase, imax+winerase+1),
+                      0, nval-1)
         obsc[idx] = np.nan
         nvalid -= len(idx)
         nevent += 1
@@ -765,8 +756,8 @@ def absolute_peak_error(obs, sim, winerase=300, winpeakbefore=5, \
     return aperr/nevent, events
 
 
-def relative_percentile_error(obs, sim, percentile_range, \
-                            eps=0., modified=False, neval=50):
+def relative_percentile_error(obs, sim, percentile_range,
+                              eps=0., modified=False, neval=50):
     """ Mean relative percentile error
 
     Parameters
@@ -801,13 +792,11 @@ def relative_percentile_error(obs, sim, percentile_range, \
     if len(rg) != 2:
         raise ValueError("Expected len(rg) = 2, got {0}".format(len(rg)))
     if rg[1] < rg[0]+1:
-        raise ValueError("Expected rg[1] > rg[0]+1, "+\
-                        "got rg={0}".format(*rg))
+        raise ValueError(f"Expected rg[1] > rg[0]+1, got rg={rg[0]}, {rg[1]}.")
 
     for ir, r in enumerate(rg):
         if r < 0 or r > 100:
-            raise ValueError("Expected r[{0}] in [0, 100], got {1}".format(\
-                        ir, r))
+            raise ValueError(f"Expected r[{ir}] in [0, 100], got {r}.")
 
     # Process
     idx = pd.notnull(obs) & pd.notnull(sim)
@@ -822,8 +811,8 @@ def relative_percentile_error(obs, sim, percentile_range, \
             rp = (qs-qo)/(qo+eps)
 
         rperr += abs(rp)
-        perc.append({"quantile":qt, "qobs":qo, "qsim":qs, \
-                            "rel_perc_err":rp})
+        perc.append({"quantile": qt, "qobs": qo, "qsim": qs,
+                     "rel_perc_err": rp})
 
     rperr /= neval
     perc = pd.DataFrame(perc)
@@ -867,9 +856,9 @@ def confusion_matrix(obs, sim, ncat=None):
     # Add missing rows and columns
     if cm.shape != (ncat, ncat):
         for icat in range(ncat):
-            if not icat in cm.columns:
+            if icat not in cm.columns:
                 cm.loc[:, icat] = 0
-            if not icat in cm.index:
+            if icat not in cm.index:
                 cm.loc[icat, :] = 0
 
         # Re-order
@@ -921,9 +910,9 @@ def binary(conf_mat):
                     compared to total number of events. This is also
                     called proportion correct.
         * F1: F score. This is the harmonic mean of hit rate and precision.
-        * MCC: Matthews correlation coefficient. This is identical to the square root
-                    of the normalised Chi-squared measures of association (also
-                    referred to as "Phi").
+        * MCC: Matthews correlation coefficient. This is identical to
+               the square root of the normalised Chi-squared measures
+               of association (also referred to as "Phi").
         * LOR: Log odds ratio.
         * ORSS: Odd ratio skill score
         * EDS: Extreme dependency score (see Stephenson et al., 2008)
@@ -936,8 +925,8 @@ def binary(conf_mat):
     # Process confusion matrix
     conf_mat = np.array(conf_mat, dtype=np.int64)
     if conf_mat.shape != (2, 2):
-        raise ValueError("Expected confusion matrix of shape "+\
-            "(2, 2), got {}".format(conf_mat.shape))
+        raise ValueError("Expected confusion matrix of shape " +
+                         f"(2, 2), got {conf_mat.shape}.")
     # TP: true positive (hit)
     # FP: false positive (false alarm)
     # FN: false negative (miss)
@@ -956,7 +945,7 @@ def binary(conf_mat):
     theta = H*(1-F)/(1-H)/F
 
     LOR = np.nan
-    if H>0 and H<1 and F>0 and F<1:
+    if H > 0 and H < 1 and F > 0 and F < 1:
         LOR = math.log(theta)
 
     MCC = (TP*TN-FP*FN)/math.sqrt((TP+FP)*(TP+FN)*(TN+FP)*(TN+FN))
@@ -966,7 +955,7 @@ def binary(conf_mat):
         EDS = 2*math.log(Pobs/nval)/math.log(TP/nval)-1
 
     ORSS = np.nan
-    if theta>-1 and theta<1:
+    if theta > -1 and theta < 1:
         ORSS = (theta-1)/(theta+1)
 
     # Random values
@@ -979,33 +968,33 @@ def binary(conf_mat):
     H_rand = TP_rand/Pobs
     F_rand = FP_rand/Nobs
     theta_rand = H_rand*(1-F_rand)/(1-H_rand)/F_rand
-    MCC_rand = (TP_rand*TN_rand-FP_rand*FN_rand)\
-                        /math.sqrt((TP_rand+FP_rand)*(TP_rand+FN_rand)\
-                            *(TN_rand+FP_rand)*(TN_rand+FN_rand))
+    MCC_rand = (TP_rand*TN_rand-FP_rand*FN_rand)
+    MCC_rand /= math.sqrt((TP_rand + FP_rand) * (TP_rand + FN_rand)
+                          * (TN_rand + FP_rand) * (TN_rand + FN_rand))
 
     # Generate scores
     scores = {
-        "truepos": TP, "falsepos": FP, \
-        "trueneg": TN, "falseneg": FN, \
-        "bias": Psim/Pobs, \
-        "hitrate": H, \
-        "precision": TP/Psim, \
-        "falsealarm": F, \
-        "accuracy": (TP+TN)/nval, \
-        "F1":  2*TP/(2*TP+FP+FN), \
-        "MCC": MCC, \
-        "LOR": LOR, \
-        "ORSS": ORSS, \
+        "truepos": TP, "falsepos": FP,
+        "trueneg": TN, "falseneg": FN,
+        "bias": Psim/Pobs,
+        "hitrate": H,
+        "precision": TP/Psim,
+        "falsealarm": F,
+        "accuracy": (TP+TN)/nval,
+        "F1":  2*TP/(2*TP+FP+FN),
+        "MCC": MCC,
+        "LOR": LOR,
+        "ORSS": ORSS,
         "EDS": EDS
     }
 
     scores_rand = {
-        "accuracy": (TP_rand+TN_rand)/nval, \
-        "hitrate": TP_rand/(TP_rand+FN_rand), \
-        "falsealarm": FP_rand/(FP_rand+TN_rand), \
-        "precision": TP_rand/(TP_rand+FP_rand), \
-        "MCC": MCC_rand, \
-        "LOR": math.log(theta_rand), \
+        "accuracy": (TP_rand+TN_rand)/nval,
+        "hitrate": TP_rand/(TP_rand+FN_rand),
+        "falsealarm": FP_rand/(FP_rand+TN_rand),
+        "precision": TP_rand/(TP_rand+FP_rand),
+        "MCC": MCC_rand,
+        "LOR": math.log(theta_rand),
         "F1":  2*TP_rand/(2*TP_rand+FP_rand+FN_rand)
     }
 
