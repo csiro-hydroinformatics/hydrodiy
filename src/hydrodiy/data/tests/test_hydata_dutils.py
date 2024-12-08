@@ -188,7 +188,7 @@ def test_aggregate(allclose):
     assert allclose(obsm.values, obsm2)
 
     obsm = agg_d2m(obs, fun="mean")
-    obsm2 = dutils.aggregate(aggindex, obs.values, oper=1)
+    obsm2 = dutils.aggregate(aggindex, obs.values, operator=1)
     assert allclose(obsm.values, obsm2)
 
     kk = np.random.choice(range(nval), nval//10, replace=False)

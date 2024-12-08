@@ -143,8 +143,8 @@ class Vector(object):
         val = np.atleast_1d(val).flatten().astype(np.float64)
 
         if val.shape[0] != self.nval:
-            raise ValueError("Expected vector of length " +
-                             +f"{self.nval}, got {val.shape[0]}.")
+            raise ValueError("Expected vector of length "
+                             + f"{self.nval}, got {val.shape[0]}.")
 
         if np.any(np.isnan(val)) and not self._accept_nan:
             raise ValueError("Cannot process values with NaN")

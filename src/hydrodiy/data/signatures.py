@@ -107,8 +107,8 @@ def fdcslope(x, q1=90, q2=100, cst=0.375, trans=Identity()):
         raise ValueError("No valid data")
 
     if q2 < q1 + 1./nok:
-        raise ValueError("Expected q2 > q1, " +
-                         +f"got q1={q1} and q2={q2}")
+        raise ValueError("Expected q2 > q1, "
+                         + f"got q1={q1} and q2={q2}")
 
     if np.nanstd(x) < EPS:
         return np.nan, (np.nan, np.nan)

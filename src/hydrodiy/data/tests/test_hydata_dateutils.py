@@ -31,7 +31,7 @@ def test_isleapyear():
 
 
 @pytest.mark.skipif(not has_c_module("data", False), reason=SKIPMESS)
-def testDAYSinmonth():
+def test_daysinmonth():
     sn = 0
     for m in MONTHS:
         nb = ((m+delta(months=1)-delta(days=1))-m).days + 1

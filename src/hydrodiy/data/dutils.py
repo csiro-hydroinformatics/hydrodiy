@@ -147,7 +147,7 @@ def compute_aggindex(time, timestep):
                     + time.day*100+time.hour
 
 
-def aggregate(aggindex, inputs, oper=0, maxnan=0):
+def aggregate(aggindex, inputs, operator=0, maxnan=0):
     """ Fast aggregation of inputs based on aggregation indices
         This is an equivalent of pandas.Series.resample method,
         but much faster.
@@ -159,7 +159,7 @@ def aggregate(aggindex, inputs, oper=0, maxnan=0):
         Jan 1995). Index should be in increasing order.
     inputs : numpy.ndarray
         Inputs data to be aggregated
-    oper : int
+    operator : int
         Aggregation operator:
         0 = sum
         1 = mean
@@ -182,7 +182,7 @@ def aggregate(aggindex, inputs, oper=0, maxnan=0):
                          f"and len(inputs)={len(inputs)}.")
 
     # Allocate arrays
-    oper = np.int32(oper)
+    operator = np.int32(operator)
     maxnan = np.int32(maxnan)
     aggindex = np.array(aggindex).astype(np.int32)
     inputs = inputs.astype(np.float64)
@@ -190,7 +190,7 @@ def aggregate(aggindex, inputs, oper=0, maxnan=0):
     iend = np.array([0]).astype(np.int32)
 
     # Run C function
-    ierr = c_hydrodiy_data.aggregate(oper, maxnan, aggindex,
+    ierr = c_hydrodiy_data.aggregate(operator, maxnan, aggindex,
                                      inputs, outputs, iend)
 
     if ierr > 0:
