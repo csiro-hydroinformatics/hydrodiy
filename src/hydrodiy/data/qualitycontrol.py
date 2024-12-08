@@ -1,11 +1,10 @@
 import numpy as np
-import pandas as pd
 
-from hydrodiy.data import dutils
 from hydrodiy import has_c_module
 
 if has_c_module("data", False):
     import c_hydrodiy_data
+
 
 def ismisscens(x, censor=0., eps=1e-10):
     """ Check if array is containing missing or censored values.
@@ -34,8 +33,8 @@ def ismisscens(x, censor=0., eps=1e-10):
     # Check data dimensions
     ndim = x.ndim
     if ndim > 2:
-        raise ValueError("Expected 1d or 2d data, got "+\
-                "x.shape = {0}".format(x.shape))
+        raise ValueError("Expected 1d or 2d data, got " +
+                         "x.shape = {0}".format(x.shape))
 
     # Get dimensions
     if ndim == 1:
@@ -54,8 +53,8 @@ def ismisscens(x, censor=0., eps=1e-10):
             u = x
 
         # find censoring flags for column
-        icens[u<censor+eps, i] = 1
-        icens[u>=censor+eps, i] = 2
+        icens[u < censor+eps, i] = 1
+        icens[u >= censor+eps, i] = 2
         icens[:, i] *= 3**i
 
     # Aggregate
@@ -103,28 +102,25 @@ def islinear(data, npoints=3, tol=1e-6, thresh=0.):
 
     # Check data
     if data.ndim > 1:
-        raise ValueError("Expected data as 1d vector, got "+\
-            f"data.shape={data.shape}.")
+        raise ValueError("Expected data as 1d vector, got " +
+                         f"data.shape = {data.shape}.")
 
     islin = np.zeros(len(data), dtype=np.int32)
     npoints = int(npoints)
     tol = np.float64(tol)
     thresh = np.float64(thresh)
 
-    if npoints<1:
+    if npoints < 1:
         raise ValueError(f"Expected npoints >=1, got {npoints}.")
 
-    if tol<1e-10:
+    if tol < 1e-10:
         raise ValueError(f"Expected tol>1e-10, got {tol:5.5e}")
 
     # Run C function
-    ierr = c_hydrodiy_data.islin(thresh, tol, npoints, \
-                data, islin)
+    ierr = c_hydrodiy_data.islin(thresh, tol, npoints,
+                                 data, islin)
 
-    if ierr>0:
+    if ierr > 0:
         raise ValueError(f"c_hydrodiy_data.islin returns {ierr}.")
 
     return islin
-
-
-

@@ -11,8 +11,10 @@ from pandas.tseries.offsets import DateOffset
 from numpy.polynomial import polynomial as poly
 
 from hydrodiy import has_c_module
+
 if has_c_module("data", False):
     import c_hydrodiy_data
+
 
 def sequence_true(values):
     """ Identify start and end of consecutive "true" values.
@@ -123,8 +125,8 @@ def compute_aggindex(time, timestep):
         if timestep != "AS":
             mth = re.sub("AS-", "", timestep)
             allowed = [month_abbr[i].upper() for i in range(1, 13)]
-            errmsg = f"Expected month in {'/'.join(allowed)}, got"+\
-                        f" timestep={timestep}."
+            errmsg = f"Expected month in {'/'.join(allowed)}, got"\
+                     + f" timestep={timestep}."
             assert mth in allowed, errmsg
     else:
         allowed = ["D", "h", "MS"]
@@ -142,7 +144,7 @@ def compute_aggindex(time, timestep):
         return time.year*10000+time.month*100+time.day
     elif timestep == "h":
         return time.year*1000000+time.month*10000\
-                    +time.day*100+time.hour
+                    + time.day*100+time.hour
 
 
 def aggregate(aggindex, inputs, oper=0, maxnan=0):
@@ -175,9 +177,9 @@ def aggregate(aggindex, inputs, oper=0, maxnan=0):
 
     # Check inputs
     if len(aggindex) != len(inputs):
-        raise ValueError("Expected same length for aggindex and"+\
-                    f" inputs,got len(aggindex)={len(aggindex)} "+
-                    f"and len(inputs)={len(inputs)}.")
+        raise ValueError("Expected same length for aggindex and" +
+                         f" inputs,got len(aggindex)={len(aggindex)} " +
+                         f"and len(inputs)={len(inputs)}.")
 
     # Allocate arrays
     oper = np.int32(oper)
@@ -188,12 +190,11 @@ def aggregate(aggindex, inputs, oper=0, maxnan=0):
     iend = np.array([0]).astype(np.int32)
 
     # Run C function
-    ierr = c_hydrodiy_data.aggregate(oper, maxnan, aggindex, \
-                inputs, outputs, iend)
+    ierr = c_hydrodiy_data.aggregate(oper, maxnan, aggindex,
+                                     inputs, outputs, iend)
 
     if ierr > 0:
-        raise ValueError("c_hydrodiy_data.aggregate"+\
-                            " returns {0}".format(ierr))
+        raise ValueError(f"c_hydrodiy_data.aggregate returns {ierr}.")
 
     # Truncate the outputs to keep only the valid part of the vector
     outputs = outputs[:iend[0]]
@@ -228,8 +229,8 @@ def flathomogen(aggindex, inputs, maxnan=0):
 
     # Check inputs
     if len(aggindex) != len(inputs):
-        raise ValueError("Expected inputs of length "+\
-                f"{len(aggindex)}, got {len(inputs)}.")
+        raise ValueError("Expected inputs of length "
+                         + f"{len(aggindex)}, got {len(inputs)}.")
 
     # Allocate arrays
     maxnan = np.int32(maxnan)
@@ -238,12 +239,11 @@ def flathomogen(aggindex, inputs, maxnan=0):
     outputs = 0.*inputs
 
     # Run C function
-    ierr = c_hydrodiy_data.flathomogen(maxnan, aggindex, \
-                inputs, outputs)
+    ierr = c_hydrodiy_data.flathomogen(maxnan, aggindex,
+                                       inputs, outputs)
 
     if ierr > 0:
-        raise ValueError("c_hydrodiy_data.flatdisagg"+\
-                            " returns {0}".format(ierr))
+        raise ValueError(f"c_hydrodiy_data.flatdisagg returns {ierr}.")
 
     return outputs
 
@@ -309,7 +309,7 @@ def water_year_end(x, convolve_window=3):
     year_star : int
         Month corresponding to water year start.
     """
-    errmsg = f"Expected x with a datetime index."
+    errmsg = "Expected x with a datetime index."
     assert isinstance(x.index, pd.DatetimeIndex), errmsg
     errmsg = f"Expected convolve_window in [1, 3, 5], got {convolve_window}."
     assert convolve_window in [1, 3, 5], errmsg
@@ -388,10 +388,10 @@ def monthly2daily(se, interpolation="flat", minthreshold=0.):
         # 2. f(1) = y[i]
         # 3. f"(0) = d0
         # 4. f"(1) = d1
-        Mi = np.array([\
-            [0., 1., 0.], \
-            [3., -2., -1.], \
-            [-2., 1., 1.]])
+        Mi = np.array([[0., 1., 0.],
+                       [3., -2., -1.],
+                       [-2., 1., 1.]
+                       ])
 
         ndays = np.array(months.days_in_month)
         const = np.array([y, dyc[:-1]*ndays, dyc[1:]*ndays])
@@ -422,20 +422,21 @@ def monthly2daily(se, interpolation="flat", minthreshold=0.):
         days = pd.date_range(start, end-delta(days=1))
         sed = pd.Series(yy, index=days)
 
-
     else:
-        raise ValueError("Expected interpolation in [flat/cubic], got "+\
-                    interpolation)
+        raise ValueError("Expected interpolation in [flat/cubic],"
+                         + "got " + interpolation)
 
     return sed
 
 
-def var2h(se, nbsec_per_period=3600, maxgapsec=5*86400, rainfall=False, display=False):
+def var2h(se, nbsec_per_period=3600, maxgapsec=5*86400,
+          rainfall=False, display=False):
     """ Convert a variable time step time series to half-hourly or hourly using
         linear interpolation and aggregation.
 
         Data are mapped to the beginning of the time stamp.
-        Example: Average over [1/1/2000 00:00 - 1/1/2000 01:00] -> 1/1/2000 00:00
+        Example: Average over [1/1/2000 00:00 - 1/1/2000 01:00]
+        -> 1/1/2000 00:00
 
     Parameters
     -----------
@@ -460,9 +461,10 @@ def var2h(se, nbsec_per_period=3600, maxgapsec=5*86400, rainfall=False, display=
     has_c_module("data")
 
     nbsec_per_period = np.int32(nbsec_per_period)
-    errmsg = f"Expected nbsec_per_period in [1800, 3600], "+\
-                f"got {nbsec_per_period}"
-    assert nbsec_per_period in [1800, 3600], errmsg
+    if nbsec_per_period not in [1800, 3600]:
+        errmsg = "Expected nbsec_per_period in [1800, 3600], "\
+             + f"got {nbsec_per_period}"
+        raise ValueError(errmsg)
 
     # Allocate arrays
     rainfall = np.int32(rainfall)
@@ -478,24 +480,22 @@ def var2h(se, nbsec_per_period=3600, maxgapsec=5*86400, rainfall=False, display=
 
     # Determines start and end of time series
     start = se.index[0]
-    hstart = datetime(start.year, start.month, start.day, \
-                        start.hour)+delta(hours=1)
+    hstart = datetime(start.year, start.month,
+                      start.day, start.hour) + delta(hours=1)
     ref = datetime(1970, 1, 1)
     hstartsec = np.int64((hstart-ref).total_seconds())
 
     end = se.index[-1]
-    hend = datetime(end.year, end.month, end.day, \
-                        end.hour)-delta(hours=1)
     nvalh = np.int32((end-start).total_seconds()/nbsec_per_period)
     hvalues = np.nan*np.ones(nvalh, dtype=np.float64)
 
     # Run C function
-    ierr = c_hydrodiy_data.var2h(maxgapsec, \
-                hstartsec, \
-                nbsec_per_period, \
-                rainfall, \
-                display, \
-                varsec, varvalues, hvalues)
+    ierr = c_hydrodiy_data.var2h(maxgapsec,
+                                 hstartsec,
+                                 nbsec_per_period,
+                                 rainfall,
+                                 display,
+                                 varsec, varvalues, hvalues)
 
     if ierr > 0:
         raise ValueError(f"c_hydrodiy_data.var2h returns {ierr}")
@@ -540,5 +540,3 @@ def oz_timezone(lon, lat):
             return "Australia/Sydney"
         else:
             return "Australia/Brisbane"
-
-
