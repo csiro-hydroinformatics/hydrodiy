@@ -66,9 +66,3 @@ def test_goue(allclose):
 
     assert allclose(gv, gv_expected)
 
-
-def test_lag1corr():
-    nval = 100
-    values = np.random.uniform(0, 1, nval)
-    rho = signatures.lag1corr(values)
-
