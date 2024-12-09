@@ -71,7 +71,7 @@ int c_aggregate(int nval, int operator, int maxnan, int * aggindex,
             agg += inp;
         }
         else if (operator == 2){
-            agg = max(agg, inp);
+            agg = inp > agg ? inp : agg;
         }
         else if (operator == 3){
             agg = inp;
