@@ -163,6 +163,8 @@ def aggregate(aggindex, inputs, operator=0, maxnan=0):
         Aggregation operator:
         0 = sum
         1 = mean
+        2 = max
+        3 = tail (last valid value)
     maxnan : int
         Maximum number of nan in inputs for each
         aggregation index
