@@ -23,13 +23,17 @@ SKIPMESS = "c_hydrodiy_data module is not available. Please compile."
 # Utility function to aggregate data
 # using various version of pandas
 def agg_d2m(x, fun="mean"):
-    assert fun in ["mean", "sum"]
+    assert fun in ["mean", "sum", "max", "tail"]
 
     # Define aggregation function
     if fun == "mean":
         aggfun = lambda y: np.mean(y.values)
-    else:
+    elif fun == "sum":
         aggfun = lambda y: np.sum(y.values)
+    elif fun == "max":
+        aggfun = lambda y: np.nanmax(y.values)
+    else:
+        aggfun = lambda y: y.values[~np.isnan(y.values)][-1]
 
     # Run aggregation
     try:
@@ -191,6 +195,14 @@ def test_aggregate(allclose):
     obsm2 = dutils.aggregate(aggindex, obs.values, operator=1)
     assert allclose(obsm.values, obsm2)
 
+    obsm = agg_d2m(obs, fun="max")
+    obsm2 = dutils.aggregate(aggindex, obs.values, operator=2)
+    assert allclose(obsm.values, obsm2)
+
+    obsm = agg_d2m(obs, fun="tail")
+    obsm2 = dutils.aggregate(aggindex, obs.values, operator=3)
+    assert allclose(obsm.values, obsm2)
+
     kk = np.random.choice(range(nval), nval//10, replace=False)
     obs[kk] = np.nan
     obsm = obs.resample("MS").apply(lambda x: np.sum(x.values))
@@ -209,9 +221,8 @@ def test_aggregate(allclose):
 def test_aggregate_error(allclose):
     dt = pd.date_range("1990-01-01", "2000-12-31")
     nval = len(dt)
-    obs = pd.Series(np.random.uniform(0, 1, nval), \
-            index=dt)
-
+    obs = pd.Series(np.random.uniform(0, 1, nval),
+                    index=dt)
     aggindex = dt.year * 100 + dt.month
 
     try:

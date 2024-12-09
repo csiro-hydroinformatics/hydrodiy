@@ -2,11 +2,13 @@
 
 /**
 * Aggregate inputs based on the aggindex
-* The operator applied to the aggregation is defined by op:
-* oper = 0 : sum
-* oper = 1 : mean
+* The operatorator applied to the aggregation is defined by op:
+* operator = 0 : sum
+* operator = 1 : mean
+* operator = 2 : max
+* operator = 3 : tail
 **/
-int c_aggregate(int nval, int oper, int maxnan, int * aggindex,
+int c_aggregate(int nval, int operator, int maxnan, int * aggindex,
     double * inputs, double * outputs, int * iend)
 {
     int i, nagg, nagg_nan, count, ia, iaprev;
@@ -35,7 +37,7 @@ int c_aggregate(int nval, int oper, int maxnan, int * aggindex,
         if(ia != iaprev)
         {
             /* Mean instead of agg */
-            if(oper == 1 && nagg>0)
+            if(operator == 1 && nagg>0)
                 agg/=nagg;
 
             /* Store outputs */
@@ -65,11 +67,19 @@ int c_aggregate(int nval, int oper, int maxnan, int * aggindex,
         } else
             nagg ++;
 
-        agg += inp;
+        if(operator<=1) {
+            agg += inp;
+        }
+        else if (operator == 2){
+            agg = inp > agg ? inp : agg;
+        }
+        else if (operator == 3){
+            agg = inp;
+        }
     }
 
     /* Final step */
-    if(oper == 1 && nagg>0)
+    if(operator == 1 && nagg>0)
         agg/=nagg;
 
     if(nagg_nan > maxnan)
