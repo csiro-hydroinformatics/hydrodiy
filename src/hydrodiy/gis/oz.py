@@ -1,36 +1,35 @@
 """ Module to plot data on an Australia map """
 
-import re, os, json, tarfile
+import re
+import json
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
+import matplotlib.pyplot as plt
+import matplotlib.patheffects as patheff
+
 import matplotlib as mpl
 mpl.use("Agg")
-
-import matplotlib.pyplot as plt
-from matplotlib.patches import Polygon
-from matplotlib.collections import PatchCollection
-import matplotlib.patheffects as patheff
 
 HAS_PYSHP = False
 try:
     import shapefile
     HAS_PYSHP = True
-except (ImportError, FileNotFoundError) as err:
+except (ImportError, FileNotFoundError):
     pass
 
 # Decompress australia shoreline shapefile
 FHERE = Path(__file__).resolve().parent
 FDATA = FHERE / "data"
 SHAPEFILES = {
-    "ozcoast10m": FDATA / "ne_10m_admin_0_countries_australia.shp", \
-    "ozcoast50m": FDATA / "ne_50m_admin_0_countries_australia.shp", \
-    "ozstates50m": FDATA / "ne_50m_admin_1_states_australia.shp", \
-    "ozdrainage": FDATA / "drainage_divisions_lines_simplified.shp", \
+    "ozcoast10m": FDATA / "ne_10m_admin_0_countries_australia.shp",
+    "ozcoast50m": FDATA / "ne_50m_admin_0_countries_australia.shp",
+    "ozstates50m": FDATA / "ne_50m_admin_1_states_australia.shp",
+    "ozdrainage": FDATA / "drainage_divisions_lines_simplified.shp",
     "ozbasins": FDATA / "rbasin_lines_simplified.shp"
-}
+    }
 
 # Lat long coordinate boxes for regions in Australia
 freg = FDATA / "regions.json"
@@ -39,18 +38,18 @@ with open(freg, "r") as fo:
 
 # Capital cities
 CAPITAL_CITIES = {
-    "Brisbane": [153.026, -27.471], \
-    "Melbourne": [144.960, -37.821],\
-    "Sydney": [151.206, -33.864], \
-    "Canberra": [149.134, -35.299], \
-    "Hobart": [147.3265, -42.8818], \
-    "Adelaide": [138.60, -34.92833], \
+    "Brisbane": [153.026, -27.471],
+    "Melbourne": [144.960, -37.821],
+    "Sydney": [151.206, -33.864],
+    "Canberra": [149.134, -35.299],
+    "Hobart": [147.3265, -42.8818],
+    "Adelaide": [138.60, -34.92833],
     "Perth": [115.86134, -31.95182]
-}
+    }
 
 
-def ozlayer(ax, name, filter_field=None, filter_regex=None, proj=None, \
-                fixed_lim=True, *args, **kwargs):
+def ozlayer(ax, name, filter_field=None, filter_regex=None, proj=None,
+            fixed_lim=True, *args, **kwargs):
     """ plot Australian geographic layer in axes using data
     from Natural Earth.
     (see https://www.naturalearthdata.com/)
@@ -81,7 +80,7 @@ def ozlayer(ax, name, filter_field=None, filter_regex=None, proj=None, \
         raise ValueError("pyshp package could not be imported")
 
     # Select shapefile to draw
-    if not name in SHAPEFILES:
+    if name not in SHAPEFILES:
         names = "|".join(list(SHAPEFILES.keys()))
         raise ValueError(f"Expected name in {names}, got {name}.")
 
@@ -94,7 +93,7 @@ def ozlayer(ax, name, filter_field=None, filter_regex=None, proj=None, \
     # Plotting function
     def plotit(x, y, recs):
         # Project
-        if not proj is None:
+        if proj is not None:
             x, y = np.array([proj(xx, yy) for xx, yy in zip(x, y)]).T
 
         # Plot
@@ -112,11 +111,13 @@ def ozlayer(ax, name, filter_field=None, filter_regex=None, proj=None, \
         # Get shapefile fields
         fields = np.array([f[0] for f in shp_object.fields])[1:]
 
-        if not filter_field is None:
+        if filter_field is not None:
             # Filter field
-            if not filter_field in fields:
-                raise ValueError("Expected filter_field in "+\
-                    "/".join(list(fields)) + ", got "+filter_field)
+            if filter_field not in fields:
+                ftxt = "/".join(list(fields))
+                errmess = f"Expected filter_field in {ftxt}, "\
+                          + f"got {filter_field}."
+                raise ValueError(errmess)
 
             ifilter = np.where(fields == filter_field)[0][0]
         else:
@@ -126,7 +127,7 @@ def ozlayer(ax, name, filter_field=None, filter_regex=None, proj=None, \
         lines = []
         for shp, rec in zip(shp_object.shapes(), shp_object.records()):
             # Apply filter if needed
-            if not ifilter is None:
+            if ifilter is not None:
                 if not re.search(filter_regex, rec[ifilter]):
                     continue
 
@@ -159,10 +160,10 @@ def ozlayer(ax, name, filter_field=None, filter_regex=None, proj=None, \
     return lines
 
 
-def ozcities(ax, cities=None, \
-                filter_regex=None, \
-                fixed_lim=True, plot_kwargs={}, \
-                text_kwargs={}, proj=None):
+def ozcities(ax, cities=None,
+             filter_regex=None,
+             fixed_lim=True, plot_kwargs={},
+             text_kwargs={}, proj=None):
     """ plot Australian capital cities.
 
     Parameters
@@ -213,12 +214,12 @@ def ozcities(ax, cities=None, \
     elements = {}
     for icity, (city, xy) in enumerate(cities.items()):
         # Skip if filtered
-        if not filter_regex is None:
+        if filter_regex is not None:
             if not re.search(filter_regex, city):
                 continue
 
         xyproj = xy
-        if not proj is None:
+        if proj is not None:
             xyproj = proj(*xyproj)
 
         lab = "Capital city" if icity == 0 else ""
