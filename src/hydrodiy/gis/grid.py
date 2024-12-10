@@ -1,17 +1,13 @@
 """ Module containing grid utilities """
 
-import re, os
+import re
+import os
 from pathlib import Path
-import math
 import copy
 import zipfile
-from io import BytesIO, StringIO
+from io import StringIO
 from tempfile import TemporaryFile
 import warnings
-
-from datetime import datetime
-from dateutil.relativedelta import relativedelta
-import calendar
 
 import numpy as np
 import pandas as pd
@@ -34,8 +30,8 @@ if has_c_module("gis", False):
 #   8   4     2       /   |   \
 #
 FLOWDIRCODE = np.array([[32, 64, 128],
-                            [16, 0, 1],
-                            [8, 4, 2]]).astype(np.int64)
+                        [16, 0, 1],
+                        [8, 4, 2]]).astype(np.int64)
 
 # Path to hygis data
 FHERE = Path(__file__).resolve().parent
@@ -47,17 +43,17 @@ with zipfile.ZipFile(str(FZIP_AWRAL_SUBGRIDS), "r") as archive:
     AWRAL_SUBGRIDS, _ = csv.read_csv("awra_grids.csv", archive=archive)
 
 AWRAL_SUBGRIDS.loc[:, "gridid"] = "AWRAL_"\
-                + AWRAL_SUBGRIDS.entity_type.str.upper() \
-                + "_" + AWRAL_SUBGRIDS.name_short.str.upper()
+                                  + AWRAL_SUBGRIDS.entity_type.str.upper() \
+                                  + "_" + AWRAL_SUBGRIDS.name_short.str.upper()
 
 
 class Grid(object):
     """ Gridded data object """
 
-    def __init__(self, name, ncols, nrows=None, cellsize=1., \
-            xllcorner=0, yllcorner=0, dtype=np.float64, \
-            nodata=0, \
-            comment=""):
+    def __init__(self, name, ncols, nrows=None, cellsize=1.,
+                 xllcorner=0, yllcorner=0, dtype=np.float64,
+                 nodata=0,
+                 comment=""):
 
         if nrows is None:
             nrows = ncols
@@ -80,7 +76,6 @@ class Grid(object):
 
         self._data = np.zeros((self.nrows, self.ncols), dtype=dtype)
 
-
     def _getsize(self):
         """ Returns dimensions of the grid """
         xll = self.xllcorner
@@ -90,18 +85,15 @@ class Grid(object):
         ncols = self.ncols
         return xll, yll, csz, nrows, ncols
 
-
     def __setitem__(self, index, value):
         """ Set cell values """
-        index =  np.int64(index)
+        index = np.int64(index)
         self._data.flat[index] = np.array(value).astype(self.dtype)
-
 
     def __getitem__(self, index):
         """ Extract cell values """
-        index =  np.int64(index)
+        index = np.int64(index)
         return self._data.flat[index]
-
 
     def __str__(self):
         str = "\nGrid {0}:\n".format(self.name)
@@ -118,16 +110,14 @@ class Grid(object):
         if hasattr(self, "parentgrid_ncols"):
             str += "\n\t--- PARENT GRID ---\n"
 
-        for attr in ["name", "ncols", "nrows", "cellsize", \
-                        "xllcorner", "yllcorner", "rows_start", \
-                        "rows_end", "cols_start", "cols_end"]:
+        for attr in ["name", "ncols", "nrows", "cellsize",
+                     "xllcorner", "yllcorner", "rows_start",
+                     "rows_end", "cols_start", "cols_end"]:
             pattr = "parentgrid_"+attr
             if hasattr(self, pattr):
-                str += "\t{} : {}\n".format(\
-                    re.sub("parentgrid_", "", pattr), \
-                        getattr(self, pattr))
+                str += "\t{} : {}\n".format(re.sub("parentgrid_", "", pattr),
+                                            getattr(self, pattr))
         return str
-
 
     @classmethod
     def from_stream(cls, stream_header, stream_data=None):
@@ -148,20 +138,20 @@ class Grid(object):
         """
         # initialise config
         config = {
-            "xllcorner" : 0., \
-            "yllcorner" : 0., \
-            "cellsize": 1., \
-            "nodata" : 0, \
-            "nbits" : 64, \
-            "pixeltype" : "float", \
-            "byteorder" : "i", \
+            "xllcorner": 0.,
+            "yllcorner": 0.,
+            "cellsize": 1.,
+            "nodata": 0,
+            "nbits": 64,
+            "pixeltype": "float",
+            "byteorder": "i",
             "comment": "No comment"
         }
 
         # Define name if available
         if hasattr(stream_header, "name"):
-            config["name"] = os.path.splitext(\
-                    os.path.basename(stream_header.name))[0]
+            basename = os.path.basename(stream_header.name)
+            config["name"] = os.path.splitext(basename)[0]
         else:
             config["name"] = "no_name"
 
@@ -174,10 +164,9 @@ class Grid(object):
             pname = line[0].lower()
             try:
                 if pname in ["pixeltype", "byteorder",
-                    "layout", "comment", "name"]:
+                             "layout", "comment", "name"]:
                     pvalue = " ".join(line[1:]).strip().lower()
-                elif pname.startswith("n") and \
-                            not pname.startswith("nodata"):
+                elif pname.startswith("n") and not pname.startswith("nodata"):
                     pvalue = int(line[1].strip())
                 elif pname.startswith("parentgrid_n"):
                     pvalue = int(line[1].strip())
@@ -190,8 +179,8 @@ class Grid(object):
                     config[pname] = pvalue
 
             except ValueError:
-                warnings.warn(("Header field {0} cannot be" + \
-                        +"processed").format(pname))
+                errmess = f"Header field {pname} cannot be processed."
+                warnings.warn(errmess)
                 pass
 
         # Define dtype
@@ -200,14 +189,14 @@ class Grid(object):
         elif config["byteorder"] == "i":
             byteorder = "<"
         else:
-            raise ValueError("Byteorder {0} not recognised".format(
-                    config["byteorder"]))
+            errmess = "Byteorder {config['byteorder']} not recognised"
+            raise ValueError(errmess)
 
-        pixeltype = re.sub("nsignedint$|^signed|nt|loat", "", \
-                                                    config["pixeltype"])
+        pixeltype = re.sub("nsignedint$|^signed|nt|loat", "",
+                           config["pixeltype"])
         nbits = config["nbits"]//8
-        config["dtype"] = np.dtype(byteorder +\
-                                pixeltype + str(nbits)).type
+        config["dtype"] = np.dtype(byteorder +
+                                   pixeltype + str(nbits)).type
 
         # Check cell size / dimensions
         if "xdim" in config:
@@ -215,30 +204,30 @@ class Grid(object):
 
             # Check the cell are squared (i.e. xdim=ydim)
             if "ydim" in config:
-                if abs(config["ydim"]-config["xdim"])>1e-10:
-                    raise ValueError(("xdim {0} != " +
-                        "ydim {1}").format(config["xdim"],
-                            config["ydim"]))
+                if abs(config["ydim"] - config["xdim"]) > 1e-10:
+                    errmess = f"xdim {config['xdim']} != "\
+                              + f"ydim {config['ydim']}."
+                    raise ValueError(errmess)
 
         if "ulxmap" in config:
             config["xllcorner"] = config["ulxmap"]
-            config["yllcorner"] = config["ulymap"] - \
-                                config["cellsize"]*config["nrows"]
+            yll = config["ulymap"] - config["cellsize"]*config["nrows"]
+            config["yllcorner"] = yll
 
         # Rename nodata_value to nodata
         if "nodata_value" in config:
             config["nodata"] = config["nodata_value"]
 
         # Filters config data
-        keys = ["name", "ncols", "nrows", "cellsize", "comment", \
-            "xllcorner", "yllcorner", "dtype", "nodata"]
-        config = {k:config[k] for k in config if k in keys}
+        keys = ["name", "ncols", "nrows", "cellsize", "comment",
+                "xllcorner", "yllcorner", "dtype", "nodata"]
+        config = {k: config[k] for k in config if k in keys}
 
         # Creates grid
         grid = Grid(**config)
 
         # Reads data if bil file is there
-        if not stream_data is None:
+        if stream_data is not None:
             stream_data.seek(0)
             grid.load(stream_data)
 
@@ -248,7 +237,6 @@ class Grid(object):
                 setattr(grid, key, value)
 
         return grid
-
 
     @classmethod
     def from_header(cls, fileheader):
@@ -271,8 +259,8 @@ class Grid(object):
         filedata = fileheader.parent / (fileheader.stem+".bil")
 
         if not fileheader.exists():
-            raise ValueError(("File {0} does not "+
-                "exist").format(fileheader))
+            errmess = f"File {fileheader} does not exist."
+            raise ValueError(errmess)
 
         with fileheader.open("r") as fh:
             if filedata.exists():
@@ -280,7 +268,6 @@ class Grid(object):
                     return cls.from_stream(fh, fd)
             else:
                 return cls.from_stream(fh)
-
 
     @classmethod
     def from_zip(cls, zipfilepath, fileheader_in_zip):
@@ -307,7 +294,7 @@ class Grid(object):
         with zipfile.ZipFile(zipfilepath, "r") as archive:
             fh = StringIO(archive.open(fileheader).read().decode())
 
-            if not filedata in archive.namelist():
+            if filedata not in archive.namelist():
                 # No data, just header
                 return Grid.from_stream(fh)
             else:
@@ -317,7 +304,6 @@ class Grid(object):
                     fd.write(archive.open(filedata).read())
 
                     return Grid.from_stream(fh, fd)
-
 
     @classmethod
     def from_dict(cls, dic):
@@ -335,19 +321,18 @@ class Grid(object):
         """
 
         # Init argument
-        dic2 = {"name":dic["name"], "ncols":dic["ncols"]}
+        dic2 = {"name": dic["name"], "ncols": dic["ncols"]}
 
         # Init optional arguments
-        for opt in ["nrows", "cellsize", "xllcorner", "yllcorner", \
-            "dtype", "nodata", "comment"]:
+        for opt in ["nrows", "cellsize", "xllcorner", "yllcorner",
+                    "dtype", "nodata", "comment"]:
             if opt in dic:
                 dic2[opt] = dic[opt]
 
         if "dtype" in dic2:
             dic2["dtype"] = np.dtype(dic2["dtype"]).type
 
-        return  Grid(**dic2)
-
+        return Grid(**dic2)
 
     @property
     def shape(self):
@@ -364,7 +349,6 @@ class Grid(object):
         """ Return y limits """
         return self.yllcorner, self.yllcorner+self.nrows*self.cellsize
 
-
     @property
     def xvalues(self):
         """ Return coordinates along grid columns (x) """
@@ -372,14 +356,12 @@ class Grid(object):
         xv = self.cell2coord(cells)
         return xv[:, 0]
 
-
     @property
     def yvalues(self):
         """ Return coordinates along grid rows (y) """
         cells = np.arange(0, self.nrows*self.ncols, self.ncols)
         xv = self.cell2coord(cells)
         return xv[:, 1]
-
 
     @property
     def data(self):
@@ -393,22 +375,23 @@ class Grid(object):
         _value = np.ascontiguousarray(np.atleast_2d(value))
 
         if _value.ndim != 2:
-            raise ValueError("Expected 2d array, got "+\
-                                "{0} dimensions".format(\
-                                _value.ndim))
+            raise ValueError("Expected 2d array, got "
+                             + f"{_value.ndim} dimensions.")
 
         nrows, ncols = _value.shape
 
         if nrows != self.nrows:
-            raise ValueError(("Wrong number of rows:" + \
-                " data has {0}, but expects {1}").format(nrows, self.nrows))
+            errmess = "Wrong number of rows:"\
+                      + f" data has {nrows}, but expected {self.nrows}."
+            raise ValueError(errmess)
 
         if ncols != self.ncols:
-            raise ValueError(("Wrong number of columns:" + \
-                " data has {0}, but expects {1}").format(ncols, self.ncols))
+            errmess = "Wrong number of columns:"\
+                      + f" data has {ncols}, but expects {self.ncols}."
+            raise ValueError(errmess)
 
         self._data = np.clip(_value, self.mindata,
-                                self.maxdata).astype(self.dtype)
+                             self.maxdata).astype(self.dtype)
 
     @property
     def nodata(self):
@@ -419,7 +402,6 @@ class Grid(object):
     def nodata(self, value):
         """ Set nodata value """
         self._nodata = self.dtype(value)
-
 
     @property
     def dtype(self):
@@ -432,7 +414,6 @@ class Grid(object):
         self._dtype = value
         self._data = self._data.astype(value)
 
-
     @property
     def mindata(self):
         """ Get data minimum allowed """
@@ -443,12 +424,12 @@ class Grid(object):
         """ Set data minimum allowed """
         self._mindata = self.dtype(value)
         if self._mindata > self._maxdata:
-            raise ValueError("Expected mindata<maxdata, got "+\
-                "mindata={0} and maxdata={1}".format(\
-                        self._mindata, self._maxdata))
+            errmess = "Expected mindata<maxdata,"\
+                      + f" got mindata={self._mindata}"\
+                      + f" and maxdata={self._maxdata}."
+            raise ValueError(errmess)
 
         self._data = np.maximum(self._data, self._mindata)
-
 
     @property
     def maxdata(self):
@@ -460,25 +441,25 @@ class Grid(object):
         """ Set data maximum allowed """
         self._maxdata = self.dtype(value)
         if self._mindata > self._maxdata:
-            raise ValueError("Expected mindata<maxdata, got "+\
-                "mindata={0} and maxdata={1}".format(\
-                        self._mindata, self._maxdata))
+            errmess = "Expected mindata<maxdata,"\
+                      + f" got mindata={self._mindata}"\
+                      + f" and maxdata={self._maxdata}."
+            raise ValueError(errmess)
+
         self._data = np.minimum(self._data, self._maxdata)
 
-
-    def set_parent_attributes(self, grid, row_start, row_end, \
-                    col_start, col_end):
+    def set_parent_attributes(self, grid, row_start, row_end,
+                              col_start, col_end):
         """ Set parent attributes when clipping a grid """
 
-        for attr in ["name", "ncols", "nrows", "cellsize", \
-                        "xllcorner", "yllcorner"]:
+        for attr in ["name", "ncols", "nrows", "cellsize",
+                     "xllcorner", "yllcorner"]:
             setattr(self, "parentgrid_"+attr, getattr(grid, attr))
 
         self.parentgrid_rows_start = row_start
         self.parentgrid_rows_end = row_end
         self.parentgrid_cols_start = col_start
         self.parentgrid_cols_end = col_end
-
 
     def same_geometry(self, grd):
         """ Check another grid has the same geometry
@@ -501,7 +482,6 @@ class Grid(object):
 
         return identical
 
-
     def load(self, stream_data):
         """ Load data from file
 
@@ -515,51 +495,51 @@ class Grid(object):
 
         nval = self.nrows * self.ncols
         if len(data) != nval:
-            raise ValueError(("File contains {0} data points" +
-                ", expecting {1}").format(len(data), nval))
+            errmess = f"File contains {len(data)} data points,"\
+                      + f" expecting {nval}."
+            raise ValueError(errmess)
 
         self._data = np.clip(data.reshape((self.nrows, self.ncols)),
-                        self.mindata, self.maxdata).astype(self.dtype)
-
+                             self.mindata, self.maxdata).astype(self.dtype)
 
     def to_dict(self):
         """ Export grid metadata to json """
-        js = { \
-            "name": self.name, \
-            "ncols": self.ncols, \
-            "nrows": self.nrows, \
-            "cellsize": self.cellsize, \
-            "xllcorner": self.xllcorner, \
-            "yllcorner": self.yllcorner, \
-            "dtype": np.dtype(self.dtype).str, \
-            "nodata": str(self.nodata), \
+        js = {
+            "name": self.name,
+            "ncols": self.ncols,
+            "nrows": self.nrows,
+            "cellsize": self.cellsize,
+            "xllcorner": self.xllcorner,
+            "yllcorner": self.yllcorner,
+            "dtype": np.dtype(self.dtype).str,
+            "nodata": str(self.nodata),
             "comment": self.comment
-        }
+            }
 
         # Add attributes from parent grid if any
-        for attr in ["nrows", "ncols", "xllcorner", \
-                        "yllcorner", "rows_start", "rows_end", \
-                        "cols_start", "cols_end"]:
+        for attr in ["nrows", "ncols", "xllcorner",
+                     "yllcorner", "rows_start", "rows_end",
+                     "cols_start", "cols_end"]:
             pattr = "parentgrid_"+attr
             if hasattr(self, pattr):
                 js[pattr] = getattr(self, pattr)
 
         return js
 
-
     def save(self, filename):
         """ Save data as a BIL file """
         filename = str(filename)
 
         if not filename.endswith("bil"):
-            raise ValueError(("Filename ({0}) should end with a" + \
-                " bil extension").format(filename))
+            errmess = f"Filename {filename}' should end with"\
+                      + " a bil extension."
+            raise ValueError(errmess)
 
         # Print header file
         fileheader = re.sub("bil$", "hdr", filename)
         with open(fileheader, "w") as fh:
             for attname in ["nrows", "ncols", "xllcorner",
-                "yllcorner", "cellsize"]:
+                            "yllcorner", "cellsize"]:
                 attval = getattr(self, attname)
                 fh.write("{0:<14} {1}\n".format(attname.upper(), attval))
 
@@ -598,17 +578,16 @@ class Grid(object):
             fh.write("{0:<14} {1}\n".format("COMMENT", comment))
 
             # Parent attributes
-            for attr in ["nrows", "ncols", "xllcorner", \
-                        "yllcorner", "rows_start", "rows_end", \
-                        "cols_start", "cols_end"]:
+            for attr in ["nrows", "ncols", "xllcorner",
+                         "yllcorner", "rows_start", "rows_end",
+                         "cols_start", "cols_end"]:
                 pattr = "parentgrid_"+attr
                 if hasattr(self, pattr):
-                    fh.write("{0:<22} {1}\n".format(pattr.upper(), \
-                                getattr(self, pattr)))
+                    fh.write("{0:<22} {1}\n".format(pattr.upper(),
+                                                    getattr(self, pattr)))
 
         # Print data
         self._data.tofile(filename)
-
 
     def fill(self, value):
         """ Initialise grid value
@@ -621,7 +600,6 @@ class Grid(object):
         """
         dtype = self._dtype
         self.data.fill(dtype(value))
-
 
     def coord2cell(self, xycoords):
         """ Return cell number from coordinates.
@@ -648,18 +626,17 @@ class Grid(object):
 
         xll, yll, csz, nrows, ncols = self._getsize()
 
-        xycoords = np.ascontiguousarray(np.atleast_2d(xycoords), \
-                                                    dtype=np.float64)
+        xycoords = np.ascontiguousarray(np.atleast_2d(xycoords),
+                                        dtype=np.float64)
         idxcell = np.zeros(len(xycoords)).astype(np.int64)
 
         ierr = c_hydrodiy_gis.coord2cell(nrows, ncols, xll, yll,
-                                        csz, xycoords, idxcell)
-        if ierr>0:
-            raise ValueError("c_hydrodiy_gis.coord2cell returns "+\
-                                    str(ierr))
+                                         csz, xycoords, idxcell)
+        if ierr > 0:
+            errmess = f"c_hydrodiy_gis.coord2cell returns {ierr}."
+            raise ValueError(errmess)
 
         return idxcell
-
 
     def cell2coord(self, idxcells):
         """ Return coordinate from cell number.
@@ -690,17 +667,17 @@ class Grid(object):
         has_c_module("gis")
 
         xll, yll, csz, nrows, ncols = self._getsize()
-        idxcells = np.ascontiguousarray(np.atleast_1d(idxcells), \
-                                                        dtype=np.int64)
+        idxcells = np.ascontiguousarray(np.atleast_1d(idxcells),
+                                        dtype=np.int64)
         xycoords = np.zeros((len(idxcells), 2)).astype(np.float64)
 
         ierr = c_hydrodiy_gis.cell2coord(nrows, ncols, xll, yll, csz,
-                                        idxcells, xycoords)
-        if ierr>0:
-            raise ValueError("c_hydrodiy_gis.cell2coord "+\
-                                f"returns {ierr}.")
-        return xycoords
+                                         idxcells, xycoords)
+        if ierr > 0:
+            errmess = f"c_hydrodiy_gis.cell2coord returns {ierr}."
+            raise ValueError(errmess)
 
+        return xycoords
 
     def cell2rowcol(self, idxcells):
         """ Return row and column number from cell number
@@ -731,17 +708,17 @@ class Grid(object):
         has_c_module("gis")
         xll, yll, csz, nrows, ncols = self._getsize()
 
-        idxcells = np.ascontiguousarray(np.atleast_1d(idxcells), \
-                                                        dtype=np.int64)
+        idxcells = np.ascontiguousarray(np.atleast_1d(idxcells),
+                                        dtype=np.int64)
         rowcols = np.zeros((len(idxcells), 2)).astype(np.int64)
 
         ierr = c_hydrodiy_gis.cell2rowcol(nrows, ncols,
-                                        idxcells, rowcols)
-        if ierr>0:
-            raise ValueError("c_hydrodiy_gis.cell2rowcol "+\
-                                f"returns {ierr}.")
-        return rowcols
+                                          idxcells, rowcols)
+        if ierr > 0:
+            errmess = "c_hydrodiy_gir.cell2rowcol returns {ierr}."
+            raise ValueError(errmess)
 
+        return rowcols
 
     def neighbours(self, idxcell):
         """ Compute the codes of cells surrounding a cell.
@@ -769,12 +746,12 @@ class Grid(object):
         neighbours = np.zeros(9).astype(np.int64)
 
         ierr = c_hydrodiy_gis.neighbours(nrows, ncols, idxcell,
-                                        neighbours)
-        if ierr>0:
-            raise ValueError("c_hydrodiy_gis.neighbours "+\
-                                f"returns {ierr}.")
-        return neighbours
+                                         neighbours)
+        if ierr > 0:
+            errmess = f"c_hydrodiy_gis.neighbours returns {ierr}."
+            raise ValueError(errmess)
 
+        return neighbours
 
     def slice(self, xyslice):
         """ Extract a profile from the grid
@@ -796,19 +773,18 @@ class Grid(object):
         xll, yll, csz, _, _ = self._getsize()
 
         xyslice = np.ascontiguousarray(np.atleast_2d(xyslice),
-                        dtype=np.float64)
+                                       dtype=np.float64)
         zslice = np.zeros(len(xyslice)).astype(np.float64)
 
         # Run C code
-        ierr = c_hydrodiy_gis.slice(xll, yll, csz, \
-                    self._data.astype(np.float64), \
-                    xyslice, zslice)
+        ierr = c_hydrodiy_gis.slice(xll, yll, csz,
+                                    self._data.astype(np.float64),
+                                    xyslice, zslice)
 
-        if ierr>0:
+        if ierr > 0:
             raise ValueError("c_hydrodiy_gis.slice returns "+str(ierr))
 
         return zslice
-
 
     def plot(self, ax, *args, **kwargs):
         """ Plot the grid using imshow. This is a basic plotting
@@ -825,15 +801,16 @@ class Grid(object):
         xll, yll, csz, nr, nc = self._getsize()
         extent = [xll, xll+csz*nc, yll, yll+csz*nr]
         if np.any(np.isnan(extent)):
-            raise ValueError(("Cannot plot grid when one of "+\
-                        "xllcorner(()), "+\
-                        "yllcorner({}), cellsize({}), nrows({}), "+\
-                        "ncols({}) is nan").format(xll, yll, csz, nr, nc))
+            errmess = "Cannot plot grid when one of"\
+                      + f" xllcorner ({xll}), yllcorner ({yll})"\
+                      + f" cellsize ({csz}), nrows ({nr})"\
+                      + f" or ncols ({nc}) is nan"
+            raise ValueError(errmess)
 
         return ax.imshow(self.data, extent=extent, *args, **kwargs)
 
-
-    def plot_values(self, ax, fmt="0.2f", mini=-np.inf, maxi=np.inf, *args, **kwargs):
+    def plot_values(self, ax, fmt="0.2f", mini=-np.inf,
+                    maxi=np.inf, *args, **kwargs):
         """ Plot grid values. This is a basic plotting
         function. For more advanced plots, use
         hydrodiy.plot.gridplot
@@ -856,16 +833,16 @@ class Grid(object):
         txt : list
             List of matplotlib text objects.
         """
-        txt =[]
+        txt = []
         idxcells = np.arange(self.nrows*self.ncols)
         coords = self.cell2coord(idxcells)
         data = self.data.flat
-        for i in  idxcells:
-            value  = data[i]
+        for i in idxcells:
+            value = data[i]
             if value >= mini and value <= maxi:
                 lab = "{:{fmt}}".format(value, fmt=fmt)
-                t = ax.text(coords[i, 0], coords[i, 1], lab, va="center", \
-                                ha="center", *args, **kwargs)
+                t = ax.text(coords[i, 0], coords[i, 1], lab, va="center",
+                            ha="center", *args, **kwargs)
                 txt.append(t)
 
         return txt
@@ -884,12 +861,10 @@ class Grid(object):
             Cloned grid
         """
         grid = copy.deepcopy(self)
-
-        if not dtype is None:
+        if dtype is not None:
             grid.dtype = dtype
 
         return grid
-
 
     def clip(self, xll, yll, xur, yur):
         """ Clip the current grid to a smaller area """
@@ -906,13 +881,12 @@ class Grid(object):
         xllg = xy[0, 0]-self.cellsize/2
         yllg = xy[0, 1]-self.cellsize/2
         grid = Grid(name, ncols, nrows, cellsize=self.cellsize,
-                xllcorner=xllg, yllcorner=yllg,
-                dtype=self.dtype,
-                nodata=self.nodata)
+                    xllcorner=xllg, yllcorner=yllg,
+                    dtype=self.dtype,
+                    nodata=self.nodata)
 
-        grid.comment = "Clip of grid "+\
-                "{} on the box [{}, {}, {}, {}]".format(\
-                        self.name, xll, yll, xur, yur)
+        grid.comment = f"Clip of grid {self.name} on the"\
+                       + f" box [{xll}, {yll}, {xur}, {yur}]."
         # Set data
         row0, row1 = rowcols[::-1][:, 0]
         col0, col1 = rowcols[:, 1]
@@ -923,15 +897,12 @@ class Grid(object):
 
         return grid
 
-
     def apply(self, fun, *args, **kwargs):
         """ Apply a function to the grid data """
-
         grid = self.clone()
         grid._data = fun(grid._data, *args, **kwargs).astype(self.dtype)
 
         return grid
-
 
     def interpolate(self, grid, method="linear"):
         """ Interpolate the current grid based on geometry supplied
@@ -969,8 +940,7 @@ class Grid(object):
         # interpolation
         z = self.data.flat
         xy = np.column_stack([x.flat, y.flat])
-        znew = griddata(xy, z, (xnew, ynew), \
-                            method=method)
+        znew = griddata(xy, z, (xnew, ynew), method=method)
 
         # Create grid
         interp_grid = grid.clone()
@@ -978,7 +948,6 @@ class Grid(object):
         interp_grid.data = znew
 
         return interp_grid
-
 
     def cells_inside_polygon(self, polygon, atol=1e-8):
         """ Identify grid cells which have their centroid falling
@@ -1004,10 +973,12 @@ class Grid(object):
         inside = gutils.points_inside_polygon(points, polygon)
         inside = inside.astype(bool)
 
-        return pd.DataFrame({"x": points[inside, 0], \
-                    "y": points[inside, 1], \
-                    "cell": ncells[inside]})
-
+        dd = {
+            "x": points[inside, 0],
+            "y": points[inside, 1],
+            "cell": ncells[inside]
+            }
+        return pd.DataFrame(dd)
 
 
 class Catchment(object):
@@ -1024,65 +995,55 @@ class Catchment(object):
         self._flowpathlengths = None
         self._xycells_boundary = None
 
-
     def __str__(self):
         str = "\nGrid {0}:\n".format(self.name)
         str += "\toutlet   : {0}\n".format(self._idxcell_outlet)
         str += "\tinlets   : {0}\n".format(self._idxinlets)
 
         narea = 0
-        if not self._idxcells_area is None:
-            narea = len(self._idxcells_area)
+        try:
+            narea = len(self.idxcells_area)
+        except Exception:
+            pass
         str += "\tarea     : {0} cells\n".format(narea)
 
         nboundary = 0
-        if not self._idxcells_boundary is None:
-            nboundary = len(self._idxcells_boundary)
+        try:
+            nboundary = len(self.idxcells_boundary)
+        except Exception:
+            pass
         str += "\tboundary : {0} cells\n".format(nboundary)
 
         return str
 
-
     def __add__(self, other):
         """ Combine two catchment areas """
-
-        if self._idxcells_area is None:
-            raise ValueError("idxcells_area is None, please" + \
-                        " delineate the area")
-
-        if other._idxcells_area is None:
-            raise ValueError("idxcells_area is None for other, please" + \
-                        " delineate the area")
-
         catchment = self.clone()
-        catchment.name = self.name +"+"+other.name
+        catchment.name = self.name + "+" + other.name
         catchment._idxcell_outlet = None
         catchment._idxinlets = None
         catchment._idxcells_boundary = None
         catchment._xycells_boundary = None
-        if self._idxcells_area is not None and other._idxcells_area \
-                is not None:
-            catchment._idxcells_area = np.union1d(self._idxcells_area,
-                                    other._idxcells_area)
+        if self._idxcells_area is not None \
+           and other._idxcells_area is not None:
+            catchment._idxcells_area = np.union1d(self.idxcells_area_filled,
+                                                  other.idxcells_area_filled)
         return catchment
-
 
     def __sub__(self, other):
         """ Substract two catchment areas """
         catchment = self.clone()
-        catchment.name = self.name +"-"+other.name
+        catchment.name = self.name + "-" + other.name
         catchment._idxcell_outlet = None
         catchment._idxinlets = None
         catchment._idxcells_boundary = None
         catchment._xycells_boundary = None
 
         # Difference between filled cell boundary
-        catchment._idxcells_area = np.setdiff1d(\
-                                    self._idxcells_area_filled,
-                                    other._idxcells_area_filled)
+        catchment._idxcells_area = np.setdiff1d(self.idxcells_area_filled,
+                                                other.idxcells_area_filled)
 
         return catchment
-
 
     @classmethod
     def from_dict(cls, dic):
@@ -1103,20 +1064,23 @@ class Catchment(object):
         catchment._idxcell_outlet = dic["idxcell_outlet"]
         catchment._idxintlets = dic["idxinlets"]
 
-        catchment._idxcells_area = \
-                        np.array(dic["idxcells_area"]).astype(np.int64)
+        area = np.array(dic["idxcells_area"]).astype(np.int64)
+        catchment._idxcells_area = area
 
-        catchment._idxcells_area_filled = \
-                        np.array(dic["idxcells_area_filled"]).astype(np.int64)
+        filled = np.array(dic["idxcells_area_filled"]).astype(np.int64)
+        catchment._idxcells_area_filled = filled
 
         return catchment
-
 
     @property
     def idxcell_outlet(self):
         """ Get outlet cell """
-        return self._idxcell_outlet
+        if self._idxcell_outlet is None:
+            errmess = "idxcell_outlet is None, please"\
+                      + " set outlet."
+            raise ValueError(errmess)
 
+        return self._idxcell_outlet
 
     @property
     def idxinlets(self):
@@ -1126,13 +1090,21 @@ class Catchment(object):
     @property
     def idxcells_area(self):
         """ Get cells of catchment area """
+        if self._idxcells_area is None:
+            errmess = "idxcells_area is None, please"\
+                      + " delineate the area."
+            raise ValueError(errmess)
+
         return self._idxcells_area
 
     @property
     def idxcells_area_filled(self):
         """ Get cells of filled catchment area (no holes)"""
+        if self._idxcells_area_filled is None:
+            errmess = "idxcells_area_filled is None, please"\
+                      + " delineate the area."
+            raise ValueError(errmess)
         return self._idxcells_area_filled
-
 
     @property
     def flowpathlengths(self):
@@ -1144,10 +1116,14 @@ class Catchment(object):
         """ Get xy coords of catchment boundary """
         return self._xycells_boundary
 
-
     @property
     def idxcells_boundary(self):
         """ Get cells of catchment boundary """
+        if self._idxcells_boundary is None:
+            errmess = "idxcells_boundary is None, please"\
+                      + " delineate the area."
+            raise ValueError(errmess)
+
         return self._idxcells_boundary
 
     @property
@@ -1158,22 +1134,15 @@ class Catchment(object):
     def clone(self):
         """ Clone the current catchment """
         catchment = copy.deepcopy(self)
-
         return catchment
-
 
     def extent(self):
         """ Get catchment area extent """
-
-        if self._idxcells_area_filled is None:
-            raise ValueError("idxcells_area_filled is None, please" + \
-                        " delineate the area")
-
         xy = self._flowdir.cell2coord(self._idxcells_area_filled)
         cz = self.flowdir.cellsize
-        return np.min(xy[:, 0])-cz/2, np.max(xy[:, 0])+cz/2, \
-                np.min(xy[:, 1])-cz/2, np.max(xy[:, 1])+cz/2,
-
+        ext = (np.min(xy[:, 0])-cz/2, np.max(xy[:, 0])+cz/2,
+               np.min(xy[:, 1])-cz/2, np.max(xy[:, 1])+cz/2)
+        return ext
 
     def upstream(self, idxdown):
         """ Get upstream cell of a given cell """
@@ -1182,14 +1151,14 @@ class Catchment(object):
         idxdown = np.atleast_1d(idxdown).astype(np.int64)
         idxup = np.zeros((len(idxdown), 9), dtype=np.int64)
         ierr = c_hydrodiy_gis.upstream(FLOWDIRCODE,
-                    self._flowdir.data, idxdown, idxup)
-
-        if ierr>0:
-            raise ValueError("c_hydrodiy_gis.upstream" + \
-                                " returns "+str(ierr))
+                                       self._flowdir.data,
+                                       idxdown,
+                                       idxup)
+        if ierr > 0:
+            errmess = f"c_hydrodiy_gis.upstream returns {ierr}."
+            raise ValueError(errmess)
 
         return idxup
-
 
     def downstream(self, idxup):
         """ Get downstream cell of a given cell """
@@ -1199,14 +1168,14 @@ class Catchment(object):
         idxdown = np.zeros(len(idxup), dtype=np.int64)
 
         ierr = c_hydrodiy_gis.downstream(FLOWDIRCODE,
-                    self._flowdir.data, idxup, idxdown)
-
-        if ierr>0:
-            raise ValueError("c_hydrodiy_gis.downstream" + \
-                                " returns "+str(ierr))
+                                         self._flowdir.data,
+                                         idxup,
+                                         idxdown)
+        if ierr > 0:
+            errmess = f"c_hydrodiy_gis.downstream returns {ierr}."
+            raise ValueError(errmess)
 
         return idxdown
-
 
     def delineate_area(self, idxcell_outlet, idxinlets=None, nval=1000000):
         """ Delineate catchment area from flow direction grid
@@ -1237,21 +1206,24 @@ class Catchment(object):
         # Compute area
         flowdir = self.flowdir
         ierr = c_hydrodiy_gis.delineate_area(FLOWDIRCODE,
-                    flowdir.data, self.idxcell_outlet, idxinlets,
-                    idxcells, buffer1, buffer2)
+                                             flowdir.data,
+                                             self.idxcell_outlet,
+                                             idxinlets,
+                                             idxcells,
+                                             buffer1,
+                                             buffer2)
 
-        if ierr>0:
+        if ierr > 0:
             self._idxcells_area = None
             self._idxcells_area_filled = None
-            raise ValueError(("c_hydrodiy_gis.delineate_area" + \
-                " returns {0}. Consider increasing " + \
-                "buffer size ({1})").format(ierr, nval))
+            errmess = f"c_hydrodiy_gis.delineate_area returns {ierr}."\
+                      + f" Consider increasing buffer size ({nval})."
+            raise ValueError(errmess)
 
         idx = idxcells >= 0
         self._idxcells_area = idxcells[idx]
 
-
-        if idx.sum()>0:
+        if idx.sum() > 0:
             # Fill area cells
             # .. create a minimal rectangle containing catchment area
             rowcol = flowdir.cell2rowcol(self._idxcells_area)
@@ -1265,7 +1237,7 @@ class Catchment(object):
             # .. fill holes
             grid = binary_fill_holes(grid)
             # .. get cell coordinates
-            irows, icols = np.where(grid==1)
+            irows, icols = np.where(grid == 1)
             irows += i0
             icols += j0
             filled = irows*flowdir.ncols+icols
@@ -1273,14 +1245,14 @@ class Catchment(object):
         else:
             self._idxcells_area_filled = self._idxcells_area
 
-
     def delineate_boundary(self, catchment_area_mask=None):
         """ Delineate catchment boundary from area """
         has_c_module("gis")
 
         if self._idxcells_area is None:
-            raise ValueError("idxcells_area is None, please" + \
-                        " delineate the area")
+            errmess = "idxcells_arer is None, please"\
+                      + " delineate the area"
+            raise ValueError(errmess)
 
         nrows = self._flowdir.nrows
         ncols = self._flowdir.ncols
@@ -1300,14 +1272,14 @@ class Catchment(object):
         # Use filled area (algorithm failed when there are holes)
         # Compute boundary with varying dmax
         # This point could be improved!!
-        ierr = c_hydrodiy_gis.delineate_boundary(nrows, ncols, \
-                    cells_area, \
-                    buf, catchment_area_mask, \
-                    idxcells_boundary)
+        ierr = c_hydrodiy_gis.delineate_boundary(nrows, ncols,
+                                                 cells_area,
+                                                 buf, catchment_area_mask,
+                                                 idxcells_boundary)
 
-        if ierr>0:
-            raise ValueError(("c_hydrodiy_gis.delineate_boundary" +
-                " returns {0}").format(ierr))
+        if ierr > 0:
+            errmess = f"c_hydrodiy_gis.delineate_boundary returns {ierr}."
+            raise ValueError(errmess)
 
         idx = idxcells_boundary >= 0
         idxcells_boundary = idxcells_boundary[idx]
@@ -1320,57 +1292,43 @@ class Catchment(object):
             # to allow processing by GDAL
             nrows = len(xy)
             idxok = np.zeros(nrows, dtype=np.int64)
-            deteps = np.std(xy)*1e-6;
-            ierr = c_hydrodiy_gis.exclude_zero_area_boundary(\
-                            deteps, xy, idxok)
+            deteps = np.std(xy)*1e-6
+            ierr = c_hydrodiy_gis.exclude_zero_area_boundary(deteps,
+                                                             xy, idxok)
 
-            if ierr>0:
-                raise ValueError(("c_hydrodiy_gis."+\
-                    "exclude_zero_area_boundary" +
-                    " returns {0}").format(ierr))
+            if ierr > 0:
+                errmess = "c_hydrodiy_gis.exclude_zero_area_boundary"\
+                          + f" returns {ierr}."
+                raise ValueError(errmess)
         else:
             idxok = np.ones(len(idxcells_boundary))
 
         # Store boundaries
         idx = idxok == 1
         self._idxcells_boundary = idxcells_boundary[idx]
-        self._xycells_boundary  = xy[idx]
-
+        self._xycells_boundary = xy[idx]
 
     def compute_flowpathlengths(self):
         """ Compute length of all flow paths in catchment. """
         has_c_module("gis")
 
         idxcells_area = self.idxcells_area
-        if idxcells_area is None:
-            raise ValueError("idxcells_area is None, please" + \
-                        " delineate the area")
-
-        if self.idxcell_outlet is None:
-            raise ValueError("idxcell_outlet is None, please" + \
-                        " define an outlet for the catchment")
-
-        nrows = self._flowdir.nrows
-        ncols = self._flowdir.ncols
 
         # Initialise flowpaths data
         nval = np.int64(len(idxcells_area))
         flowpaths = np.zeros((nval, 3), dtype=np.float64)
 
         # Compute flow paths
-        ierr = c_hydrodiy_gis.delineate_flowpathlengths_in_catchment(
-                    self.idxcell_outlet, \
-                    FLOWDIRCODE, self.flowdir.data, \
-                    self.idxcells_area, flowpaths)
+        fun = c_hydrodiy_gis.delineate_flowpathlengths_in_catchment
+        ierr = fun(self.idxcell_outlet, FLOWDIRCODE, self.flowdir.data,
+                   self.idxcells_area, flowpaths)
+        if ierr > 0:
+            errmess = "c_hydrodiy_gis.delineate_flowpathlengths_in_catchment"\
+                      f" returns {ierr}."
+            raise ValueError(errmess)
 
-        if ierr>0:
-            raise ValueError(("c_hydrodiy_gis.delineate_"+
-                "flowpathlengths_in_catchment returns {0}").format(ierr))
-
-        self._flowpathlengths = pd.DataFrame(flowpaths, \
-                                    columns=["idxcell_start", \
-                                        "idxcell_end", "length[cell]"])
-
+        cols = ["idxcell_start", "idxcell_end", "length[cell]"]
+        self._flowpathlengths = pd.DataFrame(flowpaths, columns=cols)
 
     def intersect(self, grid, filled=False):
         """ Intersect catchment area with other grid and compute
@@ -1401,18 +1359,10 @@ class Catchment(object):
         has_c_module("gis")
 
         if grid.cellsize < self.flowdir.cellsize*2:
-            warnings.warn(("Cellsize of intersecting grid ({}) is smaller"+\
-                " than twice the cellsize of flow directon grid ({})").format(\
-                        grid.cellsize, self.flowdir.cellsize))
-
-
-        if self.idxcells_area is None:
-            raise ValueError("idxcells_area is None, " + \
-                "please delineate the area")
-
-        if len(self.idxcells_area)==0:
-            raise ValueError("No cells in idxcells_area, " + \
-                "please use another outlet")
+            warnmess = f"Cellsize of intersecting grid ({grid.cellsize})"\
+                       + " is smaller than twice the cellsize of flow"\
+                       + f" directon grid ({self.flowdir.cellsize})."
+            warnings.warn(warnmess)
 
         xll, yll, csz, nrows, ncols = grid._getsize()
         _, _, csz_area, _, _ = self.flowdir._getsize()
@@ -1425,12 +1375,12 @@ class Catchment(object):
 
         # Compute intersection
         ierr = c_hydrodiy_gis.intersect(nrows, ncols,
-            xll, yll, csz, csz_area,
-            xy_area, npoints, idxcells, weights)
+                                        xll, yll, csz, csz_area,
+                                        xy_area, npoints, idxcells, weights)
 
-        if ierr>0:
-            raise ValueError(("c_hydrodiy_gis.intersect" +
-                " returns {0}").format(ierr))
+        if ierr > 0:
+            errmess = f"c_hydrodiy_gis.intersect returns {ierr}."
+            raise ValueError(errmess)
 
         idxcells = idxcells[:npoints[0]]
         weights = weights[:npoints[0]]
@@ -1451,38 +1401,36 @@ class Catchment(object):
         ancols = col_end-col_start + 1
 
         weights_array = np.zeros((anrows, ancols))
-        weights_array[(rowcols[:, 0]-row_start)[:, None], \
-                    (rowcols[:, 1]-col_start)[:, None]] = weights[:, None]
+        weights_array[(rowcols[:, 0]-row_start)[:, None],
+                      (rowcols[:, 1]-col_start)[:, None]] = weights[:, None]
 
         # Generate grid object
-        area_grid = Grid("area_grid", \
-                        ncols=ancols, nrows=anrows, \
-                        cellsize=grid.cellsize, \
-                        xllcorner=axll, yllcorner=ayll, \
-                        dtype=np.float64, nodata=0, \
-                        comment="Area grid for catchment "+\
-                                "[{}] intersected with grid [{}]".format(\
-                                        self.name, grid.name))
+        comment = "Area grid for catchment"\
+                  + f"[{self.name}] intersected with grid [{grid.name}]."
+        area_grid = Grid("area_grid",
+                         ncols=ancols, nrows=anrows,
+                         cellsize=grid.cellsize,
+                         xllcorner=axll, yllcorner=ayll,
+                         dtype=np.float64, nodata=0,
+                         comment=comment)
         area_grid.data = weights_array
 
         # Set additional attributes to area grid
         # to keep info
-        area_grid.set_parent_attributes(grid, row_start, row_end, \
-                                            col_start, col_end)
+        area_grid.set_parent_attributes(grid, row_start, row_end,
+                                        col_start, col_end)
 
         return area_grid, idxcells, weights
-
 
     def isin(self, idxcell, filled=False):
         """ Check if a cell is within the catchment area """
 
         if self._idxcells_area is None:
-            raise ValueError("idxcells_area is None, " + \
-                "please delineate the area")
+            errmess = "idxcells_boundary is None, please delineate the area"
+            raise ValueError(errmess)
 
         cells = self._idxcells_area_filled if filled else self._idxcells_area
         return idxcell in cells
-
 
     def compute_area(self, to_proj, from_proj=None):
         """ Compute catchment area in km2 using a projection and
@@ -1511,8 +1459,8 @@ class Catchment(object):
         """
         idxb = self.idxcells_boundary
         if idxb is None:
-            raise ValueError("idxcells_boundary is None, " + \
-                "please delineate the area")
+            errmess = "idxcells_boundary is None, please delineate the area"
+            raise ValueError(errmess)
 
         # Obtain source coordinates in source projection system
         xy = self.flowdir.cell2coord(idxb)
@@ -1527,17 +1475,17 @@ class Catchment(object):
         # Compute area with Shoelace formula
         x = xy2[:, 0]
         y = xy2[:, 1]
-        area = 0.5e-6*np.abs(np.dot(x,np.roll(y,1))-np.dot(y,np.roll(x,1)))
+        area = 0.5e-6 * np.abs(np.dot(x, np.roll(y, 1))
+                               - np.dot(y, np.roll(x, 1)))
 
         return area
-
 
     def plot_area(self, ax, *args, **kwargs):
         """ Plot catchment area """
 
         if self._idxcells_area is None:
-            raise ValueError("idxcells_boundary is None, " + \
-                "please delineate the area")
+            errmess = "idxcells_boundary is None, please delineate the area"
+            raise ValueError(errmess)
 
         filled = kwargs.get("filled", False)
         cells = self._idxcells_area_filled if filled else self._idxcells_area
@@ -1545,39 +1493,36 @@ class Catchment(object):
         xy = self.flowdir.cell2coord(cells)
         ax.plot(xy[:, 0], xy[:, 1], *args, **kwargs)
 
-
     def plot_boundary(self, ax, *args, **kwargs):
         """ Plot catchment boundary """
 
         if self._idxcells_boundary is None:
-            raise ValueError("idxcells_boundary is None, " + \
-                "please delineate the area")
+            errmess = "idxcells_boundary is None, please delineate the area"
+            raise ValueError(errmess)
 
         xy = self.flowdir.cell2coord(self._idxcells_boundary)
         ax.plot(xy[:, 0], xy[:, 1], *args, **kwargs)
-
 
     def to_dict(self):
         """ Export data to a dictionnary """
 
         if self._idxcells_area is None:
-            raise ValueError("idxcells_area is None, " + \
-                "please delineate the area")
+            errmess = "idxcells_area is None, please delineate the area"
+            raise ValueError(errmess)
 
         inlets = None
-        if not self._idxinlets is None:
+        if self._idxinlets is not None:
             inlets = list(self._idxinlets)
 
         dic = {
             "name": self.name,
-            "idxcell_outlet":self._idxcell_outlet,
-            "idxinlets":inlets,
-            "idxcells_area":list(self._idxcells_area),
-            "idxcells_area_filled":list(self._idxcells_area_filled),
-            "flowdir":self.flowdir.to_dict(),
+            "idxcell_outlet": self._idxcell_outlet,
+            "idxinlets": inlets,
+            "idxcells_area": list(self._idxcells_area),
+            "idxcells_area_filled": list(self._idxcells_area_filled),
+            "flowdir": self.flowdir.to_dict(),
         }
         return dic
-
 
 
 def delineate_river(flowdir, idxupstream, nval=1000000):
@@ -1619,23 +1564,23 @@ def delineate_river(flowdir, idxupstream, nval=1000000):
 
     # Compute river path
     ierr = c_hydrodiy_gis.delineate_river(xll, yll, csz,
-                FLOWDIRCODE, flowdir.data,
-                idxupstream, npoints, idxcells, data)
+                                          FLOWDIRCODE, flowdir.data,
+                                          idxupstream, npoints, idxcells, data)
 
-    if ierr>0:
-        raise ValueError(("c_hydrodiy_gis.delineate_river" +
-            " returns {0}").format(ierr))
+    if ierr > 0:
+        errmess = f"c_hydrodiy_gis.delineate_river returns {ierr}."
+        raise ValueError(errmess)
 
     nval = npoints[0]
     data = pd.DataFrame(data[:nval],
-        columns=["dist", "dx", "dy", "x", "y"])
+                        columns=["dist", "dx", "dy", "x", "y"])
     data["idxcell"] = idxcells[:nval]
 
     return data
 
 
-def accumulate(flowdir, to_accumulate=None, nprint=100, \
-                    max_accumulated_cells=-1):
+def accumulate(flowdir, to_accumulate=None, nprint=100,
+               max_accumulated_cells=-1):
     """ Compute flow accumulation from the flow direction grid
 
     Parameters
@@ -1677,16 +1622,17 @@ def accumulate(flowdir, to_accumulate=None, nprint=100, \
     accumulation = to_accumulate.clone()
 
     # Compute accumulation
-    ierr = c_hydrodiy_gis.accumulate(nprint, \
-                max_accumulated_cells,
-                to_accumulate.nodata, \
-                FLOWDIRCODE, \
-                flowdir.data, to_accumulate.data, \
-                accumulation.data)
+    ierr = c_hydrodiy_gis.accumulate(nprint,
+                                     max_accumulated_cells,
+                                     to_accumulate.nodata,
+                                     FLOWDIRCODE,
+                                     flowdir.data,
+                                     to_accumulate.data,
+                                     accumulation.data)
 
-    if ierr>0:
-        raise ValueError(("c_hydrodiy_gis.accumulate" +
-            " returns {0}").format(ierr))
+    if ierr > 0:
+        errmess = f"c_hydrodiy_gis.accumulate returns {ierr}."
+        raise ValueError(errmess)
 
     return accumulation
 
@@ -1711,8 +1657,9 @@ def voronoi(catchment, xypoints):
     """
     has_c_module("gis")
     if catchment._idxcells_area is None:
-        raise ValueError("Catchment idxcells_area is None, " + \
-            "please delineate the area")
+        errmess = "Catchment idxcells_area is None, "\
+                  + "please delineate the area"
+        raise ValueError(errmess)
 
     xll, yll, csz, nrows, ncols = catchment._flowdir._getsize()
 
@@ -1721,14 +1668,13 @@ def voronoi(catchment, xypoints):
     weights = np.zeros(xypoints.shape[0]).astype(np.float64)
 
     ierr = c_hydrodiy_gis.voronoi(nrows, ncols, xll, yll, csz,
-                idxcells_area, xypoints, weights)
+                                  idxcells_area, xypoints, weights)
 
-    if ierr>0:
-        raise ValueError(("c_hydrodiy_gis.voronoi" +
-            " returns {0}").format(ierr))
+    if ierr > 0:
+        errmess = f"c_hydrodiy_gis.voronoi returns {ierr}."
+        raise ValueError(errmess)
 
     return weights
-
 
 
 def get_grid(name):
@@ -1767,8 +1713,8 @@ def get_grid(name):
         info = AWRAL_SUBGRIDS.loc[idx, :].iloc[0]
 
         # Generate file names
-        fh = "{}/{}.hdr".format(info.entity_type, \
-                            re.sub("\\..*$", "", info.grid_file))
+        fh = "{}/{}.hdr".format(info.entity_type,
+                                re.sub("\\..*$", "", info.grid_file))
 
         # Reads data
         gr = Grid.from_zip(FZIP_AWRAL_SUBGRIDS, fh)
@@ -1785,8 +1731,9 @@ def get_grid(name):
         gr = Grid.from_zip(fzip, fhdr)
 
     else:
-        raise ValueError("Expected name in {0} or AWRAL subgrids id, got {1}".format(
-            "/".join(expected_base), name))
+        errmess = f"Expected name in {expected_base} or AWRAL subgrids id,"\
+                  + f"got {name}."
+        raise ValueError(errmess)
 
     return gr
 
@@ -1808,45 +1755,47 @@ def slope(flowdir, altitude, nprint=100):
     cellsize = np.float64(altitude.cellsize)
 
     ierr = c_hydrodiy_gis.slope(nprint, cellsize, FLOWDIRCODE,
-                flowdir.data, altitude.data, slopeval.data)
+                                flowdir.data, altitude.data,
+                                slopeval.data)
 
-    if ierr>0:
-        raise ValueError(("c_hydrodiy_gis.slope" +
-            " returns {0}").format(ierr))
+    if ierr > 0:
+        errmess = f"c_hydrodiy_gis.slope returns {ierr}."
+        raise ValueError(errmess)
 
     return slopeval
 
 
-def gsmooth(grid, mask=None, coastwin=50, sigma=5., \
-                              minval=-np.inf, eps=1e-6):
+def gsmooth(grid, mask=None, coastwin=50, sigma=5.,
+            minval=-np.inf, eps=1e-6):
     ''' Smooth gridded value to improve look of map '''
     # Check coastwin param
     if coastwin < 10*sigma:
-        warnings.warn('Expected coastwin > 10 x sigma, got '+
-                'coastwin={:0.1f} sigma={:0.1f}'.format(coastwin, \
-                    sigma))
+        warnmess = "Expected coastwin > 10 x sigma, got "\
+                   + f"coastwin={coastwin:0.1f} sigma={sigma:0.1f}."
+        warnings.warn(warnmess)
 
     # Set up smooth grid
     smooth = grid.clone(dtype=np.float64)
     z0 = grid.data.copy()
 
     # Cut mask
-    if not mask is None:
+    if mask is not None:
         # Check grid and mask have the same geometry
         if not grid.same_geometry(mask):
-            raise ValueError('Mask does not have the same '+
-                'geometry than input grid')
+            raise ValueError('Mask does not have the same '
+                             + 'geometry than input grid')
 
         # Check mask as integer dtype
         if not issubclass(mask.data.dtype.type, np.integer):
-            raise ValueError('Expected integer dtype for mask, '+\
-                        'got {}'.format(mask.dtype))
+            errmess = "Expected integer dtype for mask,"\
+                      + f" got {mask.dtype}."
+            raise ValueError(errmess)
 
         # Set mask
         z0[mask.data == 0] = np.nan
 
     # Gapfill with nearest neighbour
-    idx = np.isnan(z0) | (z0<minval-eps)
+    idx = np.isnan(z0) | (z0 < minval-eps)
     z0[idx] = -np.inf
 
     z1 = maximum_filter(z0, size=coastwin, mode='nearest')
@@ -1856,12 +1805,10 @@ def gsmooth(grid, mask=None, coastwin=50, sigma=5., \
     z2 = gaussian_filter(z1, sigma=sigma, mode='nearest')
 
     # Final mask cut
-    if not mask is None:
+    if mask is not None:
         z2[mask.data == 0] = np.nan
 
     # Store
     smooth.data = z2
 
     return smooth
-
-

@@ -1,5 +1,4 @@
 from datetime import datetime
-import pandas as pd
 from pathlib import Path
 
 FHERE = Path(__file__).resolve().parent
@@ -29,6 +28,7 @@ HTML_TEMPLATE = '''
 </html>.
 '''
 
+
 def dataframe2html(df, fhtml, title, comment="", author="", index=False):
     # Open CSS
     fcss = FHERE / "pandas_dataframe_style.css"
@@ -36,14 +36,11 @@ def dataframe2html(df, fhtml, title, comment="", author="", index=False):
         css_style = fo.read()
 
     # Format table
+    tbl = df.to_html(index=index, classes="css_style")
     with fhtml.open("w") as fo:
-        fo.write(HTML_TEMPLATE.format(\
-            author=author, \
-            css_style=css_style, \
-            now=str(datetime.now()), \
-            comment=comment, \
-            table=df.to_html(index=index, classes="css_style"),\
-            title=title
-        ))
-
-
+        fo.write(HTML_TEMPLATE.format(author=author,
+                                      css_style=css_style,
+                                      now=str(datetime.now()),
+                                      comment=comment,
+                                      table=tbl,
+                                      title=title))

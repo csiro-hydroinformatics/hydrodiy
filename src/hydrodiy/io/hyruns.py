@@ -1,12 +1,9 @@
-import re, json
+import re
+import json
 import time
-import copy
 from pathlib import Path
 from itertools import product as prod
 import numpy as np
-import pandas as pd
-
-from hydrodiy.io import csv
 
 # Specify key names to allow possibily to change this
 # and solve backward compatibility issues when
@@ -16,19 +13,22 @@ from hydrodiy.io import csv
 # function
 _DICT_KEYNAMES_DEFAULT = {
     "context_name": "context",
-    "task_options_name": "options", \
+    "task_options_name": "options",
     "manager_options_name": "options"
-}
+    }
 
 _DICT_KEYNAMES = {}
+
 
 def reset_dict_keyname():
     """ Reset all key/name pairs for import and export of json data """
     for key, val in _DICT_KEYNAMES_DEFAULT.items():
         _DICT_KEYNAMES[key] = val
 
+
 # Initial setup of keynames
 reset_dict_keyname()
+
 
 def set_dict_keyname(key, name):
     """ Set a new key/name pair for import and export of json data """
@@ -36,7 +36,6 @@ def set_dict_keyname(key, name):
     errmsg = f"Expected key in {txt}, got {key}"
     assert key in _DICT_KEYNAMES_DEFAULT, errmsg
     _DICT_KEYNAMES[key] = name
-
 
 
 def get_batch(nelements, nbatch, ibatch):
@@ -68,15 +67,14 @@ def get_batch(nelements, nbatch, ibatch):
         raise ValueError(f"Expected nelements>=1, got {nelements}.")
 
     if nelements < nbatch:
-        raise ValueError(f"Expected nelements ({nelements}) "+\
-                            f">= nbatch ({nbatch})")
+        raise ValueError(f"Expected nelements ({nelements})"
+                         + f">= nbatch ({nbatch})")
 
     if ibatch < 0 or ibatch >= nbatch:
-        raise ValueError(f"Expected ibatch ({ibatch}) in "+\
-                        f"[0, {nbatch-1}].")
+        raise ValueError(f"Expected ibatch ({ibatch}) in"
+                         + f" [0, {nbatch-1}].")
 
     return np.array_split(np.arange(nelements), nbatch)[ibatch]
-
 
 
 class SiteBatch():
@@ -92,18 +90,15 @@ class SiteBatch():
         self.nsites = nsites
         self.nbatch = nbatch
 
-
     def __getitem__(self, ibatch):
         isites = get_batch(self.nsites, self.nbatch, ibatch)
         return self.siteids[isites].tolist()
-
 
     def search(self, siteid):
         for ibatch in range(self.nbatch):
             s = self[ibatch]
             if siteid in s:
                 return ibatch
-
 
 
 class OptionTask():
@@ -121,7 +116,6 @@ class OptionTask():
             txt += f"\t\t{key}: {value}\n"
         return txt
 
-
     def __getattr__(self, key):
         if key in self.options:
             return self.options[key]
@@ -132,7 +126,6 @@ class OptionTask():
         else:
             super(self).__getattr__(key)
 
-
     def __getitem__(self, key):
         txt = "/".join(self.options.keys())
         txt += "/" + "/".join(self.context.keys())
@@ -142,22 +135,19 @@ class OptionTask():
             return self.options[key]
         return self.context[key]
 
-
     def to_dict(self):
-        dd = {\
-            "taskid": self.taskid, \
-            _DICT_KEYNAMES["context_name"]: self.context, \
+        dd = {
+            "taskid": self.taskid,
+            _DICT_KEYNAMES["context_name"]: self.context,
             _DICT_KEYNAMES["task_options_name"]: self.options
-        }
+            }
         return dd
-
 
     @classmethod
     def from_dict(cls, dd):
-        return OptionTask(dd["taskid"], \
-                    dd[_DICT_KEYNAMES["context_name"]], \
-                    dd[_DICT_KEYNAMES["task_options_name"]])
-
+        return OptionTask(dd["taskid"],
+                          dd[_DICT_KEYNAMES["context_name"]],
+                          dd[_DICT_KEYNAMES["task_options_name"]])
 
     def log(self, logger):
         """ Log task """
@@ -174,7 +164,6 @@ class OptionTask():
         logger.info("")
 
 
-
 class OptionManager():
     """ Object to manage task contexturation built from lists of parameters """
 
@@ -184,29 +173,27 @@ class OptionManager():
         self.tasks = []
         self.context = kwargs
 
-
     def __str__(self):
-        txt = f"\n*****\n"
+        txt = "\n*****\n"
         txt += f"Options manager with {len(self.options)} "
-        txt += f"options, {len(self.context)} context and {self.ntasks} tasks:\n"
+        txt += f"options, {len(self.context)} context"\
+               + f" and {self.ntasks} tasks:\n"
         txt += "\tOptions values\n"
         for key, value in self.options.items():
             txt += f"\t\t{key} ({len(value)} values): {value}\n"
 
-        if len(self.context)>0:
+        if len(self.context) > 0:
             txt += "\tConfig values\n"
             for key, value in self.context.items():
                 txt += f"\t\t{key}: {value}\n"
 
         return txt
 
-
     def __getattr__(self, key):
         if key in self.context:
             return self.context[key]
         else:
             super(self).__getattr__(key)
-
 
     def __eq__(self, other):
         # Check other is an option manager
@@ -243,7 +230,6 @@ class OptionManager():
 
         return True
 
-
     @classmethod
     def from_dict(cls, dd):
         opm = OptionManager(dd.get("name", "Task Manager"))
@@ -255,7 +241,6 @@ class OptionManager():
             opm.tasks.append(to.options)
 
         return opm
-
 
     @classmethod
     def from_file(cls, path, wait_secs=2):
@@ -274,19 +259,20 @@ class OptionManager():
 
         return cls.from_dict(js)
 
-
     def to_dict(self):
-        dd = {"name": self.name, \
-                _DICT_KEYNAMES["context_name"]: self.context, \
-                _DICT_KEYNAMES["manager_options_name"]: self.options, \
-                "tasks": [self.get_task(taskid).to_dict() \
-                                for taskid in range(self.ntasks)]
+        dd = {
+            "name": self.name,
+            _DICT_KEYNAMES["context_name"]: self.context,
+            _DICT_KEYNAMES["manager_options_name"]: self.options,
+            "tasks": [self.get_task(taskid).to_dict()
+                      for taskid in range(self.ntasks)]
         }
         return dd
 
-
     def save(self, filename, overwrite=False):
-        """ Save option manager to disk. Overwrite existing one if different."""
+        """ Save option manager to disk.
+        Overwrite existing one if different.
+        """
         dd = self.to_dict()
         filename = Path(filename)
 
@@ -296,9 +282,8 @@ class OptionManager():
         try:
             with filename.open("w") as fo:
                 json.dump(dd, fo, indent=4)
-        except:
+        except Exception:
             pass
-
 
     def from_cartesian_product(self, **kwargs):
         """ Build an option manager from a cartesian product of options """
@@ -311,8 +296,8 @@ class OptionManager():
             elif hasattr(v, "__iter__"):
                 v2 = v
             else:
-                errmsg = "Expected an iterable, a float, "+\
-                        f"an int or a string, got {type(v)}."
+                errmsg = "Expected an iterable, a float,"\
+                         + f" an int or a string, got {type(v)}."
                 raise TypeError(errmsg)
 
             sk = str(k)
@@ -324,21 +309,18 @@ class OptionManager():
             dd = {k: tt for k, tt in zip(keys, t)}
             self.tasks.append(dd)
 
-
     @property
     def ntasks(self):
         """ Number of options """
         return len(self.tasks)
 
-
     def get_task(self, taskid):
         ntsks = self.ntasks
         errmsg = f"Expected taskid in [0, {ntsks}[, got {taskid}."
-        assert taskid>=0 and taskid<ntsks, errmsg
+        assert taskid >= 0 and taskid < ntsks, errmsg
 
         # Build task object on the fly
         return OptionTask(taskid, self.context, self.tasks[taskid])
-
 
     def search(self, **kwargs):
         """ Search tasks with criteria on options,
@@ -363,14 +345,12 @@ class OptionManager():
 
         return taskids
 
-
     def find(self, **kwargs):
         """ Find options with specific values for options,
             e.g. month=1 will search month equal to 1.
         """
         kw = {k: f"^{v}$" for k, v in kwargs.items()}
         return self.search(**kw)
-
 
     def match(self, other_task, exclude=[], **kwargs):
         """ Find all tasks that match another task excluding certain items.
