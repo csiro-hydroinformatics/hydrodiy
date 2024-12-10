@@ -1,6 +1,8 @@
 ''' Module to read and write csv data with comments '''
 
-import sys, os, re
+import sys
+import os
+import re
 
 from datetime import datetime
 from getpass import getuser
@@ -12,14 +14,8 @@ import numpy as np
 
 from hydrodiy import PYVERSION
 
-# Tailor string handling depending on python version
-if PYVERSION == 2:
-    from StringIO import StringIO
-    UNICODE = unicode
-
-elif PYVERSION == 3:
-    from io import StringIO
-    UNICODE = str
+from io import StringIO
+UNICODE = str
 
 # Check distutils available for python folders
 HAS_DISTUTILS = False
@@ -89,8 +85,8 @@ def _csvhead(nrow, ncol, comment, source_file, author=None):
         head.append(f'# {key} : {comments[key]}')
 
     now = datetime.now()
-    head.append('# time_generated : ' + \
-                        datetime.strftime(now, '%Y-%m-%d %H:%M:%S'))
+    head.append("# time_generated : "
+                + f"{datetime.strftime(now, '%Y-%m-%d %H:%M:%S')}")
 
     # seek author
     if author is None:
@@ -142,8 +138,8 @@ def _check_name(filename):
         filename_full = '{0}.zip'.format(filename)
 
     if not os.path.exists(filename_full):
-        raise ValueError('Cannot find file {0} (filename={1})'.format(\
-            filename_full, filename))
+        errmess = f"Cannot find file {filename} ({filename_full})."
+        raise ValueError(errmess)
 
     return filename_full
 
@@ -153,31 +149,31 @@ def write2zip(archive, arcname, txt):
 
     # Check file is not in the archive
     zinfo_test = archive.NameToInfo.get(arcname)
-    if not zinfo_test is None:
-        raise ValueError('File {0} already exists in archive'.format(arcname))
+    if zinfo_test is not None:
+        raise ValueError(f"File {arcname} already exists in archive")
 
     # Create fileinfo object
     zinfo = zipfile.ZipInfo(arcname)
 
     now = datetime.now()
-    zinfo.date_time = (now.year, now.month, now.day, \
-                            now.hour, now.minute, now.second)
+    zinfo.date_time = (now.year, now.month, now.day,
+                       now.hour, now.minute, now.second)
     # File permission
-    zinfo.external_attr = 33488896 # 0777 << 16
+    zinfo.external_attr = 33488896  # 0777 << 16
 
     # Write to archive with header
-    archive.writestr(zinfo, txt, \
-        compress_type=zipfile.ZIP_DEFLATED)
+    archive.writestr(zinfo, txt,
+                     compress_type=zipfile.ZIP_DEFLATED)
 
 
-def write_csv(data, filename, comment,\
-        source_file,\
-        author=None,\
-        write_index=False,\
-        compress=True,\
-        float_format='%0.5f',\
-        archive=None,\
-        **kwargs):
+def write_csv(data, filename, comment,
+              source_file,
+              author=None,
+              write_index=False,
+              compress=True,
+              float_format='%0.5f',
+              archive=None,
+              **kwargs):
     ''' write a pandas dataframe to csv with comments in header
 
     Parameters
@@ -218,16 +214,15 @@ def write_csv(data, filename, comment,\
     source_file = str(source_file)
 
     # Generate head
-    head = _csvhead(data.shape[0], data.shape[1],\
-                comment,\
-                source_file=source_file,\
-                author=author)
+    head = _csvhead(data.shape[0], data.shape[1], comment,
+                    source_file=source_file,
+                    author=author)
 
     # Check source_file exists
     if not os.path.exists(source_file):
         raise ValueError(source_file + ' file does not exists')
 
-    if not archive is None:
+    if archive is not None:
         compress = False
 
     # defines file name
@@ -249,9 +244,8 @@ def write_csv(data, filename, comment,\
             fobj.write(line+'\n')
 
     # Write data itself
-    txt = data.to_csv(fobj, index=write_index,\
-        float_format=float_format, \
-        **kwargs)
+    txt = data.to_csv(fobj, index=write_index,
+                      float_format=float_format, **kwargs)
 
     # Store compressed data
     if archive or compress:
@@ -261,9 +255,8 @@ def write_csv(data, filename, comment,\
         arcname = filename
         if compress:
             arcname = os.path.basename(filename)
-            archive = zipfile.ZipFile(filename_full, \
-                            mode='w', \
-                            compression=zipfile.ZIP_DEFLATED)
+            archive = zipfile.ZipFile(filename_full, mode='w',
+                                      compression=zipfile.ZIP_DEFLATED)
 
         write2zip(archive, arcname, txt)
 
@@ -274,8 +267,8 @@ def write_csv(data, filename, comment,\
         fobj.close()
 
 
-def read_csv(filename, has_colnames=True, archive=None, \
-        encoding='utf-8', **kwargs):
+def read_csv(filename, has_colnames=True, archive=None,
+             encoding='utf-8', **kwargs):
     ''' Read a pandas dataframe from a csv with comments in header
 
     Parameters
@@ -330,9 +323,9 @@ def read_csv(filename, has_colnames=True, archive=None, \
 
         except TypeError:
             import warnings
-            warnings.warn(('Failed to open {0} as a text file. '+\
-                'Will now try to open it as a buffer').format(filename), \
-                stacklevel=2)
+            warnmess = f"Failed to open {filename} as a text file."\
+                       + "Will now try to open it as a buffer."
+            warnings.warn(warnmess, stacklevel=2)
             fobj = filename
 
     else:
@@ -362,12 +355,12 @@ def read_csv(filename, has_colnames=True, archive=None, \
         if 'names' not in kwargs:
             # deals with multi-index columns
             # reformat columns like (idx1-idx2-...)
-            search = re.findall('"\([^(]*\)"', line)
+            search = re.findall('"\\([^(]*\\)"', line)
             linecols = line
 
             if search:
                 for cn in search:
-                    cn2 = re.sub('\(|\)|"|\'', '', cn)
+                    cn2 = re.sub('\\(|\\)|"|\'', '', cn)
                     cn2 = re.sub(', *', '-', cn2)
                     linecols = re.sub(re.escape(cn), cn2, linecols)
 
@@ -377,18 +370,13 @@ def read_csv(filename, has_colnames=True, archive=None, \
             kwargs.pop('names')
 
         # Reads data with proper column names
-        data = pd.read_csv(fobj, names=cns, \
-                    encoding=encoding, **kwargs)
-
-        data.columns = [re.sub('\\.', '_', cn)\
-                                        for cn in data.columns]
+        data = pd.read_csv(fobj, names=cns, encoding=encoding, **kwargs)
+        data.columns = [re.sub('\\.', '_', cn) for cn in data.columns]
 
     else:
         # Reads data frame without header
-        data = pd.read_csv(fobj, header=None, \
-                    encoding=encoding, **kwargs)
+        data = pd.read_csv(fobj, header=None, encoding=encoding, **kwargs)
 
     fobj.close()
 
     return data, comment
-
