@@ -3,18 +3,17 @@ import math
 import numpy as np
 import pandas as pd
 
-from hydrodiy.stat import sutils
-from hydrodiy.plot import putils
-
 from matplotlib import lines, colors as mcolors
-from matplotlib.patches import FancyBboxPatch, BoxStyle
+from matplotlib.patches import FancyBboxPatch
 import matplotlib.pyplot as plt
 
 COLORS = [v for k, v in mcolors.TABLEAU_COLORS.items()]
 EPS = 1e-10
 
+
 class BoxplotError(Exception):
     pass
+
 
 def compute_percentiles(coverage):
     """ Compute whiskers percentiles from coverage """
@@ -31,9 +30,9 @@ def boxplot_stats(data, box_coverage, whiskers_coverage):
     wqq1, wqq2 = compute_percentiles(whiskers_coverage)
     nok = np.sum(idx)
 
-    if nok>3:
+    if nok > 3:
         qq = [wqq1, bqq1, 50, bqq2, wqq2]
-        prc = pd.Series(np.nanpercentile(data[idx], qq), \
+        prc = pd.Series(np.nanpercentile(data[idx], qq),
                         index=["{0:0.1f}%".format(qqq) for qqq in qq])
         prc["count"] = nok
         prc["mean"] = data[idx].mean()
@@ -41,12 +40,12 @@ def boxplot_stats(data, box_coverage, whiskers_coverage):
         prc["min"] = data[idx].min()
     else:
         prc = pd.Series({"count": nok})
-        pnames = ["{0:0.1f}%".format(wqq1), \
-                "{0:0.1f}%".format(bqq1), \
-                "50.0%", \
-                "{0:0.1f}%".format(bqq2), \
-                "{0:0.1f}%".format(wqq2), \
-                "min", "max", "mean"]
+        pnames = ["{0:0.1f}%".format(wqq1),
+                  "{0:0.1f}%".format(bqq1),
+                  "50.0%",
+                  "{0:0.1f}%".format(bqq2),
+                  "{0:0.1f}%".format(wqq2),
+                  "min", "max", "mean"]
         for pn in pnames:
             prc[pn] = np.nan
 
@@ -57,50 +56,49 @@ def _to_float(value, mini=0., maxi=np.inf):
     """ Convert value to float with range checking """
     try:
         value = np.float64(value)
-    except:
-        raise BoxplotError("Failed to convert {0} to float".format(value))
+    except Exception:
+        raise BoxplotError(f"Failed to convert {value} to float.")
 
-    if value<mini-EPS or value>maxi+EPS:
-        raise BoxplotError(("Expected value in [{0}, {1}], " +\
-            "got {2}").format(mini, maxi, value))
+    if value < mini-EPS or value > maxi+EPS:
+        errmsg = f"Expected value in [{mini}, {maxi}], got {value}."
+        raise BoxplotError(errmsg)
 
     return value
 
 
 def _is_in(value, possible):
     """ Check if a value is in a set of possible choices """
-    if not value in possible:
-        raise BoxplotError(("Expected value in {0}," + \
-            " got {1}").format(possible, value))
+    if value not in possible:
+        errmsg = f"Expected value in {possible}, got {value}."
+        raise BoxplotError(errmsg)
 
     return value
-
 
 
 class BoxplotItem(object):
     """ Element of the boxplot graph """
 
-    def __init__(self, \
-        linestyle="-", \
-        alpha=1., \
-        linewidth=2, \
-        linecolor="k", \
-        facecolor="none", \
-        width=0.2, \
-        va="center", \
-        ha="left", \
-        fontcolor="k", \
-        number_format="%0.1f", \
-        fontsize=10, \
-        fontweight="normal", \
-        boxstyle="Square,pad=0", \
-        hatch="none", \
-        marker="o", \
-        markerfacecolor="none", \
-        markeredgecolor="k", \
-        markersize=5, \
-        show_line=True, \
-        show_text=True):
+    def __init__(self,
+                 linestyle="-",
+                 alpha=1.,
+                 linewidth=2,
+                 linecolor="k",
+                 facecolor="none",
+                 width=0.2,
+                 va="center",
+                 ha="left",
+                 fontcolor="k",
+                 number_format="%0.1f",
+                 fontsize=10,
+                 fontweight="normal",
+                 boxstyle="Square,pad=0",
+                 hatch="none",
+                 marker="o",
+                 markerfacecolor="none",
+                 markeredgecolor="k",
+                 markersize=5,
+                 show_line=True,
+                 show_text=True):
 
         # Attributes controlled by getters/setters
         self._linestyle = None
@@ -142,7 +140,6 @@ class BoxplotItem(object):
         self.show_line = show_line
         self.show_text = show_text
 
-
     @property
     def linestyle(self):
         return self._linestyle
@@ -151,15 +148,14 @@ class BoxplotItem(object):
     def linestyle(self, value):
         self._linestyle = _is_in(value, lines.lineStyles.keys())
 
-
     @property
     def va(self):
         return self._va
 
     @va.setter
     def va(self, value):
-        self._va = _is_in(value, ["top", "center", \
-                                        "bottom", "baseline"])
+        va = ["top", "center", "bottom", "baseline"]
+        self._va = _is_in(value, va)
 
     @property
     def ha(self):
@@ -167,8 +163,8 @@ class BoxplotItem(object):
 
     @ha.setter
     def ha(self, value):
-        self._ha = _is_in(value, ["left", "center", \
-                                        "right"])
+        ha = ["left", "center", "right"]
+        self._ha = _is_in(value, ha)
 
     @property
     def marker(self):
@@ -176,8 +172,8 @@ class BoxplotItem(object):
 
     @marker.setter
     def marker(self, value):
-        self._marker = _is_in(value, ["none", \
-                    "o", ".", "*", "+"])
+        markers = ["none", "o", ".", "*", "+"]
+        self._marker = _is_in(value, markers)
 
     @property
     def boxstyle(self):
@@ -186,8 +182,9 @@ class BoxplotItem(object):
     @boxstyle.setter
     def boxstyle(self, value):
         if not re.search("^(Square|Round)", value):
-            raise BoxplotError(("Boxstyle should start either" +\
-                " by Round or Square, got {0}").format(value))
+            errmsg = "Boxstyle should start either by Round or"\
+                     + f" Square, got {value}."
+            raise BoxplotError(errmsg)
         self._boxstyle = value
 
     @property
@@ -197,7 +194,6 @@ class BoxplotItem(object):
     @linewidth.setter
     def linewidth(self, value):
         self._linewidth = _to_float(value)
-
 
     @property
     def fontsize(self):
@@ -215,7 +211,6 @@ class BoxplotItem(object):
     def fontweight(self, value):
         self._fontweight = _is_in(str(value), ["normal", "bold"])
 
-
     @property
     def width(self):
         return self._width
@@ -224,7 +219,6 @@ class BoxplotItem(object):
     def width(self, value):
         self._width = _to_float(value)
 
-
     @property
     def markersize(self):
         return self._markersize
@@ -232,7 +226,6 @@ class BoxplotItem(object):
     @markersize.setter
     def markersize(self, value):
         self._markersize = _to_float(value)
-
 
     @property
     def alpha(self):
@@ -248,26 +241,26 @@ class BoxplotItem(object):
 
     @hatch.setter
     def hatch(self, value):
-        self._hatch = _is_in(str(value), ["none", "/", \
-                    "\\", "\\\\", "\\\\\\", "//", "///", "|", "-", \
-                    "+", "x", "o", "O", ".", "*"])
-
+        hatches = ["none", "/",
+                   "\\", "\\\\", "\\\\\\", "//", "///", "|", "-",
+                   "+", "x", "o", "O", ".", "*"]
+        self._hatch = _is_in(str(value), hatches)
 
 
 class Boxplot(object):
     """ Object allowing to draw boxplots """
 
     def __init__(self, data,
-                style="default", by=None, \
-                show_mean=False, \
-                show_median=True, \
-                show_text=False, \
-                center_text=True, \
-                linewidth=2, \
-                width_from_count=False,
-                number_format="0.2f", \
-                box_coverage=50.,
-                whiskers_coverage=90.):
+                 style="default", by=None,
+                 show_mean=False,
+                 show_median=True,
+                 show_text=False,
+                 center_text=True,
+                 linewidth=2,
+                 width_from_count=False,
+                 number_format="0.2f",
+                 box_coverage=50.,
+                 whiskers_coverage=90.):
         """ Draw boxplots with labels and defined colors
 
         Parameters
@@ -305,7 +298,7 @@ class Boxplot(object):
         """
 
         # Check input data
-        if not by is None:
+        if by is not None:
             by = pd.Series(by)
             if by.name is None:
                 by.name = "by"
@@ -316,16 +309,16 @@ class Boxplot(object):
             try:
                 data = pd.Series(data).astype(np.float64)
             except Exception as err:
-                raise BoxplotError("Failed to convert data to float"+\
-                        " series: {0}".format(str(err)))
+                errmsg = f"Failed to convert data to float series: {err}."
+                raise BoxplotError(errmsg)
 
         else:
             try:
                 data = pd.DataFrame(data).astype(np.float64)
             except Exception as err:
-                raise BoxplotError("Failed to convert data to float"+\
-                        " dataframe:" +\
-                        " {0}".format(str(err)))
+                errmsg = "Failed to convert data to float dataframe:"\
+                         + f" {err}"
+                raise BoxplotError(errmsg)
 
         # initialise objects
         self._ax = None
@@ -336,15 +329,16 @@ class Boxplot(object):
         self.mean = None
 
         if box_coverage < 40.:
-            raise BoxplotError("Box coverage cannot be below 40. "+\
-                "Got {0}.".format(box_coverage))
+            errmsg = "Bor coverage cannot be below 40."\
+                     + f" Got {box_coverage}."
+            raise BoxplotError(errmsg)
         self.box_coverage = box_coverage
 
         if whiskers_coverage <= box_coverage:
-            raise BoxplotError("Whiskers coverage cannot be below box"+\
-                " coverage."+\
-                " Got {0} for box cov and {1} for whisk cov.".format(\
-                    box_coverage, whiskers_coverage))
+            errmsg = "Whiskers coverage cannot be below box coverage."\
+                     + f" Got {box_coverage} for box cov and"\
+                     + f"{whiskers_coverage} for whisk cov."
+            raise BoxplotError(errmsg)
         self.whiskers_coverage = whiskers_coverage
 
         self._width_from_count = width_from_count
@@ -352,86 +346,89 @@ class Boxplot(object):
         # Configure box plot formats depending on style
         if style == "default":
             if show_median:
-                self.median = BoxplotItem(linecolor=COLORS[3], \
-                            fontcolor=COLORS[3], fontsize=9, \
-                            marker="none",\
-                            linewidth=linewidth, \
-                            show_text=show_text)
+                self.median = BoxplotItem(linecolor=COLORS[3],
+                                          fontcolor=COLORS[3],
+                                          fontsize=9,
+                                          marker="none",
+                                          linewidth=linewidth,
+                                          show_text=show_text)
 
             if show_mean:
-                self.mean = BoxplotItem(marker="o", \
-                            markerfacecolor=COLORS[4], \
-                            markeredgecolor=COLORS[4], \
-                            markersize=6, \
-                            show_line=False, \
-                            fontcolor=COLORS[4], \
-                            show_text=False)
+                self.mean = BoxplotItem(marker="o",
+                                        markerfacecolor=COLORS[4],
+                                        markeredgecolor=COLORS[4],
+                                        markersize=6,
+                                        show_line=False,
+                                        fontcolor=COLORS[4],
+                                        show_text=False)
 
-            self.whiskers = BoxplotItem(linecolor=COLORS[0], \
-                                facecolor=COLORS[0], \
-                                linewidth=linewidth, \
-                                width=0.)
+            self.whiskers = BoxplotItem(linecolor=COLORS[0],
+                                        facecolor=COLORS[0],
+                                        linewidth=linewidth,
+                                        width=0.)
 
-            self.caps = BoxplotItem(linecolor=COLORS[0], \
-                            linewidth=linewidth, \
-                            width=0.3, fontcolor=COLORS[0])
+            self.caps = BoxplotItem(linecolor=COLORS[0],
+                                    linewidth=linewidth,
+                                    width=0.3, fontcolor=COLORS[0])
 
-            self.box = BoxplotItem(linecolor=COLORS[0], \
-                            width=0.7, fontcolor=COLORS[0], \
-                            number_format = "%0.{0}f".format(number_format), \
-                            fontsize=8, \
-                            linewidth=linewidth, \
-                            show_text=False)
+            self.box = BoxplotItem(linecolor=COLORS[0],
+                                   width=0.7,
+                                   fontcolor=COLORS[0],
+                                   number_format=f"%0.{number_format}f",
+                                   fontsize=8,
+                                   linewidth=linewidth,
+                                   show_text=False)
 
         elif style == "narrow":
-            obj = BoxplotItem(marker="o", \
-                            markeredgecolor=COLORS[0], \
-                            markerfacecolor="w", \
-                            show_line=False, \
-                            show_text=False)
+            obj = BoxplotItem(marker="o",
+                              markeredgecolor=COLORS[0],
+                              markerfacecolor="w",
+                              show_line=False,
+                              show_text=False)
             if show_median:
                 self.median = obj
             else:
                 self.mean = obj
 
-            self.whiskers = BoxplotItem(linecolor="none", \
-                                facecolor=COLORS[0], \
-                                alpha=0.5, \
-                                width=0.3, linewidth=0)
+            self.whiskers = BoxplotItem(linecolor="none",
+                                        facecolor=COLORS[0],
+                                        alpha=0.5,
+                                        width=0.3, linewidth=0)
 
             self.caps = BoxplotItem(linecolor="none", width=0.)
 
-            self.box = BoxplotItem(linecolor="none", \
-                            facecolor=COLORS[0], \
-                            width=0.6, show_text=False)
+            self.box = BoxplotItem(linecolor="none",
+                                   facecolor=COLORS[0],
+                                   width=0.6, show_text=False)
         else:
-            raise BoxplotError("Expecting style in [default/narrow],"+\
-                        " got {0}".format(style))
+            errmsg = f"Expecting style in [default/narrow], got {style}."
+            raise BoxplotError(errmsg)
 
         # Set text format
-        for obj in [self.median, self.mean, self.whiskers, self.box, self.caps]:
-            if not obj is None:
+        for obj in [self.median, self.mean, self.whiskers,
+                    self.box, self.caps]:
+            if obj is not None:
                 obj.number_format = number_format
 
         self.center_text = center_text
         if center_text:
             for obj in [self.median, self.mean, self.box, self.whiskers]:
-                if not obj is None:
+                if obj is not None:
                     obj.ha = "center"
                     obj.va = "bottom"
             self.box.ha = "left"
 
         # Items not affected by style
-        self.count = BoxplotItem(fontsize=7, \
-                        fontcolor="grey", number_format="%d")
+        self.count = BoxplotItem(fontsize=7,
+                                 fontcolor="grey",
+                                 number_format="%d")
 
-        self.minmax = BoxplotItem(markerfacecolor=COLORS[0], \
-                            marker="none", \
-                            show_line=False)
+        self.minmax = BoxplotItem(markerfacecolor=COLORS[0],
+                                  marker="none",
+                                  show_line=False)
 
         # Compute boxplot stats
         self._compute()
-
 
     def _compute(self):
         """ Compute boxplot stats """
@@ -448,21 +445,20 @@ class Boxplot(object):
 
             # Reformat to make a 2d dataframe
             stats = stats.reset_index()
-            self._stats = pd.pivot_table(stats, \
-                index="level_1", columns=by.name, values=stats.columns[-1])
-
+            self._stats = pd.pivot_table(stats,
+                                         index="level_1",
+                                         columns=by.name,
+                                         values=stats.columns[-1])
 
     @property
     def stats(self):
         """ Returns the boxplot stats """
         return self._stats
 
-
     @property
     def ax(self):
         """ Returns the boxplot axe """
         return self._ax
-
 
     def draw(self, ax=None, logscale=False, xoffset=0.):
         """ Draw the boxplot
@@ -506,9 +502,6 @@ class Boxplot(object):
             capswidths = np.ones(ncols)*self.caps.width
             whiskerswidths = np.ones(ncols)*self.whiskers.width
 
-        # Axis y limits used to draw text or not
-        ax_ylim = ax.get_ylim()
-
         # Loop through stats
         self.elements = {}
         for i, colname in enumerate(stats.columns):
@@ -527,19 +520,19 @@ class Boxplot(object):
                 valid_value = np.all(~np.isnan(value))
 
                 item = getattr(self, statname)
-                if not item is None:
+                if item is not None:
                     if item.show_line and valid_value:
-                        ax.plot(x, y, lw=item.linewidth, \
-                            color=item.linecolor, \
-                            alpha=item.alpha)
+                        ax.plot(x, y, lw=item.linewidth,
+                                color=item.linecolor,
+                                alpha=item.alpha)
                         element[statname+"-line"] = ax.get_lines()[-1]
 
                     if item.marker != "none":
-                        ax.plot(i+xoffset, value, marker=item.marker, \
-                            markeredgecolor=item.markeredgecolor, \
-                            markerfacecolor=item.markerfacecolor, \
-                            markersize=item.markersize, \
-                            alpha=item.alpha)
+                        ax.plot(i+xoffset, value, marker=item.marker,
+                                markeredgecolor=item.markeredgecolor,
+                                markerfacecolor=item.markerfacecolor,
+                                markersize=item.markersize,
+                                alpha=item.alpha)
                         element[statname+"-marker"] = ax.get_lines()[-1]
 
                     if item.show_text and valid_value:
@@ -550,14 +543,14 @@ class Boxplot(object):
                             valuetext = f"{value:{item.number_format}}"
                             xshift = 0
 
-                        element[statname+"-text"] = \
-                            ax.text(i+xshift+xoffset, \
-                                value, \
-                                valuetext, \
-                                fontsize=item.fontsize, \
-                                color=item.fontcolor, \
-                                va=item.va, ha=item.ha, \
-                                alpha=item.alpha)
+                        txt = ax.text(i+xshift+xoffset,
+                                      value,
+                                      valuetext,
+                                      fontsize=item.fontsize,
+                                      color=item.fontcolor,
+                                      va=item.va, ha=item.ha,
+                                      alpha=item.alpha)
+                        element[statname+"-text"] = txt
 
             # Skip missing data
             q1 = stats.loc[bqq1txt, colname]
@@ -570,21 +563,20 @@ class Boxplot(object):
 
             # Draw box
             item = self.box
-            if item.facecolor !="none" or item.show_line:
+            if item.facecolor != "none" or item.show_line:
                 # Remove rounding to avoid weird spikes
                 # when there are too many columns
                 boxstyle = item.boxstyle
-                if ncols>8 or logscale:
-                    boxstyle = re.sub("rounding_size=[^,]+", \
-                                "rounding_size=0.", boxstyle)
+                if ncols > 8 or logscale:
+                    boxstyle = re.sub("rounding_size=[^,]+",
+                                      "rounding_size=0.", boxstyle)
 
-                bbox = FancyBboxPatch([i-bw/2+xoffset, q1], bw, q2-q1, \
-                    boxstyle=boxstyle, \
-                    facecolor=item.facecolor, \
-                    linewidth=item.linewidth, \
-                    edgecolor=item.linecolor,
-                    alpha=item.alpha)
-
+                bbox = FancyBboxPatch([i-bw/2+xoffset, q1], bw, q2-q1,
+                                      boxstyle=boxstyle,
+                                      facecolor=item.facecolor,
+                                      linewidth=item.linewidth,
+                                      edgecolor=item.linecolor,
+                                      alpha=item.alpha)
                 ax.add_patch(bbox)
                 element["box"] = ax.patches[-1]
 
@@ -605,20 +597,20 @@ class Boxplot(object):
                         x = [i+xoffset]*2
                         y = [q1, q2]
                         ax.plot(x, y, lw=item.linewidth,
-                            color=item.linecolor, \
-                            alpha=item.alpha)
+                                color=item.linecolor,
+                                alpha=item.alpha)
+
                         element[f"bottom-whiskers{icc+1}"] = ax.get_lines()[-2]
                         element[f"top-whiskers{icc+1}"] = ax.get_lines()[-1]
                     else:
                         # Draw box
-                        bbox = FancyBboxPatch([i-ww/2+xoffset, q1], \
-                            ww, q2-q1, \
-                            boxstyle=item.boxstyle, \
-                            facecolor=item.facecolor, \
-                            linewidth=item.linewidth, \
-                            edgecolor=item.linecolor,
-                            alpha=item.alpha)
-
+                        bbox = FancyBboxPatch([i-ww/2+xoffset, q1],
+                                              ww, q2-q1,
+                                              boxstyle=item.boxstyle,
+                                              facecolor=item.facecolor,
+                                              linewidth=item.linewidth,
+                                              edgecolor=item.linecolor,
+                                              alpha=item.alpha)
                         ax.add_patch(bbox)
                         element[f"whiskers{icc+1}"] = ax.patches[-1]
 
@@ -627,14 +619,14 @@ class Boxplot(object):
 
             # Draw caps
             item = self.caps
-            if item.show_line and cw>0:
+            if item.show_line and cw > 0:
                 for iqq, qq in enumerate([wqq1txt, wqq2txt]):
                     q1 = stats.loc[qq, colname]
                     x = [i-cw/5+xoffset, i+cw/5+xoffset]
                     y = [q1]*2
                     ax.plot(x, y, lw=item.linewidth,
-                        color=item.linecolor, \
-                        alpha=item.alpha)
+                            color=item.linecolor,
+                            alpha=item.alpha)
 
                     element[f"bottom-cap{iqq+1}"] = ax.get_lines()[-2]
                     element[f"top-cap{iqq+1}"] = ax.get_lines()[-1]
@@ -650,8 +642,7 @@ class Boxplot(object):
                 elif item.ha == "center":
                     xshift = 0
 
-                values = [stats.loc[qq, colname] \
-                                    for qq in [bqq1txt, bqq2txt]]
+                values = [stats.loc[qq, colname] for qq in [bqq1txt, bqq2txt]]
 
                 for ivalue, value in enumerate(values):
                     va, ha = item.va, item.ha
@@ -666,24 +657,25 @@ class Boxplot(object):
                         va = "top" if ivalue == 0 else "bottom"
 
                     # Draw text
-                    element[f"box-text{ivalue}"] = ax.text(i+xshift+xoffset, \
-                        value, \
-                        valuetext, \
-                        fontsize=item.fontsize, \
-                        color=item.fontcolor, \
-                        va=va, ha=ha, \
-                        alpha=item.alpha)
+                    txt = ax.text(i+xshift+xoffset,
+                                  value,
+                                  valuetext,
+                                  fontsize=item.fontsize,
+                                  color=item.fontcolor,
+                                  va=va, ha=ha,
+                                  alpha=item.alpha)
+                    element[f"box-text{ivalue}"] = txt
 
             # Draw min / max
             item = self.minmax
             if item.marker != "none":
                 x = [i+xoffset]*2
                 y = stats.loc[["min", "max"], colname]
-                ax.plot(x, y, item.marker, \
-                    mfc=item.markerfacecolor, \
-                    mec=item.markeredgecolor, \
-                    markersize=item.markersize, \
-                    alpha=item.alpha)
+                ax.plot(x, y, item.marker,
+                        mfc=item.markerfacecolor,
+                        mec=item.markeredgecolor,
+                        markersize=item.markersize,
+                        alpha=item.alpha)
 
                 element["minmax"] = ax.get_lines()[-1]
 
@@ -694,7 +686,7 @@ class Boxplot(object):
         ax.set_xticks(range(ncols))
         ax.set_xticklabels(stats.columns)
 
-        if not self._by is None:
+        if self._by is not None:
             ax.set_xlabel(self._by.name)
 
         # Y axis log scale
@@ -714,24 +706,24 @@ class Boxplot(object):
             dy = math.log(ylim[1])-math.log(ylim[0])
             ylim0 = ylim[0]
             miniq = stats.loc[wqq1txt, :].min()
-            if miniq>0:
+            if miniq > 0:
                 ylim0 = min(ylim[0], math.exp(math.log(miniq)-dy*0.02))
 
             ylim1 = ylim[1]
             maxiq = stats.loc[wqq1txt, :].max()
-            if maxiq>0:
+            if maxiq > 0:
                 ylim1 = max(ylim[1], math.exp(math.log(maxiq)+dy*0.02))
 
         ax.set_ylim((ylim0, ylim1))
-
 
     def show_count(self, ypos=0.025):
         """ Show the counts """
 
         ax = self._ax
         if ax is None:
-            raise BoxplotError("Boxplot ax is not initialised."+\
-                " Run draw method first.")
+            errmsg = "Boxplot ax is not initialised."\
+                     + " Run draw method first."
+            raise BoxplotError(errmsg)
 
         if self.elements is None:
             raise BoxplotError("No elements in the boxplot. Run draw")
@@ -754,16 +746,15 @@ class Boxplot(object):
 
             for i, cn in enumerate(stats.columns):
                 cnt = formatter % stats.loc["count", cn]
-                txt = ax.text(i, y, cnt, fontsize=item.fontsize, \
-                        color=item.fontcolor, \
-                        va=va, ha="center")
+                txt = ax.text(i, y, cnt, fontsize=item.fontsize,
+                              color=item.fontcolor,
+                              va=va, ha="center")
 
                 if cn in self.elements:
                     self.elements[cn]["count-text"] = txt
 
         else:
             raise BoxplotError("show_text property for count set to False")
-
 
     def set_ylim(self, ylim, hide_offlimit_text=True):
         """ Reset limits of y axis
@@ -775,7 +766,7 @@ class Boxplot(object):
         hide_offlimit_text: bool
             Remove text outside of axis limits.
         """
-        if not ylim is None:
+        if ylim is not None:
             # Make sure ylim is sorted
             ylim = np.sort(ylim)
 
@@ -795,7 +786,6 @@ class Boxplot(object):
             # Set axis limits
             self.ax.set_ylim(ylim)
 
-
     def set_color(self, name_pattern, color, alpha=0.5):
         """ Set color for selected boxes identied by
         name_pattern.
@@ -809,9 +799,9 @@ class Boxplot(object):
         alpha : float
             Transparency level.
         """
-        props = ["color", "linecolor", \
-                    "edgecolor", "markeredgecolor", \
-                    "facecolor"]
+        props = ["color", "linecolor",
+                 "edgecolor", "markeredgecolor",
+                 "facecolor"]
 
         for ename, elems in self.elements.items():
             if not re.search(name_pattern, ename):
@@ -824,9 +814,8 @@ class Boxplot(object):
                     try:
                         fun = getattr(obj, f"set_{prop}")
                         fun(color)
-                    except:
+                    except Exception:
                         pass
 
                     if re.search("box", on):
                         obj.set_alpha(alpha)
-
