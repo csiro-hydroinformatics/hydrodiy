@@ -3,7 +3,11 @@
 
 [COMMENT]
 
-import sys, os, re, json, math
+import sys
+import os
+import re
+import json
+import math
 import argparse
 from pathlib import Path
 
@@ -21,9 +25,6 @@ import pandas as pd
 
 import matplotlib as mpl
 
-# Select backend
-mpl.use("Agg")
-
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 #from matplotlib.backends.backend_pdf import PdfPages
@@ -40,21 +41,24 @@ from hydrodiy.gis.oz import ozlayer
 #import importlib
 #importlib.reload(utils)
 
+# Select backend
+mpl.use("Agg")
+
 #----------------------------------------------------------------------
 # @Config
 #----------------------------------------------------------------------
 
-parser = argparse.ArgumentParser(\
-    description="[DESCRIPTION]", \
-    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser = argparse.ArgumentParser(description="[DESCRIPTION]",
+                                 formatter_class=
+                                 argparse.ArgumentDefaultsHelpFormatter)
 
-parser.add_argument("-v", "--version", \
-                    help="Version number", \
+parser.add_argument("-v", "--version",
+                    help="Version number",
                     type=int, required=True)
-parser.add_argument("-e", "--extension", help="Image file extension", \
+parser.add_argument("-e", "--extension", help="Image file extension",
                     type=str, default="png")
-#parser.add_argument("-p", "--projection", \
-#                    help="Spatial projection (GDA94=3112, WGS84=4326)", \
+#parser.add_argument("-p", "--projection",
+#                    help="Spatial projection (GDA94=3112, WGS84=4326)",
 #                    type=int, default=3112)
 args = parser.parse_args()
 
@@ -143,11 +147,11 @@ for name, ax in axs.items():
 
     # Scatter plot
     ax.plot(x, y, "o",
-        markersize=10,
-        mec="black",
-        mfc="pink",
-        alpha=0.5,
-        label="points")
+            markersize=10,
+            mec="black",
+            mfc="pink",
+            alpha=0.5,
+            label="points")
 
     # Spatial
     #ozlayer(ax, "ozcoast50m")
@@ -164,7 +168,7 @@ for name, ax in axs.items():
 fig.suptitle("Overall title")
 
 # Footer
-label = "Generated: %s" % datetime.now().strftime("%H:%M %d/%m/%Y")
+label = f"Generated: {datetime.now().strftime('%H:%M %d/%m/%Y')}"
 fig.text(0.05, 0.010, label, color="#595959", ha="left", fontsize=9)
 
 # Save file

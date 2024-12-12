@@ -1,18 +1,12 @@
 import numpy as np
-import math
-import matplotlib.image as mpimg
-
-import time
-
-from hydrodiy.stat import sutils
-
 from hydrodiy import has_c_module
 
 if has_c_module("gis", False):
     import c_hydrodiy_gis
 
-def points_inside_polygon(points, polygon, inside=None, atol=1e-8, \
-                    nprint=0):
+
+def points_inside_polygon(points, polygon, inside=None, atol=1e-8,
+                          nprint=0):
     """
 
     Determines if a set of points are inside a given polygon or not
@@ -52,24 +46,24 @@ def points_inside_polygon(points, polygon, inside=None, atol=1e-8, \
         inside = np.zeros(len(points), dtype=np.int32)
     else:
         if not inside.dtype == np.int32:
-            raise ValueError("Expected inside of "+\
-                        f"dtype np.int32, got {inside.dtype}.")
+            errmess = "Expected inside of dtype np.int32, "\
+                      + f"got {inside.dtype}."
+            raise ValueError(errmess)
 
         if not len(inside) == len(points):
-            raise ValueError("Expected inside of length "+\
-                    f"{len(points)}, got {len(inside)}.")
+            errmess = f"Expected inside of length {len(points)},"\
+                      + f"got {len(inside)}."
+            raise ValueError(errmess)
 
         # To make sure that the inside vector is properly initialised
         inside.fill(0)
 
     # run C code
-    ierr = c_hydrodiy_gis.points_inside_polygon(atol, nprint, points, \
-                    polygon, inside)
+    ierr = c_hydrodiy_gis.points_inside_polygon(atol, nprint, points,
+                                                polygon, inside)
 
-    if ierr>0:
-        raise ValueError("c_hydrodiy_gis.points_inside_polygon "+\
-                            "returns "+str(ierr))
+    if ierr > 0:
+        errmess = f"c_hydrodiy_gis.points_inside_polygon returns {ierr}."
+        raise ValueError(errmess)
 
     return inside
-
-
