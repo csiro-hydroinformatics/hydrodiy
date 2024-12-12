@@ -3,7 +3,11 @@
 
 [COMMENT]
 
-import sys, os, re, json, math
+import sys
+import os
+import re
+import json
+import math
 import argparse
 from pathlib import Path
 
@@ -23,13 +27,12 @@ from hydrodiy.io import csv, iutils
 #foo = importlib.util.module_from_spec(spec)
 #spec.loader.exec_module(foo)
 
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # @Config
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 parser = argparse.ArgumentParser(description="[DESCRIPTION]",
                                  formatter_class=
                                  argparse.ArgumentDefaultsHelpFormatter)
-
 parser.add_argument("-v", "--version",
                     help="Version number",
                     type=int, required=True)
@@ -58,27 +61,27 @@ overwrite = args.overwrite
 debug = args.debug
 sitepattern = args.sitepattern
 
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # @Folders
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 source_file = Path(__file__).resolve()
 froot = [FROOT]
 fdata = [FDATA]
 fout = [FOUT]
 fimg = [FIMG]
 
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # @Logging
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 basename = source_file.stem
 flog = froot / "logs" / f"{basename}.log"
 flog.parent.mkdir(exist_ok=True)
 LOGGER = iutils.get_logger(basename, console=False, contextual=True)
 LOGGER.log_dict(vars(args), "Command line arguments")
 
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # @Get data
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 fs = fdata / "sites.csv"
 allsites, _ = csv.read_csv(fs, index_col="siteid")
 
@@ -92,9 +95,9 @@ else:
         idx = iutils.get_ibatch(allsites.shape[0], nbatch, ibatch)
         sites = allsites.iloc[idx, :]
 
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # @Process
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 nsites = len(sites)
 for isite, (siteid, sinfo) in enumerate(sites.iterrows()):
 
