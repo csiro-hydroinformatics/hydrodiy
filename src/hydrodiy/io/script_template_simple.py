@@ -33,7 +33,6 @@ from hydrodiy.io import csv, iutils
 parser = argparse.ArgumentParser(description="[DESCRIPTION]",
                                  formatter_class=
                                  argparse.ArgumentDefaultsHelpFormatter)
-
 parser.add_argument("-v", "--version",
                     help="Version number",
                     type=int, required=True)
