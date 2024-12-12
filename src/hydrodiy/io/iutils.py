@@ -1,28 +1,19 @@
-import sys, os, re
+import sys
+import os
+import re
 from pathlib import Path
 
-import shlex
-import subprocess
 import warnings
 
 from datetime import datetime
 import logging
 import stat
 
-from hydrodiy import PYVERSION
-
-from io import StringIO,BytesIO
-
-import requests
-
-import numpy as np
-import pandas as pd
-
 
 def script_template(filename, comment,
-        type="simple",
-        author=None, \
-        fout=None, fdata=None, fimg=None):
+                    type="simple",
+                    author=None,
+                    fout=None, fdata=None, fimg=None):
     """ Write a script template
 
     Parameters
@@ -45,17 +36,15 @@ def script_template(filename, comment,
         Images folder
     Example
     -----------
-    >>> iutils.script_template("a_cool_script.py", "Testing", "plot", "Bob Marley")
-
+    >>> iutils.script_template("a_cool_script.py", "Testing",
+                               "plot", "Bob Marley")
     """
-
-    if not type in ["simple", "plot"]:
-        raise ValueError("Expected script type in [simple/plot], "+\
-                            f"got {type}.")
+    if type not in ["simple", "plot"]:
+        errmess = f"Expected script type in [simple/plot], got {type}."
+        raise ValueError(errmess)
 
     # Open script template
-    ftemplate = Path(__file__).resolve().parent / \
-                                    f"script_template_{type}.py"
+    ftemplate = Path(__file__).resolve().parent / f"script_template_{type}.py"
     with ftemplate.open("r") as ft:
         txt = ft.read()
 
@@ -63,7 +52,7 @@ def script_template(filename, comment,
     if author is None:
         try:
             author = os.getlogin()
-        except:
+        except Exception:
             author = "unknown"
 
     meta = "## -- Script Meta Data --\n"
@@ -118,12 +107,12 @@ def script_template(filename, comment,
 class StartedCompletedLogger():
     """ Add context to logging messages via the context attribute """
 
-    def __init__(self, logger, \
-                    separator_charac="-", \
-                    separator_length=50, \
-                    dictseparator_charac="+", \
-                    dictseparator_length=30, \
-                    tab_length=4):
+    def __init__(self, logger,
+                 separator_charac="-",
+                 separator_length=50,
+                 dictseparator_charac="+",
+                 dictseparator_length=30,
+                 tab_length=4):
         errmess = "Expected a logger object"
         assert isinstance(logger, logging.Logger), errmess
         self._logger = logger
@@ -140,7 +129,7 @@ class StartedCompletedLogger():
         return sep*nsep
 
     def add_tab(self, msg, ntab):
-        if ntab==0:
+        if ntab == 0:
             return msg
 
         tab_space = " "*self.tab_length*ntab
@@ -168,24 +157,26 @@ class StartedCompletedLogger():
 
     def started(self):
         self.info("@@@ Process started @@@")
-        self.info(self.get_separator(self.separator_charac, \
-                                            self.separator_length))
+        self.info(self.get_separator(self.separator_charac,
+                                     self.separator_length))
         self.info("")
 
     def completed(self):
         self.info("")
-        self.info(self.get_separator(self.separator_charac, \
-                                            self.separator_length))
+        self.info(self.get_separator(self.separator_charac,
+                                     self.separator_length))
         self.info("@@@ Process completed @@@")
 
     def log_dict(self, tolog, name="", level="info"):
-        """ Add log entry for dictionnary (e.g. created from argparse using  vars)"""
+        """ Add log entry for dictionnary
+        (e.g. created from argparse using  vars)
+        """
         assert level in ["info", "warning", "critical", "error"]
         logfun = getattr(self, level)
-        sep = self.get_separator(self.dictseparator_charac, \
-                                    self.dictseparator_length)
+        sep = self.get_separator(self.dictseparator_charac,
+                                 self.dictseparator_length)
         logfun(sep)
-        if name!="":
+        if name != "":
             logfun(f"{name}:")
         for k, v in tolog.items():
             msg = self.add_tab(f"{k} = {v}", 1)
@@ -195,15 +186,14 @@ class StartedCompletedLogger():
         logfun("")
 
 
-
 class ContextualLogger(StartedCompletedLogger):
     """ Add context to logging messages via the context attribute """
 
-    def __init__(self, logger, \
-                        context_hasheader=False, \
-                        context_charac="#", \
-                        context_length=3, \
-                        *args, **kwargs):
+    def __init__(self, logger,
+                 context_hasheader=False,
+                 context_charac="#",
+                 context_length=3,
+                 *args, **kwargs):
         self._context = ""
         self.context_hasheader = context_hasheader
         self.context_charac = context_charac
@@ -221,8 +211,8 @@ class ContextualLogger(StartedCompletedLogger):
         self.info("")
         self._context = str(value)
         if self._context != "" and self.context_hasheader:
-            sep = self.get_separator(self.context_charac, \
-                                        self.context_length)
+            sep = self.get_separator(self.context_charac,
+                                     self.context_length)
             mess = sep+" "+self._context+" "+sep
             self.info(mess)
 
@@ -232,7 +222,7 @@ class ContextualLogger(StartedCompletedLogger):
 
     def get_message(self, msg, ntab):
         if self.context != "":
-            tab = " "*self.tab_length*ntab if ntab>0 else ""
+            tab = " "*self.tab_length*ntab if ntab > 0 else ""
             return "{{ {0} }} {1}{2}".format(self.context, tab, msg)
         return msg
 
@@ -253,15 +243,15 @@ class ContextualLogger(StartedCompletedLogger):
         return self._logger.critical(msg, *args, **kwargs)
 
 
-def get_logger(name, level="INFO", \
-        console=True, flog=None, \
-        fmt="%(asctime)s | %(levelname)s | %(message)s", \
-        overwrite=True,
-        excepthook=True,
-        no_duplicate_handler=True,\
-        contextual=False, \
-        start_message=True, \
-        date_fmt="%y-%m-%d %H:%M"):
+def get_logger(name, level="INFO",
+               console=True, flog=None,
+               fmt="%(asctime)s | %(levelname)s | %(message)s",
+               overwrite=True,
+               excepthook=True,
+               no_duplicate_handler=True,
+               contextual=False,
+               start_message=True,
+               date_fmt="%y-%m-%d %H:%M"):
     """ Get a logger object that can handle contextual info
 
     Parameters
@@ -303,8 +293,8 @@ def get_logger(name, level="INFO", \
     logger.handlers = []
 
     # Set logging level
-    if not level in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
-        raise ValueError("{0} not a valid level".format(level))
+    if level not in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
+        raise ValueError(f"{level} not a valid level.")
 
     logger.setLevel(getattr(logging, level))
 
@@ -330,7 +320,7 @@ def get_logger(name, level="INFO", \
         logger.addHandler(sh)
 
     # log to file
-    if not flog is None and not has_flog:
+    if flog is not None and not has_flog:
         flog = Path(flog)
         if overwrite:
             try:
@@ -344,8 +334,8 @@ def get_logger(name, level="INFO", \
 
     if excepthook:
         def catcherr(exc_type, exc_value, exc_traceback):
-            logger.error("Unexpected error", exc_info=(exc_type, \
-                        exc_value, exc_traceback))
+            logger.error("Unexpected error",
+                         exc_info=(exc_type, exc_value, exc_traceback))
             sys.__excepthook__(exc_type, exc_value, exc_traceback)
 
         sys.excepthook = catcherr
@@ -354,12 +344,12 @@ def get_logger(name, level="INFO", \
     [h.close() for h in logger.handlers]
 
     # Create the extended logger
-    elogger = ContextualLogger(logger) if contextual else \
-                    StartedCompletedLogger(logger)
+    if contextual:
+        elogger = ContextualLogger(logger)
+    else:
+        elogger = StartedCompletedLogger(logger)
 
     if start_message:
         elogger.started()
 
     return elogger
-
-

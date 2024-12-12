@@ -30,26 +30,26 @@ from hydrodiy.io import csv, iutils
 # ----------------------------------------------------------------------
 # @Config
 # ----------------------------------------------------------------------
-parser = argparse.ArgumentParser(\
-    description="[DESCRIPTION]", \
-    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser = argparse.ArgumentParser(description="[DESCRIPTION]",
+                                 formatter_class=
+                                 argparse.ArgumentDefaultsHelpFormatter)
 
-parser.add_argument("-v", "--version", \
-                    help="Version number", \
+parser.add_argument("-v", "--version",
+                    help="Version number",
                     type=int, required=True)
-parser.add_argument("-s", "--sitepattern", help="Site selection pattern", \
+parser.add_argument("-s", "--sitepattern", help="Site selection pattern",
                     type=str, default="")
-parser.add_argument("-i", "--ibatch", help="Batch process number", \
+parser.add_argument("-i", "--ibatch", help="Batch process number",
                     type=int, default=-1)
-parser.add_argument("-n", "--nbatch", help="Number of batch processes", \
+parser.add_argument("-n", "--nbatch", help="Number of batch processes",
                     type=int, default=7)
-parser.add_argument("-t", "--taskid", help="JobID", \
+parser.add_argument("-t", "--taskid", help="JobID",
                     type=int, default=-1)
-parser.add_argument("-p", "--progress", help="Show progress", \
+parser.add_argument("-p", "--progress", help="Show progress",
                     action="store_true", default=False)
-parser.add_argument("-d", "--debug", help="Debug mode", \
+parser.add_argument("-d", "--debug", help="Debug mode",
                     action="store_true", default=False)
-parser.add_argument("-o", "--overwrite", help="Overwrite data", \
+parser.add_argument("-o", "--overwrite", help="Overwrite data",
                     action="store_true", default=False)
 args = parser.parse_args()
 
