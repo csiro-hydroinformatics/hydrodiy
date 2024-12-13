@@ -1,7 +1,5 @@
-import math, re
+import math
 import warnings
-from datetime import datetime
-import numbers
 
 from scipy.stats import gaussian_kde, chi2, norm
 from scipy import linalg
@@ -9,7 +7,18 @@ from scipy import linalg
 import colorsys
 
 from PIL import Image
-from PIL.PngImagePlugin import PngImageFile, PngInfo
+
+import matplotlib as mpl
+from matplotlib import cm
+from matplotlib.patches import Ellipse
+from matplotlib import colors as mcolors
+from matplotlib.colors import hex2color, rgb2hex
+from matplotlib.colors import LinearSegmentedColormap
+
+import numpy as np
+import pandas as pd
+
+from hydrodiy.stat import sutils
 
 HAS_CYCLER = False
 try:
@@ -18,36 +27,17 @@ try:
 except ImportError:
     pass
 
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-
-from matplotlib import cm
-
-from matplotlib.path import Path
-from matplotlib.patches import Ellipse
-
-from matplotlib import colors as mcolors
-from matplotlib.colors import hex2color, rgb2hex
-from matplotlib.colors import LinearSegmentedColormap
-
-
-import matplotlib.dates as mdates
-
-import numpy as np
-import pandas as pd
-
-from scipy.stats import norm
-from hydrodiy.stat import sutils
 
 # Some useful colors
 COLORS_BADGOOD = ["#4D935F", "#915592"]
 COLORS_TERCILES = ["#FF9933", "#64A0C8", "#005BBB"]
 
 # Palette for color blind readers
-# see https://www.somersault1824.com/tips-for-designing-scientific-figures-for-color-blind-readers/
-COLORS_CBLIND = ["#000000", "#074751", "#009292", "#FE6CB5", "#FEB5DA", \
-    "#490092", "#006DDB", "#B66CFE", "#6DB6FE", "#B6DBFF", \
-    "#920000", "#924900", "#DB6D00", "#23FE22", "#FFFF6D"]
+# see https://www.somersault1824.com/
+# tips-for-designing-scientific-figures-for-color-blind-readers/
+COLORS_CBLIND = ["#000000", "#074751", "#009292", "#FE6CB5", "#FEB5DA",
+                 "#490092", "#006DDB", "#B66CFE", "#6DB6FE", "#B6DBFF",
+                 "#920000", "#924900", "#DB6D00", "#23FE22", "#FFFF6D"]
 
 
 # Palette safe for a range of uses (cf PuOr palette)
@@ -56,29 +46,30 @@ COLORS_SAFE = ["#E66101", "#FDB863", "#B2ABD2", "#5E3C99"]
 
 # Useful palette
 COLORS_CORE = {
-    "middayblue": "#00a9ce", \
-    "midnightblue": "#001d34", \
-    "steel": "#757579", \
+    "middayblue": "#00a9ce",
+    "midnightblue": "#001d34",
+    "steel": "#757579",
     "mist": "#dadbdc"
-}
+    }
 
 COLORS_PRIMARY = {
-    "blueberry": "#1e2277", \
-    "oceanblue": "#004b87", \
-    "teal": "#007377", \
+    "blueberry": "#1e2277",
+    "oceanblue": "#004b87",
+    "teal": "#007377",
     "mint": "#007a53"
-}
+    }
 
 COLORS_SECONDARY = {
-    "plum": "#6d2077", \
-    "fuschia": "#df1995", \
-    "orange": "#e77722", \
-    "gold": "#e1b81c", \
-    "lavender": "#9faee5", \
-    "lightteal": "#2dccd3", \
-    "forest": "#78be20", \
+    "plum": "#6d2077",
+    "fuschia": "#df1995",
+    "orange": "#e77722",
+    "gold": "#e1b81c",
+    "lavender": "#9faee5",
+    "lightteal": "#2dccd3",
+    "forest": "#78be20",
     "lightmint": "#71cc98"
-}
+    }
+
 
 def _float(u):
     """ Function to convert object to float """
@@ -87,7 +78,6 @@ def _float(u):
     except TypeError:
         v = u.toordinal()
     return v
-
 
 
 def blackwhite(fimg, prefix="BW_"):
@@ -117,17 +107,22 @@ def darken_or_lighten(colname, modifier):
 
     try:
         colcode = mcolors.cnames[colname]
-    except:
+    except Exception:
         colcode = colname
 
     colhls = colorsys.rgb_to_hls(*mcolors.to_rgb(colcode))
     # Get color luminosity
     lum = colhls[1]
-    assert lum<1, f"Expected hls lum<1 for color {colname}"
+    if lum >= 1:
+        errmess = f"Expected hls lum<1 for color {colname}"
+        raise ValueError(errmess)
 
     vmax = 1/(1-lum)
     shift = math.atanh(1-2*lum)
-    assert abs(modifier)<2, "Expected |modifier|<2"
+    if abs(modifier) >= 2:
+        errmess = "Expected |modifier|<2"
+        raise ValueError(errmess)
+
     m = vmax*(1+np.tanh(modifier+shift))/2
 
     # Change luminosity
@@ -153,7 +148,12 @@ def cmap2colors(ncols=10, cmap="Paired"):
 
     if isinstance(cmap, str):
         if cmap == "safe":
-            cmapn = colors2cmap({0.:COLORS_SAFE[0], 0.5: "#A0A0A0", 1.:COLORS_SAFE[-1]})
+            dd = {
+                0.: COLORS_SAFE[0],
+                0.5: "#A0A0A0",
+                1.: COLORS_SAFE[-1]
+                }
+            cmapn = colors2cmap(dd)
         else:
             cmapn = cm.get_cmap(cmap, ncols)
 
@@ -201,9 +201,9 @@ def colors2cmap(colors, ncols=256):
     for key in sorted(colors):
         key = float(key)
         if key < 0.:
-            raise ValueError("key({0}) is lower than 0".format(key))
+            raise ValueError(f"key({key}) is lower than 0")
         if key > 1.:
-            raise ValueError("key({0}) is greater than 1".format(key))
+            raise ValueError("key({key}) is greater than 1.")
 
         col = hex2color(colors[key])
 
@@ -214,7 +214,6 @@ def colors2cmap(colors, ncols=256):
     cmap = LinearSegmentedColormap("mycmap", cdict, ncols)
 
     return cmap
-
 
 
 def line(ax, vx=0., vy=1., x0=0., y0=0., *args, **kwargs):
@@ -251,22 +250,20 @@ def line(ax, vx=0., vy=1., x0=0., y0=0., *args, **kwargs):
     >>> putils.line(0, 1, ax, "--")
     >>> putils.line(1, 0, ax, "-", color="red")
     >>> putils.line(1, 0.5, y0=2., ax, "-", color="red")
-
     """
-
     xlim = ax.get_xlim()
     ylim = ax.get_ylim()
 
     vx = float(vx)
     vy = float(vy)
     if abs(vx)+abs(vy) < 1e-8:
-        raise ValueError(("Both vx({0}) and vy({1}) are " + \
-            " close to zero").format(vx, vy))
+        errmess = f"Both vx({vx}) and vy({vy}) are close to zero."
+        raise ValueError(errmess)
 
     x0 = _float(x0)
     y0 = _float(y0)
 
-    if abs(vx)>0:
+    if abs(vx) > 0:
         a1 = (xlim[0]-x0)/vx
         a2 = (xlim[1]-x0)/vx
     else:
@@ -279,7 +276,7 @@ def line(ax, vx=0., vy=1., x0=0., y0=0., *args, **kwargs):
     pt2 = xy0 + a2*vxy
 
     line = ax.plot([pt1[0], pt2[0]],
-                [pt1[1], pt2[1]], *args, **kwargs)
+                   [pt1[1], pt2[1]], *args, **kwargs)
 
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
@@ -287,8 +284,8 @@ def line(ax, vx=0., vy=1., x0=0., y0=0., *args, **kwargs):
     return line
 
 
-def set_mpl(color_theme="black", font_size=18, usetex=False, \
-                    color_cycle=mcolors.TABLEAU_COLORS):
+def set_mpl(color_theme="black", font_size=18, usetex=False,
+            color_cycle=mcolors.TABLEAU_COLORS):
     """ Set convenient default matplotlib parameters
 
     Parameters
@@ -306,8 +303,8 @@ def set_mpl(color_theme="black", font_size=18, usetex=False, \
     # Latex mode
     mpl.rc("text", usetex=usetex)
     if usetex:
-        preamble = r"\usepackage{amsmath}\n"+ \
-                        r"\usepackage{amssymb}"
+        preamble = r"\usepackage{amsmath}\n"\
+                   + r"\usepackage{amssymb}"
         mpl.rc("text.latex", preamble=preamble)
 
     # Font size
@@ -320,8 +317,9 @@ def set_mpl(color_theme="black", font_size=18, usetex=False, \
         if HAS_CYCLER:
             mpl.rc("axes", prop_cycle=cycler("color", color_cycle))
         else:
-            warnings.warn("Cannot set color cycle "+ \
-                "because cycler package is missing")
+            warnmess = "Cannot set color cycle "\
+                       + "because cycler package is missing"
+            warnings.warn(warnmess)
 
     # Default colormap
     mpl.rc("image", cmap="PiYG")
@@ -339,7 +337,7 @@ def set_mpl(color_theme="black", font_size=18, usetex=False, \
     mpl.rc("legend", numpoints=1)
     mpl.rc("legend", markerscale=0.8)
 
-    if not color_theme in ["k", "black"]:
+    if color_theme not in ["k", "black"]:
         if "legend.framealpha" in mpl.rcParams:
             mpl.rc("legend", framealpha=0.1)
 
@@ -379,7 +377,7 @@ def kde(xy, ngrid=50, eps=1e-10):
     zz : numpy.ndarray
         A grid ngridxngrid containing the PDF estimates
     """
-    if xy.shape[1] !=2:
+    if xy.shape[1] != 2:
         xy = xy.T
 
     x = np.linspace(xy[:, 0].min(), xy[:, 0].max(), ngrid)
@@ -415,12 +413,12 @@ def cov_ellipse(mu, cov, pvalue=0.95, *args, **kwargs):
     cov = np.atleast_2d(cov)
 
     if mu.shape != (2,):
-        raise ValueError("Expected a [2] array for mu, got {0}".format(\
-            mu.shape))
+        errmess = f"Expected a [2] array for mu, got {mu.shape}."
+        raise ValueError(errmess)
 
-    if cov.shape != (2,2):
-        raise ValueError("Expected a [2, 2] array for cov, got {0}".format(\
-            cov.shape))
+    if cov.shape != (2, 2):
+        errmess = f"Expected a [2, 2] array for cov, got {cov.shape}."
+        raise ValueError(errmess)
 
     # Compute chi square corresponding to the sum of
     # two normally distributed variables with zero means
@@ -435,8 +433,8 @@ def cov_ellipse(mu, cov, pvalue=0.95, *args, **kwargs):
     alpha = np.sign(cov[0, 1])*np.rad2deg(math.acos(vect[0, 0]))
 
     # Draw ellipse
-    ellipse = Ellipse(xy=mu, width=v1, height=v2, angle=alpha, \
-            *args, **kwargs)
+    ellipse = Ellipse(xy=mu, width=v1, height=v2, angle=alpha,
+                      *args, **kwargs)
 
     return ellipse
 
@@ -467,7 +465,7 @@ def qqplot(ax, data, addline=False, censor=None, *args, **kwargs):
 
     if addline:
         idx = np.ones(nval).astype(bool)
-        if not censor is None:
+        if censor is not None:
             idx = datas > censor + 1e-10
 
         x, y = xnorm[idx], datas[idx]
@@ -489,8 +487,8 @@ def qqplot(ax, data, addline=False, censor=None, *args, **kwargs):
     return a, b, r2
 
 
-def ecdfplot(ax, df, label_stat=None, label_stat_format="4.2f", \
-            cst=0., *args, **kwargs):
+def ecdfplot(ax, df, label_stat=None, label_stat_format="4.2f",
+             cst=0., *args, **kwargs):
     """ Plot empirical cumulative density functions
 
     Parameters
@@ -524,10 +522,10 @@ def ecdfplot(ax, df, label_stat=None, label_stat_format="4.2f", \
         pp = sutils.ppos(len(values), cst=cst)
 
         label = name
-        if not label_stat is None:
+        if label_stat is not None:
             stat = getattr(se, label_stat)()
-            label = "{} ({:{format}})".format(name, stat, \
-                                format=label_stat_format)
+            label = "{} ({:{format}})".format(name, stat,
+                                              format=label_stat_format)
 
         ax.plot(values, pp, label=label, *args, **kwargs)
         lines[name] = ax.get_lines()[-1]
@@ -538,22 +536,22 @@ def ecdfplot(ax, df, label_stat=None, label_stat_format="4.2f", \
     ax.set_yticks([0., 0.5, 1.])
     ax.set_yticklabels(["0", chr(189)+" ", "1"])
     ylabs = ax.get_yticklabels()
-    if len(ylabs)>0:
+    if len(ylabs) > 0:
         ylabs[0].set_va("bottom")
         ylabs[2].set_va("top")
 
     return lines
 
 
-def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG", \
-                        markers=None, \
-                        markersizes=None, \
-                        alphas=None, \
-                        edgecolors=None, \
-                        fmt="0.2f", \
-                        eps=1e-5, \
-                        show_extremes_in_legend=True, \
-                        *args, **kwargs):
+def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG",
+               markers=None,
+               markersizes=None,
+               alphas=None,
+               edgecolors=None,
+               fmt="0.2f",
+               eps=1e-5,
+               show_extremes_in_legend=True,
+               *args, **kwargs):
     """ Draw a scatter plot using different colors or markersize depending
     on categories defined by z. Be careful when z has a lot of zeros,
     quantile computation may lead to non-unique category boundaries.
@@ -586,8 +584,9 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG", \
         Transparency for each categoy. Can be passed float which is replicated
         for each category.
     edgecolors : list
-        Edge color of markers for each catergory. Can be passed as character which
-        is replicated for each category. Can be abbreviated as 'ec'.
+        Edge color of markers for each catergory.
+        Can be passed as character which is replicated for
+        each category. Can be abbreviated as 'ec'.
     fmnt : str
         Number format to be used in labels
     show_extremes_in_legend : bool
@@ -627,17 +626,21 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG", \
         kwargs.pop("ec")
 
     if not len(x) == len(y):
-        raise ValueError("Expected x and y of same length, got "+\
-                                f"len(x)={len(x)}, len(y)={len(y)}")
+        errmess = "Expected x and y of same length, got "\
+                  + f"len(x)={len(x)}, len(y)={len(y)}"
+        raise ValueError(errmess)
 
     if not len(x) == len(z):
-        raise ValueError("Expected x and z of same length, got "+\
-                                f"len(x)={len(x)}, len(z)={len(z)}")
+        errmess = "Expected x and z of same length, got "\
+                  + f"len(x)={len(x)}, len(z)={len(z)}"
+        raise ValueError(errmess)
+
     # Format categorical data
     z = pd.Series(z)
 
     # Check z is categorical
-    # See  https://pandas.pydata.org/pandas-docs/version/0.17.0/categorical.html
+    # See  https://pandas.pydata.org/pandas-docs/
+    # version/0.17.0/categorical.html
     # Cell [176]
     if hasattr(z, "cat"):
         # Use categorical data properties
@@ -667,20 +670,24 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG", \
             cats = cats.astype(int)
 
             if len(set(cuts)) != len(cuts):
-                raise ValueError(\
-                        "Non-unique category boundaries :{0}".format(\
-                            "/ ".join([str(u) for u in list(cuts)])))
+                errmess = "Non-unique category boundaries: " + \
+                          "/ ".join([str(u) for u in list(cuts)])
+                raise ValueError(errmess)
 
             # Create labels
-            labels = ["[{0:{fmt}}, {1:{fmt}}]".format(cuts[icat], \
-                                           cuts[icat+1], fmt=fmt) \
-                                               for icat in range(ncats)]
+            labels = []
+            for icat in range(ncats):
+                lab = "[{0:{fmt}}, {1:{fmt}}]".format(cuts[icat],
+                                                      cuts[icat+1],
+                                                      fmt=fmt)
+                labels.append(lab)
+
             if not show_extremes_in_legend:
                 labels[0] = "< {0:{fmt}}".format(cuts[1], fmt=fmt)
                 labels[-1] = "> {0:{fmt}}".format(cuts[-2], fmt=fmt)
         else:
-            raise ValueError("Expected ncats or cuts to be not-None")
-
+            errmess = "Expected ncats or cuts to be not-None"
+            raise ValueError(errmess)
 
     # Get colors for each category
     if cmap is None:
@@ -689,7 +696,8 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG", \
         colors = cmap2colors(ncats, cmap)
 
     # Utility to detect if argument is a list or a string
-    notlist = lambda x: not hasattr(x, "__len__") or isinstance(x, str)
+    def notlist(x):
+        return not hasattr(x, "__len__") or isinstance(x, str)
 
     # Get size for each category
     # .. marker sizes
@@ -699,27 +707,36 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG", \
     if not notlist(markersizes):
         if len(markersizes) == 2:
             # Allow for [s0, s1]
-            markersizes = np.linspace(markersizes[0], markersizes[1], ncats)
+            markersizes = np.linspace(markersizes[0],
+                                      markersizes[1], ncats)
     else:
         markersizes = [markersizes]*ncats
 
-    assert len(markersizes) == ncats, \
-                    f"Expected {ncats} marker sizes, got {markersizes}."
+    if not len(markersizes) == ncats:
+        errmess = f"Expected {ncats} marker sizes, got {markersizes}."
+        raise ValueError(errmess)
 
     # .. markers
     markers = ["o"]*ncats if markers is None else markers
     markers = [markers]*ncats if notlist(markers) else markers
-    assert len(markers) == ncats, f"Expected {ncats} markers, got {markers}."
+    if not len(markers) == ncats:
+        errmess = f"Expected {ncats} markers, got {markers}."
+        raise ValueError(errmess)
 
     # .. transparency
     alphas = [1.0]*ncats if alphas is None else alphas
     alphas = [float(alphas)]*ncats if notlist(alphas) else alphas
-    assert len(alphas) == ncats, f"Expected {ncats} alphas, got {alphas}."
+    if not len(alphas) == ncats:
+        errmess = f"Expected {ncats} alphas, got {alphas}."
+        raise ValueError(errmess)
 
     # .. edge color
     ec = ["none"]*ncats if edgecolors is None else edgecolors
     ec = [ec]*ncats if notlist(ec) else ec
-    assert len(ec) == ncats, f"Expected {ncats} edge colors, got {ec}."
+    if not len(ec) == ncats:
+        errmess = f"Expected {ncats} edge colors, got {ec}."
+        raise ValueError(errmess)
+
     edgecolors = ec
 
     # Plot all categories from highest to lowest if categories are ordered
@@ -744,32 +761,34 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG", \
             u, v = x[idx], y[idx]
         else:
             u, v = [], []
-            warnings.warn("No points falling in category "+\
-                        "{0} ({1})".format(icat, label))
+            warnmess = "No points falling in category "\
+                       + f"{icat} ({label})"
+            warnings.warn(warnmess)
 
         # Plot category
-        sc = ax.scatter(u, v, label=label, \
-                        color=col, \
-                        alpha=alpha, \
-                        marker=marker, \
-                        s=markersize, \
-                        edgecolor=edgecolor, \
+        sc = ax.scatter(u, v, label=label,
+                        color=col,
+                        alpha=alpha,
+                        marker=marker,
+                        s=markersize,
+                        edgecolor=edgecolor,
                         *args, **kwargs)
 
         # Store plotted data
-        dd = {"idx": idx, \
-            "label": label, \
-            "color": col, \
-            "scatter": sc, \
-            "x": x[idx], "y": y[idx]}
+        dd = {"idx": idx,
+              "label": label,
+              "color": col,
+              "scatter": sc,
+              "x": x[idx], "y": y[idx]
+              }
 
         plotted[icat] = dd
 
     return plotted, cats
 
 
-def bivarnplot(ax, xy, add_semicorr=True, namex="var 1", \
-                namey="var 2", marker="o", *args, **kwargs):
+def bivarnplot(ax, xy, add_semicorr=True, namex="var 1",
+               namey="var 2", marker="o", *args, **kwargs):
     """ Bivariate normal scores Plot
 
     Useful to check symetry of correlation.
@@ -795,8 +814,9 @@ def bivarnplot(ax, xy, add_semicorr=True, namex="var 1", \
     # Select data
     idx = np.sum(np.isnan(xy), axis=1) == 0
     if np.sum(idx) < 2:
-        raise ValueError("Expected at least 2 data pairs with valid"+\
-                " values for both, got {}".format(np.sum(idx)))
+        errmess = "Expected at least 2 data pairs with valid"\
+                  + f" values for both, got {np.sum(idx)}."
+        raise ValueError(errmess)
     xy = xy[idx]
 
     # Compute normal standard variables and semi correlations
@@ -817,11 +837,11 @@ def bivarnplot(ax, xy, add_semicorr=True, namex="var 1", \
         text += "\n"+r"$\eta$   {:5.2f}".format(eta)
         text += "\n"+r"$\rho^+$ {:5.2f}".format(rho_p)
         text += "\n"+r"$\rho^-$ {:5.2f}".format(rho_m)
-        ax.text(0.02, 0.98, text, transform=ax.transAxes, \
+        ax.text(0.02, 0.98, text, transform=ax.transAxes,
                 va="top", ha="left")
     # Decorate
-    ax.set_xlabel("Standard normal score for {} [-]".format(namex))
-    ax.set_ylabel("Standard normal score for {} [-]".format(namey))
+    ax.set_xlabel(f"Standard normal score for {namex} [-]")
+    ax.set_ylabel(f"Standard normal score for {namey} [-]")
 
 
 def waterbalplot(ax, ncoeff=2.5):
@@ -843,14 +863,14 @@ def waterbalplot(ax, ncoeff=2.5):
     xx = np.linspace(1e-5, 5, 1000)
     yy = np.maximum(0, 1-1./xx)
     ax.fill_between(xx, yy*0., yy, facecolor="k",
-                            edgecolor="k", hatch="\\", alpha=0.2)
-    ax.fill_between(xx, yy*0.+1., yy*0.+5., facecolor="k", \
-                            edgecolor="k", hatch="\\", alpha=0.2)
+                    edgecolor="k", hatch="\\", alpha=0.2)
+    ax.fill_between(xx, yy*0.+1., yy*0.+5., facecolor="k",
+                    edgecolor="k", hatch="\\", alpha=0.2)
 
     yy = 1-1./(1.+xx**ncoeff)**(1./ncoeff)
 
-    lines = ax.plot(xx, yy, "k-", lw=1, \
-                label=f"Turc-Mezensev (n={ncoeff:0.1f})")
+    lines = ax.plot(xx, yy, "k-", lw=1,
+                    label=f"Turc-Mezensev (n={ncoeff:0.1f})")
     tm_line = lines[-1]
     ax.set_xlim((0, 3))
     ax.set_ylim((0, 1.1))
@@ -858,4 +878,3 @@ def waterbalplot(ax, ncoeff=2.5):
     ax.set_ylabel("Runoff coef Q/P [-]")
 
     return tm_line
-
