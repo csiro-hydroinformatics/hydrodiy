@@ -360,7 +360,7 @@ def monthly2daily(se, interpolation="flat", minthreshold=0.):
         sec[nexti] = np.nan
 
         # Convert to daily
-        sed = sec.resample("D").fillna(method="pad")
+        sed = sec.resample("D").ffill()
         sed /= sed.index.days_in_month
         sed[sed < minthreshold] = np.nan
 
