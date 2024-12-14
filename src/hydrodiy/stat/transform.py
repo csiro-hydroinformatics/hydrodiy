@@ -784,7 +784,7 @@ class Manly(Transform):
     def get_xmax(self):
         xmax = self.constants.values[0]
         if np.isnan(xmax):
-            errmess = "xmar is nan. It must be set to a proper value."
+            errmess = "xmax is nan. It must be set to a proper value."
             raise ValueError(errmess)
         return xmax
 
