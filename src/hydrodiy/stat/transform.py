@@ -1,6 +1,5 @@
 """ Module providing various data transforms """
 
-import warnings
 import math
 import sys
 import numpy as np
@@ -13,13 +12,14 @@ from hydrodiy.data.containers import Vector
 from hydrodiy.data import dutils
 from hydrodiy.stat import sutils
 
-__all__ = ["Identity", "Logit", "Log", "BoxCox2", \
-                "BoxCox1lam","BoxCox1nu", "BoxCox2sym", \
-                "YeoJohnson", "Reciprocal", "Softmax", "Sinh", \
-                "LogSinh", "Manly"]
+__all__ = ["Identity", "Logit", "Log", "BoxCox2",
+           "BoxCox1lam", "BoxCox1nu", "BoxCox2sym",
+           "YeoJohnson", "Reciprocal", "Softmax", "Sinh",
+           "LogSinh", "Manly"]
 
 # Constant to detect zeros
 EPS = 1e-10
+
 
 def _class_constructor_argnames(classobj):
     """ Get class constructor arguments """
@@ -34,16 +34,16 @@ def _class_constructor_argnames(classobj):
 
 def get_transform(name, **kwargs):
     """ Return instance of transform.
-        The function can set mininu (mininum of the threshold parameter)
-        and parameter values by via kwargs.
+    The function can set mininu (mininum of the threshold parameter)
+    and parameter values by via kwargs.
 
         Example:
         >>> BC = get_transform("BoxCox2", lam=0.2)
     """
-
-    if not name in __all__:
-        raise ValueError(("Expected transform name in {0}, "+\
-            "got {1}").format(__all__, name))
+    if name not in __all__:
+        errmess = f"Expected transform name in {__all__},"\
+            + f" got {name}."
+        raise ValueError(errmess)
 
     # Get instance of transform, setting the constructor arguments
     trans_class = getattr(sys.modules[__name__], name)
@@ -63,8 +63,8 @@ def get_transform(name, **kwargs):
     # Set parameters
     if len(kwargs) > 0:
         for vname in kwargs:
-            if not vname in trans.params.names and \
-                    not vname in trans.constants.names:
+            if vname not in trans.params.names and\
+                    vname not in trans.constants.names:
                 continue
 
             # Set parameters
@@ -78,13 +78,12 @@ def get_transform(name, **kwargs):
     return trans
 
 
-
 class Transform(object):
     """ Transform base class """
 
-    def __init__(self, name,\
-                    params=Vector([]), \
-                    constants=Vector([])):
+    def __init__(self, name,
+                 params=Vector([]),
+                 constants=Vector([])):
         """
         Create instance of a data transform object
 
@@ -102,7 +101,6 @@ class Transform(object):
         self._params = params
         self._constants = constants
 
-
     def __getattribute__(self, name):
         # Except name, _params and _constants to avoid infinite recursion
         if name in ["name", "_params", "_constants"]:
@@ -115,7 +113,6 @@ class Transform(object):
             return getattr(self._constants, name)
 
         return super(Transform, self).__getattribute__(name)
-
 
     def __setattr__(self, name, value):
         # Except name, _params and _constants to avoid infinite recursion
@@ -131,7 +128,6 @@ class Transform(object):
 
         else:
             super(Transform, self).__setattr__(name, value)
-
 
     def __setitem__(self, key, value):
         if self._constants.nval == 0:
@@ -158,55 +154,45 @@ class Transform(object):
 
         return str
 
-
     @property
     def params(self):
         """ Get parameters """
         return self._params
-
 
     @property
     def constants(self):
         """ Get constants """
         return self._constants
 
-
     def reset(self):
         """ Reset parameter values """
         self._params.reset()
-
 
     def _forward(self, x):
         """ internal forward method (no cast)"""
         raise NotImplementedError("Method _forward not implemented")
 
-
     def _backward(self, y):
         """ internal backward method (no cast)"""
         raise NotImplementedError("Method _backward not implemented")
-
 
     def _jacobian(self, x):
         """ internal jacobian method (no cast)"""
         raise NotImplementedError("Method _jacobian not implemented")
 
-
     def forward(self, x):
         """ Returns the forward transform of x """
         return dutils.cast(x, self._forward(x))
 
-
     def backward(self, y):
         """ Returns the backward transform of y after cast """
         return dutils.cast(y, self._backward(y))
-
 
     def jacobian(self, x):
         """ Returns the transformation jacobianobian d[forward(x)]/dx
             after cast
         """
         return dutils.cast(x, self._jacobian(x))
-
 
     def backward_censored(self, y, censor=0.):
         """ Returns the backward transform of x censored below
@@ -245,16 +231,14 @@ class Transform(object):
 
         return sutils.lhs(nsamples, pmins, pmaxs)
 
-
     def params_logprior(self):
         """ Flat log prior for transform parameters """
         val = self.params.values
         mins = self.params.mins
         maxs = self.params.maxs
 
-        ck = np.all((val-mins>=0) & (maxs-val>=0))
+        ck = np.all((val - mins >= 0) & (maxs - val >= 0))
         return 0 if ck else -np.inf
-
 
 
 class Identity(Transform):
@@ -277,38 +261,36 @@ class Logit(Transform):
     """ Logit transform y = log(x/(1-x))"""
 
     def __init__(self):
-        params = Vector(["lower", "logdelta"], \
-                    [0., 0.], [-np.inf, -10], [np.inf, 10])
+        params = Vector(["lower", "logdelta"],
+                        [0., 0.], [-np.inf, -10], [np.inf, 10])
 
         super(Logit, self).__init__("Logit", params)
 
     def _forward(self, x):
         lower, logdelta = self.params.values
         upper = lower + math.exp(logdelta)
-        value = (x-lower)/(upper-lower)
-        return np.log(1./(1-value)-1)
+        value = (x - lower) / (upper - lower)
+        return np.log(1. / (1 - value) - 1)
 
     def _backward(self, y):
         lower, logdelta = self.params.values
         upper = lower + math.exp(logdelta)
-        bnd = 1-1./(1+np.exp(y))
-        return bnd*(upper-lower) + lower
+        bnd = 1 - 1. / (1 + np.exp(y))
+        return bnd * (upper - lower) + lower
 
     def _jacobian(self, x):
         lower, logdelta = self.params.values
         upper = lower + math.exp(logdelta)
-        value = (x-lower)/(upper-lower)
-        return  np.where((x > lower+EPS) & (x < upper-EPS), \
-                    1./(upper-lower)/value/(1-value), np.nan)
+        value = (x - lower) / (upper - lower)
+        value = 1. / (upper - lower) / value / (1 - value)
+        return np.where((x > lower+EPS) & (x < upper-EPS),
+                        value, np.nan)
 
     def params_sample(self, nsamples=500, minval=-10., maxval=10.):
         """ Sample parameters with latin hypercube """
-
         pmins = [-10, self.params.mins[1]]
         pmaxs = [10, self.params.maxs[1]]
-
         samples = sutils.lhs(nsamples, pmins, pmaxs)
-
         return samples
 
 
@@ -328,22 +310,23 @@ class Log(Transform):
     def _forward(self, x):
         nu = self.params.values[0]
         bf = self.basefactor
-        return np.log(x+nu)/bf
+        return np.log(x + nu) / bf
 
     def _backward(self, y):
         nu = self.params.values[0]
         bf = self.basefactor
-        return np.exp(bf*y)-nu
+        return np.exp(bf * y) - nu
 
     def _jacobian(self, x):
         nu = self.params.values[0]
         bf = self.basefactor
-        return np.where(x+nu > self.mininu, 1./(x+nu)/bf, np.nan)
+        return np.where(x + nu > self.mininu, 1. / (x + nu) / bf,
+                        np.nan)
 
     def params_sample(self, nsamples=500, minval=-6., maxval=0.):
         # Generate parameters samples in log space
         samples = np.random.uniform(minval, maxval, nsamples)
-        samples = np.exp(samples)[:, None]+self.mininu
+        samples = np.exp(samples)[:, None] + self.mininu
 
         return samples
 
@@ -365,8 +348,8 @@ class BoxCox2(Transform):
             error_msg = f"Expected minilam > -3, got {minilam}."
             raise ValueError(error_msg)
 
-        params = Vector(["nu", "lam"], [mininu, 1.], \
-                    [mininu, minilam], [np.inf, 3.])
+        params = Vector(["nu", "lam"], [mininu, 1.],
+                        [mininu, minilam], [np.inf, 3.])
 
         super(BoxCox2, self).__init__("BoxCox2", params)
         self.mininu = mininu
@@ -374,27 +357,28 @@ class BoxCox2(Transform):
     def _forward(self, x):
         nu, lam = self.params.values
         if abs(lam) > EPS:
-            return (np.power(x+nu, lam)-1)/lam
+            return (np.power(x + nu, lam) - 1) / lam
         else:
-            return np.log(x+nu)
+            return np.log(x + nu)
 
     def _backward(self, y):
         nu, lam = self.params.values
 
         if abs(lam) > EPS:
-            u = lam*y+1
-            return np.power(u, 1./lam)-nu
+            u = lam * y + 1
+            return np.power(u, 1. / lam) - nu
         else:
-            return np.exp(y)-nu
+            return np.exp(y) - nu
 
     def _jacobian(self, x):
         nu, lam = self.params.values
 
         if abs(lam) > EPS:
-            return np.where(x+nu > self.mininu, \
-                    np.power(x+nu, lam-1.), np.nan)
+            return np.where(x + nu > self.mininu,
+                            np.power(x + nu, lam - 1.), np.nan)
         else:
-            return np.where(x+nu > self.mininu, 1./(x+nu), np.nan)
+            return np.where(x + nu > self.mininu,
+                            1. / (x + nu), np.nan)
 
     def params_sample(self, nsamples=500, minval=-6., maxval=0.):
         pmins = [minval, 0]
@@ -402,8 +386,7 @@ class BoxCox2(Transform):
 
         # Generate parameters samples in log space
         samples = sutils.lhs(nsamples, pmins, pmaxs)
-        samples[:, 0] = np.exp(samples[:, 0])+self.mininu
-
+        samples[:, 0] = np.exp(samples[:, 0]) + self.mininu
         return samples
 
 
@@ -416,8 +399,8 @@ class BoxCox1lam(Transform):
 
         # define the nu constant and set it to inf by default
         # to force proper setup
-        constants = Vector(["nu"], [np.nan], [mininu], [np.inf], \
-                                        accept_nan=True)
+        constants = Vector(["nu"], [np.nan], [mininu], [np.inf],
+                           accept_nan=True)
 
         super(BoxCox1lam, self).__init__("BoxCox1lam", params, constants)
         self.BC = BoxCox2(mininu=mininu, minilam=minilam)
@@ -425,7 +408,8 @@ class BoxCox1lam(Transform):
     def get_nu(self):
         nu = self.constants.values[0]
         if np.isnan(nu):
-            raise ValueError("nu is nan. It must be set to a proper value")
+            errmess = "nu is nan. It must be set to a proper value."
+            raise ValueError(errmess)
         return nu
 
     def _forward(self, x):
@@ -444,17 +428,16 @@ class BoxCox1lam(Transform):
         return self.BC.params_sample(nsamples, minval, maxval)[:, 1][:, None]
 
 
-
 class BoxCox2sym(Transform):
     """ Symetrical boxcox transform y = ((nu+x)^lambda-1)/lambda
     """
     def __init__(self, mininu=EPS, minilam=0.):
         if minilam < -3:
-            error_msg = f"Expected minilam > -3, got {minilam}."
-            raise ValueError(error_msg)
+            errmess = f"Expected minilam > -3, got {minilam}."
+            raise ValueError(errmess)
 
-        params = Vector(["nu", "lam"], [mininu, 1.], \
-                    [mininu, minilam], [np.inf, 3.])
+        params = Vector(["nu", "lam"], [mininu, 1.],
+                        [mininu, minilam], [np.inf, 3.])
 
         super(BoxCox2sym, self).__init__("BoxCox2sym", params)
         self.BC = BoxCox2(mininu=mininu, minilam=minilam)
@@ -477,7 +460,6 @@ class BoxCox2sym(Transform):
         return self.BC.params_sample(nsamples, minval, maxval)
 
 
-
 class BoxCox1nu(Transform):
     """ BoxCox transform y = ((nu+x)^lambda-1)/lambda
         with lambda exponent fixed
@@ -488,7 +470,8 @@ class BoxCox1nu(Transform):
 
         # Define the nu constant and set it to inf by default
         # to force proper setup
-        constants = Vector(["lam"], [np.nan], [minilam], [3], accept_nan=True)
+        constants = Vector(["lam"], [np.nan], [minilam], [3],
+                           accept_nan=True)
 
         super(BoxCox1nu, self).__init__("BoxCox1nu", params, constants)
         self.BC = BoxCox2(mininu=mininu, minilam=minilam)
@@ -496,7 +479,8 @@ class BoxCox1nu(Transform):
     def get_lam(self):
         lam = self.constants.values[0]
         if np.isnan(lam):
-            raise ValueError("lam is nan. It must be set to a proper value")
+            errmess = "lam is nan. It must be set to a proper value."
+            raise ValueError(errmess)
         return lam
 
     def _forward(self, x):
@@ -512,80 +496,80 @@ class BoxCox1nu(Transform):
         return self.BC.jacobian(x)
 
     def params_sample(self, nsamples=500, minval=0., maxval=1.):
-        return self.BC.params_sample(nsamples, minval, maxval)[:, 0][:, None]
-
+        return self.BC.params_sample(nsamples,
+                                     minval, maxval)[:, 0][:, None]
 
 
 class YeoJohnson(Transform):
     """ YeoJohnson transform """
 
     def __init__(self):
-        params = Vector(["nu", "scale", "lam"],\
-            [0., 1., 1.], [-np.inf, 1e-5, -1.],\
-            [np.inf, np.inf, 3.])
+        params = Vector(["nu", "scale", "lam"],
+                        [0., 1., 1.], [-np.inf, 1e-5, -1.],
+                        [np.inf, np.inf, 3.])
 
         super(YeoJohnson, self).__init__("YeoJohnson", params)
 
     def _forward(self, x):
         nu, scale, lam = self.params.values
         x = np.atleast_1d(x)
-        y = x*np.nan
-        w = nu+x*scale
+        y = x * np.nan
+        w = nu + x*scale
         ipos = w >= EPS
 
         if not np.isclose(lam, 0.0):
-            y[ipos] = (np.power(w[ipos]+1, lam)-1)/lam
+            y[ipos] = (np.power(w[ipos] + 1, lam) - 1) / lam
 
         if np.isclose(lam, 0.0):
-            y[ipos] = np.log(w[ipos]+1)
+            y[ipos] = np.log(w[ipos] + 1)
 
         if not np.isclose(lam, 2.0):
-            y[~ipos] = -(np.power(-w[~ipos]+1, 2-lam)-1)/(2-lam)
+            y[~ipos] = - (np.power(- w[~ipos] + 1, 2 - lam) - 1) / (2 - lam)
 
         if np.isclose(lam, 2.0):
-            y[~ipos] = -np.log(-w[~ipos]+1)
+            y[~ipos] = - np.log(- w[~ipos] + 1)
 
         return y
 
     def _backward(self, y):
         nu, scale, lam = self.params.values
         y = np.atleast_1d(y)
-        x = y*np.nan
+        x = y * np.nan
         ipos = y >= EPS
 
         if not np.isclose(lam, 0.0):
-            x[ipos] = np.power(lam*y[ipos]+1, 1./lam)-1
+            x[ipos] = np.power(lam*y[ipos] + 1, 1. / lam) - 1
         else:
-            x[ipos] = np.exp(y[ipos])-1
+            x[ipos] = np.exp(y[ipos]) - 1
 
         if not np.isclose(lam, 2.0):
-            x[~ipos] = -np.power(-(2-lam)*y[~ipos]+1, 1./(2-lam))+1
+            x[~ipos] = -np.power(- (2 - lam) * y[~ipos] + 1,
+                                 1. / (2 - lam)) + 1
         else:
-            x[~ipos] = -np.exp(-y[~ipos])+1
+            x[~ipos] = - np.exp(- y[~ipos]) + 1
 
-        return (x-nu)/scale
+        return (x - nu) / scale
 
     def _jacobian(self, x):
         nu, scale, lam = self.params.values
         x = np.atleast_1d(x)
-        j = x*np.nan
-        w = nu+x*scale
+        j = x * np.nan
+        w = nu + x * scale
         ipos = w >= EPS
 
         if not np.isclose(lam, 0.0):
-            j[ipos] = (w[ipos]+1)**(lam-1)
+            j[ipos] = (w[ipos] + 1)**(lam - 1)
 
         if np.isclose(lam, 0.0):
-            j[ipos] = 1/(w[ipos]+1)
+            j[ipos] = 1 / (w[ipos] + 1)
 
         if not np.isclose(lam, 2.0):
-            j[~ipos] = (-w[~ipos]+1)**(1-lam)
+            j[~ipos] = (-w[~ipos] + 1)**(1 - lam)
 
         if np.isclose(lam, 2.0):
-            j[~ipos] = 1/(-w[~ipos]+1)
+            j[~ipos] = 1 / (- w[~ipos] + 1)
 
         return j*scale
-
 
 
 class LogSinh(Transform):
@@ -597,19 +581,22 @@ class LogSinh(Transform):
     """
 
     def __init__(self):
-        params = Vector(["loga", "logb"], [-1., 0.], [-20, -5.], [0., 5.])
+        params = Vector(["loga", "logb"], [-1., 0.],
+                        [-20, -5.], [0., 5.])
 
         # Define the xmax constant and set it to nan by default
         # to force proper setup
-        constants = Vector(["xmax"], [np.nan], [EPS], [np.inf], accept_nan=True)
+        constants = Vector(["xmax"], [np.nan], [EPS],
+                           [np.inf], accept_nan=True)
 
-        super(LogSinh, self).__init__("LogSinh", \
-            params, constants)
+        super(LogSinh, self).__init__("LogSinh",
+                                      params, constants)
 
     def get_xmax(self):
         xmax = self.constants.values[0]
         if np.isnan(xmax):
-            raise ValueError("xmax is nan. It must be set to a proper value")
+            errmess = "xmax is nan. It must be set to a proper value."
+            raise ValueError(errmess)
         return xmax
 
     def _forward(self, x):
@@ -620,8 +607,8 @@ class LogSinh(Transform):
 
         xn = x/xmax
         w = a + b*xn
-        return np.where(xn > -a/b+EPS, \
-            (w+np.log((1.-np.exp(-2.*w))/2.))/b, np.nan)
+        return np.where(xn > -a/b+EPS,
+                        (w+np.log((1.-np.exp(-2.*w))/2.))/b, np.nan)
 
     def _backward(self, y):
         xmax = self.get_xmax()
@@ -629,8 +616,10 @@ class LogSinh(Transform):
         a = math.exp(loga)
         b = math.exp(logb)
 
-        w = b*y
-        return xmax*(y + (np.log(1.+np.sqrt(1.+np.exp(-2.*w)))-a)/b)
+        w = b * y
+        back = xmax * (y + (np.log(1. + np.sqrt(1. + np.exp(-2. * w)))
+                            - a) / b)
+        return back
 
     def _jacobian(self, x):
         xmax = self.get_xmax()
@@ -638,9 +627,10 @@ class LogSinh(Transform):
         a = math.exp(loga)
         b = math.exp(logb)
 
-        xn = x/xmax
-        w = a+b*xn
-        return 1./xmax*np.where(xn > -a/b+EPS, 1./np.tanh(w), np.nan)
+        xn = x / xmax
+        w = a + b * xn
+        return 1. / xmax * np.where(xn > -a / b + EPS,
+                                    1. / np.tanh(w), np.nan)
 
     def params_sample(self, nsamples=500, loga_scale=3., logb_sig=0.3):
         """ Sample from informative prior """
@@ -653,7 +643,6 @@ class LogSinh(Transform):
         logb = np.maximum(logb, self.params.mins[1])
 
         return np.column_stack([loga, logb])
-
 
     def params_logprior(self):
         """ <0 prior for loga and N(0., 0.3) prior for logb """
@@ -674,15 +663,15 @@ class Reciprocal(Transform):
 
     def _forward(self, x):
         nu = self.params.values[0]
-        return np.where(x > -nu, -1./(nu+x), np.nan)
+        return np.where(x > - nu, - 1. / (nu + x), np.nan)
 
     def _backward(self, y):
         nu = self.params.values[0]
-        return np.where(y < -self.mininu, -1./y-nu, np.nan)
+        return np.where(y < - self.mininu, - 1. / y - nu, np.nan)
 
     def _jacobian(self, x):
         nu = self.params.values[0]
-        return np.where(x > -nu, 1./(nu+x)**2, np.nan)
+        return np.where(x > - nu, 1. / (nu + x)**2, np.nan)
 
     def params_sample(self, nsamples=500, minval=-7., maxval=0.):
         # Generate parameters samples in log space
@@ -692,13 +681,11 @@ class Reciprocal(Transform):
         return samples
 
 
-
 class Softmax(Transform):
     """ Softmax transform """
 
     def __init__(self):
         super(Softmax, self).__init__("Softmax")
-
 
     def _forward(self, x):
         # Check inputs
@@ -714,7 +701,7 @@ class Softmax(Transform):
         if np.any(sx > 1-EPS):
             raise ValueError("sum(x) >= 1")
 
-        return np.log(x/(1-sx[:, None]))
+        return np.log(x / (1 - sx[:, None]))
 
     def _backward(self, y):
         # Check inputs
@@ -724,7 +711,7 @@ class Softmax(Transform):
 
         # Back transform
         x = np.exp(y)
-        return x/(1+np.sum(x, axis=1)[:, None])
+        return x / (1 + np.sum(x, axis=1)[:, None])
 
     def _jacobian(self, x):
         """ See
@@ -733,7 +720,8 @@ class Softmax(Transform):
         # Check inputs
         x = np.atleast_2d(x)
         if x.ndim > 2:
-            raise ValueError("Expected ndim 2, got {0}".format(x.ndim))
+            errmess = f"Expected ndim 2, got {x.ndim}."
+            raise ValueError(errmess)
 
         if np.any(x < 0):
             raise ValueError("x < 0")
@@ -746,13 +734,12 @@ class Softmax(Transform):
         return (1+sx/(1-sx))/px
 
 
-
 class Sinh(Transform):
     """ Sinh transform y=arcsinh((x-sign(x) * log(cst+abs(x))-log(cst) """
 
     def __init__(self):
-        params = Vector(["nu", "scale"], [0., 1.], [-np.inf, 1e-10], \
-                                                [np.inf, np.inf])
+        params = Vector(["nu", "scale"], [0., 1.],
+                        [-np.inf, 1e-10], [np.inf, np.inf])
         super(Sinh, self).__init__("Sinh", params)
 
     def _forward(self, x):
@@ -762,12 +749,12 @@ class Sinh(Transform):
 
     def _backward(self, y):
         nu, scale = self.params.values
-        return np.sinh(y)/scale+nu
+        return np.sinh(y) / scale + nu
 
     def _jacobian(self, x):
         nu, scale = self.params.values
-        u = (x-nu)*scale
-        return scale/np.sqrt(1+u*u)
+        u = (x - nu) * scale
+        return scale / np.sqrt(1 + u * u)
 
     def params_sample(self, nsamples=500, minval=-7., maxval=0.):
         # Generate parameters samples in log space
@@ -775,7 +762,6 @@ class Sinh(Transform):
         samples[:, 1] = np.exp(samples[:, 1])
 
         return samples
-
 
 
 class Manly(Transform):
@@ -790,47 +776,45 @@ class Manly(Transform):
 
         # Define the xmax constant and set it to nan by default
         # to force proper setup
-        constants = Vector(["xmax"], [np.nan], [EPS], [np.inf], accept_nan=True)
+        constants = Vector(["xmax"], [np.nan], [EPS], [np.inf],
+                           accept_nan=True)
 
         super(Manly, self).__init__("Manly", params, constants)
-
 
     def get_xmax(self):
         xmax = self.constants.values[0]
         if np.isnan(xmax):
-            raise ValueError("xmax is nan. It must be set to a proper value")
+            errmess = "xmar is nan. It must be set to a proper value."
+            raise ValueError(errmess)
         return xmax
-
 
     def _forward(self, x):
         lam = self.params.values[0]
         xmax = self.get_xmax()
         if abs(lam-EPS) > 0.:
-            u = x/xmax
-            return (np.exp(lam*u)-1)/lam
+            u = x / xmax
+            return (np.exp(lam * u) - 1) / lam
         else:
             return u
 
     def _backward(self, y):
         lam = self.params.values[0]
         xmax = self.get_xmax()
-        if abs(lam-EPS) > 0.:
-            return xmax*np.log(1+(lam*y))/lam
+        if abs(lam - EPS) > 0.:
+            return xmax * np.log(1 + lam * y) / lam
         else:
-            return xmax*y
+            return xmax * y
 
     def _jacobian(self, x):
         lam = self.params.values[0]
         xmax = self.get_xmax()
         if abs(lam-EPS) > 0.:
-            u = x/xmax
-            return np.exp(lam*u)/xmax
+            u = x / xmax
+            return np.exp(lam * u) / xmax
         else:
-            return np.one_likes(x)/xmax
+            return np.one_likes(x) / xmax
 
     def params_sample(self, nsamples=500, minval=-5., maxval=5.):
         # Generate parameters samples in log space
         samples = np.random.uniform(minval, maxval, (nsamples, 1))
         return samples
-
-
