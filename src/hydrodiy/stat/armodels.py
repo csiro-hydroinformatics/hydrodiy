@@ -67,10 +67,11 @@ def armodel_sim(params, innov, sim_mean=0., sim_ini=None):
     outputs = np.zeros_like(innov)
 
     # Run model
-    ierr = c_hydrodiy_stat.armodel_sim(sim_mean, sim_ini, params, \
-                                            innov, outputs)
-    if ierr!=0:
-        raise ValueError("c_hydrodiy_stat.armodel_sim returns %d"%ierr)
+    ierr = c_hydrodiy_stat.armodel_sim(sim_mean, sim_ini, params,
+                                       innov, outputs)
+    if ierr != 0:
+        errmess = f"c_hydrodiy_stat.armodel_sim returns {ierr}."
+        raise ValueError(errmess)
 
     return np.reshape(outputs, shape_innov)
 
@@ -136,17 +137,19 @@ def armodel_residual(params, inputs, sim_mean=None, sim_ini=None):
     residuals = np.zeros_like(inputs)
 
     # Run model
-    ierr = c_hydrodiy_stat.armodel_residual(sim_mean, sim_ini, \
-                        params, inputs, residuals)
-    if ierr!=0:
-        raise ValueError("c_hydrodiy_stat.armodel_residual returns %d"%ierr)
+    ierr = c_hydrodiy_stat.armodel_residual(sim_mean, sim_ini,
+                                            params, inputs, residuals)
+    if ierr != 0:
+        errmess = f"c_hydrodiy_stat.armodel_residual returns {ierr}."
+        raise ValueError(errmess)
 
     return np.reshape(residuals, shape_inputs)
 
 
 def yule_walker(acf):
     """ Compute AR model parameter using the Yule-Walker rule.
-    See https://en.wikipedia.org/wiki/Autoregressive_model#Yule%E2%80%93Walker_equations
+    See https://en.wikipedia.org/wiki/
+          Autoregressive_model#Yule%E2%80%93Walker_equations
 
     Code implemented as per
     http://mpastell.com/pweave/_downloads/AR_yw.html

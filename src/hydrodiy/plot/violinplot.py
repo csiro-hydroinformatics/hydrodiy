@@ -16,21 +16,23 @@ COVERAGE_EXTREMES = 100
 
 VIOLIN_WIDTH = 0.7
 
+
 class ViolinplotError(Exception):
     pass
+
 
 class Violin(object):
     """ Object allowing to draw violinplots """
 
     def __init__(self, data,
-                show_text=True, \
-                linewidth=2, \
-                number_format="0.2f", \
-                col_ref_median="darkblue", \
-                col_ref_others="tab:blue", \
-                brightening_factor_light=-0.5, \
-                brightening_factor_superlight=-1.0, \
-                npoints_kde=None, **kwargs):
+                 show_text=True,
+                 linewidth=2,
+                 number_format="0.2f",
+                 col_ref_median="darkblue",
+                 col_ref_others="tab:blue",
+                 brightening_factor_light=-0.5,
+                 brightening_factor_superlight=-1.0,
+                 npoints_kde=None, **kwargs):
         """ Draw boxplots with labels and defined colors
 
         Parameters
@@ -60,11 +62,16 @@ class Violin(object):
         try:
             data = pd.DataFrame(data).astype(np.float64)
         except Exception as err:
-            raise ViolinplotError("Failed to convert data to float"+\
-                    f" dataframe: {err}")
+            errmess = "Failed to convert data to float"\
+                      + f" dataframe: {err}"
+            raise ViolinplotError(errmess)
 
         # initialise objects
-        self.npoints_kde = 2*len(data) if npoints_kde is None else int(npoints_kde)
+        if npoints_kde is None:
+            self.npoints_kde = 2*len(data)
+        else:
+            self.npoints_kde = int(npoints_kde)
+
         self._ax = None
         self._data = data
         self._kde_x = None
@@ -103,7 +110,6 @@ class Violin(object):
         # Compute violin stats
         self._compute()
 
-
     @property
     def data(self):
         """ Returns the violin data """
@@ -130,14 +136,13 @@ class Violin(object):
         cpp1, cpp2 = compute_percentiles(COVERAGE_CENTER)
         epp1, epp2 = compute_percentiles(COVERAGE_EXTREMES)
         df = pd.DataFrame({
-                f"Q{epp1:0.0f}": self.stat_extremes_low, \
-                f"Q{cpp1:0.0f}": self.stat_center_low, \
-                f"median": self.stat_median, \
-                f"Q{cpp2:0.0f}": self.stat_center_high, \
+                f"Q{epp1:0.0f}": self.stat_extremes_low,
+                f"Q{cpp1:0.0f}": self.stat_center_low,
+                "median": self.stat_median,
+                f"Q{cpp2:0.0f}": self.stat_center_high,
                 f"Q{epp2:0.0f}": self.stat_extremes_high
-            }).T
+                }).T
         return df
-
 
     def reset_items(self):
         show_text = self.show_text
@@ -146,40 +151,38 @@ class Violin(object):
         col_ref_median = self.col_ref_median
         col_ref_others = self.col_ref_others
 
-        self.median = BoxplotItem(linecolor=col_ref_median, \
-                    fontcolor=col_ref_median,\
-                    fontsize=9, \
-                    fontweight="bold", \
-                    marker="none",\
-                    linewidth=linewidth, \
-                    ha="center", va="bottom", \
-                    number_format=number_format, \
-                    show_text=show_text)
+        self.median = BoxplotItem(linecolor=col_ref_median,
+                                  fontcolor=col_ref_median,
+                                  fontsize=9,
+                                  fontweight="bold",
+                                  marker="none",
+                                  linewidth=linewidth,
+                                  ha="center", va="bottom",
+                                  number_format=number_format,
+                                  show_text=show_text)
 
+        col_light = putils.darken_or_lighten(col_ref_others,
+                                             self.brightening_factor_light)
+        br = self.brightening_factor_superlight
+        col_superlight = putils.darken_or_lighten(col_ref_others, br)
 
-        col_light = putils.darken_or_lighten(col_ref_others, \
-                            self.brightening_factor_light)
-        col_superlight = putils.darken_or_lighten(col_ref_others, \
-                            self.brightening_factor_superlight)
+        self.extremes = BoxplotItem(linecolor="none",
+                                    fontcolor=col_ref_others,
+                                    facecolor=col_superlight,
+                                    linewidth=linewidth,
+                                    hatch="///",
+                                    ha="center", va="bottom",
+                                    number_format=number_format)
 
-        self.extremes = BoxplotItem(linecolor="none", \
-                            fontcolor=col_ref_others, \
-                            facecolor=col_superlight, \
-                            linewidth=linewidth, \
-                            hatch="///", \
-                            ha="center", va="bottom", \
-                            number_format=number_format)
-
-        self.center = BoxplotItem(linecolor=col_ref_others, \
-                        fontcolor=col_ref_others, \
-                        facecolor=col_light, \
-                        width=0.7, \
-                        number_format=number_format, \
-                        fontsize=8, \
-                        linewidth=linewidth, \
-                        ha="center", va="bottom", \
-                        show_text=False)
-
+        self.center = BoxplotItem(linecolor=col_ref_others,
+                                  fontcolor=col_ref_others,
+                                  facecolor=col_light,
+                                  width=0.7,
+                                  number_format=number_format,
+                                  fontsize=8,
+                                  linewidth=linewidth,
+                                  ha="center", va="bottom",
+                                  show_text=False)
 
     def _compute(self):
         """ Compute stats """
@@ -203,14 +206,14 @@ class Violin(object):
 
         # initialise
         npts = self.npoints_kde
-        kde_x = pd.DataFrame(np.nan, columns=data.columns, \
-                                index=np.arange(npts))
+        kde_x = pd.DataFrame(np.nan, columns=data.columns,
+                             index=np.arange(npts))
         kde_y = kde_x.copy()
 
         # Compute kde
         for cn, se in data.items():
             notnull = se.notnull()
-            if notnull.sum()<=2:
+            if notnull.sum() <= 2:
                 kde_x.loc[:, cn] = np.nan
                 kde_y.loc[:, cn] = np.nan
                 continue
@@ -230,7 +233,6 @@ class Violin(object):
 
         self._kde_x = kde_x
         self._kde_y = kde_y
-
 
     def draw(self, ax=None):
         """ Draw the boxplot
@@ -267,45 +269,46 @@ class Violin(object):
             u0 = np.interp(med, x, y)
             um = [i-u0*vw/2, i+u0*vw/2]
             item = self.median
-            ax.plot(um, vm, lw=item.linewidth, \
-                color=item.linecolor, \
-                alpha=item.alpha)
+            ax.plot(um, vm, lw=item.linewidth,
+                    color=item.linecolor,
+                    alpha=item.alpha)
 
             colelement["median-line"] = ax.get_lines()[-1]
 
             # Draw extremes
             item = self.extremes
-            ix = (x>=self.stat_extremes_low[colname]) & \
-                (x<=self.stat_extremes_high[colname])
+            ix = (x >= self.stat_extremes_low[colname])\
+                & (x <= self.stat_extremes_high[colname])
 
             uu1, uu2 = i-y[ix]*vw/2, i+y[ix]*vw/2
             vv = x[ix]
             uc = np.concatenate([uu1, uu2[::-1], [uu1.iloc[0]]])
             vc = np.concatenate([vv, vv[::-1], [vv.iloc[0]]])
-            epoly = Polygon(np.column_stack([uc, vc]), \
-                                edgecolor="none", \
-                                facecolor=item.facecolor, \
-                                linewidth=item.linewidth, \
-                                hatch=None if item.hatch=="none" else item.hatch , \
-                                alpha=item.alpha)
+            hatch = None if item.hatch == "none" else item.hatch
+            epoly = Polygon(np.column_stack([uc, vc]),
+                            edgecolor="none",
+                            facecolor=item.facecolor,
+                            linewidth=item.linewidth,
+                            hatch=hatch,
+                            alpha=item.alpha)
             ax.add_patch(epoly)
             n = "extreme-polygon"
             colelement[n] = epoly
 
             # Draw center
             item = self.center
-            ix = (x>=self.stat_center_low[colname]) & \
-                    (x<=self.stat_center_high[colname])
+            ix = (x >= self.stat_center_low[colname])\
+                & (x <= self.stat_center_high[colname])
             uu1, uu2 = i-y[ix]*vw/2, i+y[ix]*vw/2
             vv = x[ix]
             uc = np.concatenate([uu1, uu2[::-1], [uu1.iloc[0]]])
             vc = np.concatenate([vv, vv[::-1], [vv.iloc[0]]])
-            cpoly = Polygon(np.column_stack([uc, vc]), \
-                                edgecolor=item.linecolor, \
-                                facecolor=item.facecolor, \
-                                linewidth=item.linewidth, \
-                                hatch=None if item.hatch=="none" else item.hatch , \
-                                alpha=item.alpha)
+            cpoly = Polygon(np.column_stack([uc, vc]),
+                            edgecolor=item.linecolor,
+                            facecolor=item.facecolor,
+                            linewidth=item.linewidth,
+                            hatch=hatch,
+                            alpha=item.alpha)
             ax.add_patch(cpoly)
             n = "center-polygon"
             colelement[n] = cpoly
@@ -331,15 +334,15 @@ class Violin(object):
                         valuetext = f"{value:{item.number_format}}"
                         xshift = 0
 
-                    colelement[statname+"-text"] = \
-                        ax.text(i+xshift, \
-                            value, \
-                            valuetext, \
-                            fontweight=item.fontweight, \
-                            fontsize=item.fontsize, \
-                            color=item.fontcolor, \
-                            va=item.va, ha=item.ha, \
-                            alpha=item.alpha)
+                    txt = ax.text(i+xshift,
+                                  value,
+                                  valuetext,
+                                  fontweight=item.fontweight,
+                                  fontsize=item.fontsize,
+                                  color=item.fontcolor,
+                                  va=item.va, ha=item.ha,
+                                  alpha=item.alpha)
+                    colelement[statname+"-text"] = txt
 
             # Store
             self.elements[colname] = colelement
@@ -351,4 +354,3 @@ class Violin(object):
         ncols = kde_x.shape[1]
         xlim = (-vw, ncols-1+vw)
         ax.set_xlim(xlim)
-

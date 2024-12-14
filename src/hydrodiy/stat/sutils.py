@@ -1,4 +1,3 @@
-import re
 import math
 import numpy as np
 from scipy import linalg
@@ -34,7 +33,9 @@ def ppos(nval, cst=0.3):
         Plotting postion
     """
     if cst < 0. or cst > 0.5:
-        raise ValueError("Expected cst  in [0, 0.5], got {0}".format(cst))
+        errmess = f"Expected cst  in [0, 0.5], got {cst}."
+        raise ValueError(errmess)
+
     return (np.arange(1, nval+1)-cst)/(nval+1-2*cst)
 
 
@@ -65,11 +66,12 @@ def acf(data, maxlag=1, idx=None):
     nval = len(data)
     maxlag = int(maxlag)
 
-    if not idx is None:
+    if idx is not None:
         idx = np.atleast_1d(idx)
         if len(idx) != nval:
-            raise ValueError(f"Expected idx of length {nval}, "+\
-                                f"got {len(idx)}.")
+            errmess = f"Expected idx of length {nval},"\
+                      + f" got {len(idx)}."
+            raise ValueError(errmess)
     else:
         idx = np.ones(nval).astype(bool)
 
@@ -83,7 +85,7 @@ def acf(data, maxlag=1, idx=None):
         d1 = data[k:]
         idx1 = idx[k:]
 
-        if k>0:
+        if k > 0:
             d2 = data[:-k]
             idx2 = idx[:-k]
         else:
@@ -101,10 +103,10 @@ def acf(data, maxlag=1, idx=None):
             mean = np.mean(d1)
 
         # Covariance
-        cov[k] = np.nansum((d1-mean)*(d2-mean))/nval
+        cov[k] = np.nansum((d1-mean) * (d2-mean)) / nval
 
     # ACF function
-    acf_values = cov[1:]/cov[0]
+    acf_values = cov[1:] / cov[0]
 
     return acf_values, cov[0]
 
@@ -143,12 +145,14 @@ def lhs(nsamples, pmin, pmax):
         pmax = np.repeat(pmax, nparams)
 
     if len(pmax) != nparams:
-        raise ValueError(("Expected pmax of length" + \
-            " {0}, got {1}").format(nparams, \
-                len(pmax)))
-    if np.any(pmax-pmin<=0):
-        raise ValueError(("Expected pmax>pmin got" +\
-            " pmin={0} and pmax={1}").format(pmin, pmax))
+        errmess = f"Expected pmax of length {nparams},"\
+                  + f" got {len(pmax)}."
+        raise ValueError(errmess)
+
+    if np.any(pmax - pmin <= 0):
+        errmess = "Expected pmax>pmin got"\
+                  + f" pmin={pmin} and pmax={pmax}."
+        raise ValueError(errmess)
 
     # Initialise
     samples = np.zeros((nsamples, nparams))
@@ -216,8 +220,10 @@ def standard_normal(x, cst=0., sorted=False, rank_method="average"):
         Standard normal deviates
     """
     if np.any(np.isnan(x)):
-        raise ValueError("Expected no nan values in x, "+\
-                            "found {np.sum(np.isnan(x))))}.")
+        errmess = "Expected no nan values in x,"\
+            + f" found {np.sum(np.isnan(x))}."
+        raise ValueError(errmess)
+
     nval = len(x)
     if sorted:
         ranks = np.arange(nval)
@@ -253,8 +259,8 @@ def semicorr(unorm):
     # Check dimensions
     nval, ncols = unorm.shape
     if ncols != 2:
-        raise ValueError("Expected a two columns array, "+\
-                            f"got ncols={ncols}.")
+        raise ValueError("Expected a two columns array,"
+                         + f" got ncols={ncols}.")
     # Full correlations
     rho = np.corrcoef(unorm.T)[0, 1]
 
@@ -306,10 +312,9 @@ def pareto_front(data, orientation=1):
     data = data.astype(np.float64)
 
     if data.ndim != 2:
-        error_msg = "Expected data to be a 2 dimensional array, "+\
-                        "got data.ndim={data.ndim}."
+        error_msg = "Expected data to be a 2 dimensional array,"\
+                    + "got data.ndim={data.ndim}."
         raise ValueError(error_msg)
-
 
     # set the array contiguous to work with C
     if not data.flags["C_CONTIGUOUS"]:
@@ -319,12 +324,13 @@ def pareto_front(data, orientation=1):
     isdominated = np.zeros(data.shape[0]).astype(np.int32)
 
     # Run model
-    ierr = c_hydrodiy_stat.pareto_front(orientation, data, \
-                                            isdominated)
-    if ierr!=0:
+    ierr = c_hydrodiy_stat.pareto_front(orientation, data,
+                                        isdominated)
+    if ierr != 0:
         raise ValueError(f"c_hydrodiy_stat.pareto_front {ierr}")
 
     return isdominated
+
 
 def lstsq(X, y, add_intercept=False, Rtest=None, rtest=None, rcond=1e-4):
     """ Perform OLS fit
@@ -374,7 +380,7 @@ def lstsq(X, y, add_intercept=False, Rtest=None, rtest=None, rcond=1e-4):
             X.loc[:, "intercept"] = ones
             cc = ["intercept"] + cols
             X = X.loc[:, cc]
-        except:
+        except Exception:
             X = np.column_stack([ones, X])
 
     # Constraints
@@ -383,7 +389,7 @@ def lstsq(X, y, add_intercept=False, Rtest=None, rtest=None, rcond=1e-4):
         R = np.zeros((1, nparams))
         Rtest = []
         for iparam in range(nparams):
-            if add_intercept and iparam==0:
+            if add_intercept and iparam == 0:
                 # Does not test intercept by default
                 continue
             Rt = R.copy()
@@ -391,22 +397,22 @@ def lstsq(X, y, add_intercept=False, Rtest=None, rtest=None, rcond=1e-4):
             Rtest.append(Rt)
     else:
         errmsg = "Expected 2d arrays only in Rest"
-        assert all([R.ndim==2 for R in Rtest]), errmsg
+        assert all([R.ndim == 2 for R in Rtest]), errmsg
 
     if rtest is None:
         rtest = [np.zeros(R.shape[0]) for R in Rtest]
     else:
         errmsg = "Expected 1d arrays in rtest"
-        assert all([r.ndim==1 for r in rtest]), errmsg
+        assert all([r.ndim == 1 for r in rtest]), errmsg
 
-    assert all([R.shape[1]==nparams for R in Rtest])
-    assert all([R.shape[0]==r.shape[0] for R, r in zip(Rtest, rtest)])
+    assert all([R.shape[1] == nparams for R in Rtest])
+    assert all([R.shape[0] == r.shape[0] for R, r in zip(Rtest, rtest)])
     assert len(Rtest) == len(rtest)
 
     # Remove nan
     iok = np.all(~np.isnan(X), axis=1) & ~np.isnan(y)
     errmsg = "Expected at least {X.shape[1]+1} samples, got {iok.sum()}."
-    assert iok.sum()>=X.shape[1]+1, errmsg
+    assert iok.sum() >= X.shape[1] + 1, errmsg
     X, y = X[iok], y[iok]
 
     # Regular OLS fit
@@ -414,10 +420,10 @@ def lstsq(X, y, add_intercept=False, Rtest=None, rtest=None, rcond=1e-4):
 
     # compute parameter uncertainty
     yhat = X.dot(theta)
-    err = yhat-y
+    err = yhat - y
     sse = np.sum(err*err)
-    degf = len(err)-nparams
-    sig2 = sse/degf
+    degf = len(err) - nparams
+    sig2 = sse / degf
     XX = X.T.dot(X)
     XXinv = np.linalg.inv(XX)
     theta_std = np.sqrt(np.diag(sig2*XXinv))
@@ -427,16 +433,16 @@ def lstsq(X, y, add_intercept=False, Rtest=None, rtest=None, rcond=1e-4):
     fstats, fpvalues = np.zeros(ntests), np.zeros(ntests)
     for itest, (R, r) in enumerate(zip(Rtest, rtest)):
         nconst = R.shape[0]
-        delta = R.dot(theta)-r
+        delta = R.dot(theta) - r
         M = R.dot(XXinv).dot(R.T)
         Minv = np.linalg.inv(M)
-        fstats[itest] = np.sum(delta*Minv.dot(delta))/nconst/sig2
-        fpvalues[itest] = 1-fisch.cdf(fstats[itest], nconst, degf)
+        fstats[itest] = np.sum(delta * Minv.dot(delta)) / nconst / sig2
+        fpvalues[itest] = 1 - fisch.cdf(fstats[itest], nconst, degf)
 
     # student test for theta=0
-    tstat = theta/theta_std
+    tstat = theta / theta_std
     p1 = tstud.cdf(np.abs(tstat), df=degf)
-    tpvalue = 2*(1-p1)
+    tpvalue = 2 * (1 - p1)
 
     # Store
     if hasattr(X, "columns"):
@@ -444,10 +450,10 @@ def lstsq(X, y, add_intercept=False, Rtest=None, rtest=None, rcond=1e-4):
     else:
         idx = None
 
-    res = pd.DataFrame({"params": theta, \
-                        "stderr": theta_std, \
-                        "tstat": tstat, \
-                        "tpvalue": tpvalue}, \
-                        index=idx)
+    res = pd.DataFrame({"params": theta,
+                        "stderr": theta_std,
+                        "tstat": tstat,
+                        "tpvalue": tpvalue},
+                       index=idx)
 
     return res, fstats, fpvalues, X

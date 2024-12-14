@@ -18,8 +18,8 @@ if has_c_module("stat", False):
 EPS = 1e-10
 
 # Reads Cramer-Von Mises table
-CVPATH = Path(__file__).resolve().parent / "data" / \
-            "cramer_von_mises_test_pvalues.zip"
+CVPATH = Path(__file__).resolve().parent / "data" /\
+    "cramer_von_mises_test_pvalues.zip"
 CVM_TABLE, _ = csv.read_csv(CVPATH, index_col=0)
 CVM_NSAMPLE = CVM_TABLE.columns.values.astype(int)
 CVM_QQ = CVM_TABLE.index.values
@@ -40,8 +40,10 @@ def __check_ensemble_data(obs, ens):
 
     # Check dimensions
     if ens.shape[0] != obs.shape[0]:
-        raise ValueError("Expected ens with first dim equal to" +
-                         " {0}, got {1}".format(obs.shape[0], ens.shape[0]))
+        errmess = "Expected ens with first dim equal to"\
+            + f"{obs.shape[0]}, got {ens.shape[0]}."
+        raise ValueError(errmess)
+
     # Skip nan
     idx = pd.notnull(obs)
     idx = idx & pd.notnull(ens).any(axis=1)
@@ -67,8 +69,9 @@ def __nonulldata(tobs, tsim):
     nok = np.sum(idx)
     nval = len(tobs)
     if nok != nval:
-        warnings.warn(("There are {0} null values in" +
-                       " transformed data").format(nval-nok))
+        warnmess = f"There are {nval-nok} null values in"\
+                   + "transformed data."
+        warnings.warn(warnmess)
 
     return tobs[idx], tsim[idx]
 

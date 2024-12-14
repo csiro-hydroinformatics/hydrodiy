@@ -36,6 +36,18 @@ jobs:
           conda activate env_hydrodiy
           pip install -e .
 
+      - name: Lint with flake8
+        run: |
+          source $CONDA/etc/profile.d/conda.sh
+          conda activate env_hydrodiy
+          cd $GITHUB_WORKSPACE
+          flake8 --exclude src/hydrodiy/data/tests src/hydrodiy/data
+          flake8 --exclude src/hydrodiy/gis/tests,src/hydrodiy/gis/data src/hydrodiy/gis
+          flake8 --exclude src/hydrodiy/io/tests,src/hydrodiy/io/script_template_plot.py,src/hydrodiy/io/script_template_simple.py src/hydrodiy/io
+          flake8 --exclude src/hydrodiy/plot/tests src/hydrodiy/plot
+          flake8 --exclude src/hydrodiy/stat/tests,src/hydrodiy/stat/data src/hydrodiy/stat
+
+
       - name: Run tests
         run: |
           source $CONDA/etc/profile.d/conda.sh
