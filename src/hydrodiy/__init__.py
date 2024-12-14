@@ -1,7 +1,7 @@
 import sys
 import importlib
 
-__version__ = "2.7"
+__version__ = "2.8"
 
 # Detect python version
 PYVERSION = 2
