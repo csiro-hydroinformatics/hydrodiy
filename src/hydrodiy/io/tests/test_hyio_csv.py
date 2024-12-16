@@ -171,6 +171,34 @@ def test_write_csv3():
     fz.unlink()
 
 
+def test_write_no_sys_info():
+    nval = 100
+    nc = 5
+    idx = pd.date_range("1990-01-01", periods=nval, freq="D")
+    df = pd.DataFrame(np.random.normal(size=(nval, nc)), index=idx)
+
+    fcsv1 = FTEST / "testwrite_sys_info.csv"
+    csv.write_csv(df, fcsv1, "Random data",
+            Path(__file__))
+
+    fcsv2 = FTEST / "testwrite_no_sys_info.csv"
+    csv.write_csv(df, fcsv2, "Random data",
+            Path(__file__), write_sys_info=False)
+
+    df1, comment1 = csv.read_csv(fcsv1, index_col=0)
+    df2, comment2 = csv.read_csv(fcsv2, index_col=0)
+
+    sys_keys = ["python_version", "pandas_version",
+                "numpy_version", "python_inc",
+                "python_lib"]
+    for key in sys_keys:
+        assert key in comment1
+        assert key not in comment2
+
+    fsrc = Path(comment1["source_file"])
+    assert comment2["source_file"] == fsrc.name
+
+
 def test_read_write_zip():
     # Generate data
     df = {}
