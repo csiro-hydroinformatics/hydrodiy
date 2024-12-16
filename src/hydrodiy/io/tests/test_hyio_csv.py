@@ -175,8 +175,8 @@ def test_read_write_zip():
     # Generate data
     df = {}
     for i in range(4):
-        df["test_{0:02d}/test_{0}.csv".format(i)] = \
-                pd.DataFrame(np.random.normal(size=(100, 4)))
+        df[f"folder_{i:02d}/test_{i}.csv"] =\
+            pd.DataFrame(np.random.normal(size=(100, 4)))
 
     # Write data to archive
     farc = FTEST / "test_archive.zip"
@@ -185,7 +185,7 @@ def test_read_write_zip():
             # Add file to tar with a directory structure
             csv.write_csv(df[k],
                 filename=k,
-                comment="test "+str(i),
+                comment=f"test {i}",
                 archive=arc,
                 float_format="%0.20f",
                 source_file=Path(__file__))
