@@ -212,7 +212,7 @@ class Violin(object):
 
         # Compute kde
         for cn, se in data.items():
-            notnull = se.notnull()
+            notnull = se.notnull() & np.isfinite(se.values)
             if notnull.sum() <= 2:
                 kde_x.loc[:, cn] = np.nan
                 kde_y.loc[:, cn] = np.nan
@@ -222,7 +222,7 @@ class Violin(object):
             kernel = gaussian_kde(sen.values)
 
             # blend regular spacing and ecdf spacing
-            x0, x1 = se.min(), se.max()
+            x0, x1 = sen.min(), sen.max()
             x = np.linspace(x0, x1, (npts-len(sen)))
             err = 1e-6*np.random.uniform(-1, 1, len(sen))
             x = np.sort(np.concatenate([x, sen.values+err]))
@@ -279,39 +279,40 @@ class Violin(object):
             item = self.extremes
             ix = (x >= self.stat_extremes_low[colname])\
                 & (x <= self.stat_extremes_high[colname])
-
-            uu1, uu2 = i-y[ix]*vw/2, i+y[ix]*vw/2
-            vv = x[ix]
-            uc = np.concatenate([uu1, uu2[::-1], [uu1.iloc[0]]])
-            vc = np.concatenate([vv, vv[::-1], [vv.iloc[0]]])
-            hatch = None if item.hatch == "none" else item.hatch
-            epoly = Polygon(np.column_stack([uc, vc]),
-                            edgecolor="none",
-                            facecolor=item.facecolor,
-                            linewidth=item.linewidth,
-                            hatch=hatch,
-                            alpha=item.alpha)
-            ax.add_patch(epoly)
-            n = "extreme-polygon"
-            colelement[n] = epoly
+            if ix.sum()>0:
+                uu1, uu2 = i-y[ix]*vw/2, i+y[ix]*vw/2
+                vv = x[ix]
+                uc = np.concatenate([uu1, uu2[::-1], [uu1.iloc[0]]])
+                vc = np.concatenate([vv, vv[::-1], [vv.iloc[0]]])
+                hatch = None if item.hatch == "none" else item.hatch
+                epoly = Polygon(np.column_stack([uc, vc]),
+                                edgecolor="none",
+                                facecolor=item.facecolor,
+                                linewidth=item.linewidth,
+                                hatch=hatch,
+                                alpha=item.alpha)
+                ax.add_patch(epoly)
+                n = "extreme-polygon"
+                colelement[n] = epoly
 
             # Draw center
             item = self.center
             ix = (x >= self.stat_center_low[colname])\
                 & (x <= self.stat_center_high[colname])
-            uu1, uu2 = i-y[ix]*vw/2, i+y[ix]*vw/2
-            vv = x[ix]
-            uc = np.concatenate([uu1, uu2[::-1], [uu1.iloc[0]]])
-            vc = np.concatenate([vv, vv[::-1], [vv.iloc[0]]])
-            cpoly = Polygon(np.column_stack([uc, vc]),
-                            edgecolor=item.linecolor,
-                            facecolor=item.facecolor,
-                            linewidth=item.linewidth,
-                            hatch=hatch,
-                            alpha=item.alpha)
-            ax.add_patch(cpoly)
-            n = "center-polygon"
-            colelement[n] = cpoly
+            if ix.sum()>0:
+                uu1, uu2 = i-y[ix]*vw/2, i+y[ix]*vw/2
+                vv = x[ix]
+                uc = np.concatenate([uu1, uu2[::-1], [uu1.iloc[0]]])
+                vc = np.concatenate([vv, vv[::-1], [vv.iloc[0]]])
+                cpoly = Polygon(np.column_stack([uc, vc]),
+                                edgecolor=item.linecolor,
+                                facecolor=item.facecolor,
+                                linewidth=item.linewidth,
+                                hatch=hatch,
+                                alpha=item.alpha)
+                ax.add_patch(cpoly)
+                n = "center-polygon"
+                colelement[n] = cpoly
 
             # Text
             for statname in ["median", "centerlow", "centerhigh"]:
