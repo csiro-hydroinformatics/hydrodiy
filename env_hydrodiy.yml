@@ -3,6 +3,7 @@ channels:
   - conda-forge
   - defaults
 dependencies:
+  - anybadge
   - cython=3.0.10
   - flake8=7.1.1
   - matplotlib=3.8.4
