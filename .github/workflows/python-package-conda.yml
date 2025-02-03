@@ -52,20 +52,28 @@ jobs:
         run: |
           source $CONDA/etc/profile.d/conda.sh
           conda activate env_hydrodiy
-          pytest --cov=hydrodiy --cov-config=.coveragerc --junitxml=junit/test-results.xml --cov-report=xml --cov-report=html src/hydrodiy
+          pytest --cov=hydrodiy --cov-report=xml --cov-report=html --cov-report=term-missing tests
       
-      - name: Upload pytest test results
-        uses: actions/upload-artifact@v3
-        with:
-          name: pytest-results
-          path: junit/test-results.xml
-        
-        # Use always() to always run this step to publish test results when there are test failures
-        if: ${{ always() }}
+      - name: Parse coverage report and create badge
+        run: |
+          source $CONDA/etc/profile.d/conda.sh
+          conda activate env_hydrodiy
+          python -c "import xml.etree.ElementTree as ET; from anybadge import Badge; cov = float(ET.parse('coverage.xml').getroot().get('line-rate')) * 100; covbadge = Badge('Coverage', value=f'{cov:0.0f}%', thresholds={60:'red', 70:'orange', 80:'lightgreen', 90:'green'}); covbadge.write_badge('coverage_badge.svg', True)"
 
-      - name: Upload to codecov
-        uses: codecov/codecov-action@v3        
-        
+      - name: Update gist badge
+        run: |
+          sed 's/\"/\\\"/g' coverage_badge.svg > coverage_badge.txt
+          echo "{\"files\": {\"coverage_badge.svg\": {\"content\": \"$(cat coverage_badge.txt)\"}}}" > coverage_badge.json
+          curl -X PATCH -H "Authorization: token ${{ secrets.COVERAGE_GIST_TOKEN }}" \
+                -d @coverage_badge.json \
+                "https://api.github.com/gists/${{ secrets.COVERAGE_GIST_ID }}"
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-coverage
+          path: htmlcov/*.* 
+
       - name: Run examples
         run: |
           source $CONDA/etc/profile.d/conda.sh
