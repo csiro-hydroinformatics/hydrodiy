@@ -94,6 +94,22 @@ def test_violin_colors():
     fig.savefig(fp)
 
 
+def test_violin_draw_ylim():
+    plt.close("all")
+    vl = Violin(data=DATA2)
+    fig, ax = plt.subplots()
+    y0 = DATA2.max().max()
+    y1 = DATA2.min().min()
+    dy = y1-y0
+    y0 += dy*0.1
+    y1 -= dy*0.1
+
+    vl.draw(ax=ax, ylim=(y0, y1))
+    fp = FIMG / "violin_plot_extremes.png"
+    fig.savefig(fp)
+
+
+
 def test_violin_draw_extremes():
     plt.close("all")
     vl = Violin(data=DATA2)
