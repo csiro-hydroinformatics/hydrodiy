@@ -234,18 +234,26 @@ class Violin(object):
         self._kde_x = kde_x
         self._kde_y = kde_y
 
-    def draw(self, ax=None):
+    def draw(self, ax=None, ylim=None):
         """ Draw the boxplot
 
         Parameters
         -----------
         ax : matplotlib.axes
-            Axe to draw the boxplot on
+            Axe to draw the boxplot on.
+        ylim : tuple
+            Boundary on y axis limits.
         """
         if ax is None:
             self._ax = plt.gca()
         else:
             self._ax = ax
+
+        if ylim is not None:
+            y0, y1 = ylim
+            if y0 >= y1:
+                errmess = f"Expected ylim[0]<ylim[1], got {ylim}."
+                raise ValueError(errmess)
 
         ax = self._ax
         kde_x, kde_y = self.kde_x, self.kde_y
@@ -279,7 +287,7 @@ class Violin(object):
             item = self.extremes
             ix = (x >= self.stat_extremes_low[colname])\
                 & (x <= self.stat_extremes_high[colname])
-            if ix.sum()>0:
+            if ix.sum() > 0:
                 uu1, uu2 = i-y[ix]*vw/2, i+y[ix]*vw/2
                 vv = x[ix]
                 uc = np.concatenate([uu1, uu2[::-1], [uu1.iloc[0]]])
@@ -299,7 +307,7 @@ class Violin(object):
             item = self.center
             ix = (x >= self.stat_center_low[colname])\
                 & (x <= self.stat_center_high[colname])
-            if ix.sum()>0:
+            if ix.sum() > 0:
                 uu1, uu2 = i-y[ix]*vw/2, i+y[ix]*vw/2
                 vv = x[ix]
                 uc = np.concatenate([uu1, uu2[::-1], [uu1.iloc[0]]])
@@ -335,15 +343,16 @@ class Violin(object):
                         valuetext = f"{value:{item.number_format}}"
                         xshift = 0
 
-                    txt = ax.text(i+xshift,
-                                  value,
-                                  valuetext,
-                                  fontweight=item.fontweight,
-                                  fontsize=item.fontsize,
-                                  color=item.fontcolor,
-                                  va=item.va, ha=item.ha,
-                                  alpha=item.alpha)
-                    colelement[statname+"-text"] = txt
+                    if ylim is None or (value >= ylim[0] and value <= ylim[1]):
+                        txt = ax.text(i+xshift,
+                                      value,
+                                      valuetext,
+                                      fontweight=item.fontweight,
+                                      fontsize=item.fontsize,
+                                      color=item.fontcolor,
+                                      va=item.va, ha=item.ha,
+                                      alpha=item.alpha)
+                        colelement[statname+"-text"] = txt
 
             # Store
             self.elements[colname] = colelement
@@ -355,3 +364,6 @@ class Violin(object):
         ncols = kde_x.shape[1]
         xlim = (-vw, ncols-1+vw)
         ax.set_xlim(xlim)
+
+        if ylim is not None:
+            ax.set_ylim(ylim)

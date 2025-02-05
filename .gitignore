@@ -34,7 +34,7 @@ src/hydrodiy/gis/tests/grid_test.bil
 src/hydrodiy/data/c_hydrodiy_data.c
 src/hydrodiy/stat/c_hydrodiy_stat.c
 src/hydrodiy/gis/c_hydrodiy_gis.c
-src/hydrodiy.egg-info
+hydrodiy.egg-info
 nosetests.xml
 nohup.out
 listmembers.csv

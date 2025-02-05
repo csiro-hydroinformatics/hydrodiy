@@ -94,6 +94,23 @@ def test_violin_colors():
     fig.savefig(fp)
 
 
+def test_violin_draw_ylim():
+    plt.close("all")
+    vl = Violin(data=DATA2)
+    fig, ax = plt.subplots()
+
+    msg = "Expected ylim"
+    with pytest.raises(ValueError, match=msg):
+        vl.draw(ax=ax, ylim=(10, 1))
+
+    meds = DATA2.median()
+    y0 = 0
+    y1 = 2
+    vl.draw(ax=ax, ylim=(y0, y1))
+    fp = FIMG / "violin_plot_ylim.png"
+    fig.savefig(fp)
+
+
 def test_violin_draw_extremes():
     plt.close("all")
     vl = Violin(data=DATA2)
