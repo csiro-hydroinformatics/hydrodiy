@@ -312,6 +312,7 @@ class Violin(object):
                 vv = x[ix]
                 uc = np.concatenate([uu1, uu2[::-1], [uu1.iloc[0]]])
                 vc = np.concatenate([vv, vv[::-1], [vv.iloc[0]]])
+                hatch = None if item.hatch == "none" else item.hatch
                 cpoly = Polygon(np.column_stack([uc, vc]),
                                 edgecolor=item.linecolor,
                                 facecolor=item.facecolor,
