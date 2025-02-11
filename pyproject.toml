@@ -35,21 +35,15 @@ Repository = "https://github.com/csiro-hydroinformatics/hydrodiy"
 
 [tool.setuptools]
 ext-modules = [
-    {
-        name = "c_hydrodiy_data",
-        sources = [
+    {name = "c_hydrodiy_data", sources = [
             "src/hydrodiy/data/c_hydrodiy_data.pyx",
             "src/hydrodiy/data/c_dateutils.c",
             "src/hydrodiy/data/c_qualitycontrol.c",
             "src/hydrodiy/data/c_dutils.c",
             "src/hydrodiy/data/c_var2h.c",
             "src/hydrodiy/data/c_baseflow.c"
-        ],
-        include-dirs = ["numpy.get_include()"]
-    },
-    {
-        name = "c_hydrodiy_stat",
-        sources = [
+        ], include-dirs = ["numpy.get_include()"]},
+    {name = "c_hydrodiy_stat", sources = [
             "src/hydrodiy/stat/c_hydrodiy_stat.pyx",
             "src/hydrodiy/stat/c_crps.c",
             "src/hydrodiy/stat/c_dscore.c",
@@ -59,19 +53,13 @@ ext-modules = [
             "src/hydrodiy/stat/AnDarl.c",
             "src/hydrodiy/stat/c_andersondarling.c",
             "src/hydrodiy/stat/c_paretofront.c"
-        ],
-        include-dirs = ["numpy.get_include()"]
-    },
-    {
-        name = "c_hydrodiy_gis",
-        sources = [
+        ], include-dirs = ["numpy.get_include()"]},
+    {name = "c_hydrodiy_gis", sources = [
             "src/hydrodiy/gis/c_hydrodiy_gis.pyx",
             "src/hydrodiy/gis/c_grid.c",
             "src/hydrodiy/gis/c_catchment.c",
             "src/hydrodiy/gis/c_points_inside_polygon.c"
-        ],
-        include-dirs = ["numpy.get_include()"]
-    } 
+        ], include-dirs = ["numpy.get_include()"]}
 ]
 
 [tool.pytest.ini_options]
