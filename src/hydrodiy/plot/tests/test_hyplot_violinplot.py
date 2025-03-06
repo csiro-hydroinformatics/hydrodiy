@@ -132,6 +132,18 @@ def test_violin_missing():
     fig.savefig(fp)
 
 
+def test_violin_censored():
+    plt.close("all")
+    df = DATA1.copy()
+    df.data2 = df.data2.clip(-np.inf, df.data2.quantile(0.3))
+    df.data3 = df.data3.clip(df.data3.quantile(0.3))
+    vl = Violin(data=df)
+    fig, ax = plt.subplots()
+    vl.draw(ax=ax)
+    fp = FIMG / "violin_censored.png"
+    fig.savefig(fp)
+
+
 def test_violin_allnan():
     plt.close("all")
     df = DATA1.copy()

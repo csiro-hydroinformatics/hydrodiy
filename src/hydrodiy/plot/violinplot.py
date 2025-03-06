@@ -219,10 +219,28 @@ class Violin(object):
                 continue
 
             sen = se[notnull]
-            kernel = gaussian_kde(sen.values)
+            values = sen.values
+            x0, x1 = sen.min(), sen.max()
+
+            # reduce impact of censored data
+            ilow = np.abs(values-x0) < 1e-10
+            if ilow.sum() > 1:
+                idx = np.where(ilow)[0][1:]
+                ilow[idx] = False
+
+            ihigh = np.abs(values-x1) < 1e-10
+            if ihigh.sum() > 1:
+                idx = np.where(ihigh)[0][1:]
+                ihigh[idx] = False
+
+            irest = ~ilow & ~ihigh
+
+            selected = irest | ilow | ihigh
+
+            # Run kde estimate
+            kernel = gaussian_kde(values[selected])
 
             # blend regular spacing and ecdf spacing
-            x0, x1 = sen.min(), sen.max()
             x = np.linspace(x0, x1, (npts-len(sen)))
             err = 1e-6*np.random.uniform(-1, 1, len(sen))
             x = np.sort(np.concatenate([x, sen.values+err]))
