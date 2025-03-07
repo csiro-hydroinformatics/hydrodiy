@@ -4,6 +4,7 @@
 import numpy as np
 import pandas as pd
 from scipy.stats import gaussian_kde
+from numpy.polynomial import Chebyshev
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
@@ -32,7 +33,9 @@ class Violin(object):
                  col_ref_others="tab:blue",
                  brightening_factor_light=-0.5,
                  brightening_factor_superlight=-1.0,
-                 npoints_kde=None, **kwargs):
+                 npoints_kde=None,
+                 nresample_kde=500,
+                 **kwargs):
         """ Draw boxplots with labels and defined colors
 
         Parameters
@@ -57,6 +60,9 @@ class Violin(object):
             0.25 and 0.75 quantiles. Can use 'bfsl' abbreviation.
         npoints_kde: int
             Number points used in kde density estimation
+        nresample_kde: int
+            Number resampled data points used in kde density estimation
+            to accelerate. Ignored if number of data points is smaller.
         """
         # Check input data
         try:
@@ -68,9 +74,11 @@ class Violin(object):
 
         # initialise objects
         if npoints_kde is None:
-            self.npoints_kde = 2*len(data)
+            self.npoints_kde = max(100, min(500, len(data)))
         else:
             self.npoints_kde = int(npoints_kde)
+
+        self.nresample_kde = int(nresample_kde)
 
         self._ax = None
         self._data = data
@@ -241,10 +249,13 @@ class Violin(object):
             kernel = gaussian_kde(values[selected])
 
             # blend regular spacing and ecdf spacing
-            x = np.linspace(x0, x1, (npts-len(sen)))
-            err = 1e-6*np.random.uniform(-1, 1, len(sen))
-            x = np.sort(np.concatenate([x, sen.values+err]))
+            q = np.linspace(0, 1, npts//2)
+            err = 1e-6 * np.random.uniform(-1, 1, len(q))
+            x = np.concatenate([np.linspace(x0, x1, npts // 2),
+                                sen.quantile(q) + err])
+            x = np.sort(x)
             y = kernel(x)
+
             y = (y-y.min())/(y.max()-y.min())
             kde_x.loc[:, cn] = x
             kde_y.loc[:, cn] = y

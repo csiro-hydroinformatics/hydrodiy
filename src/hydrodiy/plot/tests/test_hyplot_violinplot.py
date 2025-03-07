@@ -1,6 +1,7 @@
 from pathlib import Path
 import os
 import math
+import time
 import pytest
 
 import numpy as np
@@ -141,6 +142,30 @@ def test_violin_censored():
     fig, ax = plt.subplots()
     vl.draw(ax=ax)
     fp = FIMG / "violin_censored.png"
+    fig.savefig(fp)
+
+
+def test_violin_large():
+    plt.close("all")
+    fig, axs = plt.subplots(ncols=2)
+
+    df = pd.DataFrame(np.random.normal(size=(100, 5)))
+    ax = axs[0]
+    t0 = time.time()
+    vl = Violin(data=df)
+    vl.draw(ax=ax)
+    delta0 = time.time() - t0
+
+    df = pd.DataFrame(np.random.normal(size=(100000, 5)))
+    ax = axs[1]
+    t1 = time.time()
+    vl = Violin(data=df)
+    vl.draw(ax=ax)
+    delta1 = time.time() - t1
+
+    assert delta1 / delta0 < 100
+
+    fp = FIMG / "violin_large.png"
     fig.savefig(fp)
 
 
