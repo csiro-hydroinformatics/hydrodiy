@@ -70,6 +70,19 @@ COLORS_SECONDARY = {
     "lightmint": "#71cc98"
     }
 
+# Colours palette recommended by Nature
+# See https://www.nature.com/articles/nmeth.1618
+COLORS_NATURE = [
+    "k",
+    rgb2hex((230./255, 159./255, 0)),
+    rgb2hex((86./255., 180./255, 233./255)),
+    rgb2hex((0., 158./255, 115./255)),
+    rgb2hex((240./255, 228./255, 66./255)),
+    rgb2hex((0., 114./255, 178./255)),
+    rgb2hex((213./255, 94./255, 0.)),
+    rgb2hex((204./255, 121./255., 167./255))
+]
+
 
 def _float(u):
     """ Function to convert object to float """
@@ -284,8 +297,11 @@ def line(ax, vx=0., vy=1., x0=0., y0=0., *args, **kwargs):
     return line
 
 
-def set_mpl(color_theme="black", font_size=18, usetex=False,
-            color_cycle=mcolors.TABLEAU_COLORS):
+def set_mpl(color_theme="black",
+            font_size=18,
+            usetex=False,
+            color_cycle=mcolors.TABLEAU_COLORS,
+            linewidth=2):
     """ Set convenient default matplotlib parameters
 
     Parameters
@@ -299,6 +315,8 @@ def set_mpl(color_theme="black", font_size=18, usetex=False,
     color_cycle : list
         List of colors to cycle through.
     """
+    # Use constrained layout by default
+    mpl.rc("figure.constrained_layout", use=True)
 
     # Latex mode
     mpl.rc("text", usetex=usetex)
@@ -308,7 +326,8 @@ def set_mpl(color_theme="black", font_size=18, usetex=False,
         mpl.rc("text.latex", preamble=preamble)
 
     # Font size
-    mpl.rc("font", size=font_size)
+    if font_size is not None:
+        mpl.rc("font", size=font_size)
 
     # Set color cycle - depends on matplotlib version
     if "axes.color_cycle" in mpl.rcParams:
@@ -325,7 +344,8 @@ def set_mpl(color_theme="black", font_size=18, usetex=False,
     mpl.rc("image", cmap="PiYG")
 
     # Ticker line width than default
-    mpl.rc("lines", linewidth=2)
+    if linewidth is not None:
+        mpl.rc("lines", linewidth=linewidth)
 
     # Set contour line style
     mpl.rc("contour", negative_linestyle="solid")
