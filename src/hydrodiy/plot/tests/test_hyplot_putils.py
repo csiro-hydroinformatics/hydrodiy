@@ -23,7 +23,7 @@ FIMG.mkdir(exist_ok=True)
 def test_color_sets():
     """ Test color sets """
     for colname in ["badgood", "terciles", "cblind", "safe", \
-                    "core", "primary", "secondary"]:
+                    "core", "primary", "secondary", "nature"]:
         cols = getattr(putils, "COLORS_{}".format(colname.upper()))
         if isinstance(cols, str):
             cols = [cols]
@@ -160,11 +160,16 @@ def test_set_mpl():
     plot(fp)
 
     mpl.rcdefaults()
-    putils.set_mpl(usetex=True)
+    putils.set_mpl(color_cycle=putils.COLORS_NATURE)
     fp = FIMG / "set_mpl4.png"
+    plot(fp)
+
+    mpl.rcdefaults()
+    putils.set_mpl(usetex=True)
+    fp = FIMG / "set_mpl5.png"
     try:
         plot(fp, True)
-    except (FileNotFoundError, RuntimeError) as err:
+    except (FileNotFoundError, ValueError, RuntimeError) as err:
         message = "Cannot process set_mpl, error = {0}".format(str(err))
         print(message)
 
