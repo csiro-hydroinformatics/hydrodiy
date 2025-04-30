@@ -51,6 +51,24 @@ def agg_d2m(x, fun="mean"):
 
 
 # Tests
+
+def test_get_value_from_kwargs(allclose):
+    kw = dict(firstarg=10, secondarg=100)
+    v = dutils.get_value_from_kwargs(kw, "firstarg")
+    assert v == 10
+    assert kw == dict(secondarg=100)
+
+    kw = dict(f=10)
+    v = dutils.get_value_from_kwargs(kw, "firstarg", "f")
+    assert v == 10
+    assert kw == dict()
+
+    kw = dict(firstarg=10)
+    v = dutils.get_value_from_kwargs(kw, "bidule", "b", 100)
+    assert v == 100
+    assert kw == dict(firstarg=10)
+
+
 def test_cast_scalar(allclose):
     """ Test scalar casts """
     x = 0.6

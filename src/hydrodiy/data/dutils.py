@@ -16,6 +16,34 @@ if has_c_module("data", False):
     import c_hydrodiy_data
 
 
+def get_value_from_kwargs(kw, fullname, shortname=None, default=None):
+    """ Extract argument from a kwargs dictionnary.
+
+    Parameters
+    ----------
+    kw : dict
+        Kwargs dictionnary.
+    fullname : str
+        Full name of the argument.
+    shortname : str
+        Abbreviated name.
+    default : obj
+        Default value.
+
+    Returns
+    -------
+    """
+    value = kw.get(fullname, kw.get(shortname, default))
+
+    if fullname in kw:
+        kw.pop(fullname)
+
+    if shortname in kw:
+        kw.pop(shortname)
+
+    return value
+
+
 def sequence_true(values):
     """ Identify start and end of consecutive "true" values.
     Can be used for gap analysis.
