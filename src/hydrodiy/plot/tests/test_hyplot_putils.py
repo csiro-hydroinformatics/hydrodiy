@@ -321,6 +321,17 @@ def test_scattercat():
     fig.savefig(fp)
 
 
+def test_scattercat_counts():
+    x, y, z = np.random.uniform(0, 1, size=(100, 3)).T
+    fig, ax = plt.subplots()
+    plotted, cats = putils.scattercat(ax, x, y, z, 5, \
+                            markersizes=np.linspace(30, 70, 5), \
+                            alphas=0.6, scl=True)
+    ax.legend(loc=2, title="categories")
+    fp = FIMG / "scattercat_counts.png"
+    fig.savefig(fp)
+
+
 def test_scattercat_nocmap():
     """ Test categorical scatter plot with no cmap"""
     x, y, z = np.random.uniform(0, 1, size=(100, 3)).T
