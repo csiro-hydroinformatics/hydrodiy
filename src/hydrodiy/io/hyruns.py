@@ -282,7 +282,7 @@ class OptionManager():
         try:
             with filename.open("w") as fo:
                 json.dump(dd, fo, indent=4)
-        except Exception as err:
+        except Exception:
             pass
 
     def from_cartesian_product(self, **kwargs):

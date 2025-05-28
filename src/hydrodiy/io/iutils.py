@@ -126,14 +126,14 @@ class StartedCompletedLogger():
         self.tab_length = tab_length
 
     def get_separator(self, nsep, sep):
-        return sep*nsep
+        return sep * nsep
 
     def add_tab(self, msg, ntab):
         if ntab == 0:
             return msg
 
-        tab_space = " "*self.tab_length*ntab
-        return tab_space+msg
+        tab_space = " " * self.tab_length * ntab
+        return tab_space + msg
 
     def error(self, msg, ntab=0, *args, **kwargs):
         msg = self.add_tab(msg, ntab)
