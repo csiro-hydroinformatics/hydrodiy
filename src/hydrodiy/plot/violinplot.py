@@ -4,7 +4,6 @@
 import numpy as np
 import pandas as pd
 from scipy.stats import gaussian_kde
-from numpy.polynomial import Chebyshev
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon

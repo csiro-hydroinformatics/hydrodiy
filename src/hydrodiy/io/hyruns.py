@@ -300,6 +300,13 @@ class OptionManager():
                          + f" an int or a string, got {type(v)}."
                 raise TypeError(errmsg)
 
+            # convert numpy to list
+            try:
+                v2 = v2.tolist()
+            except AttributeError:
+                pass
+
+            # Store options
             sk = str(k)
             self.options[sk] = v2
 

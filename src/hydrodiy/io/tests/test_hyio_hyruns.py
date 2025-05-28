@@ -311,7 +311,8 @@ def test_option_dict():
 
 def test_option_file():
     opm = hyruns.OptionManager(bidule="test")
-    opm.from_cartesian_product(v1=["a", "b"], v2=[1, 2, 3])
+    opm.from_cartesian_product(v1=pd.Series(["a", "b"]),
+                               v2=np.arange(1, 4))
 
     f = TESTS_DIR / "opm.json"
     if f.exists():

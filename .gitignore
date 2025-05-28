@@ -29,6 +29,8 @@ src/hydrodiy/gis/tests/*.cpg
 src/hydrodiy/gis/tests/*.dbf
 src/hydrodiy/gis/tests/*.shp
 src/hydrodiy/gis/tests/*.shx
+src/hydrodiy/plot/tests/images/
+src/hydrodiy/stat/tests/__pycache__/
 src/hydrodiy/io/tests/script_test*
 src/hydrodiy/gis/tests/grid_test.bil
 src/hydrodiy/data/c_hydrodiy_data.c

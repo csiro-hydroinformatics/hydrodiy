@@ -18,6 +18,7 @@ from matplotlib.colors import LinearSegmentedColormap
 import numpy as np
 import pandas as pd
 
+from hydrodiy.data.dutils import get_value_from_kwargs
 from hydrodiy.stat import sutils
 
 HAS_CYCLER = False
@@ -571,6 +572,7 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG",
                fmt="0.2f",
                eps=1e-5,
                show_extremes_in_legend=True,
+               show_counts_in_legend=False,
                *args, **kwargs):
     """ Draw a scatter plot using different colors or markersize depending
     on categories defined by z. Be careful when z has a lot of zeros,
@@ -611,7 +613,9 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG",
         Number format to be used in labels
     show_extremes_in_legend : bool
         Show lowest and highest bounds in legend. If False, report <b or b> in
-        legend.
+        legend. Can be abbreviated as 'sel'.
+    show_counts_in_legend : bool
+        Show count of categoriges in legend. Can be abbreviated as 'scl'.
     eps : float
         Tolerance on min and max value if using cuts.
     args, kwargs
@@ -633,18 +637,24 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG",
         Series containing the category number for each item
     """
     # Check inputs
-    if "m" in kwargs:
-        markers = kwargs["m"]
-        kwargs.pop("m")
+    markers = get_value_from_kwargs(kwargs, "markers", "m",
+                                    markers)
 
-    if "ms" in kwargs:
-        markersizes = kwargs["ms"]
-        kwargs.pop("ms")
+    markersizes = get_value_from_kwargs(kwargs, "markersizes",
+                                        "ms", markersizes)
 
-    if "ec" in kwargs:
-        edgecolors = kwargs["ec"]
-        kwargs.pop("ec")
+    edgecolors = get_value_from_kwargs(kwargs, "edgecolors",
+                                       "ec", edgecolors)
 
+    show_extremes_in_legend = get_value_from_kwargs(kwargs,
+                                                    "show_extremes_in_legend",
+                                                    "sel",
+                                                    show_extremes_in_legend)
+
+    show_counts_in_legend = get_value_from_kwargs(kwargs,
+                                                  "show_counts_in_legend",
+                                                  "scl",
+                                                  show_counts_in_legend)
     if not len(x) == len(y):
         errmess = "Expected x and y of same length, got "\
                   + f"len(x)={len(x)}, len(y)={len(y)}"
@@ -771,6 +781,9 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG",
             continue
 
         label = labels[icat]
+        if show_counts_in_legend:
+            label = f"{label} ({idx.sum()})"
+
         marker = markers[icat]
         markersize = markersizes[icat]
         col = colors[icat]
