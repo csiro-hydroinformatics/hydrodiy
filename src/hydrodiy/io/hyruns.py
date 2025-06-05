@@ -124,7 +124,7 @@ class OptionTask():
         elif key == "names":
             return list(self.options.keys())
         else:
-            super(self).__getattr__(key)
+            super(OptionTask, self).__getattribute__(key)
 
     def __getitem__(self, key):
         txt = "/".join(self.options.keys())
@@ -193,7 +193,7 @@ class OptionManager():
         if key in self.context:
             return self.context[key]
         else:
-            super(self).__getattr__(key)
+            super(OptionManager, self).__getattribute__(key)
 
     def __eq__(self, other):
         # Check other is an option manager
