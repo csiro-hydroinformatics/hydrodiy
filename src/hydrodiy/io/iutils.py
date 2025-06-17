@@ -113,9 +113,14 @@ class StartedCompletedLogger():
                  dictseparator_charac="+",
                  dictseparator_length=30,
                  tab_length=4):
-        errmess = "Expected a logger object"
-        assert isinstance(logger, logging.Logger), errmess
+
+        if not isinstance(logger, logging.Logger):
+            errmess = "Expected a logger object"
+            raise ValueError(errmess)
+
         self._logger = logger
+
+        self._time_start = datetime.now()
 
         self.separator_charac = separator_charac
         self.separator_length = separator_length
@@ -165,6 +170,11 @@ class StartedCompletedLogger():
         self.info("")
         self.info(self.get_separator(self.separator_charac,
                                      self.separator_length))
+        tdelta = datetime.now() - self._time_start
+        days = tdelta.days
+        hours, rem = divmod(tdelta.seconds, 3600)
+        mins, secs = divmod(rem, 60)
+        self.info(f"Execution time : {days*24 + hours}h {mins}m {secs}s")
         self.info("@@@ Process completed @@@")
 
     def log_dict(self, tolog, name="", level="info"):
