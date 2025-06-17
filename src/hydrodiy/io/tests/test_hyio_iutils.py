@@ -160,13 +160,14 @@ def test_get_logger():
 
     with open(flog2, "r") as fl:
         txt = fl.readlines()
-    expected = ["@@@ Process started @@@", \
-                    logger2.separator_charac*logger2.separator_length, \
-                        ""]+\
-                mess+\
-                ["", \
-                    logger2.separator_charac*logger2.separator_length, \
-                    "@@@ Process completed @@@"]
+    expected = ["@@@ Process started @@@",
+                logger2.separator_charac*logger2.separator_length,
+                ""] +\
+               mess +\
+               ["",
+                logger2.separator_charac*logger2.separator_length,
+                "Execution time : 0h 0m 0s",
+                "@@@ Process completed @@@"]
     assert expected == [t.strip() for t in txt]
 
     # Close log file handler and delete files
@@ -211,7 +212,8 @@ def test_get_logger_contextual():
     ck &= bool(re.search("CRITICAL . \\{ context2 \\}", txt[10]))
     ck &= bool(re.search("WARNING . \\{ context2 \\}", txt[11]))
     ck &= bool(re.search("INFO . \\{ context2 \\}             test tab3", txt[12]))
-    ck &= bool(re.search("@@@ Process completed @@@", txt[16]))
+    ck &= bool(re.search("Execution time", txt[16]))
+    ck &= bool(re.search("@@@ Process completed @@@", txt[17]))
     assert ck
 
     logger.handlers[1].close()
