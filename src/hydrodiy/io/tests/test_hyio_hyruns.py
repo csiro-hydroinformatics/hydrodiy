@@ -141,6 +141,9 @@ def test_option_manager():
         js = json.load(fo)
     assert not set(list(js.keys())) ^ set(["name", "tasks", "context", "options"])
 
+    # Ensures json tasks do not contain context
+    assert not set(js["tasks"][0].keys()) ^ set(["taskid", "options"])
+
     fout.unlink()
 
 
