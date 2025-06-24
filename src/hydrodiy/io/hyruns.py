@@ -104,7 +104,7 @@ class SiteBatch():
 class OptionTask():
     def __init__(self, taskid, context, options):
         self.taskid = taskid
-        self.context = context
+        self.context = {} if context is None else context
         self.options = options
 
     def __str__(self):
@@ -135,18 +135,20 @@ class OptionTask():
             return self.options[key]
         return self.context[key]
 
-    def to_dict(self):
+    def to_dict(self, prefix="", include_context=True):
         dd = {
             "taskid": self.taskid,
-            _DICT_KEYNAMES["context_name"]: self.context,
             _DICT_KEYNAMES["task_options_name"]: self.options
             }
+        if include_context:
+            dd[_DICT_KEYNAMES["context_name"]] = self.context
+
         return dd
 
     @classmethod
     def from_dict(cls, dd):
         return OptionTask(dd["taskid"],
-                          dd[_DICT_KEYNAMES["context_name"]],
+                          dd.get(_DICT_KEYNAMES["context_name"], None),
                           dd[_DICT_KEYNAMES["task_options_name"]])
 
     def log(self, logger):
@@ -259,21 +261,22 @@ class OptionManager():
 
         return cls.from_dict(js)
 
-    def to_dict(self):
+    def to_dict(self, prefix=""):
         dd = {
             "name": self.name,
             _DICT_KEYNAMES["context_name"]: self.context,
             _DICT_KEYNAMES["manager_options_name"]: self.options,
-            "tasks": [self.get_task(taskid).to_dict()
+            "tasks": [self.get_task(taskid).to_dict(prefix,
+                                                    include_context=False)
                       for taskid in range(self.ntasks)]
         }
         return dd
 
-    def save(self, filename, overwrite=False):
+    def save(self, filename, prefix="", overwrite=False):
         """ Save option manager to disk.
         Overwrite existing one if different.
         """
-        dd = self.to_dict()
+        dd = self.to_dict(prefix)
         filename = Path(filename)
 
         if filename.exists() and not overwrite:
