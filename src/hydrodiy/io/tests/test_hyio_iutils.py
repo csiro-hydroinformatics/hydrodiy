@@ -152,8 +152,8 @@ def test_get_logger():
                     flog=flog2)
 
     mess = ["flog2 A", "flog2 B"]
-    logger2.warning(mess[0])
-    logger2.critical(mess[1])
+    logger2.warning(mess[0], nret=2)
+    logger2.critical(mess[1], ntab=2)
     logger2.completed()
 
     assert flog2.exists()
@@ -162,7 +162,7 @@ def test_get_logger():
         txt = fl.readlines()
     expected = ["@@@ Process started @@@",
                 logger2.separator_charac*logger2.separator_length,
-                ""] +\
+                "", "", ""] +\
                mess +\
                ["",
                 logger2.separator_charac*logger2.separator_length,

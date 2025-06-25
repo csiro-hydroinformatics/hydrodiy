@@ -140,19 +140,27 @@ class StartedCompletedLogger():
         tab_space = " " * self.tab_length * ntab
         return tab_space + msg
 
-    def error(self, msg, ntab=0, *args, **kwargs):
+    def add_ret(self, nret):
+        for i in range(nret):
+            self._logger.info("")
+
+    def error(self, msg, ntab=0, nret=0, *args, **kwargs):
+        self.add_ret(nret)
         msg = self.add_tab(msg, ntab)
         return self._logger.error(msg, *args, **kwargs)
 
-    def info(self, msg, ntab=0, *args, **kwargs):
+    def info(self, msg, ntab=0, nret=0, *args, **kwargs):
+        self.add_ret(nret)
         msg = self.add_tab(msg, ntab)
         return self._logger.info(msg, *args, **kwargs)
 
-    def warning(self, msg, ntab=0, *args, **kwargs):
+    def warning(self, msg, ntab=0, nret=0, *args, **kwargs):
+        self.add_ret(nret)
         msg = self.add_tab(msg, ntab)
         return self._logger.warning(msg, *args, **kwargs)
 
-    def critical(self, msg, ntab=0, *args, **kwargs):
+    def critical(self, msg, ntab=0, nret=0, *args, **kwargs):
+        self.add_ret(nret)
         msg = self.add_tab(msg, ntab)
         return self._logger.critical(msg, *args, **kwargs)
 
@@ -236,19 +244,23 @@ class ContextualLogger(StartedCompletedLogger):
             return "{{ {0} }} {1}{2}".format(self.context, tab, msg)
         return msg
 
-    def error(self, msg, ntab=0, *args, **kwargs):
+    def error(self, msg, ntab=0, nret=0, *args, **kwargs):
+        self.add_ret(nret)
         msg = self.get_message(msg, ntab)
         return self._logger.error(msg, *args, **kwargs)
 
-    def info(self, msg, ntab=0, *args, **kwargs):
+    def info(self, msg, ntab=0, nret=0, *args, **kwargs):
+        self.add_ret(nret)
         msg = self.get_message(msg, ntab)
         return self._logger.info(msg, *args, **kwargs)
 
-    def warning(self, msg, ntab=0, *args, **kwargs):
+    def warning(self, msg, ntab=0, nret=0, *args, **kwargs):
+        self.add_ret(nret)
         msg = self.get_message(msg, ntab)
         return self._logger.warning(msg, *args, **kwargs)
 
-    def critical(self, msg, ntab=0, *args, **kwargs):
+    def critical(self, msg, ntab=0, nret=0, *args, **kwargs):
+        self.add_ret(nret)
         msg = self.get_message(msg, ntab)
         return self._logger.critical(msg, *args, **kwargs)
 
@@ -261,7 +273,7 @@ def get_logger(name, level="INFO",
                no_duplicate_handler=True,
                contextual=False,
                start_message=True,
-               date_fmt="%y-%m-%d %H:%M"):
+               date_fmt="%d %b %H:%M"):
     """ Get a logger object that can handle contextual info
 
     Parameters
