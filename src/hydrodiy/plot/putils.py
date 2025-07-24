@@ -777,12 +777,10 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG",
     for icat in icats:
         # plot config
         idx = cats == icat
-        if idx.sum() == 0:
-            continue
 
         label = labels[icat]
         if show_counts_in_legend:
-            label = f"{label} ({idx.sum()})"
+            label = f"{label}  ({idx.sum()})"
 
         marker = markers[icat]
         markersize = markersizes[icat]
@@ -794,9 +792,6 @@ def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG",
             u, v = x[idx], y[idx]
         else:
             u, v = [], []
-            warnmess = "No points falling in category "\
-                       + f"{icat} ({label})"
-            warnings.warn(warnmess)
 
         # Plot category
         sc = ax.scatter(u, v, label=label,
