@@ -398,15 +398,22 @@ def test_scattercat_cat():
 
 
 
-def test_bivarnplot():
+def test_bivarnplot(allclose):
     """ Test categorical scatter plot """
     mean = [0, 0]
     cov = [[1, 0.7], [0.7, 1]]
-    xy = np.random.multivariate_normal(mean, cov, size=100)
+    nsmp = 100000
+    xy = np.random.multivariate_normal(mean, cov, size=nsmp)
     fig, ax = plt.subplots()
-    putils.bivarnplot(ax, xy)
+
+    unorm, rho, eta, rho_p, rho_m = putils.bivarnplot(ax, xy)
+
     fp = FIMG / "bivarnplot.png"
     fig.savefig(fp)
+
+    assert allclose(rho, 0.7, 1e-2)
+    assert allclose(rho_p, eta, 1e-2)
+    assert allclose(rho_m, eta, 1e-2)
 
 
 def test_waterbalplot():
