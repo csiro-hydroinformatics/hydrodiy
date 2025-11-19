@@ -871,6 +871,8 @@ def bivarnplot(ax, xy, add_semicorr=True, namex="var 1",
     ax.set_xlabel(f"Standard normal score for {namex} [-]")
     ax.set_ylabel(f"Standard normal score for {namey} [-]")
 
+    return unorm, rho, eta, rho_p, rho_m
+
 
 def waterbalplot(ax, ncoeff=2.5):
     """ Background for the normalised P/PE vs Q/P adimensional
