@@ -401,6 +401,9 @@ def kde(xy, ngrid=50, eps=1e-10):
     if xy.shape[1] != 2:
         xy = xy.T
 
+    iok = np.all(np.isfinite(xy), axis=1)
+    xy = xy[iok]
+
     x = np.linspace(xy[:, 0].min(), xy[:, 0].max(), ngrid)
     y = np.linspace(xy[:, 1].min(), xy[:, 1].max(), ngrid)
     xx, yy = np.meshgrid(x, y)
@@ -535,10 +538,13 @@ def ecdfplot(ax, df, label_stat=None, label_stat_format="4.2f",
     lines : dict
         Dictionnary containing the line object for each column in df.
     """
-    lines = {}
+    data = {}
     for name, se in df.items():
-        values = se.sort_values().values
-        values = values[~np.isnan(values)]
+        values = se.sort_values()
+        idx = values.index
+        isok = values.notnull()
+        idx = idx[isok]
+        values = values[isok].values
 
         pp = sutils.ppos(len(values), cst=cst)
 
@@ -549,7 +555,12 @@ def ecdfplot(ax, df, label_stat=None, label_stat_format="4.2f",
                                               format=label_stat_format)
 
         ax.plot(values, pp, label=label, *args, **kwargs)
-        lines[name] = ax.get_lines()[-1]
+        data[name] = {
+            "line": ax.get_lines()[-1],
+            "index": idx,
+            "values": values,
+            "position": pp
+            }
 
     # Decorate
     ax.set_ylabel("Empirical CDF [-]")
@@ -561,7 +572,7 @@ def ecdfplot(ax, df, label_stat=None, label_stat_format="4.2f",
         ylabs[0].set_va("bottom")
         ylabs[2].set_va("top")
 
-    return lines
+    return data
 
 
 def scattercat(ax, x, y, z, ncats=5, cuts=None, cmap="PiYG",
