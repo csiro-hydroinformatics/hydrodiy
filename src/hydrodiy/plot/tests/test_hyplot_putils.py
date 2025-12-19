@@ -193,6 +193,31 @@ def test_kde():
     fig.savefig(fp)
 
 
+def test_kde_missing():
+    xy = np.random.multivariate_normal( \
+        [1, 2], [[1, 0.9], [0.9, 1]], \
+        size=1000)
+
+    miss = np.random.choice(np.arange(len(xy) * 2), 20,
+                            replace=False)
+    xy.flat[miss] = np.nan
+
+    inf = np.random.choice(np.arange(len(xy) * 2), 20,
+                            replace=False)
+    xy.flat[inf] = np.inf
+
+    xx, yy, zz = putils.kde(xy)
+
+    plt.close("all")
+    fig, ax = plt.subplots()
+    cont = ax.contourf(xx, yy, zz, cmap="Blues")
+    ax.contour(cont, colors="grey")
+    ax.plot(xy[:, 0], xy[:, 1], ".", alpha=0.2, mfc="grey", mec="none")
+    fp = FIMG / "kde_missing.png"
+    fig.savefig(fp)
+
+
+
 def test_kde_ties():
     """ Test kde generation with ties """
     xy = np.random.multivariate_normal( \
@@ -271,8 +296,8 @@ def test_ecdfplot():
 
     fig, ax = plt.subplots()
     lines = putils.ecdfplot(ax, df)
-    for nm in lines:
-        lines[nm].set_linestyle(":")
+    for vn, obj in lines.items():
+        obj["line"].set_linestyle(":")
 
     ax.legend(loc=2)
     fp = FIMG / "ecdf_plot.png"
