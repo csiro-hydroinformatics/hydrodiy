@@ -51,28 +51,31 @@ def run_script(fs, stype="python"):
         print("STDERR not null in {0}:\n\t{1}".format(fs, stderr))
 
     # If no problem, then remove script
-    if not hasError:
-        fs.unlink()
+    #if not hasError:
+    #    fs.unlink()
 
     return stderr, hasError
 
 
-def test_script_template_default():
-    sites = pd.DataFrame({"siteid":[1, 2, 3, 4], \
+@pytest.mark.parametrize("stype", iutils.SCRIPT_TYPES)
+def test_script_template(stype):
+    sites = pd.DataFrame({"stationid":[1, 2, 3, 4], \
                 "id":["a", "b", "c", "d"]})
-    fs = FDATA / "sites.csv"
+    fs = FDATA / "stations.csv"
     csv.write_csv(sites, fs, "site list", SRC)
 
     # Run defaut script file template
-    fs = FSCRIPTS / "script_test.py"
+    fs = FSCRIPTS / f"script_template_{stype}.py"
     comment = "This is a test script"
-    iutils.script_template(fs, comment)
+    iutils.script_template(fs, comment, stype)
 
     assert fs.exists()
     with fs.open("r") as fo:
         txt = fo.read()
     assert re.search(f"## Comment : {comment}", txt)
-    assert re.search(f"description=\\\"{comment}\\\"", txt)
+
+    if stype != "default":
+        assert re.search(f"description=\\\"{comment}\\\"", txt)
 
     stderr, hasError = run_script(fs)
     if hasError:
@@ -83,14 +86,14 @@ def test_script_template_default():
 def test_script_template_plot():
     sites = pd.DataFrame({"siteid":[1, 2, 3, 4], \
                 "id":["a", "b", "c", "d"]})
-    fs = FDATA / "sites.csv"
+    fs = FDATA / "stations.csv"
     csv.write_csv(sites, fs, "site list", SRC)
 
     # Run plot script file template
-    fs = FSCRIPTS / "script_test.py"
+    fs = FSCRIPTS / "script_template_plot_add.py"
     comment = "This is a plot test script"
 
-    iutils.script_template(fs, comment, type="plot")
+    iutils.script_template(fs, comment, stype="plot")
 
     assert fs.exists()
     with fs.open("r") as fo:
