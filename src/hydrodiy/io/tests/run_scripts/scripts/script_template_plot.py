@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-[COMMENT]
+## -- Script Meta Data --
+## Author  : ler015
+## Created : 2026-01-27 11:13:55.271945
+## Comment : This is a test script
+##
+## ------------------------------
+
 
 import sys
 import os
@@ -46,7 +52,7 @@ mpl.use("Agg")
 # ----------------------------------------------------------------------
 # @Config
 # ----------------------------------------------------------------------
-parser = argparse.ArgumentParser(description="[DESCRIPTION]",
+parser = argparse.ArgumentParser(description="This is a test script",
                                  formatter_class=
                                  argparse.ArgumentDefaultsHelpFormatter)
 
@@ -87,10 +93,16 @@ putils.set_mpl()
 # ----------------------------------------------------------------------
 source_file = Path(__file__).resolve()
 
-froot = [FROOT]
-fdata = [FDATA]
-fout = [FOUT]
-fimg = [FIMG]
+froot = source_file.parent.parent
+fdata = froot / "data"
+fdata.mkdir(exist_ok=True)
+
+fout = froot / "outputs"
+fout.mkdir(exist_ok=True)
+
+fimg = froot / "images"
+fimg.mkdir(exist_ok=True)
+
 
 # ------------------------------------------------------------
 # @Logging

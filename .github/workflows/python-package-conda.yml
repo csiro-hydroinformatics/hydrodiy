@@ -43,7 +43,7 @@ jobs:
           cd $GITHUB_WORKSPACE
           flake8 --exclude src/hydrodiy/data/tests src/hydrodiy/data
           flake8 --exclude src/hydrodiy/gis/tests,src/hydrodiy/gis/data src/hydrodiy/gis
-          flake8 --exclude src/hydrodiy/io/tests,src/hydrodiy/io/script_template_plot.py,src/hydrodiy/io/script_template_simple.py src/hydrodiy/io
+          flake8 --exclude src/hydrodiy/io/tests,src/hydrodiy/io/script_template_plot.py,src/hydrodiy/io/script_template_full.py,src/hydrodiy/io/script_template_default.py,src/hydrodiy/io/script_template_cmd.py src/hydrodiy/io
           flake8 --exclude src/hydrodiy/plot/tests src/hydrodiy/plot
           flake8 --exclude src/hydrodiy/stat/tests,src/hydrodiy/stat/data src/hydrodiy/stat
 

@@ -17,10 +17,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from datetime import datetime
-from dateutil.relativedelta import relativedelta as delta
-
-from hydrodiy.io import csv, iutils
+from hydrodiy.io import csv, iutils, hyruns
 
 #import importlib.util
 #spec = importlib.util.spec_from_file_location("foo", "/path/to/foo.py")
@@ -35,31 +32,25 @@ parser = argparse.ArgumentParser(description="[DESCRIPTION]",
                                  argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument("-v", "--version",
                     help="Version number",
-                    type=int, required=True)
-parser.add_argument("-s", "--sitepattern", help="Site selection pattern",
-                    type=str, default="")
-parser.add_argument("-i", "--ibatch", help="Batch process number",
-                    type=int, default=-1)
-parser.add_argument("-n", "--nbatch", help="Number of batch processes",
-                    type=int, default=7)
+                    type=str, required=True)
 parser.add_argument("-t", "--taskid", help="JobID",
                     type=int, default=-1)
-parser.add_argument("-p", "--progress", help="Show progress",
-                    action="store_true", default=False)
 parser.add_argument("-d", "--debug", help="Debug mode",
                     action="store_true", default=False)
 parser.add_argument("-o", "--overwrite", help="Overwrite data",
                     action="store_true", default=False)
+parser.add_argument("-s", "--stationpattern", help="Site selection pattern",
+                    type=str, default=".*")
 args = parser.parse_args()
 
 version = args.version
-ibatch = args.ibatch
-nbatch = args.nbatch
 taskid = args.taskid
-progress = args.progress
 overwrite = args.overwrite
 debug = args.debug
-sitepattern = args.sitepattern
+stationpattern = args.stationpattern
+
+nbatch = 4
+ibatch = -1 if debug else 0
 
 # ----------------------------------------------------------------------
 # @Folders
@@ -68,7 +59,6 @@ source_file = Path(__file__).resolve()
 froot = [FROOT]
 fdata = [FDATA]
 fout = [FOUT]
-fimg = [FIMG]
 
 # ----------------------------------------------------------------------
 # @Logging
@@ -76,34 +66,35 @@ fimg = [FIMG]
 basename = source_file.stem
 flog = froot / "logs" / f"{basename}.log"
 flog.parent.mkdir(exist_ok=True)
-LOGGER = iutils.get_logger(basename, console=False, contextual=True)
+LOGGER = iutils.get_logger(basename, console=True,
+                           flog=flog)
 LOGGER.log_dict(vars(args), "Command line arguments")
 
 # ----------------------------------------------------------------------
 # @Get data
 # ----------------------------------------------------------------------
-fs = fdata / "sites.csv"
-allsites, _ = csv.read_csv(fs, index_col="siteid")
+fs = fdata / "stations.csv"
+allstations, _ = csv.read_csv(fs, index_col="stationid",
+                              dtype={"stationid": str})
 
-# Select sites
-sites = allsites
-if not sitepattern == "":
-    idx = allsites.index.str.findall(sitepattern).astype(bool)
-    sites = allsites.loc[idx, :]
+# Select stations
+stations = allstations
+if not stationpattern == "":
+    idx = allstations.index.str.contains(stationpattern)
+    stations = allstations.loc[idx, :]
 else:
-    if ibatch>=0:
-        idx = iutils.get_ibatch(allsites.shape[0], nbatch, ibatch)
-        sites = allsites.iloc[idx, :]
+    idx = hyruns.get_batch(allstations.shape[0], nbatch, ibatch)
+    stations = allstations.iloc[idx, :]
 
 # ----------------------------------------------------------------------
 # @Process
 # ----------------------------------------------------------------------
-nsites = len(sites)
-for isite, (siteid, sinfo) in enumerate(sites.iterrows()):
+nstations = len(stations)
+for istation, (stationid, sinfo) in enumerate(stations.iterrows()):
 
-    LOGGER.context = f"{siteid} ({isite+1}/{nsites})"
+    ctxt = f"{stationid} ({istation+1}/{nstations})"
+    LOGGER.info(f"Processing {ctxt}", nret=1)
 
-    LOGGER.info("Processing")
 
 LOGGER.completed()
 

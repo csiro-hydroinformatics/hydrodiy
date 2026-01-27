@@ -9,9 +9,11 @@ from datetime import datetime
 import logging
 import stat
 
+SCRIPT_TYPES = ["default", "full", "cmd", "plot"]
+
 
 def script_template(filename, comment,
-                    type="simple",
+                    stype="default",
                     author=None,
                     fout=None, fdata=None, fimg=None):
     """ Write a script template
@@ -39,12 +41,13 @@ def script_template(filename, comment,
     >>> iutils.script_template("a_cool_script.py", "Testing",
                                "plot", "Bob Marley")
     """
-    if type not in ["simple", "plot"]:
-        errmess = f"Expected script type in [simple/plot], got {type}."
+    if stype not in SCRIPT_TYPES:
+        txt = "/".join(SCRIPT_TYPES)
+        errmess = f"Expected script type in '{txt}', got {stype}."
         raise ValueError(errmess)
 
     # Open script template
-    ftemplate = Path(__file__).resolve().parent / f"script_template_{type}.py"
+    ftemplate = Path(__file__).resolve().parent / f"script_template_{stype}.py"
     with ftemplate.open("r") as ft:
         txt = ft.read()
 
@@ -81,16 +84,22 @@ def script_template(filename, comment,
     txt = re.sub("\\[FROOT\\]", froot, txt)
 
     if fout is None:
-        fout = "froot / \"outputs\"\nfout.mkdir(exist_ok=True)\n"
+        fout = "froot / \"outputs\""
+        if stype != "cmd":
+            fout += "\nfout.mkdir(exist_ok=True)\n"
     txt = re.sub("\\[FOUT\\]", fout, txt)
 
     if fdata is None:
-        fdata = "froot / \"data\"\nfdata.mkdir(exist_ok=True)\n"
+        fdata = "froot / \"data\""
+        if stype != "cmd":
+            fdata += "\nfdata.mkdir(exist_ok=True)\n"
     txt = re.sub("\\[FDATA\\]", fdata, txt)
 
-    if type == "plot":
+    if stype == "plot":
         if fimg is None:
-            fimg = "froot / \"images\"\nfimg.mkdir(exist_ok=True)\n"
+            fimg = "froot / \"images\""
+            if stype != "cmd":
+                fimg += "\nfimg.mkdir(exist_ok=True)\n"
         txt = re.sub("\\[FIMG\\]", fimg, txt)
     else:
         txt = re.sub("fimg = \\[FIMG\\]", "", txt)
