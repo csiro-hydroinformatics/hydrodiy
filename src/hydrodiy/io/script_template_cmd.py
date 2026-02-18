@@ -26,7 +26,7 @@ from hydrodiy.io import csv, iutils, hyruns
 #spec.loader.exec_module(foo)
 
 
-def get_script_paths(debug, create):
+def get_script_paths(config):
     source_file = Path(__file__).resolve()
     froot = [FROOT]
     fdata = [FDATA]
@@ -40,16 +40,15 @@ def get_script_paths(debug, create):
                     ["source_file", "froot", "fdata", "fout", "flogs"])
     script_paths = SP(source_file, froot, fdata, fout, flogs)
 
-    if create:
-        for pa in script_paths:
-            if pa.is_file():
-                continue
-            pa.mkdir(exist_ok=True)
+    for pa in script_paths:
+        if pa.is_file():
+            continue
+        pa.mkdir(exist_ok=True)
 
     return script_paths
 
 
-def get_logger(script_paths):
+def get_logger(config, script_paths):
     basename = script_paths.source_file.stem
     fl = script_paths.flogs / f"{basename}.log"
     logger = iutils.get_logger(basename, flog=fl, console=True)
@@ -58,7 +57,7 @@ def get_logger(script_paths):
     return logger
 
 
-def get_data(script_paths, logger, nbatch, ibatch, sitepattern):
+def get_data(config, script_paths, logger):
     fs = script_paths.fdata / "stations.csv"
     allstations, _ = csv.read_csv(fs, index_col="stationid",
                                   dtype={"stationid": str})
@@ -66,10 +65,12 @@ def get_data(script_paths, logger, nbatch, ibatch, sitepattern):
     # Select stations
     stations = allstations
     if ibatch < 0:
-        idx = allstations.index.str.contains(sitepattern)
+        idx = allstations.index.str.contains(config.sitepattern)
         stations = allstations.loc[idx, :]
     else:
-        idx = hyruns.get_batch(allstations.shape[0], nbatch, ibatch)
+        idx = hyruns.get_batch(allstations.shape[0],
+                               config.nbatch,
+                               config.ibatch)
         stations = allstations.iloc[idx, :]
 
     nstations = len(stations)
@@ -80,9 +81,9 @@ def get_data(script_paths, logger, nbatch, ibatch, sitepattern):
     return data
 
 
-def process(debug, script_paths, logger, data):
+def process(config, script_paths, logger, data):
     nstations = len(data.stations)
-    logger.info(f"Start processing - Debug={debug}", nret=1)
+    logger.info(f"Start processing - Debug={config.debug}", nret=1)
 
     for isite, (stationid, sinfo) in enumerate(data.stations.iterrows()):
         ctxt = f"{stationid} ({isite+1}/{nstations})"
@@ -113,17 +114,24 @@ if __name__ == "__main__":
     debug = args.debug
     sitepattern = args.sitepattern
 
-    # Baseline
-    create = True
-    script_paths = get_script_paths(debug, create)
-    logger = get_logger(script_paths)
+    clear = False
+    nbatch = 1
+    ibatch = 0
 
-    # Data
-    nbatch = 4
-    ibatch = -1 if debug else taskid
-    data = get_data(script_paths, logger, nbatch, ibatch, sitepattern)
+    CF = namedtuple("Config",
+                    ["version", "taskid",
+                     "overwrite", "debug",
+                     "sitepattern", "clear",
+                     "nbatch", "ibatch"])
+    config = CF(version, taskid, overwrite, debug,
+                sitepattern, clear, nbatch, ibatch)
+
+    # Get data
+    script_paths = get_script_paths(config)
+    logger = get_logger(config, script_paths)
+    data = get_data(config, script_paths, logger)
 
     # Process
-    process(debug, script_paths, logger, data)
+    process(config, script_paths, logger, data)
 
     logger.completed()
