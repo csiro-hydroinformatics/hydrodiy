@@ -26,39 +26,49 @@ from hydrodiy.io import csv, iutils, hyruns
 #spec.loader.exec_module(foo)
 
 
-def get_script_paths(debug, create):
+def get_script_paths(config):
     source_file = Path(__file__).resolve()
     froot = [FROOT]
     fdata = [FDATA]
     fout = [FOUT]
-    flogs = froot / "logs"
+    flogs = froot / "logs" / source_file.stem
 
-    if debug:
+    if config.debug:
         fout = flogs / fout.stem
 
-    SP = namedtuple("ScriptPaths",
-                    ["source_file", "froot", "fdata", "fout", "flogs"])
-    script_paths = SP(source_file, froot, fdata, fout, flogs)
+    ScriptPaths = namedtuple("ScriptPaths",
+                             ["source_file", "basename",
+                              "froot", "fdata", "fout", "flogs"])
+    script_paths = ScriptPaths(source_file, source_file.stem,
+                               froot, fdata, fout, flogs)
+    if config.create_folders:
+        flogs.mkdir(exist_ok=True, parents=True)
 
-    if create:
-        for pa in script_paths:
-            if pa.is_file():
-                continue
-            pa.mkdir(exist_ok=True)
+        fout.mkdir(exist_ok=True, parents=True)
+
+        # Clean output folder if needed
+        cext = config.clean_folders_extension
+        if cext != "":
+            for f in fout.glob("*." + cext):
+                f.unlink()
 
     return script_paths
 
 
-def get_logger(script_paths):
-    basename = script_paths.source_file.stem
+def get_logger(config, script_paths):
+    basename = script_paths.basename
     fl = script_paths.flogs / f"{basename}.log"
     logger = iutils.get_logger(basename, flog=fl, console=True)
-    logger.log_dict(vars(args), "Command line arguments")
-    logger.started()
+
+    logger.info("Config:", nret=1)
+    for name, value in config._asdict().items():
+        logger.info(f"{name}: {value}", ntab=1)
+    logger.info("", nret=1)
+
     return logger
 
 
-def get_data(script_paths, logger, nbatch, ibatch, sitepattern):
+def get_data(config, script_paths, logger):
     fs = script_paths.fdata / "stations.csv"
     allstations, _ = csv.read_csv(fs, index_col="stationid",
                                   dtype={"stationid": str})
@@ -73,16 +83,16 @@ def get_data(script_paths, logger, nbatch, ibatch, sitepattern):
         stations = allstations.iloc[idx, :]
 
     nstations = len(stations)
-    logger.info(f"Dealing with {nstations} stations.")
+    logger.info(f"Found {nstations} stations.")
 
     data = namedtuple("Data", ["stations"])(stations)
 
     return data
 
 
-def process(debug, script_paths, logger, data):
+def process(config, script_paths, logger, data):
     nstations = len(data.stations)
-    logger.info(f"Start processing - Debug={debug}", nret=1)
+    logger.info(f"Start processing", nret=1)
 
     for isite, (stationid, sinfo) in enumerate(data.stations.iterrows()):
         ctxt = f"{stationid} ({isite+1}/{nstations})"
@@ -112,18 +122,29 @@ if __name__ == "__main__":
     overwrite = args.overwrite
     debug = args.debug
     sitepattern = args.sitepattern
-
-    # Baseline
-    create = True
-    script_paths = get_script_paths(debug, create)
-    logger = get_logger(script_paths)
-
-    # Data
     nbatch = 4
     ibatch = -1 if debug else taskid
-    data = get_data(script_paths, logger, nbatch, ibatch, sitepattern)
+    create_folders = True
+    clean_folders_extension = ""
+
+    Config = namedtuple("Config",
+                        ["version", "taskid", "overwrite",
+                         "debug", "create_folders",
+                         "clean_folders_extension",
+                         "sitepattern", "nbatch", "ibatch"])
+    config = Config(version, taskid, overwrite,
+                    debug, create_folders,
+                    clean_folders_extension,
+                    sitepattern, nbatch, ibatch)
+
+    # Baseline
+    script_paths = get_script_paths(config)
+    logger = get_logger(config, script_paths)
+
+    # Data
+    data = get_data(config, script_paths, logger)
 
     # Process
-    process(debug, script_paths, logger, data)
+    process(config, script_paths, logger, data)
 
     logger.completed()
