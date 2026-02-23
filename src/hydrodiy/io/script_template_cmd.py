@@ -76,10 +76,12 @@ def get_data(config, script_paths, logger):
     # Select stations
     stations = allstations
     if ibatch < 0:
-        idx = allstations.index.str.contains(sitepattern)
+        idx = allstations.index.str.contains(config.sitepattern)
         stations = allstations.loc[idx, :]
     else:
-        idx = hyruns.get_batch(allstations.shape[0], nbatch, ibatch)
+        idx = hyruns.get_batch(allstations.shape[0],
+                               config.nbatch,
+                               config.ibatch)
         stations = allstations.iloc[idx, :]
 
     nstations = len(stations)
