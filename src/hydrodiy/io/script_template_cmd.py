@@ -59,10 +59,7 @@ def get_logger(config, script_paths):
     basename = script_paths.basename
     fl = script_paths.flogs / f"{basename}.log"
     logger = iutils.get_logger(basename, flog=fl, console=True)
-
-    logger.info("Config:", nret=1)
-    for name, value in config._asdict().items():
-        logger.info(f"{name}: {value}", ntab=1)
+    logger.log_dict(config._asdict())
     logger.info("", nret=1)
 
     return logger
