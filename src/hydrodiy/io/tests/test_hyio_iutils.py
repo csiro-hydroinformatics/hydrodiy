@@ -21,7 +21,9 @@ SRC = Path(__file__).resolve()
 FTEST = SRC.parent
 FRUN = FTEST / "run_scripts"
 FDATA = FRUN / "data"
+FLOGS = FRUN / "logs"
 FSCRIPTS = FRUN / "scripts"
+
 for f in [FRUN, FDATA, FSCRIPTS]:
     f.mkdir(exist_ok=True)
 
@@ -50,15 +52,25 @@ def run_script(fs, stype="python"):
     if hasError:
         print("STDERR not null in {0}:\n\t{1}".format(fs, stderr))
 
-    # If no problem, then remove script
-    #if not hasError:
-    #    fs.unlink()
-
     return stderr, hasError
+
+def clean_script():
+    for f in FDATA.glob("*.csv"):
+        f.unlink()
+
+    for f in FSCRIPTS.glob("*.py"):
+        f.unlink()
+
+    for f in FLOGS.glob("*"):
+        for ff in f.glob("*"):
+            ff.unlink()
+        f.rmdir()
 
 
 @pytest.mark.parametrize("stype", iutils.SCRIPT_TYPES)
 def test_script_template(stype):
+    clean_script()
+
     sites = pd.DataFrame({"stationid":[1, 2, 3, 4], \
                 "id":["a", "b", "c", "d"]})
     fs = FDATA / "stations.csv"
@@ -74,35 +86,17 @@ def test_script_template(stype):
         txt = fo.read()
     assert re.search(f"## Comment : {comment}", txt)
 
-    if stype != "default":
+    if stype != "minimal":
         assert re.search(f"description=\\\"{comment}\\\"", txt)
 
     stderr, hasError = run_script(fs)
+
     if hasError:
         print(stderr)
     assert not hasError
 
-
-def test_script_template_plot():
-    sites = pd.DataFrame({"siteid":[1, 2, 3, 4], \
-                "id":["a", "b", "c", "d"]})
-    fs = FDATA / "stations.csv"
-    csv.write_csv(sites, fs, "site list", SRC)
-
-    # Run plot script file template
-    fs = FSCRIPTS / "script_template_plot_add.py"
-    comment = "This is a plot test script"
-
-    iutils.script_template(fs, comment, stype="plot")
-
-    assert fs.exists()
-    with fs.open("r") as fo:
-        txt = fo.read()
-    assert re.search(f"## Comment : {comment}", txt)
-    assert re.search(f"description=\\\"{comment}\\\"", txt)
-
-    stderr, hasError = run_script(fs)
-    assert not hasError
+    if stype != "minimal":
+        assert (FLOGS / fs.stem / f"{fs.stem}.log").exists()
 
 
 def test_get_logger():
