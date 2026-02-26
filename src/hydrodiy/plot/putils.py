@@ -374,7 +374,7 @@ def set_mpl(color_theme="black",
             mpl.rc("savefig", transparent=True)
 
 
-def kde(xy, ngrid=50, eps=1e-10):
+def kde(xy, ngrid=50, eps=1e-10, buffer_proportion=0.05):
     """ Interpolate a 2d pdf from a set of x/y data points using
     a Gaussian KDE. The outputs can be used to plot the pdf
     with something like matplotlib.Axes.contourf
@@ -388,6 +388,9 @@ def kde(xy, ngrid=50, eps=1e-10):
     eps : float
         Random error added to avoid singular matrix error
         when x or y have ties.
+    buffer_proportion : float
+        Buffer addded to extend the domain boundaries
+        beyond the data limits.
 
     Returns
     -----------
@@ -404,8 +407,18 @@ def kde(xy, ngrid=50, eps=1e-10):
     iok = np.all(np.isfinite(xy), axis=1)
     xy = xy[iok]
 
-    x = np.linspace(xy[:, 0].min(), xy[:, 0].max(), ngrid)
-    y = np.linspace(xy[:, 1].min(), xy[:, 1].max(), ngrid)
+    x0 = np.nanmin(xy[:, 0])
+    x1 = np.nanmax(xy[:, 0])
+    dx = (x1 - x0) * buffer_proportion
+    x0, x1 = x0 - dx, x1 + dx
+    x = np.linspace(x0, x1, ngrid)
+
+    y0 = np.nanmin(xy[:, 1])
+    y1 = np.nanmax(xy[:, 1])
+    dy = (y1 - y0) * buffer_proportion
+    y0, y1 = y0 - dy, y1 + dy
+    y = np.linspace(y0, y1, ngrid)
+
     xx, yy = np.meshgrid(x, y)
 
     if eps > 0.:
