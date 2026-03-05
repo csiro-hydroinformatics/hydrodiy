@@ -31,29 +31,37 @@ def get_script_paths(config):
     froot = [FROOT]
     fdata = [FDATA]
     fout = [FOUT]
-    flogs = froot / "logs"
+    flogs = froot / "logs" / source_file.stem
 
-    if debug:
+    if config.debug:
         fout = flogs / fout.stem
 
-    SP = namedtuple("ScriptPaths",
-                    ["source_file", "froot", "fdata", "fout", "flogs"])
-    script_paths = SP(source_file, froot, fdata, fout, flogs)
+    ScriptPaths = namedtuple("ScriptPaths",
+                             ["source_file", "basename",
+                              "froot", "fdata", "fout", "flogs"])
+    script_paths = ScriptPaths(source_file, source_file.stem,
+                               froot, fdata, fout, flogs)
+    if config.create_folders:
+        flogs.mkdir(exist_ok=True, parents=True)
 
-    for pa in script_paths:
-        if pa.is_file():
-            continue
-        pa.mkdir(exist_ok=True)
+        fout.mkdir(exist_ok=True, parents=True)
+
+        # Clean output folder if needed
+        cext = config.clean_folders_extension
+        if cext != "":
+            for f in fout.glob("*." + cext):
+                f.unlink()
 
     return script_paths
 
 
 def get_logger(config, script_paths):
-    basename = script_paths.source_file.stem
+    basename = script_paths.basename
     fl = script_paths.flogs / f"{basename}.log"
     logger = iutils.get_logger(basename, flog=fl, console=True)
-    logger.log_dict(vars(args), "Command line arguments")
-    logger.started()
+    logger.log_dict(config._asdict(), "Configuration")
+    logger.info("", nret=1)
+
     return logger
 
 
@@ -74,7 +82,7 @@ def get_data(config, script_paths, logger):
         stations = allstations.iloc[idx, :]
 
     nstations = len(stations)
-    logger.info(f"Dealing with {nstations} stations.")
+    logger.info(f"Found {nstations} stations.")
 
     data = namedtuple("Data", ["stations"])(stations)
 
@@ -83,7 +91,7 @@ def get_data(config, script_paths, logger):
 
 def process(config, script_paths, logger, data):
     nstations = len(data.stations)
-    logger.info(f"Start processing - Debug={config.debug}", nret=1)
+    logger.info(f"Start processing", nret=1)
 
     for isite, (stationid, sinfo) in enumerate(data.stations.iterrows()):
         ctxt = f"{stationid} ({isite+1}/{nstations})"
@@ -113,22 +121,26 @@ if __name__ == "__main__":
     overwrite = args.overwrite
     debug = args.debug
     sitepattern = args.sitepattern
+    nbatch = 4
+    ibatch = -1 if debug else taskid
+    create_folders = True
+    clean_folders_extension = ""
 
-    clear = False
-    nbatch = 1
-    ibatch = 0
+    Config = namedtuple("Config",
+                        ["version", "taskid", "overwrite",
+                         "debug", "create_folders",
+                         "clean_folders_extension",
+                         "sitepattern", "nbatch", "ibatch"])
+    config = Config(version, taskid, overwrite,
+                    debug, create_folders,
+                    clean_folders_extension,
+                    sitepattern, nbatch, ibatch)
 
-    CF = namedtuple("Config",
-                    ["version", "taskid",
-                     "overwrite", "debug",
-                     "sitepattern", "clear",
-                     "nbatch", "ibatch"])
-    config = CF(version, taskid, overwrite, debug,
-                sitepattern, clear, nbatch, ibatch)
-
-    # Get data
+    # Baseline
     script_paths = get_script_paths(config)
     logger = get_logger(config, script_paths)
+
+    # Data
     data = get_data(config, script_paths, logger)
 
     # Process

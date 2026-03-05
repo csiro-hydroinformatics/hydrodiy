@@ -9,11 +9,11 @@ from datetime import datetime
 import logging
 import stat
 
-SCRIPT_TYPES = ["default", "full", "cmd", "plot"]
+SCRIPT_TYPES = ["minimal", "cmd", "plot"]
 
 
 def script_template(filename, comment,
-                    stype="default",
+                    stype="cmd",
                     author=None,
                     fout=None, fdata=None, fimg=None):
     """ Write a script template
@@ -85,21 +85,15 @@ def script_template(filename, comment,
 
     if fout is None:
         fout = "froot / \"outputs\""
-        if stype != "cmd":
-            fout += "\nfout.mkdir(exist_ok=True)\n"
     txt = re.sub("\\[FOUT\\]", fout, txt)
 
     if fdata is None:
         fdata = "froot / \"data\""
-        if stype != "cmd":
-            fdata += "\nfdata.mkdir(exist_ok=True)\n"
     txt = re.sub("\\[FDATA\\]", fdata, txt)
 
     if stype == "plot":
         if fimg is None:
             fimg = "froot / \"images\""
-            if stype != "cmd":
-                fimg += "\nfimg.mkdir(exist_ok=True)\n"
         txt = re.sub("\\[FIMG\\]", fimg, txt)
     else:
         txt = re.sub("fimg = \\[FIMG\\]", "", txt)

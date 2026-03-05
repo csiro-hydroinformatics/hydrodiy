@@ -9,19 +9,16 @@ import re
 import json
 import math
 import argparse
+from datetime import datetime
 from pathlib import Path
+from collections import namedtuple
 
 #import warnings
 #warnings.filterwarnings("ignore")
 
-from datetime import datetime
-
-from dateutil.relativedelta import relativedelta as delta
-from string import ascii_lowercase as letters
-from calendar import month_abbr as months
-
 import numpy as np
 import pandas as pd
+from string import ascii_lowercase as letters
 
 import matplotlib as mpl
 
@@ -35,148 +32,191 @@ from hydrodiy.plot import putils
 import pyproj
 from hydrodiy.gis.oz import ozlayer
 
-# Code to facilitate import of a "utils" package
-#import utils
-#import importlib
-#importlib.reload(utils)
+from hydrodiy.io import csv, iutils, hyruns
+
+#import importlib.util
+#spec = importlib.util.spec_from_file_location("foo", "/path/to/foo.py")
+#foo = importlib.util.module_from_spec(spec)
+#spec.loader.exec_module(foo)
 
 # Select backend
 mpl.use("Agg")
 
-# ----------------------------------------------------------------------
-# @Config
-# ----------------------------------------------------------------------
-parser = argparse.ArgumentParser(description="[DESCRIPTION]",
-                                 formatter_class=
-                                 argparse.ArgumentDefaultsHelpFormatter)
 
-parser.add_argument("-v", "--version",
-                    help="Version number",
-                    type=int, required=True)
-parser.add_argument("-e", "--extension", help="Image file extension",
-                    type=str, default="png")
-#parser.add_argument("-p", "--projection",
-#                    help="Spatial projection (GDA94=3112, WGS84=4326)",
-#                    type=int, default=3112)
-args = parser.parse_args()
+def get_script_paths(config):
+    source_file = Path(__file__).resolve()
+    froot = [FROOT]
+    fdata = [FDATA]
+    fimg = [FIMG]
+    flogs = froot / "logs" / source_file.stem
 
-version = args.version
+    if config.debug:
+        fimg = flogs / source_file.stem
 
-# Image file extension
-imgext = args.extension
+    ScriptPaths = namedtuple("ScriptPaths",
+                             ["source_file", "basename",
+                              "froot", "fdata", "fimg", "flogs"])
+    script_paths = ScriptPaths(source_file, source_file.stem,
+                               froot, fdata, fimg, flogs)
 
-# Plot dimensions
-fnrows = 2
-fncols = 2
-fdpi = 120
-awidth = 8
-aheight = 8
+    if config.create_folders:
+        flogs.mkdir(exist_ok=True, parents=True)
+        fimg.mkdir(exist_ok=True, parents=True)
 
-# Figure transparency
-ftransparent = False
+        cext = config.clean_folders_extension
+        if cext != "":
+            for f in fimg.glob("*." + cext):
+                f.unlink()
 
-# Set matplotlib options
-#mpl.rcdefaults() # to reset
-putils.set_mpl()
+    return script_paths
 
-# Manage projection
-#proj = pyproj.Proj("+init=EPSG:{0}".format(args.projection))
-#
-# ----------------------------------------------------------------------
-# @Folders
-# ----------------------------------------------------------------------
-source_file = Path(__file__).resolve()
 
-froot = [FROOT]
-fdata = [FDATA]
-fout = [FOUT]
-fimg = [FIMG]
+def get_logger(config, script_paths):
+    basename = script_paths.basename
+    fl = script_paths.flogs / f"{basename}.log"
+    logger = iutils.get_logger(basename, flog=fl, console=True)
+    logger.log_dict(config._asdict(), "Configuration")
+    logger.info("", nret=1)
 
-# ------------------------------------------------------------
-# @Logging
-# ------------------------------------------------------------
-basename = source_file.stem
-LOGGER = iutils.get_logger(basename)
-LOGGER.log_dict(vars(args), "Command line arguments")
+    return logger
 
-# ------------------------------------------------------------
-# @Get data
-# ------------------------------------------------------------
-#fd = "%s/data.csv" % FDATA
-#data, comment = csv.read_csv(fd)
 
-stations = pd.DataFrame(np.random.uniform(size=(30, 5)))
+def get_data(config, script_paths, logger):
+    fs = script_paths.fdata / "stations.csv"
+    stations, _ = csv.read_csv(fs, index_col="stationid",
+                                  dtype={"stationid": str})
+    nstations = len(stations)
+    logger.info(f"Found {nstations} stations.")
 
-mess = "{0} stations found".format(stations.shape[0])
-LOGGER.info(mess, nret=1)
+    data = namedtuple("Data", ["stations"])(stations)
 
-# ------------------------------------------------------------
-# @Plot
-# ------------------------------------------------------------
+    return data
 
-# To use multipage pdf
-#fpdf = fimg / "images.pdf"
-#pdf = PdfPages(fpdf)
 
-plt.close("all")
+def process(config, script_paths, logger, data):
+    nstations = len(data.stations)
+    fimg = script_paths.fimg
 
-# Create figure
-figsize = (awidth*fncols, aheight*fnrows)
-fig = plt.figure(constrained_layout=True,
-                 figsize=figsize)
+    logger.info(f"Start plotting", nret=1)
 
-# Create mosaic with named axes
-mosaic = [[f"F{fncols*i+j}" for j in range(fncols)] for i in range(fnrows)]
-gw = dict(height_ratios=[1]*fnrows, width_ratios=[1]*fncols)
-axs = fig.subplot_mosaic(mosaic, gridspec_kw=gw)
+    # To use multipage pdf
+    #fpdf = fimg / "images.pdf"
+    #pdf = PdfPages(fpdf)
 
-nval = 10
-LOGGER.info("Drawing plot")
+    plt.close("all")
 
-for name, ax in axs.items():
-    # Retrieve column and row numbers
-    iplot = int(name[1:])
-    icol = iplot % fncols
-    irow = iplot // fncols
+    # Create figure
+    fncols, fnrows = config.fncols, config.fnrows
+    awidth, aheight = config.awidth, config.aheight
+    figsize = (awidth*fncols, aheight*fnrows)
+    fig = plt.figure(constrained_layout=True,
+                     figsize=figsize)
 
-    # Get data
-    x = pd.date_range("2001-01-01", freq="MS", periods=nval)
-    x = x.to_pydatetime()
-    y = np.random.uniform(size=nval)
+    # Create mosaic with named axes
+    mosaic = [[f"F{fncols*i+j}" for j in range(fncols)] for i in range(fnrows)]
+    gw = dict(height_ratios=[1]*fnrows, width_ratios=[1]*fncols)
+    axs = fig.subplot_mosaic(mosaic, gridspec_kw=gw)
 
-    # Scatter plot
-    ax.plot(x, y, "o",
-            markersize=10,
-            mec="black",
-            mfc="pink",
-            alpha=0.5,
-            label="points")
+    nval = 10
+    logger.info("Drawing plot")
 
-    # Spatial
-    #ozlayer(ax, "ozcoast50m")
+    for name, ax in axs.items():
+        # Retrieve column and row numbers
+        iplot = int(name[1:])
+        icol = iplot % fncols
+        irow = iplot // fncols
 
-    # Decoration
-    ax.legend(shadow=True, framealpha=0.7)
+        # Get data
+        x = pd.date_range("2001-01-01", freq="MS", periods=nval)
+        x = x.to_pydatetime()
+        y = np.random.uniform(size=nval)
 
-    # Axis
-    title = f"{name}: Row {irow} / Column {icol}"
-    ax.set_title(title)
-    ax.set_xlabel("X label")
-    ax.set_xlabel("Y label")
+        # Scatter plot
+        ax.plot(x, y, "o",
+                markersize=10,
+                mec="black",
+                mfc="pink",
+                alpha=0.5,
+                label="points")
 
-fig.suptitle("Overall title")
+        # Spatial
+        #ozlayer(ax, "ozcoast50m")
 
-# Footer
-label = f"Generated: {datetime.now().strftime('%H:%M %d/%m/%Y')}"
-fig.text(0.05, 0.010, label, color="#595959", ha="left", fontsize=9)
+        # Decoration
+        ax.legend(shadow=True, framealpha=0.7)
 
-# Save file
-fp = fimg / f"image.{imgext}"
-fig.savefig(fp, dpi=fdpi, transparent=ftransparent)
-putils.blackwhite(fp)
+        # Axis
+        title = f"{name}: Row {irow} / Column {icol}"
+        ax.set_title(title)
+        ax.set_xlabel("X label")
+        ax.set_xlabel("Y label")
 
-# To save to pdf
-#pdf.savefig(fig)
-#pdf.close()
+    fig.suptitle("Overall title")
 
-LOGGER.completed()
+    # Footer
+    label = f"Generated: {datetime.now().strftime('%H:%M %d/%m/%Y')}"
+    fig.text(0.05, 0.010, label, color="#595959", ha="left", fontsize=9)
+
+    # Save file
+    fp = fimg / f"image.{config.imgext}"
+    fig.savefig(fp, dpi=fdpi, transparent=ftransparent)
+    putils.blackwhite(fp)
+
+    # To save to pdf
+    #pdf.savefig(fig)
+    #pdf.close()
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="[DESCRIPTION]",
+                                     formatter_class=
+                                     argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("-v", "--version",
+                        help="Version number",
+                        type=str, required=True)
+    parser.add_argument("-t", "--taskid", help="JobID",
+                        type=int, default=-1)
+    parser.add_argument("-d", "--debug", help="Debug mode",
+                        action="store_true", default=False)
+    parser.add_argument("-o", "--overwrite", help="Overwrite data",
+                        action="store_true", default=False)
+    parser.add_argument("-s", "--sitepattern", help="Site selection pattern",
+                        type=str, default=".*")
+    args = parser.parse_args()
+
+    # Config
+    version = args.version
+    debug = args.debug
+    imgext = "png"
+    fnrows = 2
+    fncols = 2
+    fdpi = 120
+    awidth = 8
+    aheight = 8
+    ftransparent = False
+    create_folders = True
+    clean_folders_extension = imgext
+
+    Config = namedtuple("Config",
+                        ["version", "debug", "imgext",
+                         "fnrows", "fncols", "fdpi",
+                         "awidth", "aheight", "ftransparent",
+                         "create_folders",
+                         "clean_folders_extension"])
+    config = Config(version, debug, imgext,
+                    fnrows, fncols, fdpi,
+                    awidth, aheight, ftransparent,
+                    create_folders,
+                    clean_folders_extension)
+
+    # Baseline
+    script_paths = get_script_paths(config)
+    logger = get_logger(config, script_paths)
+
+    # Data
+    data = get_data(config, script_paths, logger)
+
+    # Process
+    process(config, script_paths, logger, data)
+
+    logger.completed()
