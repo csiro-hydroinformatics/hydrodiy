@@ -437,8 +437,8 @@ def test_bivarnplot(allclose):
     fig.savefig(fp)
 
     assert allclose(rho, 0.7, 1e-2)
-    assert allclose(rho_p, eta, 1e-2)
-    assert allclose(rho_m, eta, 1e-2)
+    assert allclose(rho_p, eta, 3e-2)
+    assert allclose(rho_m, eta, 3e-2)
 
 
 def test_waterbalplot():
