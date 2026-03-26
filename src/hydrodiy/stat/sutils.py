@@ -282,7 +282,7 @@ def semicorr(unorm):
     return rho, eta, rho_p, rho_m
 
 
-def pareto_front(data, orientation=1):
+def multivariate_dominance(data, orientation=1, printlog=False):
     """ Identify the non-dominated points in a multi-dimensional data set.
 
     Parameters
@@ -293,23 +293,27 @@ def pareto_front(data, orientation=1):
         Orientation of the metric:
         +1 : positively oriented (i.e. higher is better)
         -1 : negatively oriented (i.e. lower is better)
+    printlog : bool
+        Print log during computation or not.
 
     Returns
     -----------
-    is_dominated : numpy.ndarray
-        Integer array indicating if the point is dominated (=1)
-        or not (=0).
+    ndominating : numpy.ndarray
+        Integer array counting the number of points the current
+        point is dominating. A value of 0 means that the current
+        point does not dominate any other points.
 
     Example
     -----------
     >>> nval, ncol = 100, 3
     >>> data = np.random.normal(size=(nval, 3))
-    >>> sutils.pareto_front(data)
+    >>> sutils.multivariate_dominance(data)
     """
     has_c_module("stat")
 
     orientation = np.int32(orientation)
     data = data.astype(np.float64)
+    printlog = np.int32(printlog)
 
     if data.ndim != 2:
         error_msg = "Expected data to be a 2 dimensional array,"\
@@ -321,15 +325,17 @@ def pareto_front(data, orientation=1):
         data = np.ascontiguousarray(data)
 
     # initialise outputs
-    isdominated = np.zeros(data.shape[0]).astype(np.int32)
+    ndominating = np.zeros(data.shape[0]).astype(np.int32)
 
     # Run model
-    ierr = c_hydrodiy_stat.pareto_front(orientation, data,
-                                        isdominated)
+    ierr = c_hydrodiy_stat.multivariate_dominance(orientation,
+                                                  printlog,
+                                                  data,
+                                                  ndominating)
     if ierr != 0:
-        raise ValueError(f"c_hydrodiy_stat.pareto_front {ierr}")
+        raise ValueError(f"c_hydrodiy_stat.multivariate_dominance {ierr}")
 
-    return isdominated
+    return ndominating
 
 
 def lstsq(X, y, add_intercept=False, Rtest=None, rtest=None, rcond=1e-4):
