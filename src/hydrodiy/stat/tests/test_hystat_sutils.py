@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 import numpy as np
 from itertools import product as prod
+import time
 
 from scipy.special import kolmogorov
 from scipy.linalg import toeplitz
@@ -213,15 +214,50 @@ def test_semicorr(allclose):
     assert allclose(rho_m, 0.311, atol=5e-2)
 
 
-def test_pareto_front(allclose):
-    """ Test pareto front """
+@pytest.mark.parametrize("repeat", np.arange(5))
+def test_multivariate_dominance(repeat, allclose):
     if not has_c_module("stat", False):
         pytest.skip("Missing C module c_hydrodiy_stat")
 
-    for nval, ncol in prod([20, 200], [2, 5]):
+    nsamples = 10000
+    print(f"\n\n[Repeat {repeat}] multivariate dominance timing")
+    for ncols in [5, 10, 20]:
+        x = np.random.normal(size=(nsamples, ncols))
+
+        # C code
+        t1 = -time.time()
+        ndominating = sutils.multivariate_dominance(x)
+        t1 += time.time()
+
+        # Numpy code
+        expected = np.zeros_like(ndominating)
+        buf = np.empty(x.shape, dtype=int)
+        t2 = -time.time()
+        for i in range(nsamples):
+            np.greater(x[[i]], x, out=buf)
+            expected[i] = np.all(buf, axis=1).sum()
+        t2 += time.time()
+
+        assert allclose(expected, ndominating)
+        assert t1 < t2 / 3
+        print(f"ncols = {ncols:3d} : deltaC={t1:4.1f}s deltaN={t2:4.1f}s")
+
+    print("\n")
+
+
+def test_pareto_front(allclose):
+    if not has_c_module("stat", False):
+        pytest.skip("Missing C module c_hydrodiy_stat")
+
+    for nval, ncol in prod([20, 200], [5, 2]):
         samples = np.random.normal(size=(nval, ncol))
 
-        isdominated = sutils.pareto_front(samples)
+        # Computing the number of points that
+        # the current point is dominating using a reverse
+        # metric. If 0, then there is no point above, and
+        # it means the current point is on the pareto front
+        ndominating = sutils.multivariate_dominance(samples, -1)
+        isdominated = (ndominating > 0).astype(int)
 
         dominated = np.ones((nval, nval))
         for i, j in prod(range(nval), range(nval)):
@@ -230,12 +266,6 @@ def test_pareto_front(allclose):
 
         expected = (dominated.sum(axis=1)>0).astype(int)
         assert allclose(isdominated, expected)
-
-    #import matplotlib.pyplot as plt
-    #plt.plot(*samples.T, "o", ms=4, alpha=0.8)
-    #plt.plot(*samples[expected==0].T, "ro")
-    #plt.show()
-    #import pdb; pdb.set_trace()
 
 
 def test_lstsq(allclose):

@@ -37,9 +37,10 @@ cdef extern from 'c_andersondarling.h':
     int c_ad_test(int nval, double *unifdata, double *outputs)
 
 
-cdef extern from 'c_paretofront.h':
-    int c_paretofront(int nval,int ncol,
+cdef extern from 'c_multivariate_dominance.h':
+    int c_multivariate_dominance(int nval,int ncol,
         int orientation,
+        int printlog,
         double* data,
         int* isdominated)
 
@@ -163,17 +164,17 @@ def ad_test(np.ndarray[double, ndim=1, mode='c'] unifdata not None,
             <double*> np.PyArray_DATA(outputs))
 
 
-def pareto_front(int orientation,
+def multivariate_dominance(int orientation, int printlog,
         np.ndarray[double, ndim=2, mode='c'] data not None,
-        np.ndarray[int, ndim=1, mode='c'] isdominated not None):
+        np.ndarray[int, ndim=1, mode='c'] ndominating not None):
 
     cdef int ierr
 
     # check dimensions
-    assert data.shape[0]==isdominated.shape[0]
+    assert data.shape[0] == ndominating.shape[0]
 
-    ierr = c_paretofront(data.shape[0], data.shape[1],
-            orientation,
+    ierr = c_multivariate_dominance(data.shape[0], data.shape[1],
+            orientation, printlog,
             <double*> np.PyArray_DATA(data),
-            <int*> np.PyArray_DATA(isdominated))
+            <int*> np.PyArray_DATA(ndominating))
     return ierr

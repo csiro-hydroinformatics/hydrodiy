@@ -35,7 +35,7 @@ else:
                 "src/hydrodiy/stat/ADinf.c",
                 "src/hydrodiy/stat/AnDarl.c",
                 "src/hydrodiy/stat/c_andersondarling.c",
-                "src/hydrodiy/stat/c_paretofront.c"
+                "src/hydrodiy/stat/c_multivariate_dominance.c"
             ],
             include_dirs=[numpy.get_include()]),
         Extension(
