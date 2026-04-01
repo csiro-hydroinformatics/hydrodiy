@@ -282,7 +282,7 @@ def semicorr(unorm):
     return rho, eta, rho_p, rho_m
 
 
-def multivariate_dominance(data, orientation=1, printlog=False):
+def multivariate_dominance(data, orientation=1, printlog=0):
     """ Identify the non-dominated points in a multi-dimensional data set.
 
     Parameters
