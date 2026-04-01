@@ -215,34 +215,32 @@ def test_semicorr(allclose):
 
 
 @pytest.mark.parametrize("repeat", np.arange(5))
-def test_multivariate_dominance(repeat, allclose):
+@pytest.mark.parametrize("ncols", [5, 10, 20])
+def test_multivariate_dominance(repeat, ncols, allclose):
     if not has_c_module("stat", False):
         pytest.skip("Missing C module c_hydrodiy_stat")
 
     nsamples = 10000
-    print(f"\n\n[Repeat {repeat}] multivariate dominance timing")
-    for ncols in [5, 10, 20]:
-        x = np.random.normal(size=(nsamples, ncols))
+    x = np.random.normal(size=(nsamples, ncols))
 
-        # C code
-        t1 = -time.time()
-        ndominating = sutils.multivariate_dominance(x)
-        t1 += time.time()
+    # C code
+    t1 = -time.time()
+    printlog = 2000 if repeat == 0 and ncols == 5 else 0
+    ndominating = sutils.multivariate_dominance(x, printlog=printlog)
+    t1 += time.time()
 
-        # Numpy code
-        expected = np.zeros_like(ndominating)
-        buf = np.empty(x.shape, dtype=int)
-        t2 = -time.time()
-        for i in range(nsamples):
-            np.greater(x[[i]], x, out=buf)
-            expected[i] = np.all(buf, axis=1).sum()
-        t2 += time.time()
+    # Numpy code
+    expected = np.zeros_like(ndominating)
+    buf = np.empty(x.shape, dtype=int)
+    t2 = -time.time()
+    for i in range(nsamples):
+        np.greater(x[[i]], x, out=buf)
+        expected[i] = np.all(buf, axis=1).sum()
+    t2 += time.time()
 
-        assert allclose(expected, ndominating)
-        assert t1 < t2 / 3
-        print(f"ncols = {ncols:3d} : deltaC={t1:4.1f}s deltaN={t2:4.1f}s")
-
-    print("\n")
+    assert allclose(expected, ndominating)
+    assert t1 < t2 / 4
+    print(f"deltaC={t1:4.1f}s deltaN={t2:4.1f}s\n")
 
 
 def test_pareto_front(allclose):

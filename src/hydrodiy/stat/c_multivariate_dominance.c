@@ -7,7 +7,7 @@
  * nval : number of points
  * ncol : number of dimensions
  * orientation : orientation of the front (-1=negative, 1=positive)
- * data : points array [nvalxncol]
+ * data : points array [nval x ncol]
  * isdominated : list of dominated points (=1). Pareto front corresponds to =0.
 **/
 int c_multivariate_dominance(int nval,int ncol,
@@ -23,8 +23,8 @@ int c_multivariate_dominance(int nval,int ncol,
     double orientationd = (double) orientation;
 
     /* Disable logging for short records (very fast) */
-    int nlog = 1000;
-    int toprint = printlog && (nval > 2 * nlog);
+    int nlog = printlog > 0 ? printlog : 1;
+    int toprint = (printlog > 0) && (nval >= 2 * nlog);
 
     if(toprint)
         fprintf(stdout, "\n\t-- Started multivariate dominance computation --\n");
