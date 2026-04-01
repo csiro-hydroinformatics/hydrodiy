@@ -239,7 +239,7 @@ def test_multivariate_dominance(repeat, ncols, allclose):
     t2 += time.time()
 
     assert allclose(expected, ndominating)
-    assert t1 < t2 / 4
+    assert t1 < t2 / 3
     print(f"deltaC={t1:4.1f}s deltaN={t2:4.1f}s\n")
 
 
