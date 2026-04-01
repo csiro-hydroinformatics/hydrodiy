@@ -28,7 +28,6 @@ cdef extern from 'c_olsleverage.h':
     int c_olsleverage(int nval, int npreds, double * predictors,
         double * tXXinv, double* leverages)
 
-
 cdef extern from 'c_dscore.h':
     int c_ensrank(double eps, int nval, int ncol, double* sim,
         double * fmat, double * ranks)
@@ -36,13 +35,12 @@ cdef extern from 'c_dscore.h':
 cdef extern from 'c_andersondarling.h':
     int c_ad_test(int nval, double *unifdata, double *outputs)
 
-
 cdef extern from 'c_multivariate_dominance.h':
-    int c_multivariate_dominance(int nval,int ncol,
-        int orientation,
-        int printlog,
-        double* data,
-        int* isdominated)
+    int c_multivariate_dominance(int nval, int ncol,
+                                 int orientation,
+                                 int printlog,
+                                 double* data,
+                                 int* ndominating)
 
 
 def __cinit__(self):
@@ -177,4 +175,5 @@ def multivariate_dominance(int orientation, int printlog,
             orientation, printlog,
             <double*> np.PyArray_DATA(data),
             <int*> np.PyArray_DATA(ndominating))
+
     return ierr
