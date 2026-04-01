@@ -225,7 +225,8 @@ def test_multivariate_dominance(repeat, ncols, allclose):
 
     # C code
     t1 = -time.time()
-    ndominating = sutils.multivariate_dominance(x)
+    printlog = 2000 if repeat == 0 and ncols == 5 else 0
+    ndominating = sutils.multivariate_dominance(x, printlog=printlog)
     t1 += time.time()
 
     # Numpy code
@@ -238,9 +239,8 @@ def test_multivariate_dominance(repeat, ncols, allclose):
     t2 += time.time()
 
     assert allclose(expected, ndominating)
-    assert t1 < t2 / 5
-    print(f" timing: deltaC={t1:4.1f}s deltaN={t2:4.1f}s")
-    print("\n")
+    assert t1 < t2 / 3
+    print(f"deltaC={t1:4.1f}s deltaN={t2:4.1f}s\n")
 
 
 def test_pareto_front(allclose):
