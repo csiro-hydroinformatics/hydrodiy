@@ -51,8 +51,11 @@ else:
 
 setup(
     name = "hydrodiy",
-    ext_modules = cythonize(extensions,\
-                    compiler_directives={"language_level": 3, "profile": False})
+    ext_modules = cythonize(extensions,
+                            compiler_directives={
+                                "language_level": 3,
+                                "profile": False
+                                })
 )
 
 
