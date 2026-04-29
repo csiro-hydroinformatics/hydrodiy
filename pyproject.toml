@@ -38,9 +38,9 @@ dependencies = [
 ]
 
 [dependency-groups]
-test = [
+dev = [
     "anybadge>=1.16.0",
-    "flake8>=5.0.4",
+    "ruff>=0.15.12",
     "pytest>=8.3.5",
     "pytest-allclose>=1.0.0",
     "pytest-cov>=5.0.0"
@@ -68,3 +68,10 @@ where = ["src"]
 [tool.uv]
 no-build-isolation-package = ["hydrodiy"]
 default-groups = []
+
+[tool.ruff]
+exclude = [
+    "src/hydrodiy/io/script_template_cmd.py",
+    "src/hydrodiy/io/script_template_plot.py",
+    "src/hydrodiy/io/script_template_minimal.py"
+    ]
