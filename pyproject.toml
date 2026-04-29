@@ -63,7 +63,8 @@ testpaths = [
 where = ["src"]
 
 [tool.setuptools.package-data]
-"*" = ["*.pyx", "*.pxd", "*.c", "*.h"]
+"*" = ["*.pyx", "*.pxd", "*.c", "*.h", "*.zip", "*.csv",
+       "*.shp", "*.dbf", "*.shx", "*.prj"]
 
 [tool.uv]
 no-build-isolation-package = ["hydrodiy"]
