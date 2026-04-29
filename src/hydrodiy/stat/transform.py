@@ -4,12 +4,10 @@ import math
 import sys
 import numpy as np
 import inspect
-from hydrodiy import PYVERSION
 
 from scipy.stats import norm
 
 from hydrodiy.data.containers import Vector
-from hydrodiy.data import dutils
 from hydrodiy.stat import sutils
 
 __all__ = ["Identity", "Logit", "Log", "BoxCox2",
@@ -23,12 +21,8 @@ EPS = 1e-10
 
 def _class_constructor_argnames(classobj):
     """ Get class constructor arguments """
-    if PYVERSION == 3:
-        sign = inspect.signature(classobj)
-        argnames = sign.parameters
-    elif PYVERSION == 2:
-        argnames = inspect.getargspec(classobj.__init__).args
-
+    sign = inspect.signature(classobj)
+    argnames = sign.parameters
     return argnames
 
 
@@ -168,31 +162,17 @@ class Transform(object):
         """ Reset parameter values """
         self._params.reset()
 
-    def _forward(self, x):
-        """ internal forward method (no cast)"""
-        raise NotImplementedError("Method _forward not implemented")
-
-    def _backward(self, y):
-        """ internal backward method (no cast)"""
-        raise NotImplementedError("Method _backward not implemented")
-
-    def _jacobian(self, x):
-        """ internal jacobian method (no cast)"""
-        raise NotImplementedError("Method _jacobian not implemented")
-
     def forward(self, x):
-        """ Returns the forward transform of x """
-        return dutils.cast(x, self._forward(x))
+        """ internal forward method (no cast)"""
+        raise NotImplementedError("Method forward not implemented")
 
     def backward(self, y):
-        """ Returns the backward transform of y after cast """
-        return dutils.cast(y, self._backward(y))
+        """ internal backward method (no cast)"""
+        raise NotImplementedError("Method backward not implemented")
 
     def jacobian(self, x):
-        """ Returns the transformation jacobianobian d[forward(x)]/dx
-            after cast
-        """
-        return dutils.cast(x, self._jacobian(x))
+        """ internal jacobian method (no cast)"""
+        raise NotImplementedError("Method jacobian not implemented")
 
     def backward_censored(self, y, censor=0.):
         """ Returns the backward transform of x censored below
@@ -247,13 +227,13 @@ class Identity(Transform):
     def __init__(self):
         super(Identity, self).__init__("Identity")
 
-    def _forward(self, x):
+    def forward(self, x):
         return x
 
-    def _backward(self, y):
+    def backward(self, y):
         return y
 
-    def _jacobian(self, x):
+    def jacobian(self, x):
         return np.ones_like(x)
 
 
@@ -266,19 +246,19 @@ class Logit(Transform):
 
         super(Logit, self).__init__("Logit", params)
 
-    def _forward(self, x):
+    def forward(self, x):
         lower, logdelta = self.params.values
         upper = lower + math.exp(logdelta)
         value = (x - lower) / (upper - lower)
         return np.log(1. / (1 - value) - 1)
 
-    def _backward(self, y):
+    def backward(self, y):
         lower, logdelta = self.params.values
         upper = lower + math.exp(logdelta)
         bnd = 1 - 1. / (1 + np.exp(y))
         return bnd * (upper - lower) + lower
 
-    def _jacobian(self, x):
+    def jacobian(self, x):
         lower, logdelta = self.params.values
         upper = lower + math.exp(logdelta)
         value = (x - lower) / (upper - lower)
@@ -307,17 +287,17 @@ class Log(Transform):
         else:
             self.basefactor = math.log(base)
 
-    def _forward(self, x):
+    def forward(self, x):
         nu = self.params.values[0]
         bf = self.basefactor
         return np.log(x + nu) / bf
 
-    def _backward(self, y):
+    def backward(self, y):
         nu = self.params.values[0]
         bf = self.basefactor
         return np.exp(bf * y) - nu
 
-    def _jacobian(self, x):
+    def jacobian(self, x):
         nu = self.params.values[0]
         bf = self.basefactor
         return np.where(x + nu > self.mininu, 1. / (x + nu) / bf,
@@ -354,14 +334,14 @@ class BoxCox2(Transform):
         super(BoxCox2, self).__init__("BoxCox2", params)
         self.mininu = mininu
 
-    def _forward(self, x):
+    def forward(self, x):
         nu, lam = self.params.values
         if abs(lam) > EPS:
             return (np.power(x + nu, lam) - 1) / lam
         else:
             return np.log(x + nu)
 
-    def _backward(self, y):
+    def backward(self, y):
         nu, lam = self.params.values
 
         if abs(lam) > EPS:
@@ -370,7 +350,7 @@ class BoxCox2(Transform):
         else:
             return np.exp(y) - nu
 
-    def _jacobian(self, x):
+    def jacobian(self, x):
         nu, lam = self.params.values
 
         if abs(lam) > EPS:
@@ -412,15 +392,15 @@ class BoxCox1lam(Transform):
             raise ValueError(errmess)
         return nu
 
-    def _forward(self, x):
+    def forward(self, x):
         self.BC.params.values = [self.get_nu(), self.params.values[0]]
         return self.BC.forward(x)
 
-    def _backward(self, y):
+    def backward(self, y):
         self.BC.params.values = [self.get_nu(), self.params.values[0]]
         return self.BC.backward(y)
 
-    def _jacobian(self, x):
+    def jacobian(self, x):
         self.BC.params.values = [self.get_nu(), self.params.values[0]]
         return self.BC.jacobian(x)
 
@@ -442,17 +422,17 @@ class BoxCox2sym(Transform):
         super(BoxCox2sym, self).__init__("BoxCox2sym", params)
         self.BC = BoxCox2(mininu=mininu, minilam=minilam)
 
-    def _forward(self, x):
+    def forward(self, x):
         self.BC.params.values = self.params.values
         y0 = self.BC.forward(0.)
         return np.sign(x)*(self.BC.forward(np.abs(x))-y0)
 
-    def _backward(self, y):
+    def backward(self, y):
         self.BC.params.values = self.params.values
         y0 = self.BC.forward(0.)
         return np.sign(y)*(self.BC.backward(np.abs(y)+y0))
 
-    def _jacobian(self, x):
+    def jacobian(self, x):
         self.BC.params.values = self.params.values
         return self.BC.jacobian(np.abs(x))
 
@@ -483,15 +463,15 @@ class BoxCox1nu(Transform):
             raise ValueError(errmess)
         return lam
 
-    def _forward(self, x):
+    def forward(self, x):
         self.BC.params.values = [self.params.values[0], self.get_lam()]
         return self.BC.forward(x)
 
-    def _backward(self, y):
+    def backward(self, y):
         self.BC.params.values = [self.params.values[0], self.get_lam()]
         return self.BC.backward(y)
 
-    def _jacobian(self, x):
+    def jacobian(self, x):
         self.BC.params.values = [self.params.values[0], self.get_lam()]
         return self.BC.jacobian(x)
 
@@ -510,7 +490,7 @@ class YeoJohnson(Transform):
 
         super(YeoJohnson, self).__init__("YeoJohnson", params)
 
-    def _forward(self, x):
+    def forward(self, x):
         nu, scale, lam = self.params.values
         x = np.atleast_1d(x)
         y = x * np.nan
@@ -531,7 +511,7 @@ class YeoJohnson(Transform):
 
         return y
 
-    def _backward(self, y):
+    def backward(self, y):
         nu, scale, lam = self.params.values
         y = np.atleast_1d(y)
         x = y * np.nan
@@ -550,7 +530,7 @@ class YeoJohnson(Transform):
 
         return (x - nu) / scale
 
-    def _jacobian(self, x):
+    def jacobian(self, x):
         nu, scale, lam = self.params.values
         x = np.atleast_1d(x)
         j = x * np.nan
@@ -599,7 +579,7 @@ class LogSinh(Transform):
             raise ValueError(errmess)
         return xmax
 
-    def _forward(self, x):
+    def forward(self, x):
         xmax = self.get_xmax()
         loga, logb = self.params.values
         a = math.exp(loga)
@@ -610,7 +590,7 @@ class LogSinh(Transform):
         return np.where(xn > -a/b+EPS,
                         (w+np.log((1.-np.exp(-2.*w))/2.))/b, np.nan)
 
-    def _backward(self, y):
+    def backward(self, y):
         xmax = self.get_xmax()
         loga, logb = self.params.values
         a = math.exp(loga)
@@ -621,7 +601,7 @@ class LogSinh(Transform):
                             - a) / b)
         return back
 
-    def _jacobian(self, x):
+    def jacobian(self, x):
         xmax = self.get_xmax()
         loga, logb = self.params.values
         a = math.exp(loga)
@@ -661,15 +641,15 @@ class Reciprocal(Transform):
         super(Reciprocal, self).__init__("Reciprocal", params)
         self.mininu = mininu
 
-    def _forward(self, x):
+    def forward(self, x):
         nu = self.params.values[0]
         return np.where(x > - nu, - 1. / (nu + x), np.nan)
 
-    def _backward(self, y):
+    def backward(self, y):
         nu = self.params.values[0]
         return np.where(y < - self.mininu, - 1. / y - nu, np.nan)
 
-    def _jacobian(self, x):
+    def jacobian(self, x):
         nu = self.params.values[0]
         return np.where(x > - nu, 1. / (nu + x)**2, np.nan)
 
@@ -687,7 +667,7 @@ class Softmax(Transform):
     def __init__(self):
         super(Softmax, self).__init__("Softmax")
 
-    def _forward(self, x):
+    def forward(self, x):
         # Check inputs
         x = np.atleast_2d(x)
         if x.ndim > 2:
@@ -703,7 +683,7 @@ class Softmax(Transform):
 
         return np.log(x / (1 - sx[:, None]))
 
-    def _backward(self, y):
+    def backward(self, y):
         # Check inputs
         y = np.atleast_2d(y)
         if y.ndim > 2:
@@ -713,7 +693,7 @@ class Softmax(Transform):
         x = np.exp(y)
         return x / (1 + np.sum(x, axis=1)[:, None])
 
-    def _jacobian(self, x):
+    def jacobian(self, x):
         """ See
         https://en.wikipedia.org/wiki/Determinant#Sylvester.27s_determinant_theorem
         """
@@ -742,16 +722,16 @@ class Sinh(Transform):
                         [-np.inf, 1e-10], [np.inf, np.inf])
         super(Sinh, self).__init__("Sinh", params)
 
-    def _forward(self, x):
+    def forward(self, x):
         nu, scale = self.params.values
         u = (x-nu)*scale
         return np.arcsinh(u)
 
-    def _backward(self, y):
+    def backward(self, y):
         nu, scale = self.params.values
         return np.sinh(y) / scale + nu
 
-    def _jacobian(self, x):
+    def jacobian(self, x):
         nu, scale = self.params.values
         u = (x - nu) * scale
         return scale / np.sqrt(1 + u * u)
@@ -788,7 +768,7 @@ class Manly(Transform):
             raise ValueError(errmess)
         return xmax
 
-    def _forward(self, x):
+    def forward(self, x):
         lam = self.params.values[0]
         xmax = self.get_xmax()
         if abs(lam-EPS) > 0.:
@@ -797,7 +777,7 @@ class Manly(Transform):
         else:
             return u
 
-    def _backward(self, y):
+    def backward(self, y):
         lam = self.params.values[0]
         xmax = self.get_xmax()
         if abs(lam - EPS) > 0.:
@@ -805,7 +785,7 @@ class Manly(Transform):
         else:
             return xmax * y
 
-    def _jacobian(self, x):
+    def jacobian(self, x):
         lam = self.params.values[0]
         xmax = self.get_xmax()
         if abs(lam-EPS) > 0.:

@@ -1,0 +1,14 @@
+anybadge
+cython
+flake8
+matplotlib
+numpy
+pandas
+pip
+pyproj
+pyshp
+pytest
+pytest-allclose
+pytest-cov
+requests
+scipy

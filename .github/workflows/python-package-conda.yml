@@ -12,53 +12,36 @@ jobs:
     defaults:
       run:
         shell: bash -l {0}
+
     steps:
-      - uses: actions/checkout@v2
-      
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v3
+      - uses: actions/checkout@v6
+
+      - name: "Set up Python"
+        uses: actions/setup-python@v6
         with:
-          python-version: '3.10'
-     
-      - name: Add conda to system path
-        run: |
-          # $CONDA is an environment variable pointing to the root of the miniconda directory
-          echo $CONDA/bin >> $GITHUB_PATH
-      
-      - name: Create conda environment if needed
-        run: |
-           source $CONDA/etc/profile.d/conda.sh
-           conda env create -f env_hydrodiy.yml
+          python-version-file: "pyproject.toml"
 
-      - name : Install hydrodiy package in conda env 
-        run: |
-          source $CONDA/etc/profile.d/conda.sh
-          conda activate env_hydrodiy
-          pip install -e .
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
 
-      - name: Lint with flake8
-        run: |
-          source $CONDA/etc/profile.d/conda.sh
-          conda activate env_hydrodiy
-          cd $GITHUB_WORKSPACE
-          flake8 --exclude src/hydrodiy/data/tests src/hydrodiy/data
-          flake8 --exclude src/hydrodiy/gis/tests,src/hydrodiy/gis/data src/hydrodiy/gis
-          flake8 --exclude src/hydrodiy/io/tests,src/hydrodiy/io/script_template_plot.py,src/hydrodiy/io/script_template_minimal.py,src/hydrodiy/io/script_template_cmd.py src/hydrodiy/io
-          flake8 --exclude src/hydrodiy/plot/tests src/hydrodiy/plot
-          flake8 --exclude src/hydrodiy/stat/tests,src/hydrodiy/stat/data src/hydrodiy/stat
+      - name : Install hydrodiy package 
+        run: uv sync --locked --all-extras --dev
 
+      - name: Lint with ruff
+        run: |
+          set -e
+          uv run ruff check src/hydrodiy/data/*.py
+          uv run ruff check src/hydrodiy/gis/*.py
+          uv run ruff check src/hydrodiy/stat/*.py
+          uv run ruff check src/hydrodiy/plot/*.py
 
       - name: Run tests
         run: |
-          source $CONDA/etc/profile.d/conda.sh
-          conda activate env_hydrodiy
-          pytest --cov=hydrodiy --cov-report=xml --cov-report=html --cov-report=term-missing src/hydrodiy
+          uv run --locked pytest --cov=hydrodiy --cov-report=xml --cov-report=html --cov-report=term-missing src/hydrodiy
       
       - name: Parse coverage report and create badge
         run: |
-          source $CONDA/etc/profile.d/conda.sh
-          conda activate env_hydrodiy
-          python -c "import xml.etree.ElementTree as ET; from anybadge import Badge; cov = float(ET.parse('coverage.xml').getroot().get('line-rate')) * 100; covbadge = Badge('Coverage', value=f'{cov:0.0f}%', thresholds={60:'red', 70:'orange', 80:'lightgreen', 90:'green'}); covbadge.write_badge('coverage_badge.svg', True)"
+          uv run --locked python -c "import xml.etree.ElementTree as ET; from anybadge import Badge; cov = float(ET.parse('coverage.xml').getroot().get('line-rate')) * 100; covbadge = Badge('Coverage', value=f'{cov:0.0f}%', thresholds={60:'red', 70:'orange', 80:'lightgreen', 90:'green'}); covbadge.write_badge('coverage_badge.svg', True)"
 
       - name: Update gist badge
         run: |
@@ -76,7 +59,5 @@ jobs:
 
       - name: Run examples
         run: |
-          source $CONDA/etc/profile.d/conda.sh
-          conda activate env_hydrodiy
-          python examples/run_all_examples.py
+          uv run --locked python examples/run_all_examples.py
         

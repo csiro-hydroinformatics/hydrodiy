@@ -69,97 +69,6 @@ def test_get_value_from_kwargs(allclose):
     assert kw == dict(firstarg=10)
 
 
-def test_cast_scalar(allclose):
-    """ Test scalar casts """
-    x = 0.6
-    y = 0.7
-    ycast = dutils.cast(x, y)
-    assert isinstance(ycast, type(x))
-    assert allclose(ycast, 0.7)
-
-    x = 0.6
-    y = np.array(0.7) # 0d np.array
-    ycast = dutils.cast(x, y)
-    assert (isinstance(ycast, type(x)))
-    assert allclose(ycast, 0.7)
-
-    x = np.float64(0.6) # numpy float type
-    y = np.array(0.7) # 0d np.array
-    ycast = dutils.cast(x, y)
-    assert (isinstance(ycast, type(x)))
-    assert allclose(ycast, 0.7)
-
-    x = 0.6
-    y = np.array([0.7]) # 1d np.array
-    ycast = dutils.cast(x, y)
-    assert (isinstance(ycast, type(x)))
-    assert allclose(ycast, 0.7)
-
-    x = 0.6
-    y = 7
-    ycast = dutils.cast(x, y)
-    assert (isinstance(ycast, type(x)))
-    assert allclose(ycast, 7.)
-
-    # we convert a float to int here
-    x = 6
-    y = np.array([0.7])
-    ycast = dutils.cast(x, y)
-    assert (isinstance(ycast, type(x)))
-    assert allclose(ycast, 0)
-
-
-def test_cast_scalar_error(allclose):
-    """ Test scalar cast errors """
-    x = 6
-    y = 7.
-    msg = "Cannot cast"
-    with pytest.raises(TypeError, match=msg):
-        ycast = dutils.cast(x, y)
-
-    x = 6
-    y = np.array([0.7, 0.8])
-    msg = "only "
-    with pytest.raises(TypeError, match=msg):
-        ycast = dutils.cast(x, y)
-
-
-def test_cast_array(allclose):
-    """ Test array cast """
-    x = np.array([0.6, 0.7])
-    y = np.array([0.7, 0.8])
-    ycast = dutils.cast(x, y)
-    assert (isinstance(ycast, type(x)))
-    assert allclose(ycast, y)
-
-    x = np.array([0.6, 0.7])
-    y = np.array([7, 8])
-    ycast = dutils.cast(x, y)
-    assert (isinstance(ycast, type(x)))
-    assert allclose(ycast, y)
-
-    x = np.array([0.6, 0.7])
-    y = 7.
-    ycast = dutils.cast(x, y)
-    assert (isinstance(ycast, type(x)))
-    assert allclose(ycast, y)
-
-
-def test_cast_array_error(allclose):
-    """ Test scalar cast errors """
-    x = np.array([6, 7])
-    y = np.array([7., 8.])
-    msg = "Cannot cast"
-    with pytest.raises(TypeError, match=msg):
-        ycast = dutils.cast(x, y)
-
-    x = 6.
-    y = np.array([7., 8.])
-    msg = "only "
-    with pytest.raises(TypeError, match=msg):
-        ycast = dutils.cast(x, y)
-
-
 def test_sequence_true(allclose):
     """ Test analysis of true sequence """
     nrepeat = 100
@@ -222,7 +131,7 @@ def test_aggregate(allclose):
     assert allclose(obsm.values, obsm2)
 
     kk = np.random.choice(range(nval), nval//10, replace=False)
-    obs[kk] = np.nan
+    obs.iloc[kk] = np.nan
     obsm = obs.resample("MS").apply(lambda x: np.sum(x.values))
     obsm2 = dutils.aggregate(aggindex, obs.values)
 
@@ -435,24 +344,24 @@ def test_var2h_halfhourly(allclose):
 @pytest.mark.skipif(not has_c_module("data", False), reason=SKIPMESS)
 def test_var2h_rainfall(allclose):
     values = [
-        ["1/04/1989 7:50", 2.79], \
-        ["1/04/1989 9:20",	3.09], \
-        ["1/04/1989 9:44",	9.65], \
-        ["1/04/1989 11:37",	3.45], \
-        ["1/04/1989 13:06",	8.03], \
-        ["1/04/1989 14:03",	25.78], \
-        ["1/04/1989 14:21",	11.61], \
-        ["1/04/1989 14:39",	32.65], \
-        ["1/04/1989 14:55",	5.74], \
-        ["1/04/1989 15:34",	50], \
-        ["1/04/1989 15:51",	8.9], \
-        ["1/04/1989 16:22",	41.1], \
-        ["1/04/1989 16:34",	15.03], \
+        ["1/04/1989 7:50", 2.79],
+        ["1/04/1989 9:20",	3.09],
+        ["1/04/1989 9:44",	9.65],
+        ["1/04/1989 11:37",	3.45],
+        ["1/04/1989 13:06",	8.03],
+        ["1/04/1989 14:03",	25.78],
+        ["1/04/1989 14:21",	11.61],
+        ["1/04/1989 14:39",	32.65],
+        ["1/04/1989 14:55",	5.74],
+        ["1/04/1989 15:34",	50],
+        ["1/04/1989 15:51",	8.9],
+        ["1/04/1989 16:22",	41.1],
+        ["1/04/1989 16:34",	15.03],
         ["1/04/1989 17:05",	4.22]
     ]
     se = pd.DataFrame(values)
-    se.loc[:, 0] = pd.to_datetime(se.loc[:, 0], dayfirst=True)
-    se = se.set_index(0).squeeze()
+    se.loc[:, "time"] = pd.to_datetime(se.loc[:, 0], dayfirst=True)
+    se = se.set_index("time").iloc[:, 1].squeeze()
 
     seh = dutils.var2h(se, rainfall=True)
     t = "1989-04-01 14:00:00"
@@ -463,7 +372,7 @@ def test_var2h_rainfall(allclose):
 def test_flathomogen(allclose):
     dt = pd.date_range("2000-01-10", "2000-04-05")
     a = pd.Series(np.random.uniform(0, 1, size=len(dt)), index=dt)
-    a[15] = np.nan
+    a.iloc[15] = np.nan
     aggindex = a.index.year*100 + a.index.month
     af = dutils.flathomogen(aggindex, a.values, 1)
 

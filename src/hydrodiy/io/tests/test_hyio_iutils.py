@@ -13,7 +13,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from hydrodiy.io import iutils, csv
-from hydrodiy import PYVERSION
 
 from requests.exceptions import HTTPError
 
