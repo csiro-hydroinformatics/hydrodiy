@@ -304,8 +304,9 @@ def test_lstsq_constraints():
         std = np.std(X.dot(t_true))/2
         err = np.random.normal(0, std, size=nval)
         y = X.dot(t_true)+err
-        res, fstats, fpvalues[repeat], _ = sutils.lstsq(X, y, Rtest=[R], \
-                                        rtest=[r])
+        res, fstats, pv, _ = sutils.lstsq(X, y, Rtest=[R],
+                                          rtest=[r])
+        fpvalues[repeat] = pv.squeeze()
 
     # Failing to assume that the last param is different from 5
     assert fpvalues.mean()>0.3
