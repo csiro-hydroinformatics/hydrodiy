@@ -8,7 +8,6 @@ import inspect
 from scipy.stats import norm
 
 from hydrodiy.data.containers import Vector
-from hydrodiy.data import dutils
 from hydrodiy.stat import sutils
 
 __all__ = ["Identity", "Logit", "Log", "BoxCox2",
