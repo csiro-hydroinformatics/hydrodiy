@@ -69,47 +69,6 @@ def sequence_true(values):
     return startend
 
 
-def cast(x, y):
-    """ Cast y to the type of x.
-
-        Useful to make sure that a function returns an output that has
-        the same type than the input (e.g. to avoid mixing float with
-        0d numpy arrays).
-
-    Parameters
-    -----------
-    x : object
-        First object
-    y : object
-        Second object
-    """
-    # Check if x is an nxd numpy array (n>0)
-    # then collect is type
-    xdtype = None
-    if hasattr(x, "dtype"):
-        # prevent the use of dtype for 0d array
-        if x.ndim > 0:
-            xdtype = x.dtype
-
-    # Cast depending on the nature of x and y
-    if xdtype is None:
-        # x is a basic data type
-        # this should work even if y is a
-        # 1d or 0d numpy array
-
-        # Except unsafe cast
-        if isinstance(x, int) and isinstance(y, float):
-            raise TypeError("Cannot cast value from float to int")
-
-        ycast = type(x)(y)
-
-    else:
-        # x is a numpy array
-        ycast = np.array(y).astype(xdtype, casting="safe")
-
-    return ycast
-
-
 def dayofyear(days):
     """ Compute day of year using days.dayofyear, but reduce the value by
     one for leap-years. This ensures that all years have 365 days.
@@ -125,18 +84,18 @@ def dayofyear(days):
         Day of year
     """
     try:
-        doy = days.dayofyear.values
-        yy = days.year.values
-        mm = days.month.values
+        doy = days.dayofyear.values.copy()
+        yy = days.year.values.copy()
+        mm = days.month.values.copy()
     except AttributeError:
         # Allow older version of pandas to work
-        doy = days.dayofyear
-        yy = days.year
-        mm = days.month
+        doy = days.dayofyear.copy()
+        yy = days.year.copy()
+        mm = days.month.copy()
 
     isleap = (yy % 4 == 0) & (~(yy % 100 == 0) | (yy % 400 == 0))
     idx = (mm > 2) & isleap
-    doy[idx] = doy[idx]-1
+    doy[idx] = doy[idx] - 1
 
     return doy
 
@@ -505,14 +464,14 @@ def var2h(se, nbsec_per_period=3600, maxgapsec=5*86400,
     display = np.int32(display)
     varvalues = se.values.astype(np.float64)
 
-    time = se.index.tz_localize(None).values
-    varsec = np.int64(time.astype(np.int64)/1000000000)
+    time = se.index.tz_localize(None)
+    ref = datetime(1970, 1, 1)
+    varsec = np.int64((time - ref).total_seconds())
 
     # Determines start and end of time series
     start = se.index[0]
     hstart = datetime(start.year, start.month,
                       start.day, start.hour) + delta(hours=1)
-    ref = datetime(1970, 1, 1)
     hstartsec = np.int64((hstart-ref).total_seconds())
 
     end = se.index[-1]

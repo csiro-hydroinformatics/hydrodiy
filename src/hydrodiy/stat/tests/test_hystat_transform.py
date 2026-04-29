@@ -159,15 +159,15 @@ def test_transform_class_not_implemented():
 
     # Test not implemented methods
     x = np.linspace(0, 1, 10)
-    msg = "Method _forward"
+    msg = "Method forward"
     with pytest.raises(NotImplementedError, match=msg):
         trans.forward(x)
 
-    msg = "Method _backward"
+    msg = "Method backward"
     with pytest.raises(NotImplementedError, match=msg):
         trans.backward(x)
 
-    msg = "Method _jacobian"
+    msg = "Method jacobian"
     with pytest.raises(NotImplementedError, match=msg):
         trans.jacobian(x)
 
