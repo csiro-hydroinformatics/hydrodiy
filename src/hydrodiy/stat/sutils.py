@@ -197,7 +197,7 @@ def lhs_norm(nsamples, mean, cov):
 
 
 def standard_normal(x, cst=0., sorted=False, rank_method="average"):
-    """ Compute normal standard variables
+    """ Compute normal standard transformed data.
 
      Parameters
     -----------
@@ -228,9 +228,9 @@ def standard_normal(x, cst=0., sorted=False, rank_method="average"):
     if sorted:
         ranks = np.arange(nval)
     else:
-        ranks = pd.Series(x).rank(method=rank_method)-1
+        ranks = pd.Series(x).rank(method=rank_method) - 1
 
-    unorm = norm.ppf((ranks+1-cst)/(nval+1-2*cst))
+    unorm = norm.ppf((ranks + 1 - cst)/(nval + 1 - 2 * cst))
 
     return unorm, ranks
 
@@ -266,11 +266,11 @@ def semicorr(unorm):
 
     # Theoretical semi-correlation with correlation = rho
     # See Joe (), Dependence Modelling with Copulas, Page 71, Equation 2.59
-    beta0 = 0.25+math.asin(rho)/(2*math.pi)
-    v10 = (1+rho)/(2*beta0*math.sqrt(2*math.pi))
-    v20 = 1+rho*math.sqrt(1-rho**2)/(2*math.pi*beta0)
-    v11 = (v20-1+rho**2)/rho
-    eta = (v11-v10**2)/(v20-v10**2)
+    beta0 = 0.25 + math.asin(rho) / (2 * math.pi)
+    v10 = (1 + rho) / (2 * beta0 * math.sqrt(2 * math.pi))
+    v20 = 1 + rho * math.sqrt(1 - rho**2) / (2 * math.pi * beta0)
+    v11 = (v20 - 1 + rho**2) / rho
+    eta = (v11 - v10**2) / (v20 - v10**2)
 
     # Sample semi-correlations
     idx = np.sum(unorm > 0, axis=1) == 2
