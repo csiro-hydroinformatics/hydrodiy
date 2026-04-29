@@ -29,11 +29,11 @@ jobs:
 
       - name: Lint with ruff
         run: |
+          set -e
           uv run ruff check src/hydrodiy/data/*.py
           uv run ruff check src/hydrodiy/gis/*.py
           uv run ruff check src/hydrodiy/stat/*.py
           uv run ruff check src/hydrodiy/plot/*.py
-
 
       - name: Run tests
         run: |
