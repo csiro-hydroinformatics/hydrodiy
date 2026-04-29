@@ -115,7 +115,7 @@ class Vector(object):
             return
 
         if name in self._names:
-            value = np.float64(value)
+            value = np.float64(value).squeeze()
             if np.isnan(value) and not self._accept_nan:
                 raise ValueError("Cannot set value to nan")
 
