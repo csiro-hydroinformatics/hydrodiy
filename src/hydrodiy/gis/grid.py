@@ -1191,17 +1191,17 @@ class Catchment(object):
         """
         has_c_module("gis")
 
-        self._idxcell_outlet = np.int64(idxcell_outlet)
+        self._idxcell_outlet = np.int64(idxcell_outlet).squeeze()
 
         if idxinlets is None:
-            idxinlets = -1*np.ones(0, dtype=np.int64)
+            idxinlets = -1 * np.ones(0, dtype=np.int64)
         else:
             idxinlets = np.atleast_1d(idxinlets).astype(np.int64)
             self._idxinlets = idxinlets
 
-        idxcells = -1*np.ones(nval, dtype=np.int64)
-        buffer1 = -1*np.ones(nval, dtype=np.int64)
-        buffer2 = -1*np.ones(nval, dtype=np.int64)
+        idxcells = -1 * np.ones(nval, dtype=np.int64)
+        buffer1 = -1 * np.ones(nval, dtype=np.int64)
+        buffer2 = -1 * np.ones(nval, dtype=np.int64)
 
         # Compute area
         flowdir = self.flowdir
@@ -1557,7 +1557,7 @@ def delineate_river(flowdir, idxupstream, nval=1000000):
     xll, yll, csz, nr, nc = flowdir._getsize()
 
     # Allocate memory
-    idxupstream = np.int64(idxupstream)
+    idxupstream = np.int64(idxupstream).squeeze()
     idxcells = -1*np.ones(nval, dtype=np.int64)
     data = np.zeros((nval, 5), dtype=np.float64)
     npoints = np.zeros((1,), dtype=np.int64)
