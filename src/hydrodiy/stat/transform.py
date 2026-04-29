@@ -4,7 +4,6 @@ import math
 import sys
 import numpy as np
 import inspect
-from hydrodiy import PYVERSION
 
 from scipy.stats import norm
 
@@ -23,12 +22,8 @@ EPS = 1e-10
 
 def _class_constructor_argnames(classobj):
     """ Get class constructor arguments """
-    if PYVERSION == 3:
-        sign = inspect.signature(classobj)
-        argnames = sign.parameters
-    elif PYVERSION == 2:
-        argnames = inspect.getargspec(classobj.__init__).args
-
+    sign = inspect.signature(classobj)
+    argnames = sign.parameters
     return argnames
 
 

@@ -1,14 +1,6 @@
 import sys
 import importlib
 
-__version__ = "2.8"
-
-# Detect python version
-PYVERSION = 2
-if sys.version_info > (3, 0):
-    PYVERSION = 3
-
-
 def has_c_module(name, raise_error=True):
     name = f"c_hydrodiy_{name}"
     out = importlib.util.find_spec(name)
