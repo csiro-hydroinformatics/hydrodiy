@@ -9,7 +9,7 @@ import colorsys
 from PIL import Image
 
 import matplotlib as mpl
-from matplotlib import cm
+from matplotlib.pyplot import get_cmap
 from matplotlib.patches import Ellipse
 from matplotlib import colors as mcolors
 from matplotlib.colors import hex2color, rgb2hex
@@ -169,7 +169,7 @@ def cmap2colors(ncols=10, cmap="Paired"):
                 }
             cmapn = colors2cmap(dd)
         else:
-            cmapn = cm.get_cmap(cmap, ncols)
+            cmapn = get_cmap(cmap, ncols)
 
         return [rgb2hex(cmapn(i)) for i in range(cmapn.N)]
     else:

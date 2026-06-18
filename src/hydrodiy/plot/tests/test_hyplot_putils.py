@@ -9,7 +9,6 @@ import matplotlib as mpl
 mpl.use("Agg")
 
 import matplotlib.pyplot as plt
-from matplotlib import cm
 from matplotlib.patches import Rectangle
 
 from hydrodiy.plot import putils
@@ -62,7 +61,7 @@ def test_cmap2colors():
     colors = putils.cmap2colors(ncols=10, cmap="Reds")
     assert len(colors) == 10
 
-    cmap = cm.get_cmap("Reds")
+    cmap = plt.get_cmap("Reds")
     colors = putils.cmap2colors(ncols=10, cmap=cmap)
     assert len(colors) == 10
 
