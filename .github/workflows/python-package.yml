@@ -25,7 +25,10 @@ jobs:
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
 
       - name : Install hydrodiy package 
-        run: uv sync --locked --all-extras --dev
+        run: |
+          set -e
+          uv lock --refresh
+          uv sync --locked --all-extras --dev
 
       - name: Lint with ruff
         run: |
