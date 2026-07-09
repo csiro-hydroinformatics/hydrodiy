@@ -192,6 +192,33 @@ def test_kde():
     fig.savefig(fp)
 
 
+@pytest.mark.parametrize("axis", ["x", "y", "both"])
+def test_kde_log(axis):
+    xy = np.random.multivariate_normal(
+        [1, 2], [[1, 0.9], [0.9, 1]],
+        size=1000)
+    xy = np.exp(xy)
+
+    logx = axis in ["x", "both"]
+    logy = axis in ["y", "both"]
+    xx, yy, zz = putils.kde(xy, logx=logx, logy=logy)
+
+    plt.close("all")
+    fig, ax = plt.subplots()
+    cont = ax.contourf(xx, yy, zz, cmap="Blues")
+    ax.contour(cont, colors="grey")
+    ax.plot(xy[:, 0], xy[:, 1], ".", alpha=0.2, mfc="grey", mec="none")
+
+    if axis in ["x", "both"]:
+        ax.set_xscale("log")
+
+    if axis in ["y", "both"]:
+        ax.set_yscale("log")
+
+    fp = FIMG / f"kde_log_{axis}.png"
+    fig.savefig(fp)
+
+
 def test_kde_missing():
     xy = np.random.multivariate_normal( \
         [1, 2], [[1, 0.9], [0.9, 1]], \
