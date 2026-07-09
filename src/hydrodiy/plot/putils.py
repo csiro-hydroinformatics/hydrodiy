@@ -9,7 +9,7 @@ import colorsys
 from PIL import Image
 
 import matplotlib as mpl
-from matplotlib import cm
+from matplotlib.pyplot import get_cmap
 from matplotlib.patches import Ellipse
 from matplotlib import colors as mcolors
 from matplotlib.colors import hex2color, rgb2hex
@@ -169,7 +169,7 @@ def cmap2colors(ncols=10, cmap="Paired"):
                 }
             cmapn = colors2cmap(dd)
         else:
-            cmapn = cm.get_cmap(cmap, ncols)
+            cmapn = get_cmap(cmap, ncols)
 
         return [rgb2hex(cmapn(i)) for i in range(cmapn.N)]
     else:
@@ -374,7 +374,8 @@ def set_mpl(color_theme="black",
             mpl.rc("savefig", transparent=True)
 
 
-def kde(xy, ngrid=50, eps=1e-10, buffer_proportion=0.05):
+def kde(xy, ngrid=50, eps=1e-10, buffer_proportion=0.05,
+        logx=False, logy=False):
     """ Interpolate a 2d pdf from a set of x/y data points using
     a Gaussian KDE. The outputs can be used to plot the pdf
     with something like matplotlib.Axes.contourf
@@ -391,6 +392,10 @@ def kde(xy, ngrid=50, eps=1e-10, buffer_proportion=0.05):
     buffer_proportion : float
         Buffer addded to extend the domain boundaries
         beyond the data limits.
+    logx : bool
+        Perform kde approximation in log space for x.
+    logy : bool
+        Perform kde approximation in log space for x.
 
     Returns
     -----------
@@ -406,6 +411,12 @@ def kde(xy, ngrid=50, eps=1e-10, buffer_proportion=0.05):
 
     iok = np.all(np.isfinite(xy), axis=1)
     xy = xy[iok]
+
+    if logx:
+        xy[:, 0] = np.log(xy[:, 0])
+
+    if logy:
+        xy[:, 1] = np.log(xy[:, 1])
 
     x0 = np.nanmin(xy[:, 0])
     x1 = np.nanmax(xy[:, 0])
@@ -427,6 +438,12 @@ def kde(xy, ngrid=50, eps=1e-10, buffer_proportion=0.05):
     kd = gaussian_kde(xy.T)
     zz = kd(np.vstack([xx.ravel(), yy.ravel()]))
     zz = zz.reshape(xx.shape)
+
+    if logx:
+        xx = np.exp(xx)
+
+    if logy:
+        yy = np.exp(yy)
 
     return xx, yy, zz
 
